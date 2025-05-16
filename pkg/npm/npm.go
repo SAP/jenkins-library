@@ -26,6 +26,7 @@ const (
 type Execute struct {
 	Utils   Utils
 	Options ExecutorOptions
+	Tool    *Tool
 }
 
 // Executor interface to enable mocking for testing
@@ -50,9 +51,14 @@ type ExecutorOptions struct {
 // NewExecutor instantiates Execute struct and sets executeOptions
 func NewExecutor(executorOptions ExecutorOptions) Executor {
 	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
+	tool, err := DetectTool(&utils, executorOptions.Tool)
+	if err != nil {
+		log.Entry().Fatalf("Failed to detect and initialize tool: %v", err)
+	}
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
+		Tool:    tool,
 	}
 }
 
@@ -96,18 +102,14 @@ func (exec *Execute) SetNpmRegistries() error {
 	execRunner := exec.Utils.GetExecRunner()
 	const npmRegistry = "registry"
 
-	toolName, err := exec.detectToolFromLockfile()
-	if err != nil {
-		return err
-	}
+	toolName := exec.Tool.Name
 	if toolName == "" {
-		// at least for 'config get/set' this will always work
 		toolName = "npm"
 	}
 
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err = execRunner.RunExecutable(toolName, "config", "get", npmRegistry, "-ws=false", "-iwr")
+	err := execRunner.RunExecutable(toolName, "config", "get", npmRegistry, "-ws=false", "-iwr")
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
@@ -185,7 +187,6 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 }
 
 func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string, scriptOptions []string) error {
-	execRunner := exec.Utils.GetExecRunner()
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
@@ -203,30 +204,20 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 		return err
 	}
 
-	toolName, err := exec.detectToolFromLockfile()
-	if err != nil {
-		return err
-	}
-	if toolName == "" {
-		// at least for 'run something' this should work
-		toolName = "npm"
-	}
-
 	log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + script)
 
-	npmRunArgs := []string{"run", script}
+	args := []string{script}
 	if len(runOptions) > 0 {
-		npmRunArgs = append(npmRunArgs, runOptions...)
+		args = append(args, runOptions...)
 	}
-
 	if len(scriptOptions) > 0 {
-		npmRunArgs = append(npmRunArgs, "--")
-		npmRunArgs = append(npmRunArgs, scriptOptions...)
+		args = append(args, "--")
+		args = append(args, scriptOptions...)
 	}
 
-	err = execRunner.RunExecutable(toolName, npmRunArgs...)
+	err = exec.Tool.Run(args...)
 	if err != nil {
-		return fmt.Errorf("failed to run npm script %s: %w", script, err)
+		return fmt.Errorf("failed to run %s script %s: %w", exec.Tool.Name, script, err)
 	}
 
 	err = exec.Utils.Chdir(oldWorkingDirectory)
@@ -311,8 +302,6 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 
 // install executes npm or yarn Install for package.json
 func (exec *Execute) install(packageJSON string) error {
-	execRunner := exec.Utils.GetExecRunner()
-
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
@@ -329,36 +318,10 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	toolName, err := exec.detectToolFromLockfile()
+	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install with " + exec.Tool.Name)
+	err = exec.Tool.Install()
 	if err != nil {
-		return err
-	}
-
-	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
-	if toolName == "npm" {
-		err = execRunner.RunExecutable(toolName, "ci")
-		if err != nil {
-			return err
-		}
-	} else if toolName == "yarn" {
-		err = execRunner.RunExecutable(toolName, "install", "--frozen-lockfile")
-		if err != nil {
-			return err
-		}
-	} else if toolName == "pnpm" {
-		err = execRunner.RunExecutable(toolName, "install")
-		if err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm/yarn/pnpm install` locally." +
-			" Add this file to your version control. " +
-			"By doing so, the builds of your application become more reliable. Defaulting to 'Tool: npm'.")
-		err = execRunner.RunExecutable("npm", "install")
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("failed to install dependencies with %s: %w", exec.Tool.Name, err)
 	}
 
 	err = exec.Utils.Chdir(oldWorkingDirectory)
@@ -366,46 +329,6 @@ func (exec *Execute) install(packageJSON string) error {
 		return fmt.Errorf("failed to change back into original directory: %w", err)
 	}
 	return nil
-}
-
-// detectToolFromLockfile checks if yarn/npm/pnpm lock file exist and returns the name of the tool
-func (exec *Execute) detectToolFromLockfile() (string, error) {
-	if exec.Options.Tool == "auto" {
-		yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
-		if err != nil {
-			return "", err
-		} else if yarnLockExists {
-			err := exec.autoInstallTool("yarn")
-			if err != nil {
-				log.Entry().Warn("Could not install yarn, falling back to npm: %w", err)
-				return "npm", nil
-			}
-			return "yarn", nil
-		}
-
-		pnpmLockExists, err := exec.Utils.FileExists("pnpm-lock.yaml")
-		if err != nil {
-			return "", err
-		} else if pnpmLockExists {
-			err := exec.autoInstallTool("pnpm")
-			if err != nil {
-				log.Entry().Warn("Could not install pnpm, falling back to npm: %w", err)
-				return "npm", nil
-			}
-			return "pnpm", nil
-		}
-
-		packageLockExists, err := exec.Utils.FileExists("package-lock.json")
-		if err != nil {
-			return "", err
-		} else if packageLockExists {
-			return "npm", nil
-		}
-		return "", nil
-
-	} else {
-		return exec.Options.Tool, nil
-	}
 }
 
 // CreateBOM generates BOM file using CycloneDX from all package.json files

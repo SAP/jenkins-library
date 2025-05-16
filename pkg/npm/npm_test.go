@@ -21,6 +21,10 @@ func (u *npmMockUtilsBundle) GetExecRunner() ExecRunner {
 	return u.execRunner
 }
 
+func (u *npmMockUtilsBundle) LookPath(a string) (string, error) {
+	return a, nil
+}
+
 func newNpmMockUtilsBundle() npmMockUtilsBundle {
 	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
 	return utils
@@ -33,9 +37,12 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
@@ -52,9 +59,12 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
@@ -76,9 +86,12 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
 
 		packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes([]string{"filter/**", "filterPath/package.json"})
@@ -96,9 +109,12 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
 
 		packageJSONFilesWithScript, err := exec.FindPackageJSONFilesWithScript([]string{"package.json", filepath.Join("src", "package.json"), filepath.Join("test", "package.json")}, "ci-lint")
@@ -115,14 +131,18 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.install("package.json")
+		err = exec.install("package.json")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
+				fmt.Println(utils.execRunner.Calls)
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 			}
 		}
@@ -134,11 +154,14 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.install("package.json")
+		err = exec.install("package.json")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -155,11 +178,14 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.install("package.json")
+		err = exec.install("package.json")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -177,11 +203,14 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar", Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.InstallAllDependencies([]string{"package.json", filepath.Join("src", "package.json")})
+		err = exec.InstallAllDependencies([]string{"package.json", filepath.Join("src", "package.json")})
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
@@ -197,34 +226,20 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("yarn.lock", []byte("{}"))
 		utils.AddFile("package-lock.json", []byte("{}"))
 
-		options := ExecutorOptions{Tool: "auto"}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		toolName, err := exec.detectToolFromLockfile()
-
+		tool, err := DetectTool(&utils, "auto")
 		if assert.NoError(t, err) {
-			assert.Equal(t, "yarn", toolName)
+			assert.Equal(t, "yarn", tool.Name)
 		}
 	})
 
 	t.Run("for usage of npm", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile("yarn.lock", []byte("{}"))
+		utils.AddFile("package-lock.json", []byte("{}"))
 
-		options := ExecutorOptions{Tool: "npm"}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		toolName, err := exec.detectToolFromLockfile()
-
+		tool, err := DetectTool(&utils, "auto")
 		if assert.NoError(t, err) {
-			assert.Equal(t, "npm", toolName)
+			assert.Equal(t, "npm", tool.Name)
 		}
 	})
 
@@ -234,16 +249,9 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 		utils.AddFile("package-lock.json", []byte("{}"))
 
-		options := ExecutorOptions{Tool: "auto"}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		toolName, err := exec.detectToolFromLockfile()
-
+		tool, err := DetectTool(&utils, "auto")
 		if assert.NoError(t, err) {
-			assert.Equal(t, "pnpm", toolName)
+			assert.Equal(t, "pnpm", tool.Name)
 		}
 	})
 
@@ -251,16 +259,37 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{Tool: "auto"}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		toolName, err := exec.detectToolFromLockfile()
-
+		tool, err := DetectTool(&utils, "auto")
 		if assert.NoError(t, err) {
-			assert.Equal(t, "", toolName)
+			assert.Equal(t, "npm", tool.Name)
+		}
+	})
+
+	t.Run("use yarn when requested even without lock file", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.execRunner.Lookups = map[string]bool{"yarn": false}
+
+		tool, err := DetectTool(&utils, "yarn")
+		if assert.NoError(t, err) {
+			assert.Equal(t, "yarn", tool.Name)
+			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "yarn"}}, utils.execRunner.Calls[0])
+			}
+		}
+	})
+
+	t.Run("use pnpm when requested even without lock file", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.execRunner.Lookups = map[string]bool{"pnpm": false}
+
+		tool, err := DetectTool(&utils, "pnpm")
+		if assert.NoError(t, err) {
+			assert.Equal(t, "pnpm", tool.Name)
+			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "pnpm"}}, utils.execRunner.Calls[0])
+			}
 		}
 	})
 
@@ -270,16 +299,9 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 		utils.execRunner.Lookups = map[string]bool{"pnpm": false}
 
-		options := ExecutorOptions{Tool: "auto"}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		toolName, err := exec.detectToolFromLockfile()
-
+		tool, err := DetectTool(&utils, "auto")
 		if assert.NoError(t, err) {
-			assert.Equal(t, "pnpm", toolName)
+			assert.Equal(t, "pnpm", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "pnpm"}}, utils.execRunner.Calls[0])
 			}
@@ -292,11 +314,14 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
+		err = exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -313,11 +338,14 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
+		err = exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -334,11 +362,14 @@ func TestNpm(t *testing.T) {
 		options := ExecutorOptions{Tool: "auto"}
 		runScripts := []string{"ci-lint", "ci-build"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, nil)
+		err = exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, nil)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
@@ -357,11 +388,14 @@ func TestNpm(t *testing.T) {
 		runScripts := []string{"ci-lint", "ci-build"}
 		buildDescriptorList := []string{filepath.Join("src", "package.json"), "package.json"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
+		err = exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
@@ -378,11 +412,14 @@ func TestNpm(t *testing.T) {
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "https://example.org/npm"
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.SetNpmRegistries()
+		err = exec.SetNpmRegistries()
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -398,11 +435,14 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{Tool: "auto"}
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil, nil)
+		err = exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil, nil)
 
 		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)
@@ -427,11 +467,14 @@ func TestNpm(t *testing.T) {
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+		err = exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
 		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
 		cycloneDxNpmRunParams := []string{
 			"--output-format",
@@ -463,11 +506,14 @@ func TestNpm(t *testing.T) {
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
+		tool, err := DetectTool(&utils, "auto")
+		assert.NoError(t, err)
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			Tool:    tool,
 		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+		err = exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
 		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
 
 		cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
