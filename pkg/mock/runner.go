@@ -4,6 +4,7 @@
 package mock
 
 import (
+	"errors"
 	"io"
 	"regexp"
 	"strings"
@@ -23,6 +24,7 @@ type ExecMockRunner struct {
 	Stub                func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
+	Lookups             map[string]bool
 }
 
 type ExecCall struct {
@@ -48,6 +50,7 @@ type ShellMockRunner struct {
 	stderr              io.Writer
 	StdoutReturn        map[string]string
 	ShouldFailOnCommand map[string]error
+	Lookups             map[string]bool
 }
 
 func (m *ExecMockRunner) SetDir(d string) {
@@ -122,6 +125,14 @@ func (m *ExecMockRunner) handleCall(call string, stdoutReturn map[string]string,
 	}
 }
 
+func (m *ExecMockRunner) LookPath(bin string) (string, error) {
+	if m.Lookups[bin] {
+		return bin, nil
+	} else {
+		return "", errors.New("not found")
+	}
+}
+
 func (m *ShellMockRunner) SetDir(d string) {
 	m.Dir = d
 }
@@ -144,6 +155,14 @@ func (m *ShellMockRunner) RunShell(s string, c string) error {
 
 func (m *ShellMockRunner) GetExitCode() int {
 	return m.ExitCode
+}
+
+func (m *ShellMockRunner) LookPath(bin string) (string, error) {
+	if m.Lookups[bin] {
+		return bin, nil
+	} else {
+		return "", errors.New("not found")
+	}
 }
 
 func (e *Execution) Kill() error {

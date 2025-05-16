@@ -26,6 +26,16 @@ spec:
       - name: source
         type: stash
     params:
+      - name: tool
+        type: string
+        description: |
+          The to run the script. Can be one of: auto, npm, yarn, pnpm.
+          Default is 'auto' to auto-detect the tool based on the lock file.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "auto"
       - name: install
         type: bool
         description: Run npm install or similar commands depending on the project structure.
