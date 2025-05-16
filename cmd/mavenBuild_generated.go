@@ -421,7 +421,7 @@ func mavenBuildMetadata() config.StepData {
 							{
 								Name:    "altDeploymentRepositoryPasswordFileVaultSecretName",
 								Type:    "vaultSecretFile",
-								Default: "alt-deployment-repository-passowrd",
+								Default: "alt-deployment-repository-password",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
