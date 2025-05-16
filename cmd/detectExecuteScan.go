@@ -132,9 +132,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().WithError(err).Warning(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
-
 	utils.provider = provider
 
 	return &utils
