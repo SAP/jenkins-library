@@ -173,7 +173,6 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 
 		if len(packagesWithScript) == 0 {
 			return fmt.Errorf("could not find any package.json file with script : %s ", script)
-
 		}
 
 		for _, packageJSON := range packagesWithScript {
@@ -257,7 +256,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 	var packagesWithScript []string
 
 	for _, file := range packageJSONFiles {
-		var packageJSON map[string]interface{}
+		var packageJSON map[string]any
 
 		packageRaw, err := exec.Utils.FileRead(file)
 		if err != nil {
@@ -269,7 +268,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 			return nil, fmt.Errorf("failed to unmarshal %s to check for existence of %s script: %w", file, script, err)
 		}
 
-		scripts, ok := packageJSON["scripts"].(map[string]interface{})
+		scripts, ok := packageJSON["scripts"].(map[string]any)
 		if ok {
 			_, ok := scripts[script].(string)
 			if ok {
@@ -390,17 +389,4 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 	}
 
 	return nil
-}
-
-func (exec *Execute) autoInstallTool(toolName string) error {
-	_, err := exec.Utils.GetExecRunner().LookPath(toolName)
-	if err == nil {
-		return nil
-	} else {
-		err = exec.Utils.GetExecRunner().RunExecutable("npm", "install", "-g", toolName)
-		if err != nil {
-			return fmt.Errorf("failed to install required tool '%s': %w", toolName, err)
-		}
-		return nil
-	}
 }
