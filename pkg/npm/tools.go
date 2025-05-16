@@ -94,43 +94,59 @@ func (t *Tool) Build(args ...string) error {
 }
 
 // DetectTool inspects the current directory for lockfiles, auto-installs the tool if needed,
-// runs install, and returns the ready-to-use Tool struct.
+// and returns the ready-to-use Tool struct. For specific tools (yarn/pnpm), it handles installation.
+// It warns if a lock file is missing for the selected tool.
 func DetectTool(utils Utils, toolName string) (*Tool, error) {
 	execRunner := utils.GetExecRunner()
 	var tool Tool
 
-	// First handle specific tool requests
+	// Handle specific tool requests first
 	switch toolName {
 	case "pnpm":
+		if !exists("pnpm-lock.yaml", utils) {
+			log.Entry().Warning("No pnpm-lock.yaml found. Please run pnpm install locally and commit the lock file.")
+		}
 		if err := autoInstallTool(execRunner, "pnpm"); err != nil {
 			return nil, err
 		}
 		tool = ToolPNPM
+
 	case "yarn":
+		if !exists("yarn.lock", utils) {
+			log.Entry().Warning("No yarn.lock found. Please run yarn install locally and commit the lock file.")
+		}
 		if err := autoInstallTool(execRunner, "yarn"); err != nil {
 			return nil, err
 		}
 		tool = ToolYarn
+
 	case "auto":
 		// Auto-detect based on lock files
-		if exists("pnpm-lock.yaml", utils) {
+		switch {
+		case exists("pnpm-lock.yaml", utils):
 			if err := autoInstallTool(execRunner, "pnpm"); err != nil {
 				return nil, err
 			}
 			tool = ToolPNPM
-		} else if exists("yarn.lock", utils) {
+		case exists("yarn.lock", utils):
 			if err := autoInstallTool(execRunner, "yarn"); err != nil {
 				return nil, err
 			}
 			tool = ToolYarn
-		} else if exists("package-lock.json", utils) {
+		case exists("package-lock.json", utils):
 			tool = ToolNPM
-		} else {
+		default:
+			log.Entry().Warning("No lock file found. Please run install locally and commit the lock file.")
 			tool = ToolNPM
 			tool.InstallCmd = []string{"install"}
 		}
+
 	default:
 		tool = ToolNPM
+		if !exists("package-lock.json", utils) {
+			log.Entry().Warning("No package-lock.json found. Please run npm install locally and commit the lock file.")
+			tool.InstallCmd = []string{"install"}
+		}
 	}
 
 	tool.ExecRunner = execRunner
