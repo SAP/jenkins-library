@@ -9,7 +9,6 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type azureDevopsConfigProvider struct {
@@ -172,15 +171,14 @@ func (a *azureDevopsConfigProvider) FullLogs() ([]byte, error) {
 func (a *azureDevopsConfigProvider) PipelineStartTime() time.Time {
 	//"2022-03-18T07:30:31.1915758Z"
 	a.fetchAPIInformation()
-	if timestamp, ok := a.apiInformation["startTime"]; ok {
-		t, err := time.Parse(time.RFC3339, timestamp.(string))
-		if err == nil {
-			return t.UTC()
+	if val, ok := a.apiInformation["startTime"]; ok {
+		parsed, err := time.Parse(time.RFC3339, val.(string))
+		if err != nil {
+			log.Entry().Errorf("could not parse timestamp, %v", err)
+			parsed = time.Time{}
 		}
-		log.Entry().WithError(err).Error(errors.Wrapf(err, "failed to parse startTime (%s), returning empty time", timestamp.(string)))
-		return time.Time{}.UTC()
+		return parsed.UTC()
 	}
-	log.Entry().Error("could not determine startTime, returning empty time")
 	return time.Time{}.UTC()
 }
 
