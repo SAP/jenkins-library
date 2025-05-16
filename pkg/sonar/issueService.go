@@ -44,7 +44,7 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 	return result, response, nil
 }
 
-func (service *IssueService) getIssueCount(severity issueSeverity) (int, Severity, error) {
+func (service *IssueService) getIssueCount(severity issueSeverity, categories *[]Severity) (int, error) {
 	options := &IssuesSearchOption{
 		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
@@ -62,43 +62,51 @@ func (service *IssueService) getIssueCount(severity issueSeverity) (int, Severit
 	}
 	result, _, err := service.SearchIssues(options)
 	if err != nil {
-		return -1, Severity{}, errors.Wrapf(err, "failed to fetch the numer of '%s' issues", severity)
+		return -1, errors.Wrapf(err, "failed to fetch the numer of '%s' issues", severity)
 	}
 
-	var severityResult Severity
-	if len(result.Issues) > 0 {
+	table := map[string]int{}
+	service.updateIssueTypesTable(result.Issues, table)
+	for issueType, issuesCount := range table {
+		var severityResult Severity
 		severityResult.SeverityType = severity.ToString()
-		severityResult.IssueType = result.Issues[0].Type
-		severityResult.Count = result.Total
-	} else {
-		severityResult.SeverityType = severity.ToString()
+		severityResult.IssueType = issueType
+		severityResult.IssueCount = issuesCount
+		*categories = append(*categories, severityResult)
 	}
-	return result.Total, severityResult, nil
+	return result.Total, nil
+}
+
+func (service *IssueService) updateIssueTypesTable(issues []*sonargo.Issue, table map[string]int) {
+	for _, issue := range issues {
+		table[issue.Type]++
+	}
+	delete(table, "") // remove undefined key if any exists in response
 }
 
 // GetNumberOfBlockerIssues returns the number of issue with BLOCKER severity.
-func (service *IssueService) GetNumberOfBlockerIssues() (int, Severity, error) {
-	return service.getIssueCount(blocker)
+func (service *IssueService) GetNumberOfBlockerIssues(categories *[]Severity) (int, error) {
+	return service.getIssueCount(blocker, categories)
 }
 
 // GetNumberOfCriticalIssues returns the number of issue with CRITICAL severity.
-func (service *IssueService) GetNumberOfCriticalIssues() (int, Severity, error) {
-	return service.getIssueCount(critical)
+func (service *IssueService) GetNumberOfCriticalIssues(categories *[]Severity) (int, error) {
+	return service.getIssueCount(critical, categories)
 }
 
 // GetNumberOfMajorIssues returns the number of issue with MAJOR severity.
-func (service *IssueService) GetNumberOfMajorIssues() (int, Severity, error) {
-	return service.getIssueCount(major)
+func (service *IssueService) GetNumberOfMajorIssues(categories *[]Severity) (int, error) {
+	return service.getIssueCount(major, categories)
 }
 
 // GetNumberOfMinorIssues returns the number of issue with MINOR severity.
-func (service *IssueService) GetNumberOfMinorIssues() (int, Severity, error) {
-	return service.getIssueCount(minor)
+func (service *IssueService) GetNumberOfMinorIssues(categories *[]Severity) (int, error) {
+	return service.getIssueCount(minor, categories)
 }
 
 // GetNumberOfInfoIssues returns the number of issue with INFO severity.
-func (service *IssueService) GetNumberOfInfoIssues() (int, Severity, error) {
-	return service.getIssueCount(info)
+func (service *IssueService) GetNumberOfInfoIssues(categories *[]Severity) (int, error) {
+	return service.getIssueCount(info, categories)
 }
 
 // NewIssuesService returns a new instance of a service for the issues API endpoint.

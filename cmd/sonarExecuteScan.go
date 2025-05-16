@@ -252,24 +252,24 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
-	var categories [5]SonarUtils.Severity
-	influx.sonarqube_data.fields.blocker_issues, categories[0], err = issueService.GetNumberOfBlockerIssues()
+	var categories []SonarUtils.Severity
+	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.critical_issues, categories[1], err = issueService.GetNumberOfCriticalIssues()
+	influx.sonarqube_data.fields.critical_issues, err = issueService.GetNumberOfCriticalIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.major_issues, categories[2], err = issueService.GetNumberOfMajorIssues()
+	influx.sonarqube_data.fields.major_issues, err = issueService.GetNumberOfMajorIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.minor_issues, categories[3], err = issueService.GetNumberOfMinorIssues()
+	influx.sonarqube_data.fields.minor_issues, err = issueService.GetNumberOfMinorIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.info_issues, categories[4], err = issueService.GetNumberOfInfoIssues()
+	influx.sonarqube_data.fields.info_issues, err = issueService.GetNumberOfInfoIssues(&categories)
 	if err != nil {
 		return err
 	}

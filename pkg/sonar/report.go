@@ -34,7 +34,7 @@ type Issues struct {
 type Severity struct {
 	SeverityType string `json:"severity"`
 	IssueType    string `json:"error_type,omitempty"`
-	Count        int    `json:"issues"`
+	IssueCount   int    `json:"issues,omitempty"`
 }
 
 // WriteReport ...

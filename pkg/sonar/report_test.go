@@ -27,7 +27,13 @@ func TestWriteReport(t *testing.T) {
 		ServerURL:  "https://sonarcloud.io",
 		ProjectKey: "Piper-Validation/Golang",
 		TaskID:     mock.Anything,
-		Errors:     []Severity{{SeverityType: "CRITICAL", IssueType: "CODE_SMELL", Count: 10}},
+		Errors: []Severity{
+			{
+				SeverityType: "CRITICAL",
+				IssueType:    "CODE_SMELL",
+				IssueCount:   10,
+			},
+		},
 		NumberOfIssues: Issues{
 			Critical: 1,
 			Major:    2,
