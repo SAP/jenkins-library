@@ -40,7 +40,6 @@ func (t *Telemetry) Initialize(stepName string) {
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
 	t.provider = provider
 
