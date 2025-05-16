@@ -143,25 +143,30 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 
 // PipelineStartTime returns the pipeline start time in UTC
 func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
-	url := j.BuildURL() + "api/json"
-	response, err := j.client.GetRequest(url, nil, nil)
-	defer response.Body.Close()
+	URL := j.BuildURL() + "api/json"
+	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		log.Entry().WithError(err).Error(errors.Wrapf(err, "failed to fetch build information from url (%s), returning empty time", url))
+		log.Entry().WithError(err).Errorf("could not getRequest to URL %s", URL)
 		return time.Time{}.UTC()
 	}
 
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().WithError(err).Error(errors.Wrapf(err, "failed to fetch build information with status code %d, returning empty time", response.StatusCode))
+		log.Entry().Errorf("response code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
+		return time.Time{}.UTC()
+	}
+	var responseInterface map[string]interface{}
+	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
+	if err != nil {
+		log.Entry().WithError(err).Infof("could not parse http response, returning 1970")
 		return time.Time{}.UTC()
 	}
 
-	var responseInterface map[string]interface{}
-	if err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface); err != nil {
-		log.Entry().WithError(err).Error(errors.Wrap(err, "failed to parse response, returning empty time"))
-		return time.Time{}.UTC()
-	}
-	return time.Unix(int64(responseInterface["timestamp"].(float64))/1000, 0).UTC()
+	rawTimeStamp := responseInterface["timestamp"].(float64)
+	timeStamp := time.Unix(int64(rawTimeStamp)/1000, 0)
+
+	log.Entry().Debugf("Pipeline start time: %v", timeStamp.String())
+	defer response.Body.Close()
+	return timeStamp.UTC()
 }
 
 // JobName returns the job name of the current job e.g. foo/bar/BRANCH
