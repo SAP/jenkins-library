@@ -145,7 +145,6 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
 	url := j.BuildURL() + "api/json"
 	response, err := j.client.GetRequest(url, nil, nil)
-	defer response.Body.Close()
 	if err != nil {
 		log.Entry().WithError(err).Error(errors.Wrapf(err, "failed to fetch build information from url (%s), returning empty time", url))
 		return time.Time{}.UTC()
@@ -161,6 +160,7 @@ func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
 		log.Entry().WithError(err).Error(errors.Wrap(err, "failed to parse response, returning empty time"))
 		return time.Time{}.UTC()
 	}
+	defer response.Body.Close()
 	return time.Unix(int64(responseInterface["timestamp"].(float64))/1000, 0).UTC()
 }
 
