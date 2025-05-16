@@ -373,7 +373,6 @@ func {{ .StepName }}Metadata() config.StepData {
 
 // StepTestGoTemplate ...
 const stepTestGoTemplate = `//go:build unit
-// +build unit
 
 package cmd
 
