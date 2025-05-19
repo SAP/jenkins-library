@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -247,7 +246,7 @@ func TestPnpm(t *testing.T) {
 cd /test
 /piperbin/piper npmExecuteScripts --install --runScripts=start --defaultNpmRegistry=https://foo.bar >test-log.txt 2>&1
 `
-	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "node:14-slim",
@@ -267,7 +266,7 @@ cd /test
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 
-	content, err := ioutil.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
 	if err != nil {
 		t.Fatal("Could not read test-log.txt.", err)
 	}
