@@ -53,7 +53,6 @@ func (t *Tool) Publish(args ...string) error {
 	return t.ExecRunner.RunExecutable(t.Name, cmd...)
 }
 
-
 // DetectTool inspects the current directory for lockfiles, auto-installs the tool if needed,
 // and returns the ready-to-use Tool struct. For specific tools (yarn/pnpm), it handles installation.
 // It warns if a lock file is missing for the selected tool.
