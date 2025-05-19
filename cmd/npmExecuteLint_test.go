@@ -62,7 +62,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
