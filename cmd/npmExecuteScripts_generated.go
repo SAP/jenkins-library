@@ -250,7 +250,7 @@ and are exposed are environment variables that must be present in the environmen
 }
 
 func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScriptsOptions) {
-	cmd.Flags().StringVar(&stepConfig.Tool, "tool", `auto`, "The to run the script. Can be one of: auto, npm, yarn, pnpm.\nDefault is 'auto' to auto-detect the tool based on the lock file.\n")
+	cmd.Flags().StringVar(&stepConfig.Tool, "tool", `auto`, "The tool to run the script. Can be one of: auto, npm, yarn, pnpm.\nDefault is 'auto' to auto-detect the tool based on the lock file:\n- npm: selected if package-lock.json is present\n- yarn: selected if yarn.lock is present\n- pnpm: selected if pnpm-lock.yaml is present\n")
 	cmd.Flags().BoolVar(&stepConfig.Install, "install", true, "Run npm install or similar commands depending on the project structure.")
 	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
