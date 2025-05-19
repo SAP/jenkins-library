@@ -170,7 +170,7 @@ spec:
             param: custom/repositoryPassword
           - type: vaultSecretFile
             name: mtaDeploymentRepositoryPasswordFileVaultSecretName
-            default: mta-deployment-repository-passowrd
+            default: mta-deployment-repository-password
       - name: mtaDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which which mtar artifacts will be publised
