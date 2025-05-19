@@ -2,7 +2,9 @@ package sonar
 
 import (
 	"net/http"
+	"net/http/httputil"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
 )
@@ -35,6 +37,10 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 	if err != nil {
 		return nil, response, err
 	}
+
+	// log response
+	log.Entry().Debugf("HTTP Response: %v", func() string { rsp, _ := httputil.DumpResponse(response, true); return string(rsp) }())
+
 	// decode JSON response
 	result := new(sonargo.IssuesSearchObject)
 	err = service.apiClient.decode(response, result)
@@ -49,7 +55,6 @@ func (service *IssueService) getIssueCount(severity issueSeverity, categories *[
 		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
 		Resolved:      "false",
-		Ps:            "1",
 	}
 	if len(service.Organization) > 0 {
 		options.Organization = service.Organization
