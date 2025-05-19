@@ -91,7 +91,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -121,7 +123,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -160,7 +164,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -195,7 +201,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -228,7 +236,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -288,7 +298,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -321,7 +333,9 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -417,7 +431,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmUtils.FilesMock = lintUtils.FilesMock
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
@@ -435,7 +451,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.FailOnError = true
 
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
 		assert.EqualError(t, err, "linter installation failed: exit 1")
@@ -452,7 +469,8 @@ func TestNpmExecuteLint(t *testing.T) {
 		config := defaultConfig
 		config.FailOnError = true
 
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
 		assert.EqualError(t, err, "lint execution failed. This might be the result of severe linting findings. The lint configuration used can be found here: https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
