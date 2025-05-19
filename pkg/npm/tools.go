@@ -13,10 +13,6 @@ type Tool struct {
 	InstallCmd []string
 	RunCmd     []string
 	PublishCmd []string
-	AddCmd     []string
-	RemoveCmd  []string
-	TestCmd    []string
-	BuildCmd   []string
 }
 
 var (
@@ -25,30 +21,18 @@ var (
 		InstallCmd: []string{"ci"},
 		RunCmd:     []string{"run"},
 		PublishCmd: []string{"publish"},
-		AddCmd:     []string{"install"},
-		RemoveCmd:  []string{"uninstall"},
-		TestCmd:    []string{"run", "test"},
-		BuildCmd:   []string{"run", "build"},
 	}
 	ToolYarn = Tool{
 		Name:       "yarn",
 		InstallCmd: []string{"install", "--frozen-lockfile"},
 		RunCmd:     []string{"run"},
 		PublishCmd: []string{"publish"},
-		AddCmd:     []string{"add"},
-		RemoveCmd:  []string{"remove"},
-		TestCmd:    []string{"run", "test"},
-		BuildCmd:   []string{"run", "build"},
 	}
 	ToolPNPM = Tool{
 		Name:       "pnpm",
 		InstallCmd: []string{"install"},
 		RunCmd:     []string{"run"},
 		PublishCmd: []string{"publish"},
-		AddCmd:     []string{"add"},
-		RemoveCmd:  []string{"remove"},
-		TestCmd:    []string{"run", "test"},
-		BuildCmd:   []string{"run", "build"},
 	}
 )
 
@@ -69,29 +53,6 @@ func (t *Tool) Publish(args ...string) error {
 	return t.ExecRunner.RunExecutable(t.Name, cmd...)
 }
 
-// Add runs the add command for the tool.
-func (t *Tool) Add(args ...string) error {
-	cmd := append(t.AddCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
-}
-
-// Remove runs the remove command for the tool.
-func (t *Tool) Remove(args ...string) error {
-	cmd := append(t.RemoveCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
-}
-
-// Test runs the test command for the tool.
-func (t *Tool) Test(args ...string) error {
-	cmd := append(t.TestCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
-}
-
-// Build runs the build command for the tool.
-func (t *Tool) Build(args ...string) error {
-	cmd := append(t.BuildCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
-}
 
 // DetectTool inspects the current directory for lockfiles, auto-installs the tool if needed,
 // and returns the ready-to-use Tool struct. For specific tools (yarn/pnpm), it handles installation.
