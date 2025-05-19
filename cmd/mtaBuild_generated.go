@@ -432,7 +432,7 @@ func mtaBuildMetadata() config.StepData {
 							{
 								Name:    "mtaDeploymentRepositoryPasswordFileVaultSecretName",
 								Type:    "vaultSecretFile",
-								Default: "mta-deployment-repository-passowrd",
+								Default: "mta-deployment-repository-password",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
