@@ -138,7 +138,8 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
 		utils.AddFile("package-lock.json", []byte(""))
 
-		npmExecutor := npm.Execute{Utils: &utils, Options: options}
+		tool, _ := npm.DetectTool(&utils, options.Tool)
+		npmExecutor := npm.Execute{Utils: &utils, Options: options, Tool: tool}
 
 		SetConfigOptions(ConfigCommandOptions{
 			OpenFile: config.OpenPiperFile,

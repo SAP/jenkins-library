@@ -5,12 +5,13 @@ package cmd
 
 import (
 	"errors"
+	"path/filepath"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
 )
 
 type mockLintUtilsBundle struct {
@@ -259,7 +260,9 @@ func TestNpmExecuteLint(t *testing.T) {
 		npmUtils := newNpmMockUtilsBundle()
 		npmUtils.execRunner = lintUtils.execRunner
 		npmUtils.FilesMock = lintUtils.FilesMock
-		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+
+		tool, _ := npm.DetectTool(&npmUtils, "npm")
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}, Tool: tool}
 
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
