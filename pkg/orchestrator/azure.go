@@ -9,7 +9,6 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type azureDevopsConfigProvider struct {
@@ -177,7 +176,7 @@ func (a *azureDevopsConfigProvider) PipelineStartTime() time.Time {
 		if err == nil {
 			return t.UTC()
 		}
-		log.Entry().WithError(err).Error(errors.Wrapf(err, "failed to parse startTime (%s), returning empty time", timestamp.(string)))
+		log.Entry().WithError(err).Error(fmt.Errorsf("failed to parse startTime (%s), returning empty time: %v", timestamp.(string), err))
 		return time.Time{}.UTC()
 	}
 	log.Entry().Error("could not determine startTime, returning empty time")
