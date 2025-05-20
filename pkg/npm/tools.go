@@ -13,6 +13,7 @@ type Tool struct {
 	InstallCmd []string
 	RunCmd     []string
 	PublishCmd []string
+	PackCmd    []string
 }
 
 var (
@@ -21,18 +22,21 @@ var (
 		InstallCmd: []string{"ci"},
 		RunCmd:     []string{"run"},
 		PublishCmd: []string{"publish"},
+		PackCmd:    []string{"pack"},
 	}
 	ToolYarn = Tool{
 		Name:       "yarn",
 		InstallCmd: []string{"install", "--frozen-lockfile"},
 		RunCmd:     []string{"run"},
 		PublishCmd: []string{"publish"},
+		PackCmd:    []string{"pack"},
 	}
 	ToolPNPM = Tool{
 		Name:       "pnpm",
 		InstallCmd: []string{"install"},
 		RunCmd:     []string{"run"},
 		PublishCmd: []string{"publish"},
+		PackCmd:    []string{"pack"},
 	}
 )
 
@@ -50,6 +54,12 @@ func (t *Tool) Run(args ...string) error {
 // Publish runs the publish command for the tool.
 func (t *Tool) Publish(args ...string) error {
 	cmd := append(t.PublishCmd, args...)
+	return t.ExecRunner.RunExecutable(t.Name, cmd...)
+}
+
+// Pack runs the pack command for the tool.
+func (t *Tool) Pack(args ...string) error {
+	cmd := append(t.PackCmd, args...)
 	return t.ExecRunner.RunExecutable(t.Name, cmd...)
 }
 

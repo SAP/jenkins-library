@@ -521,17 +521,18 @@ func TestNpmPublish(t *testing.T) {
 			}
 			utils.Separator = string(filepath.Separator)
 
+			tool, _ := DetectTool(&utils, "auto")
 			exec := &Execute{
 				Utils: &utils,
+				Tool:  tool,
 			}
 
 			propertiesLoadFile = utils.FileRead
 			propertiesWriteFile = utils.FileWrite
 			writeIgnoreFile = utils.FileWrite
 
-			// This stub simulates the behavior of npm pack and puts a tgz into the requested
+			// This stub simulates the behavior of pack command and puts a tgz into the requested directory
 			utils.execRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-				// tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
 				utils.AddFile(filepath.Join(".", "package.tgz"), []byte("this is a tgz file"))
 				return nil
 			}
@@ -541,11 +542,16 @@ func TestNpmPublish(t *testing.T) {
 
 			if len(test.wants.err) == 0 && assert.NoError(t, err) {
 				if assert.NotEmpty(t, utils.execRunner.Calls) {
-					// last call is expected to be npm publish
+					// last call is expected to be the publish command
 					publishCmd := utils.execRunner.Calls[len(utils.execRunner.Calls)-1]
 
-					assert.Equal(t, "npm", publishCmd.Exec)
-					assert.Equal(t, "publish", publishCmd.Params[0])
+					assert.Equal(t, tool.Name, publishCmd.Exec)
+					if test.packBeforePublish {
+						packCmd := utils.execRunner.Calls[len(utils.execRunner.Calls)-2]
+						assert.Equal(t, tool.Name, packCmd.Exec)
+						assert.Equal(t, "pack", packCmd.Params[0])
+					}
+					assert.Equal(t, tool.PublishCmd[0], publishCmd.Params[0])
 
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
 						tarballPath := publishCmd.Params[slices.Index(publishCmd.Params, "--tarball")+1]

@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -55,23 +53,21 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 
 // publish executes npm publish for package.json
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
-	execRunner := exec.Utils.GetExecRunner()
-
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 
 	scope, err := exec.readPackageScope(packageJSON)
 	if err != nil {
-		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
+		return fmt.Errorf("failed to read package scope: %w", err)
 	}
 
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
 	if exists, err := exec.Utils.FileExists(npmignore.filepath); exists {
 		if err != nil {
-			return errors.Wrapf(err, "failed to check for existing %s file", npmignore.filepath)
+			return fmt.Errorf("failed to check for existing %s file: %w", npmignore.filepath, err)
 		}
 		log.Entry().Debugf("loading existing %s file", npmignore.filepath)
 		if err = npmignore.Load(); err != nil {
-			return errors.Wrapf(err, "failed to read existing %s file", npmignore.filepath)
+			return fmt.Errorf("failed to read existing %s file: %w", npmignore.filepath, err)
 		}
 	} else {
 		log.Entry().Debug("creating .npmignore file")
@@ -92,7 +88,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	npmignore.Add(npmrc.filepath)
 
 	if err := npmignore.Write(); err != nil {
-		return errors.Wrapf(err, "failed to update %s file", npmignore.filepath)
+		return fmt.Errorf("failed to update %s file: %w", npmignore.filepath, err)
 	}
 
 	// update .piperNpmrc
@@ -100,11 +96,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// check existing .npmrc file
 		if exists, err := exec.Utils.FileExists(npmrc.filepath); exists {
 			if err != nil {
-				return errors.Wrapf(err, "failed to check for existing %s file", npmrc.filepath)
+				return fmt.Errorf("failed to check for existing %s file: %w", npmrc.filepath, err)
 			}
 			log.Entry().Debugf("loading existing %s file", npmrc.filepath)
 			if err = npmrc.Load(); err != nil {
-				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
+				return fmt.Errorf("failed to read existing %s file: %w", npmrc.filepath, err)
 			}
 		} else {
 			log.Entry().Debugf("creating new npmrc file at %s", npmrc.filepath)
@@ -128,7 +124,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 		// update .npmrc
 		if err := npmrc.Write(); err != nil {
-			return errors.Wrapf(err, "failed to update %s file", npmrc.filepath)
+			return fmt.Errorf("failed to update %s file: %w", npmrc.filepath, err)
 		}
 	} else {
 		log.Entry().Debug("no registry provided")
@@ -140,8 +136,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change into directory for executing script: %w", err)
 		}
 
-		if err := execRunner.RunExecutable("npm", "pack"); err != nil {
-			return err
+		if err := exec.Tool.Pack(); err != nil {
+			return fmt.Errorf("failed to run %s pack: %w", exec.Tool.Name, err)
 		}
 
 		tarballs, err := exec.Utils.Glob(filepath.Join(".", "*.tgz"))
@@ -181,9 +177,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
-		if err != nil {
-			return errors.Wrap(err, "failed publishing artifact")
+		if err := exec.Tool.Publish("--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry); err != nil {
+			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
 
 		if projectNpmrcExists {
@@ -198,9 +193,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
-		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
-		if err != nil {
-			return errors.Wrap(err, "failed publishing artifact")
+		if err := exec.Tool.Publish("--userconfig", npmrc.filepath, "--registry", registry); err != nil {
+			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
 	}
 
