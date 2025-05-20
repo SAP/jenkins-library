@@ -146,7 +146,7 @@ func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
 	url := j.BuildURL() + "api/json"
 	response, err := j.client.GetRequest(url, nil, nil)
 	if err != nil {
-		log.Entry().WithError(err).Error(errors.Wrapf(err, "failed to fetch build information from url (%s), returning empty time", url))
+		log.Entry().WithError(err).Errorf("failed to fetch build information from url (%s), returning empty time: %v", url, err))
 		return time.Time{}.UTC()
 	}
 
