@@ -1,8 +1,8 @@
 package orchestrator
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
