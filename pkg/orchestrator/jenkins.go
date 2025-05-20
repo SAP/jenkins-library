@@ -128,14 +128,14 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		return []byte{}, fmt.Errorsf("could not GET Jenkins log file %v", err)
+		return []byte{}, fmt.Errorf("could not GET Jenkins log file %v", err)
 	} else if response.StatusCode != 200 {
 		log.Entry().Error("response code !=200 could not get log information from Jenkins, returning with empty log.")
 		return []byte{}, nil
 	}
 	logFile, err := io.ReadAll(response.Body)
 	if err != nil {
-		return []byte{}, fmt.Errorsf"could not read Jenkins log file from request %v", err)
+		return []byte{}, fmt.Errorf("could not read Jenkins log file from request %v", err)
 	}
 	defer response.Body.Close()
 	return logFile, nil
@@ -146,18 +146,18 @@ func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
 	url := j.BuildURL() + "api/json"
 	response, err := j.client.GetRequest(url, nil, nil)
 	if err != nil {
-		log.Entry().WithError(err).Errorf("failed to fetch build information from url (%s), returning empty time: %v", url, err))
+		log.Entry().WithError(err).Errorf("failed to fetch build information from url (%s), returning empty time: %v", url, err)
 		return time.Time{}.UTC()
 	}
 
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().WithError(err).Errorf("failed to fetch build information with status code %d, returning empty time: %v", response.StatusCode, err))
+		log.Entry().WithError(err).Errorf("failed to fetch build information with status code %d, returning empty time: %v", response.StatusCode, err)
 		return time.Time{}.UTC()
 	}
 
 	var responseInterface map[string]interface{}
 	if err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface); err != nil {
-		log.Entry().WithError(err).Errorf("failed to parse response, returning empty time: %v", err))
+		log.Entry().WithError(err).Errorf("failed to parse response, returning empty time: %v", err)
 		return time.Time{}.UTC()
 	}
 	defer response.Body.Close()
