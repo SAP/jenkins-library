@@ -663,6 +663,15 @@ func (sys *SystemInstance) UpdateApplication(app *Application) error {
 func (sys *SystemInstance) UpdateProject(project *Project) error {
 	sys.logger.Debugf("Updating project: %v", project.Name)
 	jsonBody, err := json.Marshal(*project)
+
+	// Remove fields that can cause API errors in Cx1 3.30
+	var filteredMap map[string]interface{}
+	json.Unmarshal(jsonBody, &filteredMap)
+	delete(filteredMap, "applicationIds")
+	delete(filteredMap, "createdAt")
+	delete(filteredMap, "updatedAt")
+	jsonBody, err = json.Marshal(filteredMap)
+
 	if err != nil {
 		return err
 	}

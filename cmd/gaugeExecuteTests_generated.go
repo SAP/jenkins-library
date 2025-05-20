@@ -114,7 +114,7 @@ func GaugeExecuteTestsCommand() *cobra.Command {
 	var createGaugeExecuteTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Installs gauge and executes specified gauge tests.",
-		Long: `In this step Gauge ([getgauge.io](https://getgauge.io)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
+		Long: `In this step Gauge ([gauge.org](https://gauge.org)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
 
 Acceptance Criteria
 Test implemenation layer
@@ -297,7 +297,7 @@ func gaugeExecuteTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "gauge", Image: "node:lts-buster", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
+				{Name: "gauge", Image: "node:lts-bookworm", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
 				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
