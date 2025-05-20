@@ -177,7 +177,7 @@ func (a *azureDevopsConfigProvider) PipelineStartTime() time.Time {
 		if err == nil {
 			return t.UTC()
 		}
-		log.Entry().WithError(err).Error(fmt.Errorsf("failed to parse startTime (%s), returning empty time: %v", timestamp.(string), err))
+		log.Entry().WithError(err).Error(fmt.Errorf("failed to parse startTime (%s), returning empty time: %v", timestamp.(string), err))
 		return time.Time{}.UTC()
 	}
 	log.Entry().Error("could not determine startTime, returning empty time")
