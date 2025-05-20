@@ -106,7 +106,7 @@ func (exec *Execute) SetNpmRegistries() error {
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
-	log.Entry().WithField("WorkingDirectory", currentDir).Info("Setting npm registries")
+	log.Entry().Infof("Setting npm registries from %s", currentDir)
 	err = execRunner.RunExecutable("ls")
 	if err != nil {
 		return fmt.Errorf("failed to run ls command: %w", err)
