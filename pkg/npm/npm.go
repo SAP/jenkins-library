@@ -15,11 +15,12 @@ import (
 )
 
 const (
-	npmBomFilename                 = "bom-npm.xml"
-	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
-	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
-	cycloneDxSchemaVersion         = "1.4"
+	npmBomFilename             = "bom-npm.xml"
+	cycloneDxNpmPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
+	cycloneDxBomPackageVersion = "@cyclonedx/bom@^3.10.6"
+	npmInstallationFolder      = "./tmp" // This folder is used for local tool installations and cycloneDX
+	npmBinPath                 = npmInstallationFolder + "/node_modules/.bin"
+	cycloneDxSchemaVersion     = "1.4"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -333,7 +334,7 @@ func (exec *Execute) install(packageJSON string) error {
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
-	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
+	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", npmInstallationFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
 
 	// Install cyclonedx/bom with --nosave and generate BOM.
@@ -376,7 +377,7 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 			// Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
 			if !fallback {
 				params = append(params, packageJSONFile)
-				executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
+				executable = npmBinPath + "/cyclonedx-npm"
 			} else {
 				params = append(params, path)
 			}

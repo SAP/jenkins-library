@@ -2,6 +2,8 @@ package npm
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -40,27 +42,35 @@ var (
 	}
 )
 
+// getBinaryPath returns the path to the tool's binary, using local installation for yarn/pnpm
+func (t *Tool) GetBinaryPath() string {
+	if t.Name == "yarn" || t.Name == "pnpm" {
+		return filepath.Join(npmBinPath, t.Name)
+	}
+	return t.Name
+}
+
 // Install runs the install command for the tool.
 func (t *Tool) Install() error {
-	return t.ExecRunner.RunExecutable(t.Name, t.InstallCmd...)
+	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), t.InstallCmd...)
 }
 
 // Run runs the run command for the tool with additional arguments.
 func (t *Tool) Run(args ...string) error {
 	cmd := append(t.RunCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
+	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
 // Publish runs the publish command for the tool.
 func (t *Tool) Publish(args ...string) error {
 	cmd := append(t.PublishCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
+	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
 // Pack runs the pack command for the tool.
 func (t *Tool) Pack(args ...string) error {
 	cmd := append(t.PackCmd, args...)
-	return t.ExecRunner.RunExecutable(t.Name, cmd...)
+	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
 // DetectTool inspects the current directory for lockfiles, auto-installs the tool if needed,
@@ -123,13 +133,16 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 	return &tool, nil
 }
 
-// autoInstallTool installs the given tool globally if not already present (for yarn/pnpm).
+// autoInstallTool installs the given tool locally in the tmp directory if not already present.
 func autoInstallTool(execRunner ExecRunner, toolName string) error {
-	_, err := execRunner.LookPath(toolName)
-	if err == nil {
+	// Check if tool binary exists in local installation
+	binPath := filepath.Join(npmBinPath, toolName)
+	if _, err := os.Stat(binPath); err == nil {
 		return nil
 	}
-	err = execRunner.RunExecutable("npm", "install", "-g", toolName)
+
+	// Install tool locally in tmp directory
+	err := execRunner.RunExecutable("npm", "install", toolName, "--prefix", npmInstallationFolder)
 	if err != nil {
 		return fmt.Errorf("failed to install required tool '%s': %w", toolName, err)
 	}

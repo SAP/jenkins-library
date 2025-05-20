@@ -188,8 +188,8 @@ func TestNpm(t *testing.T) {
 		err = exec.install("package.json")
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: tool.GetBinaryPath(), Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -274,7 +274,7 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "yarn", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "yarn"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "yarn", "--prefix", "./tmp"}}, utils.execRunner.Calls[0])
 			}
 		}
 	})
@@ -288,7 +288,7 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "pnpm", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "pnpm"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[0])
 			}
 		}
 	})
@@ -303,7 +303,7 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "pnpm", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "-g", "pnpm"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[0])
 			}
 		}
 	})
@@ -348,8 +348,8 @@ func TestNpm(t *testing.T) {
 		err = exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "pnpm", Params: []string{"run", "ci-lint", "--silent", "--", "--tag", "tag1"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: tool.GetBinaryPath(), Params: []string{"run", "ci-lint", "--silent", "--", "--tag", "tag1"}}, utils.execRunner.Calls[2])
 			}
 		}
 	})
