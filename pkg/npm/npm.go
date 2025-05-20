@@ -102,9 +102,19 @@ func (exec *Execute) SetNpmRegistries() error {
 	execRunner := exec.Utils.GetExecRunner()
 	const npmRegistry = "registry"
 
+	currentDir, err := exec.Utils.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	log.Entry().WithField("WorkingDirectory", currentDir).Info("Setting npm registries")
+	err = execRunner.RunExecutable("ls")
+	if err != nil {
+		return fmt.Errorf("failed to run ls command: %w", err)
+	}
+
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err := execRunner.RunExecutable(exec.Tool.GetBinaryPath(), "config", "get", npmRegistry, "-ws=false", "-iwr")
+	err = execRunner.RunExecutable(exec.Tool.GetBinaryPath(), "config", "get", npmRegistry, "-ws=false", "-iwr")
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
