@@ -5,7 +5,6 @@ package npm
 
 import (
 	"io"
-	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -52,7 +51,7 @@ func TestToolInstallation(t *testing.T) {
 			want: []execCall{
 				{
 					executable: "npm",
-					params:     []string{"install", "yarn", "--prefix", npmInstallationFolder},
+					params:     []string{"install", "yarn", "--prefix", "./tmp"},
 				},
 			},
 		},
@@ -62,7 +61,7 @@ func TestToolInstallation(t *testing.T) {
 			want: []execCall{
 				{
 					executable: "npm",
-					params:     []string{"install", "pnpm", "--prefix", npmInstallationFolder},
+					params:     []string{"install", "pnpm", "--prefix", "./tmp"},
 				},
 			},
 		},
@@ -96,7 +95,7 @@ func TestToolExecution(t *testing.T) {
 			name:       "yarn install uses local binary",
 			tool:       Tool{Name: "yarn", InstallCmd: []string{"install", "--frozen-lockfile"}},
 			operation:  "install",
-			wantExec:   filepath.Join(npmBinPath, "yarn"),
+			wantExec:   "./tmp/node_modules/.bin/yarn",
 			wantParams: []string{"install", "--frozen-lockfile"},
 		},
 		{
@@ -104,7 +103,7 @@ func TestToolExecution(t *testing.T) {
 			tool:       Tool{Name: "pnpm", RunCmd: []string{"run"}},
 			operation:  "run",
 			args:       []string{"build"},
-			wantExec:   filepath.Join(npmBinPath, "pnpm"),
+			wantExec:   "./tmp/node_modules/.bin/pnpm",
 			wantParams: []string{"run", "build"},
 		},
 		{

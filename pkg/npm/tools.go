@@ -3,7 +3,6 @@ package npm
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -42,10 +41,15 @@ var (
 	}
 )
 
-// getBinaryPath returns the path to the tool's binary, using local installation for yarn/pnpm
+// getToolPath returns a consistent path for a tool in the local installation directory
+func getToolPath(toolName string) string {
+	return npmInstallationFolder + "/node_modules/.bin/" + toolName
+}
+
+// getBinaryPath returns the path to the tool's binary
 func (t *Tool) GetBinaryPath() string {
 	if t.Name == "yarn" || t.Name == "pnpm" {
-		return filepath.Join(npmBinPath, t.Name)
+		return getToolPath(t.Name)
 	}
 	return t.Name
 }
@@ -135,8 +139,8 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 
 // autoInstallTool installs the given tool locally in the tmp directory if not already present.
 func autoInstallTool(execRunner ExecRunner, toolName string) error {
-	// Check if tool binary exists in local installation
-	binPath := filepath.Join(npmBinPath, toolName)
+	// Keep relative path for tests and CI compatibility
+	binPath := getToolPath(toolName)
 	if _, err := os.Stat(binPath); err == nil {
 		return nil
 	}

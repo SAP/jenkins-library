@@ -19,7 +19,6 @@ const (
 	cycloneDxNpmPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
 	cycloneDxBomPackageVersion = "@cyclonedx/bom@^3.10.6"
 	npmInstallationFolder      = "./tmp" // This folder is used for local tool installations and cycloneDX
-	npmBinPath                 = npmInstallationFolder + "/node_modules/.bin"
 	cycloneDxSchemaVersion     = "1.4"
 )
 
@@ -366,15 +365,15 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
-			executable := "npx"
-			params := append(packageRunParams, filepath.Join(path, npmBomFilename))
+			var executable string
+			var params []string
 
-			// Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
 			if !fallback {
-				params = append(params, packageJSONFile)
-				executable = npmBinPath + "/cyclonedx-npm"
+				executable = getToolPath("cyclonedx-npm")
+				params = append(packageRunParams, filepath.Join(path, npmBomFilename), packageJSONFile)
 			} else {
-				params = append(params, path)
+				executable = "npx"
+				params = append(packageRunParams, filepath.Join(path, npmBomFilename), path)
 			}
 
 			err := execRunner.RunExecutable(executable, params...)
