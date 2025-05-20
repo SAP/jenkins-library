@@ -103,14 +103,9 @@ func (exec *Execute) SetNpmRegistries() error {
 	execRunner := exec.Utils.GetExecRunner()
 	const npmRegistry = "registry"
 
-	toolName := exec.Tool.Name
-	if toolName == "" {
-		toolName = "npm"
-	}
-
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err := execRunner.RunExecutable(toolName, "config", "get", npmRegistry, "-ws=false", "-iwr")
+	err := execRunner.RunExecutable(exec.Tool.GetBinaryPath(), "config", "get", npmRegistry, "-ws=false", "-iwr")
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
@@ -124,7 +119,7 @@ func (exec *Execute) SetNpmRegistries() error {
 	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
 
-		err = execRunner.RunExecutable(toolName, "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr")
+		err = execRunner.RunExecutable(exec.Tool.GetBinaryPath(), "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr")
 		if err != nil {
 			return err
 		}
