@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type jenkinsConfigProvider struct {
@@ -128,14 +128,14 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "could not GET Jenkins log file %v", err)
+		return []byte{}, fmt.Errorf("could not GET Jenkins log file %v", err)
 	} else if response.StatusCode != 200 {
 		log.Entry().Error("response code !=200 could not get log information from Jenkins, returning with empty log.")
 		return []byte{}, nil
 	}
 	logFile, err := io.ReadAll(response.Body)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "could not read Jenkins log file from request %v", err)
+		return []byte{}, fmt.Errorf("could not read Jenkins log file from request %v", err)
 	}
 	defer response.Body.Close()
 	return logFile, nil
@@ -143,30 +143,25 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 
 // PipelineStartTime returns the pipeline start time in UTC
 func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
-	URL := j.BuildURL() + "api/json"
-	response, err := j.client.GetRequest(URL, nil, nil)
+	url := j.BuildURL() + "api/json"
+	response, err := j.client.GetRequest(url, nil, nil)
 	if err != nil {
-		log.Entry().WithError(err).Errorf("could not getRequest to URL %s", URL)
+		log.Entry().WithError(err).Errorf("failed to fetch build information from url (%s), returning empty time: %v", url, err)
 		return time.Time{}.UTC()
 	}
 
 	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().Errorf("response code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
+		log.Entry().WithError(err).Errorf("failed to fetch build information with status code %d, returning empty time: %v", response.StatusCode, err)
 		return time.Time{}.UTC()
 	}
+
 	var responseInterface map[string]interface{}
-	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
-	if err != nil {
-		log.Entry().WithError(err).Infof("could not parse http response, returning 1970")
+	if err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface); err != nil {
+		log.Entry().WithError(err).Errorf("failed to parse response, returning empty time: %v", err)
 		return time.Time{}.UTC()
 	}
-
-	rawTimeStamp := responseInterface["timestamp"].(float64)
-	timeStamp := time.Unix(int64(rawTimeStamp)/1000, 0)
-
-	log.Entry().Debugf("Pipeline start time: %v", timeStamp.String())
 	defer response.Body.Close()
-	return timeStamp.UTC()
+	return time.Unix(int64(responseInterface["timestamp"].(float64))/1000, 0).UTC()
 }
 
 // JobName returns the job name of the current job e.g. foo/bar/BRANCH
