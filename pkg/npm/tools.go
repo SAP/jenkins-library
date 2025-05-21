@@ -9,35 +9,43 @@ import (
 
 // Tool encapsulates the commands and configuration for a package manager tool.
 type Tool struct {
-	Name       string
-	ExecRunner ExecRunner
-	InstallCmd []string
-	RunCmd     []string
-	PublishCmd []string
-	PackCmd    []string
+	Name           string
+	ExecRunner     ExecRunner
+	InstallCmd     []string
+	RunCmd         []string
+	PublishCmd     []string
+	PackCmd        []string
+	GetRegistryCmd []string
+	SetRegistryCmd []string
 }
 
 var (
 	ToolNPM = Tool{
-		Name:       "npm",
-		InstallCmd: []string{"ci"},
-		RunCmd:     []string{"run"},
-		PublishCmd: []string{"publish"},
-		PackCmd:    []string{"pack"},
+		Name:           "npm",
+		InstallCmd:     []string{"ci"},
+		RunCmd:         []string{"run"},
+		PublishCmd:     []string{"publish"},
+		PackCmd:        []string{"pack"},
+		GetRegistryCmd: []string{"config", "get", "registry", "-ws=false", "-iwr"},
+		SetRegistryCmd: []string{"config", "set", "registry"},
 	}
 	ToolYarn = Tool{
-		Name:       "yarn",
-		InstallCmd: []string{"install", "--frozen-lockfile"},
-		RunCmd:     []string{"run"},
-		PublishCmd: []string{"publish"},
-		PackCmd:    []string{"pack"},
+		Name:           "yarn",
+		InstallCmd:     []string{"install", "--frozen-lockfile"},
+		RunCmd:         []string{"run"},
+		PublishCmd:     []string{"publish"},
+		PackCmd:        []string{"pack"},
+		GetRegistryCmd: []string{"config", "get", "registry"},
+		SetRegistryCmd: []string{"config", "set", "registry"},
 	}
 	ToolPNPM = Tool{
-		Name:       "pnpm",
-		InstallCmd: []string{"install"},
-		RunCmd:     []string{"run"},
-		PublishCmd: []string{"publish"},
-		PackCmd:    []string{"pack"},
+		Name:           "pnpm",
+		InstallCmd:     []string{"install"},
+		RunCmd:         []string{"run"},
+		PublishCmd:     []string{"publish"},
+		PackCmd:        []string{"pack"},
+		GetRegistryCmd: []string{"config", "get", "registry"},
+		SetRegistryCmd: []string{"config", "set", "registry"},
 	}
 )
 
@@ -74,6 +82,21 @@ func (t *Tool) Publish(args ...string) error {
 // Pack runs the pack command for the tool.
 func (t *Tool) Pack(args ...string) error {
 	cmd := append(t.PackCmd, args...)
+	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
+}
+
+// GetRegistry returns the registry URL for the tool.
+func (t *Tool) GetRegistry(args ...string) error {
+	cmd := append(t.GetRegistryCmd, args...)
+	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
+}
+
+// SetRegistry sets the registry URL for the tool.
+func (t *Tool) SetRegistry(registry string, args ...string) error {
+	cmd := append(t.SetRegistryCmd, registry)
+	if len(args) > 0 {
+		cmd = append(cmd, args...)
+	}
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
