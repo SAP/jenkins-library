@@ -150,6 +150,7 @@ func autoInstallTool(execRunner ExecRunner, toolName string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
+	log.Entry().Infof("Current directory: %s", currentDir)
 
 	// Install tool locally in tmp directory
 	err = execRunner.RunExecutable("npm", "install", toolName, "--prefix", npmInstallationFolder)
@@ -161,6 +162,12 @@ func autoInstallTool(execRunner ExecRunner, toolName string) error {
 	if err := os.Chdir(currentDir); err != nil {
 		return fmt.Errorf("failed to return to original directory: %w", err)
 	}
+
+	currentDir, err = os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+	log.Entry().Infof("Tool %s installed successfully, working dir: %s", toolName, currentDir)
 
 	return nil
 }
