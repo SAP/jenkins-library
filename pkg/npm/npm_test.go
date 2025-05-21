@@ -142,7 +142,6 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				fmt.Println(utils.execRunner.Calls)
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 			}
 		}
@@ -274,7 +273,8 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "yarn", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "yarn", "--prefix", "./tmp"}}, utils.execRunner.Calls[0])
+				path, _ := getAbsoluteNpmPath()
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "yarn", "--prefix", path}}, utils.execRunner.Calls[0])
 			}
 		}
 	})
@@ -288,7 +288,8 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "pnpm", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[0])
+				path, _ := getAbsoluteNpmPath()
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", path}}, utils.execRunner.Calls[0])
 			}
 		}
 	})
@@ -303,7 +304,8 @@ func TestNpm(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "pnpm", tool.Name)
 			if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[0])
+				path, _ := getAbsoluteNpmPath()
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", path}}, utils.execRunner.Calls[0])
 			}
 		}
 	})
@@ -475,7 +477,8 @@ func TestNpm(t *testing.T) {
 			Tool:    tool,
 		}
 		err = exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
+		path, _ := getAbsoluteNpmPath()
+		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", path}
 		cycloneDxNpmRunParams := []string{
 			"--output-format",
 			"XML",
@@ -501,7 +504,9 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package-lock.json", []byte("{}"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
-		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@1.11.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
+		path, _ := getAbsoluteNpmPath()
+		cmd := fmt.Sprintf("npm install --no-save @cyclonedx/cyclonedx-npm@1.11.0 --prefix %s", path)
+		utils.execRunner.ShouldFailOnCommand = map[string]error{cmd: fmt.Errorf("failed to install CycloneDX BOM")}
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -514,7 +519,7 @@ func TestNpm(t *testing.T) {
 			Tool:    tool,
 		}
 		err = exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
+		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", path}
 
 		cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
 		cycloneDxBomRunParams := []string{

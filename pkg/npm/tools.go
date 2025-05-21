@@ -3,6 +3,7 @@ package npm
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -137,6 +138,15 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 	return &tool, nil
 }
 
+// getAbsoluteNpmPath returns the absolute path for npm installation folder
+func getAbsoluteNpmPath() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get working directory: %w", err)
+	}
+	return filepath.Join(wd, npmInstallationFolder), nil
+}
+
 // autoInstallTool installs the given tool locally in the tmp directory if not already present.
 func autoInstallTool(execRunner ExecRunner, toolName string) error {
 	// Keep relative path for tests and CI compatibility
@@ -145,8 +155,14 @@ func autoInstallTool(execRunner ExecRunner, toolName string) error {
 		return nil
 	}
 
-	// Install tool locally in tmp directory
-	err := execRunner.RunExecutable("npm", "install", toolName, "--prefix", npmInstallationFolder)
+	// Get absolute path for npm installation
+	absPath, err := getAbsoluteNpmPath()
+	if err != nil {
+		return fmt.Errorf("failed to get absolute npm path: %w", err)
+	}
+
+	// Install tool locally in tmp directory using absolute path
+	err = execRunner.RunExecutable("npm", "install", toolName, "--prefix", absPath)
 	if err != nil {
 		return fmt.Errorf("failed to install required tool '%s': %w", toolName, err)
 	}
