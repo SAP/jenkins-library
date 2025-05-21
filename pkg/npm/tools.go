@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/npm/rc"
 )
 
 // Tool encapsulates the commands and configuration for a package manager tool.
@@ -14,40 +15,12 @@ type Tool struct {
 	InstallCmd     []string
 	RunCmd         []string
 	PublishCmd     []string
+	PublishFlags   []string
 	PackCmd        []string
 	GetRegistryCmd []string
 	SetRegistryCmd []string
+	RC             RCManager
 }
-
-var (
-	ToolNPM = Tool{
-		Name:           "npm",
-		InstallCmd:     []string{"ci"},
-		RunCmd:         []string{"run"},
-		PublishCmd:     []string{"publish"},
-		PackCmd:        []string{"pack"},
-		GetRegistryCmd: []string{"config", "get", "registry", "-ws=false", "-iwr"},
-		SetRegistryCmd: []string{"config", "set", "registry"},
-	}
-	ToolYarn = Tool{
-		Name:           "yarn",
-		InstallCmd:     []string{"install", "--frozen-lockfile"},
-		RunCmd:         []string{"run"},
-		PublishCmd:     []string{"publish"},
-		PackCmd:        []string{"pack"},
-		GetRegistryCmd: []string{"config", "get", "registry"},
-		SetRegistryCmd: []string{"config", "set", "registry"},
-	}
-	ToolPNPM = Tool{
-		Name:           "pnpm",
-		InstallCmd:     []string{"install"},
-		RunCmd:         []string{"run"},
-		PublishCmd:     []string{"publish"},
-		PackCmd:        []string{"pack"},
-		GetRegistryCmd: []string{"config", "get", "registry"},
-		SetRegistryCmd: []string{"config", "set", "registry"},
-	}
-)
 
 // getToolPath returns a consistent path for a tool in the local installation directory
 func getToolPath(toolName string) string {
@@ -75,7 +48,8 @@ func (t *Tool) Run(args ...string) error {
 
 // Publish runs the publish command for the tool.
 func (t *Tool) Publish(args ...string) error {
-	cmd := append(t.PublishCmd, args...)
+	cmd := append(t.PublishCmd, t.PublishFlags...)
+	cmd = append(cmd, args...)
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
@@ -104,6 +78,40 @@ func (t *Tool) SetRegistry(registry string, args ...string) error {
 // and returns the ready-to-use Tool struct. For specific tools (yarn/pnpm), it handles installation.
 // It warns if a lock file is missing for the selected tool.
 func DetectTool(utils Utils, toolName string) (*Tool, error) {
+	var (
+		ToolNPM = Tool{
+			Name:           "npm",
+			InstallCmd:     []string{"ci"},
+			RunCmd:         []string{"run"},
+			PublishCmd:     []string{"publish"},
+			PublishFlags:   []string{"--userconfig", ".piperNpmrc"},
+			PackCmd:        []string{"pack"},
+			GetRegistryCmd: []string{"config", "get", "registry", "-ws=false", "-iwr"},
+			SetRegistryCmd: []string{"config", "set", "registry"},
+			RC:             rc.NewNPM(".", utils),
+		}
+		ToolYarn = Tool{
+			Name:           "yarn",
+			InstallCmd:     []string{"install", "--frozen-lockfile"},
+			RunCmd:         []string{"run"},
+			PublishCmd:     []string{"publish"},
+			PublishFlags:   []string{"--userconfig", ".piperNpmrc"},
+			PackCmd:        []string{"pack"},
+			GetRegistryCmd: []string{"config", "get", "registry"},
+			SetRegistryCmd: []string{"config", "set", "registry"},
+		}
+		ToolPNPM = Tool{
+			Name:           "pnpm",
+			InstallCmd:     []string{"install"},
+			RunCmd:         []string{"run"},
+			PublishCmd:     []string{"--config", ".piperNpmrc", "publish"},
+			PublishFlags:   []string{},
+			PackCmd:        []string{"pack"},
+			GetRegistryCmd: []string{"config", "get", "registry"},
+			SetRegistryCmd: []string{"config", "set", "registry"},
+			RC:             rc.NewPNPM(".", utils),
+		}
+	)
 	execRunner := utils.GetExecRunner()
 	var tool Tool
 

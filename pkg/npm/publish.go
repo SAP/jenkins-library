@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
+
+type RCManager interface {
+	SetRegistry(registry, username, password, scope string) error
+	GetFilePath() string
+}
 
 type npmMinimalPackageDescriptor struct {
 	Name    string `json:"name"`
@@ -82,52 +85,15 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	log.Entry().Debug("adding sboms to npmignore")
 	npmignore.Add("**/bom*.xml")
 
-	npmrc := NewNPMRC(filepath.Dir(packageJSON))
-
-	log.Entry().Debugf("adding piper npmrc file %v", npmrc.filepath)
-	npmignore.Add(npmrc.filepath)
+	log.Entry().Debugf("adding piper npmrc file %v", exec.Tool.RC.GetFilePath())
+	npmignore.Add(exec.Tool.RC.GetFilePath())
 
 	if err := npmignore.Write(); err != nil {
 		return fmt.Errorf("failed to update %s file: %w", npmignore.filepath, err)
 	}
 
-	// update .piperNpmrc
-	if len(registry) > 0 {
-		// check existing .npmrc file
-		if exists, err := exec.Utils.FileExists(npmrc.filepath); exists {
-			if err != nil {
-				return fmt.Errorf("failed to check for existing %s file: %w", npmrc.filepath, err)
-			}
-			log.Entry().Debugf("loading existing %s file", npmrc.filepath)
-			if err = npmrc.Load(); err != nil {
-				return fmt.Errorf("failed to read existing %s file: %w", npmrc.filepath, err)
-			}
-		} else {
-			log.Entry().Debugf("creating new npmrc file at %s", npmrc.filepath)
-		}
-		// set registry
-		log.Entry().Debugf("adding registry %s", registry)
-		npmrc.Set("registry", registry)
-
-		if len(scope) > 0 {
-			npmrc.Set(fmt.Sprintf("%s:registry", scope), registry)
-		}
-
-		// set registry auth
-		if len(username) > 0 && len(password) > 0 {
-			log.Entry().Debug("adding registry credentials")
-			// See https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
-			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
-			// is no longer supported and will throw errors
-			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
-			npmrc.Set("always-auth", "true")
-		}
-		// update .npmrc
-		if err := npmrc.Write(); err != nil {
-			return fmt.Errorf("failed to update %s file: %w", npmrc.filepath, err)
-		}
-	} else {
-		log.Entry().Debug("no registry provided")
+	if err := exec.Tool.RC.SetRegistry(registry, username, password, scope); err != nil {
+		return fmt.Errorf("failed to configure registry: %w", err)
 	}
 
 	if packBeforePublish {
@@ -177,7 +143,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		if err := exec.Tool.Publish("--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry); err != nil {
+		if err := exec.Tool.Publish("--tarball", tarballFilePath, "--registry", registry); err != nil {
 			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
 
@@ -193,7 +159,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
-		if err := exec.Tool.Publish("--userconfig", npmrc.filepath, "--registry", registry); err != nil {
+		if err := exec.Tool.Publish("--registry", registry); err != nil {
 			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
 	}

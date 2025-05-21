@@ -99,6 +99,41 @@ func TestToolExecution(t *testing.T) {
 			wantParams: []string{"install", "--frozen-lockfile"},
 		},
 		{
+			name: "pnpm publish with tarball",
+			tool: Tool{
+				Name:         "pnpm",
+				PublishCmd:   []string{"publish"},
+				PublishFlags: []string{"--config", ".piperNpmrc"},
+				PackCmd:      []string{"pack"},
+			},
+			operation:  "publish",
+			args:       []string{"--tarball", "package.tgz", "--registry", "https://registry.example.com"},
+			wantExec:   "./tmp/node_modules/.bin/pnpm",
+			wantParams: []string{"publish", "--config", ".piperNpmrc", "--tarball", "package.tgz", "--registry", "https://registry.example.com"},
+		},
+		{
+			name: "pnpm pack command",
+			tool: Tool{
+				Name:    "pnpm",
+				PackCmd: []string{"pack"},
+			},
+			operation:  "pack",
+			wantExec:   "./tmp/node_modules/.bin/pnpm",
+			wantParams: []string{"pack"},
+		},
+		{
+			name: "pnpm publish uses local binary and flags",
+			tool: Tool{
+				Name:         "pnpm",
+				PublishCmd:   []string{"publish"},
+				PublishFlags: []string{"--config", ".piperNpmrc"},
+			},
+			operation:  "publish",
+			args:       []string{"--registry", "https://registry.example.com"},
+			wantExec:   "./tmp/node_modules/.bin/pnpm",
+			wantParams: []string{"publish", "--config", ".piperNpmrc", "--registry", "https://registry.example.com"},
+		},
+		{
 			name:       "pnpm run uses local binary",
 			tool:       Tool{Name: "pnpm", RunCmd: []string{"run"}},
 			operation:  "run",
@@ -127,6 +162,10 @@ func TestToolExecution(t *testing.T) {
 				err = tt.tool.Install()
 			case "run":
 				err = tt.tool.Run(tt.args...)
+			case "publish":
+				err = tt.tool.Publish(tt.args...)
+			case "pack":
+				err = tt.tool.Pack()
 			}
 
 			assert.NoError(t, err)
