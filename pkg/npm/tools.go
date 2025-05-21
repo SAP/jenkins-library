@@ -106,7 +106,7 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			InstallCmd:     []string{"install"},
 			RunCmd:         []string{"run"},
 			PublishCmd:     []string{"publish"},
-			PublishFlags:   []string{},
+			PublishFlags:   []string{"--no-git-checks"},
 			PackCmd:        []string{"pack"},
 			GetRegistryCmd: []string{"config", "get", "registry"},
 			SetRegistryCmd: []string{"config", "set", "registry"},
