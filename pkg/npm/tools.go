@@ -99,6 +99,7 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			PackCmd:        []string{"pack"},
 			GetRegistryCmd: []string{"config", "get", "registry"},
 			SetRegistryCmd: []string{"config", "set", "registry"},
+			RC:             rc.NewYarn(".", utils),
 		}
 		ToolPNPM = Tool{
 			Name:           "pnpm",
