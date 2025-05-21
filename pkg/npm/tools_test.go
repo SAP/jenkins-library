@@ -40,11 +40,6 @@ func (m *mockExecRunner) Stdout(out io.Writer) {}
 func (m *mockExecRunner) Stderr(out io.Writer) {}
 
 func TestToolInstallation(t *testing.T) {
-	path, err := getAbsoluteNpmPath()
-	if err != nil {
-		t.Fatalf("Failed to get absolute path: %v", err)
-	}
-
 	tests := []struct {
 		name     string
 		toolName string
@@ -56,7 +51,7 @@ func TestToolInstallation(t *testing.T) {
 			want: []execCall{
 				{
 					executable: "npm",
-					params:     []string{"install", "yarn", "--prefix", path},
+					params:     []string{"install", "yarn", "--prefix", "./tmp"},
 				},
 			},
 		},
@@ -66,7 +61,7 @@ func TestToolInstallation(t *testing.T) {
 			want: []execCall{
 				{
 					executable: "npm",
-					params:     []string{"install", "pnpm", "--prefix", path},
+					params:     []string{"install", "pnpm", "--prefix", "./tmp"},
 				},
 			},
 		},

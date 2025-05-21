@@ -338,11 +338,7 @@ func (exec *Execute) install(packageJSON string) error {
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
-	absPath, err := getAbsoluteNpmPath()
-	if err != nil {
-		return fmt.Errorf("failed to get absolute npm path: %w", err)
-	}
-	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", absPath}
+	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", npmInstallationFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
 
 	// Install cyclonedx/bom with --nosave and generate BOM.
@@ -350,7 +346,7 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	cycloneDxBomRunParams := []string{"cyclonedx-bom", "--output"}
 
 	// Attempt#1, generate BOM via cyclonedx-npm
-	err = exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
+	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
 	if err != nil {
 
 		log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
