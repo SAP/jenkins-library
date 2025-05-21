@@ -142,7 +142,6 @@ func TestNpm(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				fmt.Println(utils.execRunner.Calls)
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 			}
 		}
