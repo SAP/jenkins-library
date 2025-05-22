@@ -12,8 +12,8 @@ import (
 
 const (
 	// yarn publish is not working with .yarnrc .Hence replacing it to .npmrc
-	//TODO: what if user already has an .npmrc?
-	yarnConfigFilename = ".npmrc"
+	//Check: what if user already has an .npmrc?
+	yarnConfigFilename = ".piperNpmrc"
 )
 
 // Yarn implements the RCManager interface for managing .yarnrc files
@@ -51,10 +51,9 @@ func (rc *Yarn) Load() error {
 
 // Set updates or adds a key-value pair in the .yarnrc content
 func (rc *Yarn) Set(key, value string) {
-	r := regexp.MustCompile(fmt.Sprintf(`(?m)^\s*"%s"\s+.*$`, key))
+	r := regexp.MustCompile(fmt.Sprintf(`(?m)^\s*%s\s*=.*$`, key))
 
-	// Yarn uses a different format with quotes around keys and no equals sign
-	keyValue := fmt.Sprintf(`"%s" "%s"`, key, value)
+	keyValue := fmt.Sprintf("%s=%s", key, value)
 
 	if r.MatchString(rc.content) {
 		rc.content = r.ReplaceAllString(rc.content, keyValue)

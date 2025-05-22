@@ -95,7 +95,7 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			InstallCmd:     []string{"install", "--frozen-lockfile"},
 			RunCmd:         []string{"run"},
 			PublishCmd:     []string{"publish"},
-			PublishFlags:   []string{"--non-interactive"},
+			PublishFlags:   []string{"----non-interactive"},
 			PackCmd:        []string{"pack"},
 			GetRegistryCmd: []string{"config", "get", "registry"},
 			SetRegistryCmd: []string{"config", "set", "registry"},
