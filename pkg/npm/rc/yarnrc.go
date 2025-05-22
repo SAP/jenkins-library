@@ -11,7 +11,9 @@ import (
 )
 
 const (
-	yarnConfigFilename = ".yarnrc"
+	// yarn publish is not working with .yarnrc .Hence replacing it to .npmrc
+	//TODO: what if user already has an .npmrc?
+	yarnConfigFilename = ".npmrc"
 )
 
 // Yarn implements the RCManager interface for managing .yarnrc files
