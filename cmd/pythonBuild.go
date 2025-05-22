@@ -164,7 +164,7 @@ func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virut
 	}
 	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-py")
 
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename, "--format", "xml", "--schema-version", cycloneDxSchemaVersion); err != nil {
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "env", "--output-file", PyBomFilename, "--output-format", "XML", "--spec-version", cycloneDxSchemaVersion); err != nil {
 		return err
 	}
 	return nil

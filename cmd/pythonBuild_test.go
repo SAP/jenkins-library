@@ -102,7 +102,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[4].Exec)
-		assert.Equal(t, []string{"--e", "--output", "bom-pip.xml", "--format", "xml", "--schema-version", "1.4"}, utils.ExecMockRunner.Calls[4].Params)
+		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[4].Params)
 	})
 }
 
