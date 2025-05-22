@@ -161,7 +161,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
-		if err := exec.Tool.Publish("--registry", registry); err != nil {
+		if err := exec.Tool.Publish(); err != nil {
 			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
 	}
