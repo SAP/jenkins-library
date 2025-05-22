@@ -14,7 +14,7 @@ import (
 const (
 	PyBomFilename           = "bom-pip.xml"
 	stepName                = "pythonBuild"
-	cycloneDxPackageVersion = "cyclonedx-bom==3.11.0"
+	cycloneDxPackageVersion = "cyclonedx-bom==6.1.1"
 	cycloneDxSchemaVersion  = "1.4"
 )
 
