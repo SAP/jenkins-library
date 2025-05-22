@@ -126,7 +126,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return err
 		}
 
-		// TODO: handle for npm
 		// if a user has a .npmrc file and if it has a scope (e.g @sap to download scoped dependencies)
 		// if the package to be published also has the same scope (@sap) then npm gets confused
 		// and tries to publish to the scope that comes from the npmrc file
@@ -134,29 +133,35 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// file and not to the one mentioned in the users npmrc file
 		// to solve this we rename the users npmrc file before publish, the original npmrc is already
 		// packaged in the tarball and hence renaming it before publish should not have an effect
-		// projectNpmrc := filepath.Join(".", ".npmrc")
-		// projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
+		// Only handle .npmrc rename for npm tool
+		if exec.Tool.Name == "npm" {
+			projectNpmrc := filepath.Join(".", ".npmrc")
+			projectNpmrcExists, err := exec.Utils.FileExists(projectNpmrc)
+			if err != nil {
+				return fmt.Errorf("failed to check for .npmrc file: %w", err)
+			}
 
-		// if projectNpmrcExists {
-		// 	// rename the .npmrc file since it interferes with publish
-		// 	err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
-		// 	if err != nil {
-		// 		return fmt.Errorf("error when renaming current .npmrc file : %w", err)
-		// 	}
-		// }
+			if projectNpmrcExists {
+				// Rename the .npmrc file since it interferes with publish
+				err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
+				if err != nil {
+					return fmt.Errorf("error when renaming current .npmrc file: %w", err)
+				}
+				log.Entry().Debug("Renamed .npmrc to .npmrc.tmp to avoid scope conflicts")
+				defer func() {
+					err := exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
+					if err != nil {
+						log.Entry().Warnf("Unable to restore .npmrc file: %v", err)
+					} else {
+						log.Entry().Debug("Successfully restored .npmrc file")
+					}
+				}()
+			}
+		}
 
 		if err := exec.Tool.Publish("--tarball", tarballFilePath); err != nil {
 			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
-
-		// TODO: handle for npm
-		// if projectNpmrcExists {
-		// 	// undo the renaming ot the .npmrc to keep the workspace like before
-		// 	err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
-		// 	if err != nil {
-		// 		log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
-		// 	}
-		// }
 
 		if err := exec.Utils.Chdir(oldWorkingDirectory); err != nil {
 			return fmt.Errorf("failed to change back into original directory: %w", err)
