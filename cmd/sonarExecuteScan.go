@@ -376,6 +376,7 @@ func handlePullRequest(config sonarExecuteScanOptions) error {
 			sonar.addOption("sonar.pullrequest.base=" + config.ChangeTarget)
 			sonar.addOption("sonar.pullrequest.branch=" + config.ChangeBranch)
 			sonar.addOption("sonar.pullrequest.provider=" + provider)
+			log.Entry().Info("aaa" + config.ChangeID)
 		}
 	} else if len(config.BranchName) > 0 {
 		sonar.addOption("sonar.branch.name=" + config.BranchName)
