@@ -15,14 +15,11 @@ const (
 	defaultConfigFilename = ".piperNpmrc"
 )
 
-var (
-	propertiesLoadFile  = os.ReadFile
-	propertiesWriteFile = os.WriteFile
-)
-
 // Utils provides utility functions for file operations
 type Utils interface {
 	FileExists(filename string) (bool, error)
+	WriteFile(path string, content []byte, perm os.FileMode) error
+	ReadFile(filename string) ([]byte, error)
 }
 
 // NPM implements the RCManager interface for managing .npmrc files
@@ -42,7 +39,7 @@ func NewNPM(path string, utils Utils) *NPM {
 
 // Write saves the current content to the .npmrc file
 func (rc *NPM) Write() error {
-	if err := propertiesWriteFile(rc.filepath, []byte(rc.content), 0644); err != nil {
+	if err := rc.utils.WriteFile(rc.filepath, []byte(rc.content), 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", rc.filepath, err)
 	}
 	return nil
@@ -50,7 +47,7 @@ func (rc *NPM) Write() error {
 
 // Load reads the content from the .npmrc file
 func (rc *NPM) Load() error {
-	bytes, err := propertiesLoadFile(rc.filepath)
+	bytes, err := rc.utils.ReadFile(rc.filepath)
 	if err != nil {
 		return err
 	}

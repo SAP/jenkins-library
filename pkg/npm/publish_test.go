@@ -527,8 +527,6 @@ func TestNpmPublish(t *testing.T) {
 				Tool:  tool,
 			}
 
-			propertiesLoadFile = utils.FileRead
-			propertiesWriteFile = utils.FileWrite
 			writeIgnoreFile = utils.FileWrite
 
 			// This stub simulates the behavior of pack command and puts a tgz into the requested directory
