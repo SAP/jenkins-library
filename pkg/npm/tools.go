@@ -46,8 +46,15 @@ func (t *Tool) Run(args ...string) error {
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
+// Set os env
+func (t *Tool) setOSEnv(args ...string) {
+	//execRunner.SetEnv(append(os.Environ(), "NPM_CONFIG_USERCONFIG=.piperNpmrc"))
+	t.ExecRunner.SetEnv(append(os.Environ(), args...))
+}
+
 // Publish runs the publish command for the tool.
 func (t *Tool) Publish(args ...string) error {
+	t.setOSEnv("NPM_CONFIG_USERCONFIG=.piperNpmrc")
 	cmd := append(t.PublishCmd, t.PublishFlags...)
 	cmd = append(cmd, args...)
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
@@ -84,7 +91,7 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			InstallCmd:     []string{"ci"},
 			RunCmd:         []string{"run"},
 			PublishCmd:     []string{"publish"},
-			PublishFlags:   []string{"--userconfig", ".piperNpmrc"},
+			PublishFlags:   []string{""},
 			PackCmd:        []string{"pack"},
 			GetRegistryCmd: []string{"config", "get", "registry", "-ws=false", "-iwr"},
 			SetRegistryCmd: []string{"config", "set", "registry"},
@@ -99,7 +106,7 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			PackCmd:        []string{"pack"},
 			GetRegistryCmd: []string{"config", "get", "registry"},
 			SetRegistryCmd: []string{"config", "set", "registry"},
-			RC:             rc.NewYarn(".", utils),
+			RC:             rc.NewNPM(".", utils), // use custom .NPMRC for yarn publish
 		}
 		ToolPNPM = Tool{
 			Name:           "pnpm",
@@ -110,7 +117,7 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			PackCmd:        []string{"pack"},
 			GetRegistryCmd: []string{"config", "get", "registry"},
 			SetRegistryCmd: []string{"config", "set", "registry"},
-			RC:             rc.NewPNPM(".", utils),
+			RC:             rc.NewNPM(".", utils), // use custom .NPMRC for pnpm publish
 		}
 	)
 	execRunner := utils.GetExecRunner()

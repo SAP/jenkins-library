@@ -3,7 +3,6 @@ package npm
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 
@@ -93,6 +92,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		return fmt.Errorf("failed to update %s file: %w", npmignore.filepath, err)
 	}
 
+	//Set registry auth to custom npmrc, Also load existing user npmrc file.
 	if err := exec.Tool.RC.SetRegistry(registry, username, password, scope); err != nil {
 		return fmt.Errorf("failed to configure registry: %w", err)
 	}
@@ -162,20 +162,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
-		//Test yarn
-		if exec.Tool.Name == "yarn" {
-			//cmd := exec.Command("yarn", "publish", "--non-interactive")
-			execRunner := exec.Utils.GetExecRunner()
-			execRunner.SetEnv(append(os.Environ(), "NPM_CONFIG_USERCONFIG=.piperNpmrc"))
-			err := execRunner.RunExecutable("yarn", "publish", "----non-interactive")
-			if err != nil {
-				return fmt.Errorf("failed to run yarn publish command: %w", err)
-			}
-		} else {
-			err := exec.Tool.Publish()
-			if err != nil {
-				return fmt.Errorf("failed to run publish command: %w", err)
-			}
+		err := exec.Tool.Publish()
+		if err != nil {
+			return fmt.Errorf("failed to run publish command: %w", err)
 		}
 	}
 
