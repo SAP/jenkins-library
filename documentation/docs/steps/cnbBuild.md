@@ -75,7 +75,7 @@ cnbBuild(
     containerImageName: 'images/example',
     containerImageTag: 'v0.0.1',
     containerRegistryUrl: 'gcr.io',
-    buildpacks: ['gcr.io/paketo-buildpacks/nodejs', 'paketo-community/build-plan']
+    buildpacks: ['docker.io/paketobuildpacks/nodejs', 'paketo-community/build-plan']
 )
 ```
 

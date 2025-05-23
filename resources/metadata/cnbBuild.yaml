@@ -292,13 +292,13 @@ spec:
           - containerImageName: example/java-app
             containerImageAlias: java
             buildpacks:
-            - "gcr.io/paketo-buildpacks/java"
+            - "docker.io/paketobuildpacks/java"
             path: "source/java"
           - containerImageName: example/nodejs-app
             containerImageAlias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
-            - "gcr.io/paketo-buildpacks/nodejs"
+            - "docker.io/paketobuildpacks/nodejs"
             path: "source/nodejs"
           ```
         scope:

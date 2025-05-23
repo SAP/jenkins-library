@@ -19,7 +19,7 @@ func TestCnbPrivacy_FilterBuildpacks(t *testing.T) {
 			"paketobuildpacks/nodejs:v1",
 			"docker.io/paketobuildpacks/nodejs:v1",
 			"index.docker.io/paketobuildpacks/nodejs:v1",
-			"gcr.io/paketo-buildpacks/nodejs:v1",
+			"docker.io/paketobuildpacks/nodejs:v1",
 		}
 
 		filtered := privacy.FilterBuildpacks(aliases)

@@ -13,8 +13,8 @@ var allowedBuildpackSources = []struct {
 }{
 	// Paketo
 	{
-		registry:         "gcr.io",
-		repositoryPrefix: "paketo-buildpacks/",
+		registry:         "docker.io",
+		repositoryPrefix: "paketobuildpacks/",
 	}, {
 		registry:         "index.docker.io",
 		repositoryPrefix: "paketobuildpacks/",
