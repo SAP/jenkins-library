@@ -57,6 +57,12 @@ func (t *Tool) Publish(args ...string) error {
 	t.setOSEnv("NPM_CONFIG_USERCONFIG=.piperNpmrc")
 	cmd := append(t.PublishCmd, t.PublishFlags...)
 	cmd = append(cmd, args...)
+
+	err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "list")
+	if err != nil {
+		return fmt.Errorf("failed to run config list: %w", err)
+	}
+
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 

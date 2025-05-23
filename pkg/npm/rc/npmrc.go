@@ -109,6 +109,8 @@ func (rc *NPM) SetRegistry(registry, username, password, scope string) error {
 		rc.Set("always-auth", "true")
 	}
 
+	log.Entry().Debugf("content of %s:\n%s", rc.filepath, rc.content)
+
 	return rc.Write()
 }
 
