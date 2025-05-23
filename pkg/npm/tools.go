@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // Tool encapsulates the commands and configuration for a package manager tool.
@@ -170,9 +171,9 @@ func (t *Tool) SetRegistry(registry, username, password, scope string) error {
 
 	// Set authentication if provided
 	if username != "" && password != "" {
-		authToken := fmt.Sprintf("%s:%s", username, password)
+		auth := piperutils.EncodeUsernamePassword(username, password)
 		path := fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth")
-		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", path, authToken); err != nil {
+		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", path, auth); err != nil {
 			return fmt.Errorf("failed to set authentication: %w", err)
 		}
 		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", "always-auth", "true"); err != nil {
