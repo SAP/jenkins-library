@@ -178,6 +178,13 @@ func (t *Tool) SetRegistry(registry, username, password, scope string) error {
 		}
 	}
 
+	// list config
+	cmd = []string{"config", "list"}
+	cmd = append(cmd, t.ConfigGetFlags...)
+	if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...); err != nil {
+		return fmt.Errorf("failed to list config: %w", err)
+	}
+
 	return nil
 }
 
