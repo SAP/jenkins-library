@@ -153,6 +153,7 @@ spec:
           - sbt
           - yarn
           - CAP
+          - ocm
       - name: commitUserName
         aliases:
           - name: gitUserName
