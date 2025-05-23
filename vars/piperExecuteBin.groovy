@@ -77,6 +77,8 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
+            lsDir("DEBUG::: workspace content before ${stepName} execution")
+
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     writePipelineEnv(script: script, piperGoPath: piperGoPath)
@@ -106,6 +108,16 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             }
         }
     }
+}
+
+private void lsDir(String message) {
+  echo "[DEBUG] Begin of ${message}"
+  // some images might not contain the find command. In that case the build must not be aborted.
+  catchError (message: 'Cannot list directory content', buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+    // no -ls option since this is not available for some images
+    sh  'find . -mindepth 1 -maxdepth 2'
+  }
+  echo "[DEBUG] End of ${message}"
 }
 
 // reused in sonarExecuteScan
