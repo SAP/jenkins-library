@@ -122,7 +122,6 @@ func (t *Tool) setOSEnv(args ...string) {
 
 // Publish runs the publish command for the tool.
 func (t *Tool) Publish(args ...string) error {
-	t.setOSEnv()
 	cmd := append(t.PublishCmd, t.PublishFlags...)
 	cmd = append(cmd, args...)
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
@@ -152,6 +151,8 @@ func (t *Tool) SetRegistry(registry, username, password, scope string) error {
 			log.Entry().Warnf("Failed to restore configuration files: %v", err)
 		}
 	}()
+
+	t.setOSEnv()
 
 	// Set registry URL
 	cmd := []string{"config", "set", "registry", registry}
