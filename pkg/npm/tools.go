@@ -3,6 +3,7 @@ package npm
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -170,7 +171,8 @@ func (t *Tool) SetRegistry(registry, username, password, scope string) error {
 	// Set authentication if provided
 	if username != "" && password != "" {
 		authToken := fmt.Sprintf("%s:%s", username, password)
-		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", registry+"/_auth", authToken); err != nil {
+		path := fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth")
+		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", path, authToken); err != nil {
 			return fmt.Errorf("failed to set authentication: %w", err)
 		}
 		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", "always-auth", "true"); err != nil {
