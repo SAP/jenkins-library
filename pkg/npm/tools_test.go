@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -103,13 +104,13 @@ func TestToolExecution(t *testing.T) {
 			tool: Tool{
 				Name:         "pnpm",
 				PublishCmd:   []string{"publish"},
-				PublishFlags: []string{"--config", ".piperNpmrc"},
+				PublishFlags: []string{"--no-git-checks"},
 				PackCmd:      []string{"pack"},
 			},
 			operation:  "publish",
 			args:       []string{"--tarball", "package.tgz", "--registry", "https://registry.example.com"},
 			wantExec:   "./tmp/node_modules/.bin/pnpm",
-			wantParams: []string{"publish", "--config", ".piperNpmrc", "--tarball", "package.tgz", "--registry", "https://registry.example.com"},
+			wantParams: []string{"publish", "--no-git-checks", "--tarball", "package.tgz", "--registry", "https://registry.example.com"},
 		},
 		{
 			name: "pnpm pack command",
@@ -126,12 +127,12 @@ func TestToolExecution(t *testing.T) {
 			tool: Tool{
 				Name:         "pnpm",
 				PublishCmd:   []string{"publish"},
-				PublishFlags: []string{"--config", ".piperNpmrc"},
+				PublishFlags: []string{"--no-git-checks"},
 			},
 			operation:  "publish",
 			args:       []string{"--registry", "https://registry.example.com"},
 			wantExec:   "./tmp/node_modules/.bin/pnpm",
-			wantParams: []string{"publish", "--config", ".piperNpmrc", "--registry", "https://registry.example.com"},
+			wantParams: []string{"publish", "--no-git-checks", "--registry", "https://registry.example.com"},
 		},
 		{
 			name:       "pnpm run uses local binary",
@@ -176,4 +177,138 @@ func TestToolExecution(t *testing.T) {
 			assert.Equal(t, tt.wantParams, call.params)
 		})
 	}
+}
+
+func TestConfigurationManagement(t *testing.T) {
+	t.Run("backup and restore npmrc", func(t *testing.T) {
+		// Setup
+		filesMock := newNpmMockUtilsBundle()
+		filesMock.AddFile(".npmrc", []byte("registry=https://registry.npmjs.org/"))
+
+		tool := Tool{
+			Name:  "npm",
+			Utils: &filesMock,
+		}
+
+		// Test backup
+		err := tool.backupConfigFiles()
+		assert.NoError(t, err)
+
+		// Check backup exists
+		assert.True(t, filesMock.HasFile(".npmrc.bak"))
+		backup, err := filesMock.FileRead(".npmrc.bak")
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("registry=https://registry.npmjs.org/"), backup)
+
+		// Test restore
+		err = tool.restoreConfigFiles()
+		assert.NoError(t, err)
+
+		// Check original is restored and backup is removed
+		assert.True(t, filesMock.HasFile(".npmrc"))
+		assert.False(t, filesMock.HasFile(".npmrc.bak"))
+
+		restored, err := filesMock.FileRead(".npmrc")
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("registry=https://registry.npmjs.org/"), restored)
+	})
+
+	t.Run("handle pnpm workspace config", func(t *testing.T) {
+		// Setup with both npmrc and workspace file
+		filesMock := newNpmMockUtilsBundle()
+		filesMock.AddFile(".npmrc", []byte("registry=https://registry.npmjs.org/"))
+		filesMock.AddFile("pnpm-workspace.yaml", []byte("packages:\n  - 'packages/*'"))
+
+		tool := Tool{
+			Name:  "pnpm",
+			Utils: &filesMock,
+		}
+
+		// Test backup
+		err := tool.backupConfigFiles()
+		assert.NoError(t, err)
+
+		// Check both backups exist
+		assert.True(t, filesMock.HasFile(".npmrc.bak"))
+		assert.True(t, filesMock.HasFile("pnpm-workspace.yaml.bak"))
+
+		npmrcBackup, err := filesMock.FileRead(".npmrc.bak")
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("registry=https://registry.npmjs.org/"), npmrcBackup)
+
+		workspaceBackup, err := filesMock.FileRead("pnpm-workspace.yaml.bak")
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("packages:\n  - 'packages/*'"), workspaceBackup)
+	})
+
+	t.Run("set registry without auth", func(t *testing.T) {
+		// Setup
+		execRunner := &mockExecRunner{}
+		filesMock := newNpmMockUtilsBundle()
+		filesMock.AddFile(".npmrc", []byte("registry=https://old-registry.npmjs.org/"))
+
+		tool := Tool{
+			Name:       "npm",
+			ExecRunner: execRunner,
+			Utils:      &filesMock,
+		}
+
+		// Test SetRegistry without auth
+		err := tool.SetRegistry(
+			"https://test-registry.com",
+			"",
+			"",
+			"@test-scope",
+		)
+		assert.NoError(t, err)
+
+		// Verify correct npm config commands were called
+		expectedCalls := []execCall{
+			{executable: "npm", params: []string{"config", "set", "registry", "https://test-registry.com"}},
+			{executable: "npm", params: []string{"config", "set", "@test-scope:registry", "https://test-registry.com"}},
+		}
+
+		assert.Len(t, execRunner.calls, len(expectedCalls))
+		for i, call := range execRunner.calls {
+			assert.Equal(t, expectedCalls[i].executable, call.executable)
+			assert.Equal(t, expectedCalls[i].params, call.params)
+		}
+	})
+
+	t.Run("set registry with auth", func(t *testing.T) {
+		// Setup
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile(".npmrc", []byte("registry=https://old-registry.npmjs.org/"))
+
+		tool := Tool{
+			Name:       "npm",
+			ExecRunner: utils.execRunner,
+			Utils:      &utils,
+		}
+
+		// Test SetRegistry with auth
+		err := tool.SetRegistry(
+			"https://test-registry.com",
+			"testuser",
+			"testpass",
+			"@test-scope",
+		)
+		assert.NoError(t, err)
+
+		// Verify correct npm config commands were called
+		expectedCalls := []mock.ExecCall{
+			{Exec: "npm", Params: []string{"config", "set", "registry", "https://test-registry.com"}},
+			{Exec: "npm", Params: []string{"config", "set", "@test-scope:registry", "https://test-registry.com"}},
+			{Exec: "npm", Params: []string{"config", "set", "https://test-registry.com/_auth", "testuser:testpass"}},
+			{Exec: "npm", Params: []string{"config", "set", "always-auth", "true"}},
+		}
+
+		assert.Len(t, len(utils.execRunner.Calls), len(expectedCalls))
+		for i, call := range utils.execRunner.Calls {
+			assert.Equal(t, call.Exec, expectedCalls[i].Exec)
+		}
+
+		// Verify backup was created and cleaned up
+		assert.False(t, utils.HasFile(".npmrc.bak"))
+	})
 }

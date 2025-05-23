@@ -141,6 +141,7 @@ func TestNpm(t *testing.T) {
 		err = exec.install("package.json")
 
 		if assert.NoError(t, err) {
+			fmt.Println(utils.execRunner.Calls)
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 			}

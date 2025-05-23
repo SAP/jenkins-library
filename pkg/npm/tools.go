@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/npm/rc"
 )
 
 // Tool encapsulates the commands and configuration for a package manager tool.
@@ -17,9 +16,17 @@ type Tool struct {
 	PublishCmd     []string
 	PublishFlags   []string
 	PackCmd        []string
-	GetRegistryCmd []string
-	SetRegistryCmd []string
-	RC             RCManager
+	ConfigGetFlags []string
+	ConfigSetFlags []string
+	configFiles    map[string]string // Map of original file paths to backup paths
+	Utils          Utils             // For file operations
+}
+
+// ConfigFile represents a configuration file that needs backup/restore
+type configFile struct {
+	path        string
+	backupPath  string
+	needsBackup bool
 }
 
 // getToolPath returns a consistent path for a tool in the local installation directory
@@ -46,15 +53,74 @@ func (t *Tool) Run(args ...string) error {
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
+// initConfigFiles initializes the configuration files map based on the tool
+func (t *Tool) initConfigFiles() {
+	if t.configFiles == nil {
+		t.configFiles = make(map[string]string)
+	}
+
+	// Always check .npmrc
+	npmrcPath := ".npmrc"
+	if exists(npmrcPath, t.Utils) {
+		t.configFiles[npmrcPath] = npmrcPath + ".bak"
+	}
+
+	// For pnpm, also check workspace file
+	if t.Name == "pnpm" {
+		workspacePath := "pnpm-workspace.yaml"
+		if exists(workspacePath, t.Utils) {
+			t.configFiles[workspacePath] = workspacePath + ".bak"
+		}
+	}
+}
+
+// backupConfigFiles creates backups of all configuration files
+func (t *Tool) backupConfigFiles() error {
+	t.initConfigFiles()
+	for orig, backup := range t.configFiles {
+		content, err := t.Utils.FileRead(orig)
+		if err != nil {
+			return fmt.Errorf("failed to read %s: %w", orig, err)
+		}
+		if err := t.Utils.FileWrite(backup, content, 0644); err != nil {
+			return fmt.Errorf("failed to create backup %s: %w", backup, err)
+		}
+		log.Entry().Debugf("Created backup of %s at %s", orig, backup)
+	}
+	return nil
+}
+
+// restoreConfigFiles restores all configuration files from backups
+func (t *Tool) restoreConfigFiles() error {
+	for orig, backup := range t.configFiles {
+		if exists(backup, t.Utils) {
+			content, err := t.Utils.FileRead(backup)
+			if err != nil {
+				return fmt.Errorf("failed to read backup %s: %w", backup, err)
+			}
+			if err := t.Utils.FileWrite(orig, content, 0644); err != nil {
+				return fmt.Errorf("failed to restore %s: %w", orig, err)
+			}
+			if err := t.Utils.FileRemove(backup); err != nil {
+				log.Entry().Warnf("Failed to remove backup file %s: %v", backup, err)
+			}
+			log.Entry().Debugf("Restored %s from backup", orig)
+		}
+	}
+	return nil
+}
+
 // Set os env
 func (t *Tool) setOSEnv(args ...string) {
-	//execRunner.SetEnv(append(os.Environ(), "NPM_CONFIG_USERCONFIG=.piperNpmrc"))
-	t.ExecRunner.SetEnv(append(os.Environ(), args...))
+	env := os.Environ()
+	env = append(env, "NPM_CONFIG_USERCONFIG=.npmrc")
+	env = append(env, args...)
+	t.ExecRunner.SetEnv(env)
 }
 
 // Publish runs the publish command for the tool.
 func (t *Tool) Publish(args ...string) error {
-	t.setOSEnv("NPM_CONFIG_USERCONFIG=.piperNpmrc")
+	t.setOSEnv()
 	cmd := append(t.PublishCmd, t.PublishFlags...)
 	cmd = append(cmd, args...)
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
@@ -68,17 +134,51 @@ func (t *Tool) Pack(args ...string) error {
 
 // GetRegistry returns the registry URL for the tool.
 func (t *Tool) GetRegistry(args ...string) error {
-	cmd := append(t.GetRegistryCmd, args...)
+	cmd := []string{"config", "get", "registry"}
+	cmd = append(cmd, t.ConfigGetFlags...)
+	cmd = append(cmd, args...)
 	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
 }
 
-// SetRegistry sets the registry URL for the tool.
-func (t *Tool) SetRegistry(registry string, args ...string) error {
-	cmd := append(t.SetRegistryCmd, registry)
-	if len(args) > 0 {
-		cmd = append(cmd, args...)
+// SetRegistry configures the registry URL and authentication for the tool.
+func (t *Tool) SetRegistry(registry, username, password, scope string) error {
+	if err := t.backupConfigFiles(); err != nil {
+		return err
 	}
-	return t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...)
+	defer func() {
+		if err := t.restoreConfigFiles(); err != nil {
+			log.Entry().Warnf("Failed to restore configuration files: %v", err)
+		}
+	}()
+
+	// Set registry URL
+	cmd := []string{"config", "set", "registry", registry}
+	cmd = append(cmd, t.ConfigSetFlags...)
+	if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...); err != nil {
+		return fmt.Errorf("failed to set registry: %w", err)
+	}
+
+	// Set scoped registry if provided
+	if scope != "" {
+		cmd := []string{"config", "set", scope + ":registry", registry}
+		cmd = append(cmd, t.ConfigSetFlags...)
+		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), cmd...); err != nil {
+			return fmt.Errorf("failed to set scoped registry: %w", err)
+		}
+	}
+
+	// Set authentication if provided
+	if username != "" && password != "" {
+		authToken := fmt.Sprintf("%s:%s", username, password)
+		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", registry+"/_auth", authToken); err != nil {
+			return fmt.Errorf("failed to set authentication: %w", err)
+		}
+		if err := t.ExecRunner.RunExecutable(t.GetBinaryPath(), "config", "set", "always-auth", "true"); err != nil {
+			return fmt.Errorf("failed to set always-auth: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // DetectTool inspects the current directory for lockfiles, auto-installs the tool if needed,
@@ -93,9 +193,10 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			PublishCmd:     []string{"publish"},
 			PublishFlags:   []string{""},
 			PackCmd:        []string{"pack"},
-			GetRegistryCmd: []string{"config", "get", "registry", "-ws=false", "-iwr"},
-			SetRegistryCmd: []string{"config", "set", "registry"},
-			RC:             rc.NewNPM(".", utils),
+			ConfigGetFlags: []string{"-ws=false", "-iwr"},
+			ConfigSetFlags: []string{"-ws=false", "-iwr"},
+			Utils:          utils,
+			configFiles:    make(map[string]string),
 		}
 		ToolYarn = Tool{
 			Name:           "yarn",
@@ -104,9 +205,10 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			PublishCmd:     []string{"publish"},
 			PublishFlags:   []string{"----non-interactive"},
 			PackCmd:        []string{"pack"},
-			GetRegistryCmd: []string{"config", "get", "registry"},
-			SetRegistryCmd: []string{"config", "set", "registry"},
-			RC:             rc.NewNPM(".", utils), // use custom .NPMRC for yarn publish
+			ConfigGetFlags: []string{},
+			ConfigSetFlags: []string{},
+			Utils:          utils,
+			configFiles:    make(map[string]string),
 		}
 		ToolPNPM = Tool{
 			Name:           "pnpm",
@@ -115,9 +217,10 @@ func DetectTool(utils Utils, toolName string) (*Tool, error) {
 			PublishCmd:     []string{"publish"},
 			PublishFlags:   []string{"--no-git-checks"},
 			PackCmd:        []string{"pack"},
-			GetRegistryCmd: []string{"config", "get", "registry"},
-			SetRegistryCmd: []string{"config", "set", "registry"},
-			RC:             rc.NewNPM(".", utils), // use custom .NPMRC for pnpm publish
+			ConfigGetFlags: []string{"--location", "project"},
+			ConfigSetFlags: []string{"--location", "project"},
+			Utils:          utils,
+			configFiles:    make(map[string]string),
 		}
 	)
 	execRunner := utils.GetExecRunner()

@@ -11,11 +11,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-type RCManager interface {
-	SetRegistry(registry, username, password, scope string) error
-	GetFilePath() string
-}
-
 type npmMinimalPackageDescriptor struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
@@ -84,16 +79,14 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	npmignore.Add("tmp/")
 	log.Entry().Debug("adding sboms to npmignore")
 	npmignore.Add("**/bom*.xml")
-
-	log.Entry().Debugf("adding piper npmrc file %v", exec.Tool.RC.GetFilePath())
-	npmignore.Add(exec.Tool.RC.GetFilePath())
+	npmignore.Add(".npmrc.bak") // Ignore our backup files
 
 	if err := npmignore.Write(); err != nil {
 		return fmt.Errorf("failed to update %s file: %w", npmignore.filepath, err)
 	}
 
-	//Set registry auth to custom npmrc, Also load existing user npmrc file.
-	if err := exec.Tool.RC.SetRegistry(registry, username, password, scope); err != nil {
+	// Configure registry and authentication using npm CLI commands
+	if err := exec.Tool.SetRegistry(registry, username, password, scope); err != nil {
 		return fmt.Errorf("failed to configure registry: %w", err)
 	}
 
@@ -129,8 +122,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// if a user has a .npmrc file and if it has a scope (e.g @sap to download scoped dependencies)
 		// if the package to be published also has the same scope (@sap) then npm gets confused
 		// and tries to publish to the scope that comes from the npmrc file
-		// and is not the desired publish since we want to publish to the other registry (from .piperNpmrc)
-		// file and not to the one mentioned in the users npmrc file
+		// and is not the desired publish since we want to publish to the other configured registry,
+		// not the one mentioned in the user's existing .npmrc file
 		// to solve this we rename the users npmrc file before publish, the original npmrc is already
 		// packaged in the tarball and hence renaming it before publish should not have an effect
 		// Only handle .npmrc rename for npm tool
