@@ -115,6 +115,7 @@ spec:
           - pip
           - sbt
           - yarn
+          - ocm
       - name: additionalTargetDescriptors
         type: "[]string"
         description: Defines patterns for build descriptors which should be used for option additionalTargetTools.
