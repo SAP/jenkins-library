@@ -605,7 +605,7 @@ func TestRunCnbBuild(t *testing.T) {
 			DockerConfigJSON:     "/path/to/config.json",
 			ProjectDescriptor:    "project.toml",
 			AdditionalTags:       []string{"latest"},
-			Buildpacks:           []string{"paketobuildpacks/java", "gcr.io/paketo-buildpacks/node"},
+			Buildpacks:           []string{"paketobuildpacks/java", "docker.io/paketobuildpacks/node"},
 			Path:                 "target/*.jar",
 		}
 
@@ -632,7 +632,7 @@ func TestRunCnbBuild(t *testing.T) {
 			DockerConfigJSON:     "/path/to/config.json",
 			ProjectDescriptor:    "project.toml",
 			AdditionalTags:       []string{"latest"},
-			Buildpacks:           []string{"paketobuildpacks/java", "gcr.io/paketo-buildpacks/node"},
+			Buildpacks:           []string{"paketobuildpacks/java", "docker.io/paketobuildpacks/node"},
 			Path:                 "**/target",
 		}
 
