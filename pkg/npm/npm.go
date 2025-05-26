@@ -325,9 +325,16 @@ func (exec *Execute) install(packageJSON string) error {
 			return err
 		}
 	} else if pnpmLockExists {
-		err = execRunner.RunExecutable("pnpm", "install", "--frozen-lockfile")
-		if err != nil {
-			return err
+		commands := [][]string{
+			{"mkdir", "-p", "./tmp/pnpm-bin"},
+			{"npm", "install", "pnpm", "--prefix", "./tmp/pnpm-bin"},
+			{"./tmp/pnpm-bin/node_modules/.bin/pnpm", "install", "--frozen-lockfile"},
+		}
+
+		for _, cmd := range commands {
+			if err := execRunner.RunExecutable(cmd[0], cmd[1:]...); err != nil {
+				return err
+			}
 		}
 	} else {
 		log.Entry().Warn("No package lock file found. " +
