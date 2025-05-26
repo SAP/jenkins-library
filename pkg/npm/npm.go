@@ -308,7 +308,7 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
+	packageLockExists, yarnLockExists, pnpmLockExists, err := exec.checkIfLockFilesExist()
 	if err != nil {
 		return err
 	}
@@ -321,6 +321,11 @@ func (exec *Execute) install(packageJSON string) error {
 		}
 	} else if yarnLockExists {
 		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
+		if err != nil {
+			return err
+		}
+	} else if pnpmLockExists {
+		err = execRunner.RunExecutable("pnpm", "install", "--frozen-lockfile")
 		if err != nil {
 			return err
 		}
@@ -343,17 +348,24 @@ func (exec *Execute) install(packageJSON string) error {
 }
 
 // checkIfLockFilesExist checks if yarn/package lock fileUtils exist
-func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
+func (exec *Execute) checkIfLockFilesExist() (bool, bool, bool, error) {
 	packageLockExists, err := exec.Utils.FileExists("package-lock.json")
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
 
 	yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
-	return packageLockExists, yarnLockExists, nil
+
+	pnpmLockExists, err := exec.Utils.FileExists("pnpm-lock.yaml")
+	if err != nil {
+		return false, false, false, err
+	}
+
+	return packageLockExists, yarnLockExists, pnpmLockExists, nil
+
 }
 
 // CreateBOM generates BOM file using CycloneDX from all package.json files
