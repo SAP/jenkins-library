@@ -247,10 +247,12 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
 	coordinates, err := artifact.GetCoordinates()
-	if err != nil && !config.FetchCoordinates {
-		log.Entry().Warnf("fetchCoordinates is false and failed get artifact Coordinates")
-	} else if err != nil && config.FetchCoordinates {
-		return fmt.Errorf("failed to get coordinates: %w", err)
+	if err != nil {
+		if config.FetchCoordinates {
+			return fmt.Errorf("failed to get artifact coordinates: %w", err)
+		} else {
+			log.Entry().Warnf("failed to get artifact Coordinates: ignoring as fetchCoordinates is false")
+		}
 	} else {
 		commonPipelineEnvironment.artifactID = coordinates.ArtifactID
 		commonPipelineEnvironment.groupID = coordinates.GroupID
