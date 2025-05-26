@@ -2,13 +2,12 @@ package xsuaa
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 const authHeaderKey = "Authorization"
@@ -40,7 +39,7 @@ func (x *XSUAA) SetAuthHeaderIfNotPresent(header *http.Header) error {
 	if len(x.OAuthURL) == 0 ||
 		len(x.ClientID) == 0 ||
 		len(x.ClientSecret) == 0 {
-		return errors.Errorf("OAuthURL, ClientID and ClientSecret have to be set on the xsuaa instance")
+		return errors.New("OAuthURL, ClientID and ClientSecret have to be set on the xsuaa instance")
 	}
 
 	secondsOfValidityLeft := x.CachedAuthToken.ExpiresAt.Sub(time.Now()).Seconds()
@@ -80,8 +79,8 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 
 	response, httpErr := httpClient.Do(request)
 	if httpErr != nil {
-		err = errors.Wrapf(httpErr, "fetching an access token failed: HTTP %s request to %s failed",
-			method, entireURL)
+		err = fmt.Errorf("fetching an access token failed: HTTP %s request to %s failed: %w",
+			method, entireURL, httpErr)
 		return
 	}
 
@@ -91,7 +90,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		err = errors.Errorf("fetching an access token failed: HTTP %s request to %s failed: "+
+		err = fmt.Errorf("fetching an access token failed: HTTP %s request to %s failed: "+
 			"expected response code 200, got '%d', response body: '%s'",
 			method, entireURL, response.StatusCode, bodyText)
 		return
@@ -99,12 +98,12 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 
 	parsingErr := json.Unmarshal(bodyText, &authToken)
 	if err != nil {
-		err = errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %s", bodyText)
+		err = fmt.Errorf("HTTP response body could not be parsed as JSON: %s %w", bodyText, parsingErr)
 		return
 	}
 
 	if authToken.AccessToken == "" {
-		err = errors.Errorf("expected authToken field 'access_token' in json response: got response body: '%s'",
+		err = fmt.Errorf("expected authToken field 'access_token' in json response: got response body: '%s'",
 			bodyText)
 		return
 	}
@@ -124,14 +123,14 @@ func setExpireTime(now time.Time, secondsValid time.Duration) time.Time {
 
 func readResponseBody(response *http.Response) ([]byte, error) {
 	if response == nil {
-		return nil, errors.Errorf("did not retrieve an HTTP response")
+		return nil, errors.New("did not retrieve an HTTP response")
 	}
 	if response.Body != nil {
 		defer response.Body.Close()
 	}
 	bodyText, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
-		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
+		return nil, fmt.Errorf("HTTP response body could not be read: %w", readErr)
 	}
 	return bodyText, nil
 }
