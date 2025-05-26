@@ -1,0 +1,99 @@
+metadata:
+  name: onapsisExecuteScan
+  description: Execute a scan with Onapsis Control
+  longDescription: This step executes a scan with Onapsis Control.
+spec:
+  inputs:
+    secrets:
+      - name: onapsisSecretTokenId
+        type: jenkins
+        description: "Jenkins 'Secret text' for the Onapsis JWT, used to authenticate with the Onapsis scan service"
+        mandatory: true
+      - name: onapsisCertificate
+        type: jenkins
+        description: "Jenkins 'Secret file' self-signed certificate of the Onapsis scan service"
+        mandatory: true
+    params:
+      - name: scanServiceUrl
+        type: string
+        description: URL of the scan service
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanGitUrl
+        type: string
+        description: "The target git repo to scan"
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanGitBranch
+        type: string
+        description: "The target git branch to scan"
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: appType
+        type: string
+        description: "Type of the application to be scanned"
+        default: "SAPUI5"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - "ABAP"
+          - "SAPUI5"
+      - name: failOnMandatoryFinding
+        type: bool
+        description: "Fail the build if mandatory findings are detected"
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: failOnOptionalFinding
+        type: bool
+        description: "Fail the build if optional findings are detected"
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: debugMode
+        type: bool
+        description: "Enable debug mode for the scan"
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: onapsisSecretToken
+        type: string
+        description: "Onapsis JWT, used to authenticate with the Onapsis scan service"
+        mandatory: true
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: onapsisSecretTokenId
+            type: secret
+      - name: onapsisCertificatePath
+        type: string
+        description: "The path to the Onapsis scan server certificate"
+        mandatory: true
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: onapsisCertificate
+            type: secret
