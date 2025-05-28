@@ -439,4 +439,68 @@ func TestNpm(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("Create BOM with cdxgen for pnpm project", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				// Check cdxgen install
+				assert.Equal(t, mock.ExecCall{
+					Exec:   "npm",
+					Params: []string{"install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder},
+				}, utils.execRunner.Calls[0])
+
+				// Check cdxgen execution for first package.json
+				cdxgenPath := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+				assert.Equal(t, mock.ExecCall{
+					Exec: cdxgenPath,
+					Params: []string{
+						"-r",
+						"-o", "bom-npm.xml",
+						"--spec-version", cycloneDxSchemaVersion,
+					},
+				}, utils.execRunner.Calls[1])
+
+				// Check cdxgen execution for second package.json
+				assert.Equal(t, mock.ExecCall{
+					Exec: cdxgenPath,
+					Params: []string{
+						"-r",
+						"-o", filepath.Join("src", "bom-npm.xml"),
+						"--spec-version", cycloneDxSchemaVersion,
+					},
+				}, utils.execRunner.Calls[2])
+			}
+		}
+	})
+
+	t.Run("Create BOM fails if cdxgen install fails", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			"npm install @cyclonedx/cdxgen@^11.3.2 --prefix ./tmp": fmt.Errorf("failed to install cdxgen"),
+		}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.CreateBOM([]string{"package.json"})
+
+		assert.EqualError(t, err, "failed to install cdxgen: failed to install cdxgen")
+	})
 }

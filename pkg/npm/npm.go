@@ -18,6 +18,7 @@ const (
 	npmBomFilename                 = "bom-npm.xml"
 	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
 	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
+	cdxgenPackageVersion           = "@cyclonedx/cdxgen@^11.3.2"
 	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
 	cycloneDxSchemaVersion         = "1.4"
 )
@@ -386,16 +387,47 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	cycloneDxBomRunParams := []string{"cyclonedx-bom", "--output"}
 
 	// Attempt#1, generate BOM via cyclonedx-npm
-	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
+	// Check for pnpm first since it uses cdxgen
+	_, _, pnpmLockExists, err := exec.checkIfLockFilesExist()
 	if err != nil {
+		return err
+	}
 
-		log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
+	if pnpmLockExists {
+		// Install and use cdxgen for pnpm projects
+		execRunner := exec.Utils.GetExecRunner()
 
-		// Attempt #2, generate BOM via cyclonedx/bom@^3.10.6
-		err = exec.createBOMWithParams(cycloneDxBomInstallParams, cycloneDxBomRunParams, packageJSONFiles, true)
+		// Install cdxgen in tmp folder
+		err := execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder)
 		if err != nil {
-			log.Entry().Infof("Failed to generate BOM CycloneDX BOM with fallback package cyclonedx/bom ")
-			return err
+			return fmt.Errorf("failed to install cdxgen: %w", err)
+		}
+
+		for _, packageJSONFile := range packageJSONFiles {
+			path := filepath.Dir(packageJSONFile)
+			executable := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+			params := []string{
+				"-r",
+				"-o", filepath.Join(path, npmBomFilename),
+				"--spec-version", cycloneDxSchemaVersion,
+			}
+			err := execRunner.RunExecutable(executable, params...)
+			if err != nil {
+				return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen: %w", err)
+			}
+		}
+	} else {
+		// For non-pnpm projects, use existing CycloneDX approach
+		err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
+		if err != nil {
+			log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
+
+			// Attempt #2, generate BOM via cyclonedx/bom@^3.10.6
+			err = exec.createBOMWithParams(cycloneDxBomInstallParams, cycloneDxBomRunParams, packageJSONFiles, true)
+			if err != nil {
+				log.Entry().Infof("Failed to generate BOM CycloneDX BOM with fallback package cyclonedx/bom ")
+				return err
+			}
 		}
 	}
 	return nil
