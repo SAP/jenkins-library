@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -16,12 +18,24 @@ import (
 
 const (
 	npmBomFilename                 = "bom-npm.xml"
+	tempBomFilename                = "bom-npm.json"
 	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
 	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
 	cdxgenPackageVersion           = "@cyclonedx/cdxgen@^11.3.2"
+	cycloneDxCliVersion            = "v0.27.2"
 	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
 	cycloneDxSchemaVersion         = "1.4"
 )
+
+var cycloneDxCliUrl = map[struct{ os, arch string }]string{
+	{"windows", "amd64"}: "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-win-x64.exe",
+	{"windows", "arm64"}: "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-win-arm64.exe",
+	{"darwin", "amd64"}:  "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-osx-x64",
+	{"darwin", "arm64"}:  "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-osx-arm64",
+	{"linux", "amd64"}:   "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-linux-x64",
+	{"linux", "arm64"}:   "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-linux-arm64",
+	{"linux", "arm"}:     "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-linux-arm",
+}
 
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
@@ -49,7 +63,11 @@ type ExecutorOptions struct {
 
 // NewExecutor instantiates Execute struct and sets executeOptions
 func NewExecutor(executorOptions ExecutorOptions) Executor {
-	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
+	utils := utilsBundle{
+		Files:          &piperutils.Files{},
+		execRunner:     executorOptions.ExecRunner,
+		downloadClient: &piperhttp.Client{},
+	}
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
@@ -70,11 +88,25 @@ type Utils interface {
 	piperutils.FileUtils
 
 	GetExecRunner() ExecRunner
+	GetFileUtils() piperutils.FileUtils
+	GetDownloadUtils() piperhttp.Downloader
 }
 
 type utilsBundle struct {
 	*piperutils.Files
-	execRunner ExecRunner
+	execRunner     ExecRunner
+	downloadClient piperhttp.Downloader
+}
+
+func (u *utilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.Files
+}
+
+func (u *utilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	if u.downloadClient == nil {
+		u.downloadClient = &piperhttp.Client{}
+	}
+	return u.downloadClient
 }
 
 // GetExecRunner returns an execRunner if it's not yet initialized
@@ -395,27 +427,51 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	}
 
 	if pnpmLockExists {
-		// Install and use cdxgen for pnpm projects
-		execRunner := exec.Utils.GetExecRunner()
+		// Download cyclonedx-cli
+		osArch := struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}
+		var cliPath string
+		if urlTemplate, ok := cycloneDxCliUrl[osArch]; ok {
+			url := fmt.Sprintf(urlTemplate, cycloneDxCliVersion)
+			cliPath, err = piperhttp.DownloadExecutable("", exec.Utils.GetFileUtils(), exec.Utils.GetDownloadUtils(), url)
+			if err != nil {
+				return fmt.Errorf("failed to download cyclonedx-cli: %w", err)
+			}
+		} else {
+			return fmt.Errorf("cyclonedx-cli not available for OS/architecture combination: %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
 
-		// Install cdxgen in tmp folder
-		err := execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder)
+		// Install cdxgen for pnpm projects
+		execRunner := exec.Utils.GetExecRunner()
+		err = execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder)
 		if err != nil {
 			return fmt.Errorf("failed to install cdxgen: %w", err)
 		}
 
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
-			executable := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+			jsonBomPath := filepath.Join(path, tempBomFilename)
+			xmlBomPath := filepath.Join(path, npmBomFilename)
+
+			// Generate JSON SBOM with cdxgen
+			cdxgenExecutable := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
 			params := []string{
 				"-r",
-				"-o", filepath.Join(path, npmBomFilename),
+				"-o", jsonBomPath,
 				"--spec-version", cycloneDxSchemaVersion,
 			}
-			err := execRunner.RunExecutable(executable, params...)
+			err := execRunner.RunExecutable(cdxgenExecutable, params...)
 			if err != nil {
 				return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen: %w", err)
 			}
+
+			// Convert JSON to XML using cyclonedx-cli
+			err = execRunner.RunExecutable(cliPath, "convert", "--input-file", jsonBomPath, "--output-format", "xml", "--output-file", xmlBomPath)
+			if err != nil {
+				return fmt.Errorf("failed to convert BOM to XML format: %w", err)
+			}
+
+			// Cleanup temp JSON file
+			_ = exec.Utils.FileRemove(jsonBomPath)
 		}
 	} else {
 		// For non-pnpm projects, use existing CycloneDX approach
