@@ -228,7 +228,8 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 
 	nodeModulesExclude := "**/node_modules/**"
 	genExclude := "**/gen/**"
-	excludeList = append(excludeList, nodeModulesExclude, genExclude)
+	tmpExclude := "**/tmp/**"
+	excludeList = append(excludeList, nodeModulesExclude, genExclude, tmpExclude)
 
 	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
 	if err != nil {
