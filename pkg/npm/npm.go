@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -16,11 +18,24 @@ import (
 
 const (
 	npmBomFilename                 = "bom-npm.xml"
+	tempBomFilename                = "bom-npm.json"
 	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
 	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
+	cdxgenPackageVersion           = "@cyclonedx/cdxgen@^11.3.2"
+	cycloneDxCliVersion            = "v0.27.2"
 	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
 	cycloneDxSchemaVersion         = "1.4"
 )
+
+var cycloneDxCliUrl = map[struct{ os, arch string }]string{
+	{"windows", "amd64"}: "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-win-x64.exe",
+	{"windows", "arm64"}: "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-win-arm64.exe",
+	{"darwin", "amd64"}:  "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-osx-x64",
+	{"darwin", "arm64"}:  "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-osx-arm64",
+	{"linux", "amd64"}:   "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-linux-x64",
+	{"linux", "arm64"}:   "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-linux-arm64",
+	{"linux", "arm"}:     "https://github.com/CycloneDX/cyclonedx-cli/releases/download/%s/cyclonedx-linux-arm",
+}
 
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
@@ -48,7 +63,11 @@ type ExecutorOptions struct {
 
 // NewExecutor instantiates Execute struct and sets executeOptions
 func NewExecutor(executorOptions ExecutorOptions) Executor {
-	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
+	utils := utilsBundle{
+		Files:          &piperutils.Files{},
+		execRunner:     executorOptions.ExecRunner,
+		downloadClient: &piperhttp.Client{},
+	}
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
@@ -69,11 +88,25 @@ type Utils interface {
 	piperutils.FileUtils
 
 	GetExecRunner() ExecRunner
+	GetFileUtils() piperutils.FileUtils
+	GetDownloadUtils() piperhttp.Downloader
 }
 
 type utilsBundle struct {
 	*piperutils.Files
-	execRunner ExecRunner
+	execRunner     ExecRunner
+	downloadClient piperhttp.Downloader
+}
+
+func (u *utilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.Files
+}
+
+func (u *utilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	if u.downloadClient == nil {
+		u.downloadClient = &piperhttp.Client{}
+	}
+	return u.downloadClient
 }
 
 // GetExecRunner returns an execRunner if it's not yet initialized
@@ -227,7 +260,8 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 
 	nodeModulesExclude := "**/node_modules/**"
 	genExclude := "**/gen/**"
-	excludeList = append(excludeList, nodeModulesExclude, genExclude)
+	tmpExclude := "**/tmp/**"
+	excludeList = append(excludeList, nodeModulesExclude, genExclude, tmpExclude)
 
 	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
 	if err != nil {
@@ -308,7 +342,7 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
+	packageLockExists, yarnLockExists, pnpmLockExists, err := exec.checkIfLockFilesExist()
 	if err != nil {
 		return err
 	}
@@ -323,6 +357,18 @@ func (exec *Execute) install(packageJSON string) error {
 		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
 		if err != nil {
 			return err
+		}
+	} else if pnpmLockExists {
+		commands := [][]string{
+			{"mkdir", "-p", "./tmp/pnpm-bin"},
+			{"npm", "install", "pnpm", "--prefix", "./tmp/pnpm-bin"},
+			{"./tmp/pnpm-bin/node_modules/.bin/pnpm", "install", "--frozen-lockfile"},
+		}
+
+		for _, cmd := range commands {
+			if err := execRunner.RunExecutable(cmd[0], cmd[1:]...); err != nil {
+				return err
+			}
 		}
 	} else {
 		log.Entry().Warn("No package lock file found. " +
@@ -343,17 +389,24 @@ func (exec *Execute) install(packageJSON string) error {
 }
 
 // checkIfLockFilesExist checks if yarn/package lock fileUtils exist
-func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
+func (exec *Execute) checkIfLockFilesExist() (bool, bool, bool, error) {
 	packageLockExists, err := exec.Utils.FileExists("package-lock.json")
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
 
 	yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
 	if err != nil {
-		return false, false, err
+		return false, false, false, err
 	}
-	return packageLockExists, yarnLockExists, nil
+
+	pnpmLockExists, err := exec.Utils.FileExists("pnpm-lock.yaml")
+	if err != nil {
+		return false, false, false, err
+	}
+
+	return packageLockExists, yarnLockExists, pnpmLockExists, nil
+
 }
 
 // CreateBOM generates BOM file using CycloneDX from all package.json files
@@ -367,16 +420,71 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	cycloneDxBomRunParams := []string{"cyclonedx-bom", "--output"}
 
 	// Attempt#1, generate BOM via cyclonedx-npm
-	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
+	// Check for pnpm first since it uses cdxgen
+	_, _, pnpmLockExists, err := exec.checkIfLockFilesExist()
 	if err != nil {
+		return err
+	}
 
-		log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
+	if pnpmLockExists {
+		// Download cyclonedx-cli
+		osArch := struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}
+		var cliPath string
+		if urlTemplate, ok := cycloneDxCliUrl[osArch]; ok {
+			url := fmt.Sprintf(urlTemplate, cycloneDxCliVersion)
+			cliPath, err = piperhttp.DownloadExecutable("", exec.Utils.GetFileUtils(), exec.Utils.GetDownloadUtils(), url)
+			if err != nil {
+				return fmt.Errorf("failed to download cyclonedx-cli: %w", err)
+			}
+		} else {
+			return fmt.Errorf("cyclonedx-cli not available for OS/architecture combination: %s/%s", runtime.GOOS, runtime.GOARCH)
+		}
 
-		// Attempt #2, generate BOM via cyclonedx/bom@^3.10.6
-		err = exec.createBOMWithParams(cycloneDxBomInstallParams, cycloneDxBomRunParams, packageJSONFiles, true)
+		// Install cdxgen for pnpm projects
+		execRunner := exec.Utils.GetExecRunner()
+		err = execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder)
 		if err != nil {
-			log.Entry().Infof("Failed to generate BOM CycloneDX BOM with fallback package cyclonedx/bom ")
-			return err
+			return fmt.Errorf("failed to install cdxgen: %w", err)
+		}
+
+		for _, packageJSONFile := range packageJSONFiles {
+			path := filepath.Dir(packageJSONFile)
+			jsonBomPath := filepath.Join(path, tempBomFilename)
+			xmlBomPath := filepath.Join(path, npmBomFilename)
+
+			// Generate JSON SBOM with cdxgen
+			cdxgenExecutable := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+			params := []string{
+				"-r",
+				"-o", jsonBomPath,
+				"--spec-version", cycloneDxSchemaVersion,
+			}
+			err := execRunner.RunExecutable(cdxgenExecutable, params...)
+			if err != nil {
+				return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen: %w", err)
+			}
+
+			// Convert JSON to XML using cyclonedx-cli
+			err = execRunner.RunExecutable(cliPath, "convert", "--input-file", jsonBomPath, "--output-format", "xml", "--output-file", xmlBomPath)
+			if err != nil {
+				return fmt.Errorf("failed to convert BOM to XML format: %w", err)
+			}
+
+			// Cleanup temp JSON file
+			_ = exec.Utils.FileRemove(jsonBomPath)
+		}
+	} else {
+		// For non-pnpm projects, use existing CycloneDX approach
+		err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
+		if err != nil {
+			log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
+
+			// Attempt #2, generate BOM via cyclonedx/bom@^3.10.6
+			err = exec.createBOMWithParams(cycloneDxBomInstallParams, cycloneDxBomRunParams, packageJSONFiles, true)
+			if err != nil {
+				log.Entry().Infof("Failed to generate BOM CycloneDX BOM with fallback package cyclonedx/bom ")
+				return err
+			}
 		}
 	}
 	return nil

@@ -6,23 +6,43 @@ package npm
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
 type npmMockUtilsBundle struct {
 	*mock.FilesMock
-	execRunner *mock.ExecMockRunner
+	execRunner     *mock.ExecMockRunner
+	downloadClient *mock.HttpClientMock
 }
 
 func (u *npmMockUtilsBundle) GetExecRunner() ExecRunner {
 	return u.execRunner
 }
 
+func (u *npmMockUtilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.FilesMock
+}
+
+func (u *npmMockUtilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	return u.downloadClient
+}
+
 func newNpmMockUtilsBundle() npmMockUtilsBundle {
-	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
+	filesMock := &mock.FilesMock{}
+	utils := npmMockUtilsBundle{
+		FilesMock:  filesMock,
+		execRunner: &mock.ExecMockRunner{},
+		downloadClient: &mock.HttpClientMock{
+			FileUploads:   make(map[string]string),
+			HTTPFileUtils: filesMock,
+		},
+	}
 	return utils
 }
 
@@ -170,6 +190,32 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
+	t.Run("Install deps for package.json with pnpm-lock.yaml", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.install("package.json")
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				// Check mkdir command
+				assert.Equal(t, mock.ExecCall{Exec: "mkdir", Params: []string{"-p", "./tmp/pnpm-bin"}}, utils.execRunner.Calls[1])
+				// Check pnpm install command
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp/pnpm-bin"}}, utils.execRunner.Calls[2])
+				// Check pnpm install --frozen-lockfile command
+				assert.Equal(t, mock.ExecCall{Exec: "./tmp/pnpm-bin/node_modules/.bin/pnpm", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[3])
+			}
+		}
+	})
+
 	t.Run("Install all deps", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
@@ -194,11 +240,12 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("check if yarn.lock and package-lock exist", func(t *testing.T) {
+	t.Run("check if lock files exist", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("yarn.lock", []byte("{}"))
 		utils.AddFile("package-lock.json", []byte("{}"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 
 		options := ExecutorOptions{}
 
@@ -206,15 +253,16 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		packageLock, yarnLock, err := exec.checkIfLockFilesExist()
+		packageLock, yarnLock, pnpmLock, err := exec.checkIfLockFilesExist()
 
 		if assert.NoError(t, err) {
 			assert.True(t, packageLock)
 			assert.True(t, yarnLock)
+			assert.True(t, pnpmLock)
 		}
 	})
 
-	t.Run("check that yarn.lock and package-lock do not exist", func(t *testing.T) {
+	t.Run("check that no lock files exist", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
@@ -224,11 +272,12 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		packageLock, yarnLock, err := exec.checkIfLockFilesExist()
+		packageLock, yarnLock, pnpmLock, err := exec.checkIfLockFilesExist()
 
 		if assert.NoError(t, err) {
 			assert.False(t, packageLock)
 			assert.False(t, yarnLock)
+			assert.False(t, pnpmLock)
 		}
 	})
 
@@ -409,5 +458,77 @@ func TestNpm(t *testing.T) {
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src"))}, utils.execRunner.Calls[3])
 			}
 		}
+	})
+
+	t.Run("Create BOM with cdxgen for pnpm project", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.AddFile("bom-npm.json", []byte("{}")) // To test cleanup
+
+		options := ExecutorOptions{
+			DefaultNpmRegistry: "foo.bar",
+		}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+
+		// Execute CreateBOM
+		err := exec.CreateBOM([]string{"package.json"})
+
+		if assert.NoError(t, err) {
+			url := cycloneDxCliUrl[struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}]
+			cyclonedxExec := filepath.Join(".pipeline", filepath.Base(url))
+			// Verify cyclonedx-cli download was requested
+			assert.True(t, utils.FilesMock.HasFile(cyclonedxExec))
+
+			// Verify command execution sequence
+			assert.Equal(t, 3, len(utils.execRunner.Calls))
+
+			// Check cdxgen install
+			assert.Equal(t, mock.ExecCall{
+				Exec:   "npm",
+				Params: []string{"install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder},
+			}, utils.execRunner.Calls[0])
+
+			// Check cdxgen execution generating JSON
+			cdxgenPath := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+			assert.Equal(t, mock.ExecCall{
+				Exec: cdxgenPath,
+				Params: []string{
+					"-r",
+					"-o", "bom-npm.json",
+					"--spec-version", cycloneDxSchemaVersion,
+				},
+			}, utils.execRunner.Calls[1])
+
+			// Check cyclonedx-cli conversion from JSON to XML
+			assert.Equal(t, mock.ExecCall{
+				Exec:   cyclonedxExec,
+				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml"},
+			}, utils.execRunner.Calls[2])
+
+			// Verify cleanup of temporary JSON file
+			assert.True(t, utils.HasRemovedFile("bom-npm.json"))
+		}
+	})
+
+	t.Run("Create BOM fails if cdxgen install fails", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			"npm install @cyclonedx/cdxgen@^11.3.2 --prefix ./tmp": fmt.Errorf("failed to install cdxgen"),
+		}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.CreateBOM([]string{"package.json"})
+
+		assert.EqualError(t, err, "failed to install cdxgen: failed to install cdxgen")
 	})
 }
