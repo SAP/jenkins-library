@@ -6,6 +6,7 @@ package npm
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -478,8 +479,10 @@ func TestNpm(t *testing.T) {
 		err := exec.CreateBOM([]string{"package.json"})
 
 		if assert.NoError(t, err) {
+			url := cycloneDxCliUrl[struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}]
+			cyclonedxExec := filepath.Join(".pipeline", filepath.Base(url))
 			// Verify cyclonedx-cli download was requested
-			assert.True(t, utils.FilesMock.HasFile(".pipeline/cyclonedx-osx-arm64"))
+			assert.True(t, utils.FilesMock.HasFile(cyclonedxExec))
 
 			// Verify command execution sequence
 			assert.Equal(t, 3, len(utils.execRunner.Calls))
@@ -503,7 +506,7 @@ func TestNpm(t *testing.T) {
 
 			// Check cyclonedx-cli conversion from JSON to XML
 			assert.Equal(t, mock.ExecCall{
-				Exec:   ".pipeline/cyclonedx-osx-arm64",
+				Exec:   cyclonedxExec,
 				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml"},
 			}, utils.execRunner.Calls[2])
 
