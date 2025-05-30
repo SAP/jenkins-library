@@ -9,7 +9,9 @@ import (
 	"slices"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
@@ -17,11 +19,20 @@ import (
 
 type npmMockUtilsBundleRelativeGlob struct {
 	*mock.FilesMockRelativeGlob
-	execRunner *mock.ExecMockRunner
+	execRunner     *mock.ExecMockRunner
+	downloadClient piperhttp.Downloader
 }
 
 func (u *npmMockUtilsBundleRelativeGlob) GetExecRunner() ExecRunner {
 	return u.execRunner
+}
+
+func (u *npmMockUtilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.FilesMock
+}
+
+func (u *npmMockUtilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	return u.downloadClient
 }
 
 func newNpmMockUtilsBundleRelativeGlob() npmMockUtilsBundleRelativeGlob {
