@@ -8,21 +8,40 @@ import (
 	"path/filepath"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
 type npmMockUtilsBundle struct {
 	*mock.FilesMock
-	execRunner *mock.ExecMockRunner
+	execRunner     *mock.ExecMockRunner
+	downloadClient *mock.HttpClientMock
 }
 
 func (u *npmMockUtilsBundle) GetExecRunner() ExecRunner {
 	return u.execRunner
 }
 
+func (u *npmMockUtilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.FilesMock
+}
+
+func (u *npmMockUtilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	return u.downloadClient
+}
+
 func newNpmMockUtilsBundle() npmMockUtilsBundle {
-	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
+	filesMock := &mock.FilesMock{}
+	utils := npmMockUtilsBundle{
+		FilesMock:  filesMock,
+		execRunner: &mock.ExecMockRunner{},
+		downloadClient: &mock.HttpClientMock{
+			FileUploads:   make(map[string]string),
+			HTTPFileUtils: filesMock,
+		},
+	}
 	return utils
 }
 
@@ -444,46 +463,52 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("bom-npm.json", []byte("{}")) // To test cleanup
 
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
+		options := ExecutorOptions{
+			DefaultNpmRegistry: "foo.bar",
+		}
 
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+
+		// Execute CreateBOM
+		err := exec.CreateBOM([]string{"package.json"})
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
-				// Check cdxgen install
-				assert.Equal(t, mock.ExecCall{
-					Exec:   "npm",
-					Params: []string{"install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder},
-				}, utils.execRunner.Calls[0])
+			// Verify cyclonedx-cli download was requested
+			assert.True(t, utils.FilesMock.HasFile(".pipeline/cyclonedx-osx-arm64"))
 
-				// Check cdxgen execution for first package.json
-				cdxgenPath := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
-				assert.Equal(t, mock.ExecCall{
-					Exec: cdxgenPath,
-					Params: []string{
-						"-r",
-						"-o", "bom-npm.xml",
-						"--spec-version", cycloneDxSchemaVersion,
-					},
-				}, utils.execRunner.Calls[1])
+			// Verify command execution sequence
+			assert.Equal(t, 3, len(utils.execRunner.Calls))
 
-				// Check cdxgen execution for second package.json
-				assert.Equal(t, mock.ExecCall{
-					Exec: cdxgenPath,
-					Params: []string{
-						"-r",
-						"-o", filepath.Join("src", "bom-npm.xml"),
-						"--spec-version", cycloneDxSchemaVersion,
-					},
-				}, utils.execRunner.Calls[2])
-			}
+			// Check cdxgen install
+			assert.Equal(t, mock.ExecCall{
+				Exec:   "npm",
+				Params: []string{"install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder},
+			}, utils.execRunner.Calls[0])
+
+			// Check cdxgen execution generating JSON
+			cdxgenPath := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+			assert.Equal(t, mock.ExecCall{
+				Exec: cdxgenPath,
+				Params: []string{
+					"-r",
+					"-o", "bom-npm.json",
+					"--spec-version", cycloneDxSchemaVersion,
+				},
+			}, utils.execRunner.Calls[1])
+
+			// Check cyclonedx-cli conversion from JSON to XML
+			assert.Equal(t, mock.ExecCall{
+				Exec:   ".pipeline/cyclonedx-osx-arm64",
+				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml"},
+			}, utils.execRunner.Calls[2])
+
+			// Verify cleanup of temporary JSON file
+			assert.True(t, utils.HasRemovedFile("bom-npm.json"))
 		}
 	})
 
