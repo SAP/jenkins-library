@@ -35,6 +35,35 @@ type IssuesSearchOption struct {
 	Types              string `url:"types,omitempty"`              // Description:"Comma-separated list of types.",ExampleValue:"CODE_SMELL,BUG"
 }
 
+type HotSpotSearchOption struct {
+	Project string `url:"project"` // Description:"Project name"
+	Status  string `url:"status"`  // Security issue review status (TO_REVIEW | REVIEWED)
+}
+
+type HotSpotSearchObject struct {
+	Paging     interface{}   `json:"paging"`
+	HotSpots   []HotSpot     `json:"hotspots"`
+	Components []interface{} `json:"components"`
+}
+
+type HotSpot struct {
+	Key                      string        `json:"key"`
+	Component                string        `json:"component"`
+	Project                  string        `json:"project"`
+	SecurityCategory         string        `json:"securityCategory"`
+	VulnerabilityProbability string        `json:"vulnerabilityProbability"`
+	Status                   string        `json:"status"`
+	Line                     int           `json:"line"`
+	Message                  string        `json:"message"`
+	Author                   string        `json:"author"`
+	CreationDate             string        `json:"creationDate"`
+	UpdateDate               string        `json:"updateDate"`
+	TextRange                interface{}   `json:"textRange"`
+	Flows                    []interface{} `json:"flows"`
+	RuleKey                  string        `json:"ruleKey"`
+	MessageFormattings       []interface{} `json:"messageFormattings"`
+}
+
 // MeasuresComponentOption is a copy from magicsong/sonargo plus the "internal" field branch.
 type MeasuresComponentOption struct {
 	Branch      string `url:"branch,omitempty"`      // Description:"Branch key"
