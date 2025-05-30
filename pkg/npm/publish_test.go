@@ -27,11 +27,11 @@ func (u *npmMockUtilsBundleRelativeGlob) GetExecRunner() ExecRunner {
 	return u.execRunner
 }
 
-func (u *npmMockUtilsBundle) GetFileUtils() piperutils.FileUtils {
+func (u *npmMockUtilsBundleRelativeGlob) GetFileUtils() piperutils.FileUtils {
 	return u.FilesMock
 }
 
-func (u *npmMockUtilsBundle) GetDownloadUtils() piperhttp.Downloader {
+func (u *npmMockUtilsBundleRelativeGlob) GetDownloadUtils() piperhttp.Downloader {
 	return u.downloadClient
 }
 
