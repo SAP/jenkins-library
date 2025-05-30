@@ -1,0 +1,12 @@
+{
+  "name": "pnpm-bom-test",
+  "version": "1.0.0",
+  "description": "Test project for pnpm BOM generation",
+  "dependencies": {
+    "express": "^4.18.2",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
