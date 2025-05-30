@@ -2,7 +2,7 @@
 // +build integration
 
 // can be executed with
-// go test -v -tags integration -run TestPnpmIntegration ./integration/...
+// go test -v -tags integration -run TestPNPMIntegration ./integration/...
 
 package main
 
@@ -17,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func TestPnpmIntegrationInstall(t *testing.T) {
+func TestPNPMIntegrationInstall(t *testing.T) {
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
@@ -66,7 +66,7 @@ cd /test
 	assert.Contains(t, output, "info  npmExecuteScripts - SUCCESS")
 }
 
-func TestPnpmIntegrationBomGeneration(t *testing.T) {
+func TestPNPMIntegrationBomGeneration(t *testing.T) {
 	ctx := context.Background()
 
 	pwd, err := os.Getwd()
