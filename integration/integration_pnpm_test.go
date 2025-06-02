@@ -83,6 +83,7 @@ func TestPNPMIntegrationBomGeneration(t *testing.T) {
 
 	testScript := `#!/bin/sh
 cd /test
+apt-get update && apt-get install -y ca-certificates
 /piperbin/piper npmExecuteScripts --install --createBOM >test-log.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
@@ -93,6 +94,7 @@ cd /test
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(pwd, "/piperbin"),
 			testcontainers.BindMount(tempDir, "/test"),
+			testcontainers.BindMount("/etc/ssl/certs", "/etc/ssl/certs"),
 		),
 	}
 
@@ -115,4 +117,53 @@ cd /test
 	// Update assertions to match command output
 	assert.Contains(t, output, "info  npmExecuteScripts - Creating CycloneDX")
 	assert.FileExists(t, filepath.Join(tempDir, "bom-npm.xml"))
+}
+
+func TestPNPMIntegrationBomGenerationError(t *testing.T) {
+	ctx := context.Background()
+
+	pwd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed.")
+	pwd = filepath.Dir(pwd)
+
+	tempDir, err := createTmpDir(t)
+	assert.NoError(t, err, "Error when creating temp dir")
+
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPnpmIntegration", "bom-error"), tempDir)
+	if err != nil {
+		t.Fatal("Failed to copy test project.")
+	}
+
+	testScript := `#!/bin/sh
+cd /test
+/piperbin/piper npmExecuteScripts --install --createBOM >test-log.txt 2>&1
+`
+	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
+
+	reqNode := testcontainers.ContainerRequest{
+		Image: "node:20-slim",
+		Cmd:   []string{"tail", "-f"},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(pwd, "/piperbin"),
+			testcontainers.BindMount(tempDir, "/test"),
+		),
+	}
+
+	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: reqNode,
+		Started:          true,
+	})
+	require.NoError(t, err)
+
+	code, _, err := nodeContainer.Exec(ctx, []string{"sh", "/test/runPiper.sh"})
+	assert.Error(t, err)
+	assert.NotEqual(t, 0, code)
+
+	content, err := os.ReadFile(filepath.Join(tempDir, "/test-log.txt"))
+	if err != nil {
+		t.Fatal("Could not read test-log.txt.", err)
+	}
+	output := string(content)
+
+	assert.Contains(t, output, "error  npmExecuteScripts - failed to generate CycloneDX BOM")
 }
