@@ -76,7 +76,7 @@ func TestPNPMIntegrationBomGeneration(t *testing.T) {
 	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPNPMIntegration", "bom"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPnpmIntegration", "bom"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
@@ -128,7 +128,7 @@ func TestPNPMIntegrationBomGenerationError(t *testing.T) {
 	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPNPMIntegration", "bom-error"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPnpmIntegration", "bom-error"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
