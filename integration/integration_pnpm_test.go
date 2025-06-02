@@ -82,9 +82,9 @@ func TestPNPMIntegrationBomGeneration(t *testing.T) {
 	}
 
 	testScript := `#!/bin/sh
-cd /test
-apt-get update && apt-get install -y ca-certificates
-/piperbin/piper npmExecuteScripts --install --createBOM --verbose >test-log.txt 2>&1
+	cd /test
+	apt-get update && apt-get install -y ca-certificates libicu72
+	/piperbin/piper npmExecuteScripts --install --createBOM --verbose >test-log.txt 2>&1
 ls -la >> test-log.txt 2>&1
 pwd >> test-log.txt 2>&1
 find / -name bom-npm.xml >> test-log.txt 2>&1
