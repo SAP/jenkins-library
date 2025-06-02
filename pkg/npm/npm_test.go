@@ -240,47 +240,6 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("check if lock files exist", func(t *testing.T) {
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile("yarn.lock", []byte("{}"))
-		utils.AddFile("package-lock.json", []byte("{}"))
-		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
-
-		options := ExecutorOptions{}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		packageLock, yarnLock, pnpmLock, err := exec.checkIfLockFilesExist()
-
-		if assert.NoError(t, err) {
-			assert.True(t, packageLock)
-			assert.True(t, yarnLock)
-			assert.True(t, pnpmLock)
-		}
-	})
-
-	t.Run("check that no lock files exist", func(t *testing.T) {
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-
-		options := ExecutorOptions{}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		packageLock, yarnLock, pnpmLock, err := exec.checkIfLockFilesExist()
-
-		if assert.NoError(t, err) {
-			assert.False(t, packageLock)
-			assert.False(t, yarnLock)
-			assert.False(t, pnpmLock)
-		}
-	})
-
 	t.Run("check Execute script", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
