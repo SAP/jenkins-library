@@ -76,7 +76,7 @@ func TestPNPMIntegrationBomGeneration(t *testing.T) {
 	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPnpmIntegration", "bom"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPNPMIntegration", "bom"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
@@ -85,9 +85,6 @@ func TestPNPMIntegrationBomGeneration(t *testing.T) {
 	cd /test
 	apt-get update && apt-get install -y ca-certificates libicu72
 	/piperbin/piper npmExecuteScripts --install --createBOM --verbose >test-log.txt 2>&1
-ls -la >> test-log.txt 2>&1
-pwd >> test-log.txt 2>&1
-find / -name bom-npm.xml >> test-log.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -117,8 +114,6 @@ find / -name bom-npm.xml >> test-log.txt 2>&1
 	}
 	output := string(content)
 
-	t.Logf("Test output: %s", output)
-
 	// Update assertions to match command output
 	assert.Contains(t, output, "info  npmExecuteScripts - Converted CycloneDX")
 }
@@ -133,7 +128,7 @@ func TestPNPMIntegrationBomGenerationError(t *testing.T) {
 	tempDir, err := createTmpDir(t)
 	assert.NoError(t, err, "Error when creating temp dir")
 
-	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPnpmIntegration", "bom-error"), tempDir)
+	err = copyDir(filepath.Join(pwd, "integration", "testdata", "TestPNPMIntegration", "bom-error"), tempDir)
 	if err != nil {
 		t.Fatal("Failed to copy test project.")
 	}
