@@ -464,7 +464,6 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
-		utils.AddFile("bom-npm.json", []byte("{}")) // To test cleanup
 
 		options := ExecutorOptions{
 			DefaultNpmRegistry: "foo.bar",
@@ -509,9 +508,6 @@ func TestNpm(t *testing.T) {
 				Exec:   cyclonedxExec,
 				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml"},
 			}, utils.execRunner.Calls[2])
-
-			// Verify cleanup of temporary JSON file
-			assert.True(t, utils.HasRemovedFile("bom-npm.json"))
 		}
 	})
 

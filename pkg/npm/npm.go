@@ -464,14 +464,15 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 				return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen: %w", err)
 			}
 
+			log.Entry().Infof("Generated CycloneDX BOM in JSON format at %s", jsonBomPath)
+
 			// Convert JSON to XML using cyclonedx-cli
 			err = execRunner.RunExecutable(cliPath, "convert", "--input-file", jsonBomPath, "--output-format", "xml", "--output-file", xmlBomPath)
 			if err != nil {
 				return fmt.Errorf("failed to convert BOM to XML format: %w", err)
 			}
 
-			// Cleanup temp JSON file
-			_ = exec.Utils.FileRemove(jsonBomPath)
+			log.Entry().Infof("Converted CycloneDX BOM to XML format at %s", xmlBomPath)
 		}
 	} else {
 		// For non-pnpm projects, use existing CycloneDX approach
