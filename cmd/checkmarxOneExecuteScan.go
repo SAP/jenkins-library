@@ -1001,22 +1001,44 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 		return false, nil
 	}
 
+	// Check if it is matched by at least one include pattern
+	includeMatch := false
 	for _, pattern := range patterns {
-		negative := false
+		if strings.HasPrefix(pattern, "!") {
+			continue
+		}
+		match, err := utils.PathMatch(pattern, path)
+		if err != nil {
+			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
+		}
+		if match {
+			includeMatch = true
+			break
+		}
+	}
+
+	if !includeMatch {
+		return true, nil // if there is no include pattern matching, the file is necessarily excluded
+	}
+
+	// Check if it is matched by at least one exclude pattern
+	for _, pattern := range patterns {
 		if strings.HasPrefix(pattern, "!") {
 			pattern = strings.TrimLeft(pattern, "!")
-			negative = true
+		} else {
+			continue
 		}
 		match, err := utils.PathMatch(pattern, path)
 		if err != nil {
 			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
 		}
 
-		if match {
-			return negative, nil
+		if match { // match with an exclude pattern, the file is excluded
+			return true, nil
 		}
 	}
-	return true, nil
+
+	return false, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]interface{}) (string, error) {
