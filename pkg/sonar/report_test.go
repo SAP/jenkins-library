@@ -23,7 +23,7 @@ func writeToFileMock(f string, d []byte, p os.FileMode) error {
 func TestWriteCodeCheckReport(t *testing.T) {
 	// init
 	const expected = `{"serverUrl":"https://sonarcloud.io","projectKey":"Piper-Validation/Golang","taskId":"mock.Anything","numberOfIssues":{"blocker":0,"critical":1,"major":2,"minor":3,"info":4},"errors":[{"severity":"CRITICAL","error_type":"CODE_SMELL","issues":10}],"coverage":{"coverage":13.7,"lineCoverage":37.1,"linesToCover":123,"uncoveredLines":23,"branchCoverage":42,"branchesToCover":30,"uncoveredBranches":3},"linesOfCode":{"total":327,"languageDistribution":[{"languageKey":"java","linesOfCode":327}]}}`
-	testData := ReportData{
+	testData := ReportCodeCheckData{
 		ServerURL:  "https://sonarcloud.io",
 		ProjectKey: "Piper-Validation/Golang",
 		TaskID:     mock.Anything,
@@ -65,7 +65,7 @@ func TestWriteCodeCheckReport(t *testing.T) {
 func TestWriteHotSpotReport(t *testing.T) {
 	// init
 	const expected = `{"serverUrl":"https://sonarcloud.io","projectKey":"Piper-Validation/Golang","taskId":"mock.Anything","hotSpotSecurityIssues":[{"type":"MAJOR","count":1},{"type":"LOW","count":4}]}`
-	testData := ReportData{
+	testData := ReportHotSpotData{
 		ServerURL:  "https://sonarcloud.io",
 		ProjectKey: "Piper-Validation/Golang",
 		TaskID:     mock.Anything,

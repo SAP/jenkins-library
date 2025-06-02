@@ -290,7 +290,7 @@ func getStaticCodeCheckResults(config sonarExecuteScanOptions, taskReport *Sonar
 		return err
 	}
 
-	reportData := SonarUtils.ReportData{
+	reportData := SonarUtils.ReportCodeCheckData{
 		ServerURL:    taskReport.ServerURL,
 		ProjectKey:   taskReport.ProjectKey,
 		TaskID:       taskReport.TaskID,
@@ -335,7 +335,7 @@ func getHotSpotSecurityCheckResults(config sonarExecuteScanOptions, taskReport *
 		return err
 	}
 
-	reportData := SonarUtils.ReportData{
+	reportData := SonarUtils.ReportHotSpotData{
 		ServerURL:             taskReport.ServerURL,
 		ProjectKey:            taskReport.ProjectKey,
 		TaskID:                taskReport.TaskID,

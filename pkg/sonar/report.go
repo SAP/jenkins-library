@@ -9,19 +9,29 @@ import (
 const reportCodeCheckFileName = "sonarscan.json"
 const reportHotSpotFileName = "hotspot.json"
 
-// ReportData is representing the data of the step report JSON
-type ReportData struct {
+// ReportCodeCheckData is representing the data of the step report JSON
+type ReportCodeCheckData struct {
+	ServerURL      string            `json:"serverUrl"`
+	ProjectKey     string            `json:"projectKey"`
+	TaskID         string            `json:"taskId"`
+	ChangeID       string            `json:"changeID,omitempty"`
+	BranchName     string            `json:"branchName,omitempty"`
+	Organization   string            `json:"organization,omitempty"`
+	NumberOfIssues *Issues           `json:"numberOfIssues"`
+	Errors         []Severity        `json:"errors"`
+	Coverage       *SonarCoverage    `json:"coverage,omitempty"`
+	LinesOfCode    *SonarLinesOfCode `json:"linesOfCode,omitempty"`
+}
+
+// ReportCodeCheckData is representing the data of the step report JSON
+type ReportHotSpotData struct {
 	ServerURL             string                 `json:"serverUrl"`
 	ProjectKey            string                 `json:"projectKey"`
 	TaskID                string                 `json:"taskId"`
 	ChangeID              string                 `json:"changeID,omitempty"`
 	BranchName            string                 `json:"branchName,omitempty"`
 	Organization          string                 `json:"organization,omitempty"`
-	NumberOfIssues        *Issues                `json:"numberOfIssues,omitempty"`
-	Errors                []Severity             `json:"errors,omitempty"`
-	Coverage              *SonarCoverage         `json:"coverage,omitempty"`
-	LinesOfCode           *SonarLinesOfCode      `json:"linesOfCode,omitempty"`
-	HotSpotSecurityIssues []HotSpotSecurityIssue `json:"hotSpotSecurityIssues,omitempty"`
+	HotSpotSecurityIssues []HotSpotSecurityIssue `json:"hotSpotSecurityIssues"`
 }
 
 // HotSpot Security Issues
@@ -46,7 +56,7 @@ type Severity struct {
 }
 
 // WriteReport ...
-func WriteCodeCheckReport(data ReportData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func WriteCodeCheckReport(data ReportCodeCheckData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -54,7 +64,7 @@ func WriteCodeCheckReport(data ReportData, reportPath string, writeToFile func(f
 	return writeToFile(filepath.Join(reportPath, reportCodeCheckFileName), jsonData, 0644)
 }
 
-func WriteHotSpotReport(data ReportData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func WriteHotSpotReport(data ReportHotSpotData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
