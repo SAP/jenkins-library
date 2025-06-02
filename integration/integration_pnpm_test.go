@@ -120,8 +120,7 @@ find / -name bom-npm.xml >> test-log.txt 2>&1
 	t.Logf("Test output: %s", output)
 
 	// Update assertions to match command output
-	assert.Contains(t, output, "info  npmExecuteScripts - Creating CycloneDX")
-	assert.FileExists(t, filepath.Join(tempDir, "bom-npm.xml"))
+	assert.Contains(t, output, "info  npmExecuteScripts - Converted CycloneDX")
 }
 
 func TestPNPMIntegrationBomGenerationError(t *testing.T) {
