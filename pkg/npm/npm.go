@@ -322,7 +322,7 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 	return nil
 }
 
-// install executes npm or yarn Install for package.json
+// install executes the appropriate package manager install command for package.json
 func (exec *Execute) install(packageJSON string) error {
 	execRunner := exec.Utils.GetExecRunner()
 
@@ -342,23 +342,15 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, pnpmLockExists, err := exec.checkIfLockFilesExist()
+	pm, err := exec.detectPackageManager()
 	if err != nil {
 		return err
 	}
 
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
-	if packageLockExists {
-		err = execRunner.RunExecutable("npm", "ci")
-		if err != nil {
-			return err
-		}
-	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
-		if err != nil {
-			return err
-		}
-	} else if pnpmLockExists {
+
+	if pm.Name == "pnpm" {
+		// Special handling for pnpm since it requires local installation
 		commands := [][]string{
 			{"mkdir", "-p", "./tmp/pnpm-bin"},
 			{"npm", "install", "pnpm", "--prefix", "./tmp/pnpm-bin"},
@@ -371,11 +363,11 @@ func (exec *Execute) install(packageJSON string) error {
 			}
 		}
 	} else {
-		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
-			" Add this file to your version control. " +
-			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
+		if !strings.HasPrefix(pm.LockFile, "package-lock.json") {
+			log.Entry().Info("Using " + pm.Name + " package manager")
+		}
+
+		err = execRunner.RunExecutable(pm.InstallCommand, pm.InstallArgs...)
 		if err != nil {
 			return err
 		}
@@ -388,29 +380,14 @@ func (exec *Execute) install(packageJSON string) error {
 	return nil
 }
 
-// checkIfLockFilesExist checks if yarn/package lock fileUtils exist
-func (exec *Execute) checkIfLockFilesExist() (bool, bool, bool, error) {
-	packageLockExists, err := exec.Utils.FileExists("package-lock.json")
-	if err != nil {
-		return false, false, false, err
-	}
-
-	yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
-	if err != nil {
-		return false, false, false, err
-	}
-
-	pnpmLockExists, err := exec.Utils.FileExists("pnpm-lock.yaml")
-	if err != nil {
-		return false, false, false, err
-	}
-
-	return packageLockExists, yarnLockExists, pnpmLockExists, nil
-
-}
-
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
+	// Detect package manager to determine which BOM generator to use
+	pm, err := exec.detectPackageManager()
+	if err != nil {
+		return err
+	}
+
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
 	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
@@ -421,15 +398,11 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 
 	// Attempt#1, generate BOM via cyclonedx-npm
 	// Check for pnpm first since it uses cdxgen
-	_, _, pnpmLockExists, err := exec.checkIfLockFilesExist()
-	if err != nil {
-		return err
-	}
-
-	if pnpmLockExists {
+	if pm != nil && pm.Name == "pnpm" {
 		// Download cyclonedx-cli
 		osArch := struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}
 		var cliPath string
+		var err error
 		if urlTemplate, ok := cycloneDxCliUrl[osArch]; ok {
 			url := fmt.Sprintf(urlTemplate, cycloneDxCliVersion)
 			cliPath, err = piperhttp.DownloadExecutable("", exec.Utils.GetFileUtils(), exec.Utils.GetDownloadUtils(), url)
