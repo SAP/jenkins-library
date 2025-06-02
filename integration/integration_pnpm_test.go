@@ -84,7 +84,10 @@ func TestPNPMIntegrationBomGeneration(t *testing.T) {
 	testScript := `#!/bin/sh
 cd /test
 apt-get update && apt-get install -y ca-certificates
-/piperbin/piper npmExecuteScripts --install --createBOM >test-log.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --createBOM --verbose >test-log.txt 2>&1
+ls -la >> test-log.txt 2>&1
+pwd >> test-log.txt 2>&1
+find / -name bom-npm.xml >> test-log.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -113,6 +116,8 @@ apt-get update && apt-get install -y ca-certificates
 		t.Fatal("Could not read test-log.txt.", err)
 	}
 	output := string(content)
+
+	t.Logf("Test output: %s", output)
 
 	// Update assertions to match command output
 	assert.Contains(t, output, "info  npmExecuteScripts - Creating CycloneDX")
