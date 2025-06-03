@@ -4,6 +4,7 @@
 package npm
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -193,6 +194,10 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			pnpmPath + " --version": fmt.Errorf("pnpm not installed"),
+		}
+
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
@@ -203,13 +208,16 @@ func TestNpm(t *testing.T) {
 		err := exec.install("package.json")
 
 		if assert.NoError(t, err) {
+			fmt.Println(utils.execRunner.Calls)
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
-				// Check mkdir command
-				assert.Equal(t, mock.ExecCall{Exec: "mkdir", Params: []string{"-p", "./tmp/pnpm-bin"}}, utils.execRunner.Calls[1])
+				// Set npm registry
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
+				// Check pnpm version command
+				assert.Equal(t, mock.ExecCall{Exec: pnpmPath, Params: []string{"--version"}}, utils.execRunner.Calls[1])
 				// Check pnpm install command
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp/pnpm-bin"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[2])
 				// Check pnpm install --frozen-lockfile command
-				assert.Equal(t, mock.ExecCall{Exec: "./tmp/pnpm-bin/node_modules/.bin/pnpm", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[3])
+				assert.Equal(t, mock.ExecCall{Exec: pnpmPath, Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[3])
 			}
 		}
 	})

@@ -6,6 +6,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+const pnpmPath = tmpInstallFolder + "/node_modules/.bin/pnpm"
+
 // PackageManager represents a Node.js package manager configuration
 type PackageManager struct {
 	Name           string
@@ -31,9 +33,28 @@ var supportedPackageManagers = []PackageManager{
 	{
 		Name:           "pnpm",
 		LockFile:       "pnpm-lock.yaml",
-		InstallCommand: "pnpm",
+		InstallCommand: pnpmPath,
 		InstallArgs:    []string{"install", "--frozen-lockfile"},
 	},
+}
+
+// IsPnpmInstalled checks if pnpm is available in the local project
+func (pm *PackageManager) IsPnpmInstalled(execRunner ExecRunner) bool {
+	err := execRunner.RunExecutable(pnpmPath, "--version")
+	return err == nil
+}
+
+// InstallPnpm handles the special installation process for pnpm if not already installed
+func (pm *PackageManager) InstallPnpm(execRunner ExecRunner) error {
+	if pm.IsPnpmInstalled(execRunner) {
+		log.Entry().Info("pnpm is already installed locally, skipping installation")
+		return nil
+	}
+
+	if err := execRunner.RunExecutable("npm", "install", "pnpm", "--prefix", tmpInstallFolder); err != nil {
+		return err
+	}
+	return nil
 }
 
 // detectPackageManager determines which package manager to use based on lock files
@@ -44,6 +65,11 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 			return nil, fmt.Errorf("failed to check for %s: %w", pm.LockFile, err)
 		}
 		if exists {
+			if pm.Name == "pnpm" {
+				if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
+					return nil, fmt.Errorf("failed to install pnpm: %w", err)
+				}
+			}
 			return &pm, nil
 		}
 	}

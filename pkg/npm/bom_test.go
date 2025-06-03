@@ -107,16 +107,16 @@ func TestBom(t *testing.T) {
 			assert.True(t, utils.FilesMock.HasFile(cyclonedxExec))
 
 			// Verify command execution sequence
-			assert.Equal(t, 3, len(utils.execRunner.Calls))
+			assert.Equal(t, 4, len(utils.execRunner.Calls))
 
 			// Check cdxgen install
 			assert.Equal(t, mock.ExecCall{
 				Exec:   "npm",
-				Params: []string{"install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder},
-			}, utils.execRunner.Calls[0])
+				Params: []string{"install", cdxgenPackageVersion, "--prefix", tmpInstallFolder},
+			}, utils.execRunner.Calls[1])
 
 			// Check cdxgen execution generating JSON
-			cdxgenPath := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+			cdxgenPath := tmpInstallFolder + "/node_modules/.bin/cdxgen"
 			assert.Equal(t, mock.ExecCall{
 				Exec: cdxgenPath,
 				Params: []string{
@@ -124,13 +124,13 @@ func TestBom(t *testing.T) {
 					"-o", "bom-npm.json",
 					"--spec-version", cycloneDxSchemaVersion,
 				},
-			}, utils.execRunner.Calls[1])
+			}, utils.execRunner.Calls[2])
 
 			// Check cyclonedx-cli conversion from JSON to XML
 			assert.Equal(t, mock.ExecCall{
 				Exec:   cyclonedxExec,
 				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml"},
-			}, utils.execRunner.Calls[2])
+			}, utils.execRunner.Calls[3])
 		}
 	})
 

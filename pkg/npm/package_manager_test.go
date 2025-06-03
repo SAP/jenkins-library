@@ -147,9 +147,9 @@ func TestPackageManager(t *testing.T) {
 				}
 				if tt.execError != nil {
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"npm ci":                         tt.execError,
-						"yarn install --frozen-lockfile": tt.execError,
-						"./tmp/pnpm-bin/node_modules/.bin/pnpm install --frozen-lockfile": tt.execError,
+						"npm ci":                                tt.execError,
+						"yarn install --frozen-lockfile":        tt.execError,
+						pnpmPath + " install --frozen-lockfile": tt.execError,
 					}
 				}
 
