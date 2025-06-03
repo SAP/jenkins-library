@@ -24,4 +24,4 @@ run:
   - '"TestTmsExportIntegration"'
 
   # these are light-weighted tests, so we can use only one pod to reduce resource consumption
-  - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|Piper|Python|Sonar|Vault|Karma)Integration"'
+  - '"Test(Gauge|GCS|GitHub|GitOps|Influx|NPM|PNPM|Piper|Python|Sonar|Vault|Karma)Integration"'

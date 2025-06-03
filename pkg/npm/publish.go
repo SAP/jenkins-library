@@ -84,7 +84,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	log.Entry().Debug("adding tmp to npmignore")
 	npmignore.Add("tmp/")
 	log.Entry().Debug("adding sboms to npmignore")
-	npmignore.Add("**/bom*.xml")
+	npmignore.Add("**/bom*.{xml,json}")
 
 	npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
