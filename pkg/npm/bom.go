@@ -37,9 +37,13 @@ var cycloneDxCliUrl = map[struct{ os, arch string }]string{
 // CreateBOM generates a CycloneDX Bill of Materials (BOM) file for the given package.json files.
 // It supports both pnpm and other package managers (npm/yarn) with different BOM generation strategies.
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
+	log.Entry().Debug("Detecting package manager...")
 	pm, err := exec.detectPackageManager()
 	if err != nil {
-		return fmt.Errorf("failed to detect package manager: %w", err)
+		return fmt.Errorf("failed to detect package manager (looking for package.json, package-lock.json, pnpm-lock.yaml): %w", err)
+	}
+	if pm != nil {
+		log.Entry().Debugf("Detected package manager: %s", pm.Name)
 	}
 
 	if pm != nil && pm.Name == "pnpm" {
@@ -51,15 +55,21 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 
 // createPnpmBOM generates a BOM for pnpm projects using cdxgen and cyclonedx-cli
 func (exec *Execute) createPnpmBOM(packageJSONFiles []string) error {
+	log.Entry().Info("Starting BOM generation for pnpm project...")
+	log.Entry().Debug("Downloading CycloneDX CLI tool...")
+
 	cliPath, err := exec.downloadCycloneDxCli()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to setup CycloneDX CLI tool: %w", err)
 	}
+	log.Entry().Debugf("CycloneDX CLI downloaded successfully to: %s", cliPath)
 
 	execRunner := exec.Utils.GetExecRunner()
+	log.Entry().Debug("Installing cdxgen tool...")
 	if err := exec.installCdxgen(execRunner); err != nil {
-		return err
+		return fmt.Errorf("cdxgen installation failed: %w", err)
 	}
+	log.Entry().Debug("cdxgen tool installed successfully")
 
 	return exec.generatePnpmBOMFiles(packageJSONFiles, cliPath, execRunner)
 }
@@ -83,9 +93,10 @@ func (exec *Execute) downloadCycloneDxCli() (string, error) {
 
 // installCdxgen installs the cdxgen package for pnpm projects
 func (exec *Execute) installCdxgen(execRunner ExecRunner) error {
+	log.Entry().Debugf("Installing cdxgen version %s to %s", cdxgenPackageVersion, tmpInstallFolder)
 	err := execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", tmpInstallFolder)
 	if err != nil {
-		return fmt.Errorf("failed to install cdxgen: %w", err)
+		return fmt.Errorf("failed to install cdxgen (path: %s): %w", tmpInstallFolder, err)
 	}
 	return nil
 }
@@ -104,15 +115,22 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 			"--spec-version", cycloneDxSchemaVersion,
 		}
 
+		log.Entry().Debugf("Executing cdxgen with params: %v", params)
+		log.Entry().Debugf("cdxgen executable path: %s", cdxgenExecutable)
+
 		if err := execRunner.RunExecutable(cdxgenExecutable, params...); err != nil {
-			return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen: %w", err)
+			return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen for package: %s. Error: %w", packageJSONFile, err)
 		}
 
 		log.Entry().Infof("Generated CycloneDX BOM in JSON format at %s", jsonBomPath)
 
 		// Convert JSON to XML using cyclonedx-cli
+		log.Entry().Debugf("Converting BOM from JSON to XML using cyclonedx-cli at: %s", cliPath)
+		log.Entry().Debugf("Input file: %s, Output file: %s", jsonBomPath, xmlBomPath)
+
 		if err := execRunner.RunExecutable(cliPath, "convert", "--input-file", jsonBomPath, "--output-format", "xml", "--output-file", xmlBomPath); err != nil {
-			return fmt.Errorf("failed to convert BOM to XML format: %w", err)
+			return fmt.Errorf("failed to convert BOM to XML format for package: %s. Input: %s, Output: %s, Error: %w",
+				packageJSONFile, jsonBomPath, xmlBomPath, err)
 		}
 
 		log.Entry().Infof("Converted CycloneDX BOM to XML format at %s", xmlBomPath)
@@ -131,7 +149,9 @@ func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 		return nil
 	}
 
-	log.Entry().Infof("Failed to generate BOM with cyclonedx-npm, falling back to cyclonedx/bom: %v", err)
+	log.Entry().Infof("Failed to generate BOM with @cyclonedx/cyclonedx-npm@%s, falling back to @cyclonedx/bom: %v",
+		cycloneDxNpmPackageVersion, err)
+	log.Entry().Debug("Note: This fallback is normal if using an older Node.js version or if cyclonedx-npm installation fails")
 
 	// Fallback attempt with cyclonedx/bom
 	cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
@@ -149,8 +169,9 @@ func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageRunParams []string, packageJSONFiles []string, fallback bool) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	log.Entry().Debugf("Installing CycloneDX package with params: %v", packageInstallParams)
 	if err := execRunner.RunExecutable("npm", packageInstallParams...); err != nil {
-		return fmt.Errorf("failed to install CycloneDX BOM package: %w", err)
+		return fmt.Errorf("failed to install CycloneDX BOM package (params: %v): %w", packageInstallParams, err)
 	}
 
 	for _, packageJSONFile := range packageJSONFiles {
@@ -165,8 +186,12 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 			params = append(params, path)
 		}
 
+		log.Entry().Debugf("Generating BOM for package: %s", packageJSONFile)
+		log.Entry().Debugf("Using executable: %s with params: %v", executable, params)
+
 		if err := execRunner.RunExecutable(executable, params...); err != nil {
-			return fmt.Errorf("failed to generate CycloneDX BOM: %w", err)
+			return fmt.Errorf("failed to generate CycloneDX BOM for package %s using %s: %w",
+				packageJSONFile, executable, err)
 		}
 	}
 
