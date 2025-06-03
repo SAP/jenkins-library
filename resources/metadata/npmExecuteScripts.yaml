@@ -2,7 +2,7 @@ metadata:
   name: npmExecuteScripts
   aliases:
     - name: executeNpm
-  description: Execute npm run scripts on all npm packages in a project
+  description: Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
   longDescription: >
     This step handles JavaScript dependency installation and basic npm commands.
     One of the following lock files must be present, otherwise the step will fail:

@@ -108,7 +108,7 @@ func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions, 
 	}
 }
 
-// NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
+// NpmExecuteScriptsCommand Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
 func NpmExecuteScriptsCommand() *cobra.Command {
 	const STEP_NAME = "npmExecuteScripts"
 
@@ -123,7 +123,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Execute npm run scripts on all npm packages in a project",
+		Short: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
 		Long: `This step handles JavaScript dependency installation and basic npm commands. One of the following lock files must be present, otherwise the step will fail: - package-lock.json (uses ` + "`" + `npm install` + "`" + `) - yarn.lock (uses ` + "`" + `yarn install` + "`" + `) - pnpm-lock.yaml (uses ` + "`" + `pnpm install` + "`" + `)
 Only the install command uses the detected package manager (npm, yarn, or pnpm). All other commands (e.g., ` + "`" + `run` + "`" + `, ` + "`" + `pack` + "`" + `, ` + "`" + `publish` + "`" + `) are executed via the ` + "`" + `npm` + "`" + ` CLI, regardless of which lock file is detected.
 Rationale: In the Piper environment, using the npm CLI for non-install commands provides sufficient functionality without requiring additional CLI dependencies. Supporting yarn or pnpm for these commands was deemed unnecessary due to lack of added benefit.
@@ -264,7 +264,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "npmExecuteScripts",
 			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
-			Description: "Execute npm run scripts on all npm packages in a project",
+			Description: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
