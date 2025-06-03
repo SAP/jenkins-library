@@ -3,12 +3,23 @@ metadata:
   aliases:
     - name: executeNpm
   description: Execute npm run scripts on all npm packages in a project
-  longDescription: |
-    Execute npm run scripts in all package json files, if they implement the scripts.
+  longDescription: >
+    This step handles JavaScript dependency installation and basic npm commands.
+    One of the following lock files must be present, otherwise the step will fail:
+    - package-lock.json (uses `npm install`)
+    - yarn.lock (uses `yarn install`)
+    - pnpm-lock.yaml (uses `pnpm install`)
 
-    ### build with dependencies from a private repository
+    Only the install command uses the detected package manager (npm, yarn, or pnpm).
+    All other commands (e.g., `run`, `pack`, `publish`) are executed via the `npm` CLI, regardless of which lock file is detected.
 
-    If your build has scoped/unscoped dependencies from a private repository you can include a `.npmrc` into the source code
+    Rationale: In the Piper environment, using the npm CLI for non-install commands
+    provides sufficient functionality without requiring additional CLI dependencies.
+    Supporting yarn or pnpm for these commands was deemed unnecessary due to
+    lack of added benefit.
+
+    ### Build with private depedencies from a repository
+    if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
     repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
 
     ```
