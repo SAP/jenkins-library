@@ -36,8 +36,8 @@ type IssuesSearchOption struct {
 }
 
 type HotSpotSearchOption struct {
-	Project string `url:"project"` // Description:"Project name"
-	Status  string `url:"status"`  // Security issue review status (TO_REVIEW | REVIEWED)
+	Project string        `url:"project"` // Description:"Project name"
+	Status  hotSpotStatus `url:"status"`  // Security issue review status (TO_REVIEW | REVIEWED)
 }
 
 type HotSpotSearchObject struct {
@@ -87,4 +87,15 @@ const (
 	major    issueSeverity = "MAJOR"
 	minor    issueSeverity = "MINOR"
 	info     issueSeverity = "INFO"
+)
+
+type hotSpotStatus string
+
+func (s hotSpotStatus) ToString() string {
+	return string(s)
+}
+
+const (
+	reviwed   hotSpotStatus = "REVIEWED"
+	to_review hotSpotStatus = "TO_REVIEW"
 )

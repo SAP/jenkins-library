@@ -149,6 +149,7 @@ func (service *IssueService) GetNumberOfInfoIssues(categories *[]Severity) (int,
 func (service *IssueService) GetHotSpotSecurityIssues(hotspotissues *[]HotSpotSecurityIssue) error {
 	options := &HotSpotSearchOption{
 		Project: service.Project,
+		Status:  to_review,
 	}
 	result, _, err := service.SearchHotSpots(options)
 	if err != nil {
