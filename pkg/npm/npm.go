@@ -15,6 +15,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
+const tmpInstallFolder = "./tmp" // This folder is also added to npmignore in publish.go
+
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
 	Utils   Utils
@@ -327,28 +329,13 @@ func (exec *Execute) install(packageJSON string) error {
 
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
 
-	if pm.Name == "pnpm" {
-		// Special handling for pnpm since it requires local installation
-		commands := [][]string{
-			{"mkdir", "-p", "./tmp/pnpm-bin"},
-			{"npm", "install", "pnpm", "--prefix", "./tmp/pnpm-bin"},
-			{"./tmp/pnpm-bin/node_modules/.bin/pnpm", "install", "--frozen-lockfile"},
-		}
+	if !strings.HasPrefix(pm.LockFile, "package-lock.json") {
+		log.Entry().Info("Using " + pm.Name + " package manager")
+	}
 
-		for _, cmd := range commands {
-			if err := execRunner.RunExecutable(cmd[0], cmd[1:]...); err != nil {
-				return err
-			}
-		}
-	} else {
-		if !strings.HasPrefix(pm.LockFile, "package-lock.json") {
-			log.Entry().Info("Using " + pm.Name + " package manager")
-		}
-
-		err = execRunner.RunExecutable(pm.InstallCommand, pm.InstallArgs...)
-		if err != nil {
-			return err
-		}
+	err = execRunner.RunExecutable(pm.InstallCommand, pm.InstallArgs...)
+	if err != nil {
+		return err
 	}
 
 	err = exec.Utils.Chdir(oldWorkingDirectory)

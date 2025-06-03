@@ -21,8 +21,7 @@ const (
 	cycloneDxCliVersion        = "v0.27.2"
 
 	// Configuration
-	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go
-	cycloneDxSchemaVersion         = "1.4"
+	cycloneDxSchemaVersion = "1.4"
 )
 
 var cycloneDxCliUrl = map[struct{ os, arch string }]string{
@@ -84,7 +83,7 @@ func (exec *Execute) downloadCycloneDxCli() (string, error) {
 
 // installCdxgen installs the cdxgen package for pnpm projects
 func (exec *Execute) installCdxgen(execRunner ExecRunner) error {
-	err := execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", cycloneDxNpmInstallationFolder)
+	err := execRunner.RunExecutable("npm", "install", cdxgenPackageVersion, "--prefix", tmpInstallFolder)
 	if err != nil {
 		return fmt.Errorf("failed to install cdxgen: %w", err)
 	}
@@ -98,7 +97,7 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 		jsonBomPath := filepath.Join(path, tempBomFilename)
 		xmlBomPath := filepath.Join(path, npmBomFilename)
 
-		cdxgenExecutable := cycloneDxNpmInstallationFolder + "/node_modules/.bin/cdxgen"
+		cdxgenExecutable := tmpInstallFolder + "/node_modules/.bin/cdxgen"
 		params := []string{
 			"-r",
 			"-o", jsonBomPath,
@@ -124,7 +123,7 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 // createNpmBOM generates a BOM for npm/yarn projects using cyclonedx-npm or cyclonedx/bom as fallback
 func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 	// Primary attempt with cyclonedx-npm
-	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
+	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", tmpInstallFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
 
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
@@ -161,7 +160,7 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 
 		if !fallback {
 			params = append(params, packageJSONFile)
-			executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
+			executable = tmpInstallFolder + "/node_modules/.bin/cyclonedx-npm"
 		} else {
 			params = append(params, path)
 		}
