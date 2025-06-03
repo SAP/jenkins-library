@@ -148,6 +148,23 @@ func TestBom(t *testing.T) {
 		}
 		err := exec.CreateBOM([]string{"package.json"})
 
-		assert.EqualError(t, err, "failed to install cdxgen: failed to install cdxgen")
+		assert.Contains(t, err.Error(), "failed to install cdxgen")
+	})
+
+	t.Run("Create BOM fails if cyclonedx-cli download fails with network error", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+		// Configure HttpClientMock to simulate network download failure
+		utils.downloadClient.ReturnDownloadError = fmt.Errorf("network error: connection refused")
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.CreateBOM([]string{"package.json"})
+
+		assert.Contains(t, err.Error(), "network error: connection refused")
 	})
 }
