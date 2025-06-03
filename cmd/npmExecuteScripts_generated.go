@@ -125,9 +125,9 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
 		Long: `This step handles JavaScript dependency installation and basic npm commands. Lock file detection:
-  - If ` + "`" + `package-lock.json` + "`" + ` is found → runs ` + "`" + `npm install` + "`" + `
-  - If ` + "`" + `yarn.lock` + "`" + ` is found → runs ` + "`" + `yarn install` + "`" + `
-  - If ` + "`" + `pnpm-lock.yaml` + "`" + ` is found → runs ` + "`" + `pnpm install` + "`" + `
+  - If ` + "`" + `package-lock.json` + "`" + ` is found → runs ` + "`" + `npm ci` + "`" + `
+  - If ` + "`" + `yarn.lock.json` + "`" + ` is found → runs ` + "`" + `yarn install --frozen-lockfile` + "`" + `
+  - If ` + "`" + `pnpm-lock.yaml` + "`" + ` is found → runs ` + "`" + `pnpm install --frozen-lockfile` + "`" + `
   - If no lock file is found → defaults to ` + "`" + `npm install` + "`" + ` and continues execution
 
 Only the install command uses the detected package manager (npm, yarn, or pnpm). All other commands (e.g., ` + "`" + `run` + "`" + `, ` + "`" + `pack` + "`" + `, ` + "`" + `publish` + "`" + `) are executed via the ` + "`" + `npm` + "`" + ` CLI, regardless of which lock file is detected.
