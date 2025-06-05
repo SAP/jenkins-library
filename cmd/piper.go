@@ -243,7 +243,6 @@ func addRootFlags(rootCmd *cobra.Command) {
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		log.Entry().Error(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
 	}
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.BuildURL(), "ID for unique identification of a pipeline run")
