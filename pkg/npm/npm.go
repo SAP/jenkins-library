@@ -15,17 +15,18 @@ import (
 )
 
 const (
-	npmBomFilename                 = "bom-npm.xml"
-	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
-	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
-	cycloneDxSchemaVersion         = "1.4"
+	npmBomFilename             = "bom-npm.xml"
+	cycloneDxNpmPackageVersion = "@cyclonedx/cyclonedx-npm@1.11.0"
+	cycloneDxBomPackageVersion = "@cyclonedx/bom@^3.10.6"
+	npmInstallationFolder      = "./tmp" // This folder is used for local tool installations and cycloneDX
+	cycloneDxSchemaVersion     = "1.4"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
 	Utils   Utils
 	Options ExecutorOptions
+	Tool    *Tool
 }
 
 // Executor interface to enable mocking for testing
@@ -44,14 +45,20 @@ type Executor interface {
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
 	ExecRunner         ExecRunner
+	Tool               string
 }
 
 // NewExecutor instantiates Execute struct and sets executeOptions
 func NewExecutor(executorOptions ExecutorOptions) Executor {
 	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
+	tool, err := DetectTool(&utils, executorOptions.Tool)
+	if err != nil {
+		log.Entry().Fatalf("Failed to detect and initialize tool: %v", err)
+	}
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
+		Tool:    tool,
 	}
 }
 
@@ -62,6 +69,7 @@ type ExecRunner interface {
 	Stderr(out io.Writer)
 	RunExecutable(executable string, params ...string) error
 	RunExecutableInBackground(executable string, params ...string) (command.Execution, error)
+	LookPath(bin string) (string, error)
 }
 
 // Utils interface for mocking
@@ -96,7 +104,7 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry, "-ws=false", "-iwr")
+	err := exec.Tool.GetRegistry()
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
@@ -109,7 +117,8 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr")
+
+		err = exec.Tool.SetRegistry(exec.Options.DefaultNpmRegistry, "", "", "")
 		if err != nil {
 			return err
 		}
@@ -159,7 +168,6 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 
 		if len(packagesWithScript) == 0 {
 			return fmt.Errorf("could not find any package.json file with script : %s ", script)
-
 		}
 
 		for _, packageJSON := range packagesWithScript {
@@ -173,7 +181,6 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 }
 
 func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string, scriptOptions []string) error {
-	execRunner := exec.Utils.GetExecRunner()
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
@@ -193,19 +200,18 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 
 	log.Entry().WithField("WorkingDirectory", dir).Info("run-script " + script)
 
-	npmRunArgs := []string{"run", script}
+	args := []string{script}
 	if len(runOptions) > 0 {
-		npmRunArgs = append(npmRunArgs, runOptions...)
+		args = append(args, runOptions...)
 	}
-
 	if len(scriptOptions) > 0 {
-		npmRunArgs = append(npmRunArgs, "--")
-		npmRunArgs = append(npmRunArgs, scriptOptions...)
+		args = append(args, "--")
+		args = append(args, scriptOptions...)
 	}
 
-	err = execRunner.RunExecutable("npm", npmRunArgs...)
+	err = exec.Tool.Run(args...)
 	if err != nil {
-		return fmt.Errorf("failed to run npm script %s: %w", script, err)
+		return fmt.Errorf("failed to run %s script %s: %w", exec.Tool.Name, script, err)
 	}
 
 	err = exec.Utils.Chdir(oldWorkingDirectory)
@@ -227,7 +233,8 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 
 	nodeModulesExclude := "**/node_modules/**"
 	genExclude := "**/gen/**"
-	excludeList = append(excludeList, nodeModulesExclude, genExclude)
+	tmpExclude := "**/tmp/**"
+	excludeList = append(excludeList, nodeModulesExclude, genExclude, tmpExclude)
 
 	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
 	if err != nil {
@@ -245,7 +252,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 	var packagesWithScript []string
 
 	for _, file := range packageJSONFiles {
-		var packageJSON map[string]interface{}
+		var packageJSON map[string]any
 
 		packageRaw, err := exec.Utils.FileRead(file)
 		if err != nil {
@@ -257,7 +264,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 			return nil, fmt.Errorf("failed to unmarshal %s to check for existence of %s script: %w", file, script, err)
 		}
 
-		scripts, ok := packageJSON["scripts"].(map[string]interface{})
+		scripts, ok := packageJSON["scripts"].(map[string]any)
 		if ok {
 			_, ok := scripts[script].(string)
 			if ok {
@@ -290,8 +297,6 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 
 // install executes npm or yarn Install for package.json
 func (exec *Execute) install(packageJSON string) error {
-	execRunner := exec.Utils.GetExecRunner()
-
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
@@ -308,31 +313,10 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
+	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install with " + exec.Tool.Name)
+	err = exec.Tool.Install()
 	if err != nil {
-		return err
-	}
-
-	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
-	if packageLockExists {
-		err = execRunner.RunExecutable("npm", "ci")
-		if err != nil {
-			return err
-		}
-	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
-		if err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
-			" Add this file to your version control. " +
-			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
-		if err != nil {
-			return err
-		}
+		return fmt.Errorf("failed to install dependencies with %s: %w", exec.Tool.Name, err)
 	}
 
 	err = exec.Utils.Chdir(oldWorkingDirectory)
@@ -342,24 +326,10 @@ func (exec *Execute) install(packageJSON string) error {
 	return nil
 }
 
-// checkIfLockFilesExist checks if yarn/package lock fileUtils exist
-func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
-	packageLockExists, err := exec.Utils.FileExists("package-lock.json")
-	if err != nil {
-		return false, false, err
-	}
-
-	yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
-	if err != nil {
-		return false, false, err
-	}
-	return packageLockExists, yarnLockExists, nil
-}
-
 // CreateBOM generates BOM file using CycloneDX from all package.json files
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
-	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
+	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", npmInstallationFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
 
 	// Install cyclonedx/bom with --nosave and generate BOM.
@@ -396,15 +366,15 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 	if len(packageJSONFiles) > 0 {
 		for _, packageJSONFile := range packageJSONFiles {
 			path := filepath.Dir(packageJSONFile)
-			executable := "npx"
-			params := append(packageRunParams, filepath.Join(path, npmBomFilename))
+			var executable string
+			var params []string
 
-			// Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
 			if !fallback {
-				params = append(params, packageJSONFile)
-				executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
+				executable = getToolPath("cyclonedx-npm")
+				params = append(packageRunParams, filepath.Join(path, npmBomFilename), packageJSONFile)
 			} else {
-				params = append(params, path)
+				executable = "npx"
+				params = append(packageRunParams, filepath.Join(path, npmBomFilename), path)
 			}
 
 			err := execRunner.RunExecutable(executable, params...)
