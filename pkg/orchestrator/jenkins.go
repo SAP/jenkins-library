@@ -247,7 +247,7 @@ func (j *jenkinsConfigProvider) GitReference() string {
 	ref := getEnv("BRANCH_NAME", "n/a")
 	if ref == "n/a" {
 		return ref
-	} else if strings.Contains(ref, "PR") {
+	} else if strings.HasPrefix(ref, "PR-") {
 		return "refs/pull/" + strings.Split(ref, "-")[1] + "/head"
 	} else if strings.HasPrefix(ref, "refs/") {
 		return ref
