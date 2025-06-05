@@ -1,7 +1,0 @@
-# Test case configuration
-referenceAppRepo:
-  url: "https://github.com/piper-validation/tmsUpload.git"
-  branch: "master"
-deployCredentialEnv:
-  username: "CX_INFRA_IT_TMS_UPLOAD"
-  password: "CX_INFRA_IT_TMS_UPLOAD"
