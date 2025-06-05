@@ -21,7 +21,7 @@ import (
 
 // ReportsDirectory defines the subfolder for the Checkmarx reports which are generated
 const ReportsDirectory = "checkmarxOne"
-const cxOrigin = "GolangScript"
+const cxOrigin = ""
 
 // AuthToken - Structure to store OAuth2 token
 // Updated for Cx1
