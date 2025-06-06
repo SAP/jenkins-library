@@ -126,8 +126,9 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 		Short: "Execute npm run scripts on all npm packages in a project",
 		Long: `Execute npm run scripts in all package json files, if they implement the scripts.
 
-### build with depedencies from a private repository
-if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
+### build with dependencies from a private repository
+
+If your build has scoped/unscoped dependencies from a private repository you can include a ` + "`" + `.npmrc` + "`" + ` into the source code
 repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` value(s) with a valid private repo url) :
 
 ` + "`" + `` + "`" + `` + "`" + `
@@ -137,6 +138,7 @@ repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` va
 //private.repository.com/:always-auth=true
 registry=https://registry.npmjs.org
 ` + "`" + `` + "`" + `` + "`" + `
+
 ` + "`" + `PIPER_VAULTCREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository
 and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
 [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
