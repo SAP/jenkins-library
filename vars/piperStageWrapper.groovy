@@ -79,10 +79,30 @@ private void stageLocking(Map config, Closure body) {
             resource += "/${config.ordinal}"
         }
         lock(resource: resource, inversePrecedence: true) {
-            if(config.ordinal) {
-                milestone config.ordinal
+            try {
+                if(config.ordinal) {
+                    milestone config.ordinal
+                }
+                body()
+            } catch (Exception e) {
+                // Check if any older builds are in later stages before allowing failure propagation
+                def currentJob = Jenkins.instance.getItemByFullName(env.JOB_NAME)
+                if (currentJob && config.ordinal) {
+                    def runningBuilds = currentJob.builds.findAll { it.isBuilding() && it.number < currentBuild.number }
+                    for (def build : runningBuilds) {
+                        def buildMilestones = build.getActions(hudson.plugins.build_timeout.operations.MilestoneResult.class)
+                        if (buildMilestones) {
+                            def maxMilestone = buildMilestones.collect { it.ordinal }.max()
+                            if (maxMilestone && maxMilestone > config.ordinal) {
+                                echo "Build #${currentBuild.number} failed but not cancelling build #${build.number} in later stage (milestone ${maxMilestone})"
+                                // Don't propagate cancellation to builds in later stages
+                                throw new hudson.AbortException("Build failed without affecting advanced builds")
+                            }
+                        }
+                    }
+                }
+                throw e
             }
-            body()
         }
     } else {
         body()
@@ -92,7 +112,7 @@ private void stageLocking(Map config, Closure body) {
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
-    
+
     def startTime = System.currentTimeMillis()
 
     try {
