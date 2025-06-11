@@ -19,6 +19,11 @@ metadata:
     Supporting yarn or pnpm for these commands was deemed unnecessary due to
     lack of added benefit.
 
+    If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found.
+    One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.
+    Currently multimodule pnpm projects are not supported.
+    For such projects , it is necessary to use `buildDescriptorList` parameter pointing to package.json in root folder.
+
     ### Build with private dependencies from a repository
     if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
     repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
