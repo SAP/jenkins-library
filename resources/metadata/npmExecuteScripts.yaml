@@ -26,8 +26,8 @@ metadata:
 
     ### Build with private dependencies from a repository
 
-    If your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
-    repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
+    If your build has scoped/unscoped dependencies from a private repository you can include a `.npmrc` into the source code
+    repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :<br/>
 
     ```
     @privateScope:registry=https://private.repository.com/
