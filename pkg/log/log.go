@@ -112,10 +112,6 @@ func Entry() *logrus.Entry {
 
 // Writer returns an io.Writer into which a tool's output can be redirected.
 func Writer() io.Writer {
-	// Debug output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::Writer() - Creating new logrusWriter\n")
-	}
 	return &logrusWriter{logger: Entry()}
 }
 
@@ -180,21 +176,9 @@ func RegisterSecret(secret string) {
 // SetStepErrors sets the error patterns for the current step
 func SetStepErrors(errors []StepError) {
 	stepErrors = errors
-	
-	// Debug output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::SetStepErrors - Setting %d error patterns\n", len(errors))
-		for i, err := range errors {
-			fmt.Printf("::debug::SetStepErrors - Pattern %d: '%s' -> '%s'\n", i, err.Pattern, err.Message)
-		}
-	}
 }
 
 // GetStepErrors returns the current step error patterns
 func GetStepErrors() []StepError {
-	// Debug output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::GetStepErrors - Returning %d error patterns\n", len(stepErrors))
-	}
 	return stepErrors
 }

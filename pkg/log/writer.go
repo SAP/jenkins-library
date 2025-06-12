@@ -2,8 +2,6 @@ package log
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -30,11 +28,6 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
-	// Debug output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::logrusWriter.Write - Received %d bytes: '%s'\n", len(buffer), string(buffer))
-	}
-
 	origLen := len(buffer)
 	for {
 		if len(buffer) == 0 {
@@ -56,22 +49,10 @@ func (w *logrusWriter) alwaysFlush() {
 	message := w.buffer.String()
 	w.buffer.Reset()
 	
-	// Debug output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::alwaysFlush - Processing message: '%s'\n", message)
-	}
-	
 	// Check for known error patterns first
 	if errorMsg := checkKnownErrorPatterns(message); errorMsg != "" {
-		if os.Getenv("GITHUB_ACTIONS") == "true" {
-			fmt.Printf("::debug::alwaysFlush - Pattern matched! Using error message: '%s'\n", errorMsg)
-		}
 		w.logger.Error(errorMsg)
 		return
-	}
-	
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::alwaysFlush - No pattern match, using default logic\n")
 	}
 	
 	// Align level with underlying tool (like maven or npm)
@@ -90,12 +71,6 @@ func (w *logrusWriter) alwaysFlush() {
 func checkKnownErrorPatterns(message string) string {
 	errors := GetStepErrors()
 	
-	// Debug output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::Pattern matching - Found %d error patterns\n", len(errors))
-		fmt.Printf("::debug::Pattern matching - Input message: '%s'\n", message)
-	}
-	
 	if len(errors) == 0 {
 		return ""
 	}
@@ -103,34 +78,21 @@ func checkKnownErrorPatterns(message string) string {
 	// Normalize the message for better matching
 	normalizedMessage := strings.TrimSpace(message)
 	
-	for i, stepError := range errors {
-		if os.Getenv("GITHUB_ACTIONS") == "true" {
-			fmt.Printf("::debug::Pattern matching - Checking pattern %d: '%s'\n", i, stepError.Pattern)
-		}
-		
+	for _, stepError := range errors {
 		// First try regex matching
 		matched, err := regexp.MatchString(stepError.Pattern, normalizedMessage)
 		if err != nil {
 			// If regex is invalid, try robust substring matching
 			normalizedPattern := strings.TrimSpace(stepError.Pattern)
 			if strings.Contains(normalizedMessage, normalizedPattern) {
-				if os.Getenv("GITHUB_ACTIONS") == "true" {
-					fmt.Printf("::debug::Pattern matching - SUBSTRING MATCH! Returning: '%s'\n", stepError.Message)
-				}
 				return stepError.Message
 			}
 		} else if matched {
-			if os.Getenv("GITHUB_ACTIONS") == "true" {
-				fmt.Printf("::debug::Pattern matching - REGEX MATCH! Returning: '%s'\n", stepError.Message)
-			}
 			// Return the user-friendly error message
 			return stepError.Message
 		}
 	}
 	
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		fmt.Printf("::debug::Pattern matching - No match found\n")
-	}
 	return ""
 }
 
