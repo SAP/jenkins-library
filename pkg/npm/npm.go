@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -84,6 +85,11 @@ func (u *utilsBundle) GetExecRunner() ExecRunner {
 		}
 		u.execRunner.Stdout(log.Writer())
 		u.execRunner.Stderr(log.Writer())
+		
+		// Debug output for GitHub Actions
+		if os.Getenv("GITHUB_ACTIONS") == "true" {
+			fmt.Printf("::debug::npm.GetExecRunner - Set up execRunner with log.Writer() for stdout and stderr\n")
+		}
 	}
 	return u.execRunner
 }
