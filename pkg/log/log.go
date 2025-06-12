@@ -53,7 +53,7 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 	case logFormatGitHubActions:
 		// GitHub Actions format: use GitHub Actions logging commands and cleaner output
 		switch levelString {
-		case "error":
+		case "error", "fatal":
 			message = fmt.Sprintf("::error::%s%s\n", entry.Message, errorMessageSnippet)
 		case "warn":
 			message = fmt.Sprintf("::warning::%s%s\n", entry.Message, errorMessageSnippet)
