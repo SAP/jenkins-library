@@ -71,12 +71,14 @@ func (w *logrusWriter) alwaysFlush() {
 func checkKnownErrorPatterns(message string) string {
 	errors := GetStepErrors()
 	for _, stepError := range errors {
+		// First try regex matching
 		matched, err := regexp.MatchString(stepError.Pattern, message)
 		if err != nil {
-			// If regex is invalid, skip this pattern
-			continue
-		}
-		if matched {
+			// If regex is invalid, try simple substring matching
+			if strings.Contains(message, stepError.Pattern) {
+				return stepError.Message
+			}
+		} else if matched {
 			// Return the user-friendly error message
 			return stepError.Message
 		}
