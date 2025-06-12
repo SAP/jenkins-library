@@ -291,7 +291,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 			Errors: []config.StepError{
 				{
 					Pattern:  "npm error code E401",
-					Message:  "NPM authentication failed. Check your credentials or token.",
+					Message:  "",
 					Category: "authentication",
 				},
 				{

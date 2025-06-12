@@ -50,7 +50,7 @@ func (w *logrusWriter) alwaysFlush() {
 	w.buffer.Reset()
 	
 	// Check for known error patterns first
-	if errorMsg := checkKnownErrorPatterns(message); errorMsg != "" {
+	if matched, errorMsg := checkKnownErrorPatterns(message); matched {
 		w.logger.Error(errorMsg)
 		return
 	}
@@ -67,12 +67,15 @@ func (w *logrusWriter) alwaysFlush() {
 }
 
 // checkKnownErrorPatterns checks if the message matches any known error patterns
-// and returns a user-friendly error message if found
-func checkKnownErrorPatterns(message string) string {
+// Returns (matched bool, messageToUse string)
+// If matched and custom message exists, returns custom message
+// If matched but no custom message, returns original message
+// If not matched, returns (false, "")
+func checkKnownErrorPatterns(message string) (bool, string) {
 	errors := GetStepErrors()
 	
 	if len(errors) == 0 {
-		return ""
+		return false, ""
 	}
 	
 	// Normalize the message for better matching
@@ -85,15 +88,22 @@ func checkKnownErrorPatterns(message string) string {
 			// If regex is invalid, try robust substring matching
 			normalizedPattern := strings.TrimSpace(stepError.Pattern)
 			if strings.Contains(normalizedMessage, normalizedPattern) {
-				return stepError.Message
+				// Pattern matched - return custom message if provided, otherwise original
+				if stepError.Message != "" {
+					return true, stepError.Message
+				}
+				return true, message
 			}
 		} else if matched {
-			// Return the user-friendly error message
-			return stepError.Message
+			// Pattern matched - return custom message if provided, otherwise original
+			if stepError.Message != "" {
+				return true, stepError.Message
+			}
+			return true, message
 		}
 	}
 	
-	return ""
+	return false, ""
 }
 
 func (w *logrusWriter) Flush() {

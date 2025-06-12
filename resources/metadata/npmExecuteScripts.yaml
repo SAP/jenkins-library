@@ -5,7 +5,7 @@ metadata:
   description: Execute npm run scripts on all npm packages in a project
   errors:
     - pattern: "npm error code E401"
-      message: "NPM authentication failed. Check your credentials or token."
+      # message: "NPM authentication failed. Check your credentials or token."
       category: "authentication"
     - pattern: "npm error Incorrect or missing password"
       message: "NPM authentication failed. Your password or token is incorrect."

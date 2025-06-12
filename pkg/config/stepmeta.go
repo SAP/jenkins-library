@@ -33,7 +33,7 @@ type StepMetadata struct {
 // StepError defines a known error pattern that can be detected in step output
 type StepError struct {
 	Pattern  string `json:"pattern"`
-	Message  string `json:"message"`
+	Message  string `json:"message,omitempty"`
 	Category string `json:"category,omitempty"`
 }
 

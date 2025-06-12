@@ -89,7 +89,7 @@ var stepErrors []StepError
 // StepError defines a known error pattern that can be detected in step output
 type StepError struct {
 	Pattern  string `json:"pattern"`
-	Message  string `json:"message"`
+	Message  string `json:"message,omitempty"`
 	Category string `json:"category,omitempty"`
 }
 
@@ -97,13 +97,13 @@ type StepError struct {
 func Entry() *logrus.Entry {
 	if logger == nil {
 		logger = logrus.WithField("library", LibraryRepository)
-		
+
 		// Auto-detect GitHub Actions environment and set appropriate format
 		logFormat := logFormatDefault
 		if os.Getenv("GITHUB_ACTIONS") == "true" {
 			logFormat = logFormatGitHubActions
 		}
-		
+
 		logger.Logger.SetFormatter(&PiperLogFormatter{logFormat: logFormat})
 	}
 
@@ -141,7 +141,7 @@ func SetFormatter(logFormat string) {
 // SetStepName sets the stepName field.
 func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
-	
+
 	// For GitHub Actions, create a collapsible group for the step
 	if os.Getenv("GITHUB_ACTIONS") == "true" && currentGitHubGroup != stepName {
 		if currentGitHubGroup != "" {
