@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -43,8 +44,43 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	errDetails, _ := json.Marshal(&details)
-	// Logging information needed for error reporting -  do not modify.
-	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
+	
+	// Provide cleaner error output for GitHub Actions
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		// Extract meaningful error message from the error details
+		errorMsg := fmt.Sprint(details["error"])
+		stepName := fmt.Sprint(details["stepName"])
+		
+		// Create a clean, human-readable error summary
+		if strings.Contains(errorMsg, "cmd.Run() failed: exit status") {
+			// For command failures, focus on the actual command error
+			var cleanMsg string
+			if strings.Contains(errorMsg, "running command") {
+				// Extract just the command that failed
+				parts := strings.Split(errorMsg, "running command")
+				if len(parts) > 1 {
+					cmdPart := strings.Split(parts[1], "failed:")[0]
+					cmdPart = strings.Trim(cmdPart, " '")
+					cleanMsg = fmt.Sprintf("Command failed: %s", cmdPart)
+				}
+			}
+			if cleanMsg == "" {
+				cleanMsg = "Command execution failed"
+			}
+			Entry().Errorf("❌ %s: %s", stepName, cleanMsg)
+		} else {
+			// For other errors, show a clean version
+			Entry().Errorf("❌ %s: %s", stepName, errorMsg)
+		}
+		
+		// Still log the detailed JSON for debugging, but with debug level
+		Entry().Debugf("fatal error: errorDetails%v", string(errDetails))
+	} else {
+		// Original behavior for non-GitHub Actions environments
+		// Logging information needed for error reporting -  do not modify.
+		Entry().Infof("fatal error: errorDetails%v", string(errDetails))
+	}
+	
 	// Sets the fatal error details in the logging framework to be consumed in the stepTelemetryData
 	SetFatalErrorDetail(errDetails)
 	_, err := os.ReadFile(filePath)
