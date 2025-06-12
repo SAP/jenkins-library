@@ -151,7 +151,7 @@
                     "description": "Error category for better classification"
                 }
             },
-            "required": ["pattern", "message"]
+            "required": ["pattern"]
         }
     }
 }
