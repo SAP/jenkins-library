@@ -50,28 +50,33 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		// Extract meaningful error message from the error details
 		errorMsg := fmt.Sprint(details["error"])
 		stepName := fmt.Sprint(details["stepName"])
+		fatalMessage := entry.Message
 		
-		// Create a clean, human-readable error summary
-		if strings.Contains(errorMsg, "cmd.Run() failed: exit status") {
-			// For command failures, focus on the actual command error
-			var cleanMsg string
-			if strings.Contains(errorMsg, "running command") {
-				// Extract just the command that failed
-				parts := strings.Split(errorMsg, "running command")
-				if len(parts) > 1 {
-					cmdPart := strings.Split(parts[1], "failed:")[0]
-					cmdPart = strings.Trim(cmdPart, " '")
-					cleanMsg = fmt.Sprintf("Command failed: %s", cmdPart)
-				}
-			}
-			if cleanMsg == "" {
-				cleanMsg = "Command execution failed"
-			}
-			Entry().Errorf("❌ %s: %s", stepName, cleanMsg)
+		// Prioritize the actual error over generic messages like "step execution failed"
+		var displayMsg string
+		if errorMsg != "" && errorMsg != "<nil>" {
+			// Use the actual error message
+			displayMsg = errorMsg
+		} else if fatalMessage != "" {
+			// Fallback to the fatal message
+			displayMsg = fatalMessage
 		} else {
-			// For other errors, show a clean version
-			Entry().Errorf("❌ %s: %s", stepName, errorMsg)
+			displayMsg = "Unknown error"
 		}
+		
+		// Clean up common verbose error patterns for better readability
+		if strings.Contains(displayMsg, "cmd.Run() failed: exit status") && strings.Contains(displayMsg, "running command") {
+			// Extract the command that failed for cleaner display
+			parts := strings.Split(displayMsg, "running command")
+			if len(parts) > 1 {
+				cmdPart := strings.Split(parts[1], "failed:")[0]
+				cmdPart = strings.Trim(cmdPart, " '")
+				displayMsg = fmt.Sprintf("Command '%s' failed", cmdPart)
+			}
+		}
+		
+		// Log as GitHub Actions error with step context
+		Entry().Errorf("❌ %s: %s", stepName, displayMsg)
 		
 		// Still log the detailed JSON for debugging, but with debug level
 		Entry().Debugf("fatal error: errorDetails%v", string(errDetails))
