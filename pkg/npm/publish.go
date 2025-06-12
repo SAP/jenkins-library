@@ -5,13 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
@@ -55,23 +51,21 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 
 // publish executes npm publish for package.json
 func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
-	execRunner := exec.Utils.GetExecRunner()
-
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 
 	scope, err := exec.readPackageScope(packageJSON)
 	if err != nil {
-		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
+		return fmt.Errorf("failed to read package scope: %w", err)
 	}
 
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
 	if exists, err := exec.Utils.FileExists(npmignore.filepath); exists {
 		if err != nil {
-			return errors.Wrapf(err, "failed to check for existing %s file", npmignore.filepath)
+			return fmt.Errorf("failed to check for existing %s file: %w", npmignore.filepath, err)
 		}
 		log.Entry().Debugf("loading existing %s file", npmignore.filepath)
 		if err = npmignore.Load(); err != nil {
-			return errors.Wrapf(err, "failed to read existing %s file", npmignore.filepath)
+			return fmt.Errorf("failed to read existing %s file: %w", npmignore.filepath, err)
 		}
 	} else {
 		log.Entry().Debug("creating .npmignore file")
@@ -85,53 +79,15 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	npmignore.Add("tmp/")
 	log.Entry().Debug("adding sboms to npmignore")
 	npmignore.Add("**/bom*.xml")
-
-	npmrc := NewNPMRC(filepath.Dir(packageJSON))
-
-	log.Entry().Debugf("adding piper npmrc file %v", npmrc.filepath)
-	npmignore.Add(npmrc.filepath)
+	npmignore.Add(".npmrc.bak") // Ignore our backup files
 
 	if err := npmignore.Write(); err != nil {
-		return errors.Wrapf(err, "failed to update %s file", npmignore.filepath)
+		return fmt.Errorf("failed to update %s file: %w", npmignore.filepath, err)
 	}
 
-	// update .piperNpmrc
-	if len(registry) > 0 {
-		// check existing .npmrc file
-		if exists, err := exec.Utils.FileExists(npmrc.filepath); exists {
-			if err != nil {
-				return errors.Wrapf(err, "failed to check for existing %s file", npmrc.filepath)
-			}
-			log.Entry().Debugf("loading existing %s file", npmrc.filepath)
-			if err = npmrc.Load(); err != nil {
-				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
-			}
-		} else {
-			log.Entry().Debugf("creating new npmrc file at %s", npmrc.filepath)
-		}
-		// set registry
-		log.Entry().Debugf("adding registry %s", registry)
-		npmrc.Set("registry", registry)
-
-		if len(scope) > 0 {
-			npmrc.Set(fmt.Sprintf("%s:registry", scope), registry)
-		}
-
-		// set registry auth
-		if len(username) > 0 && len(password) > 0 {
-			log.Entry().Debug("adding registry credentials")
-			// See https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
-			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
-			// is no longer supported and will throw errors
-			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
-			npmrc.Set("always-auth", "true")
-		}
-		// update .npmrc
-		if err := npmrc.Write(); err != nil {
-			return errors.Wrapf(err, "failed to update %s file", npmrc.filepath)
-		}
-	} else {
-		log.Entry().Debug("no registry provided")
+	// Configure registry and authentication using npm CLI commands
+	if err := exec.Tool.SetRegistry(registry, username, password, scope); err != nil {
+		return fmt.Errorf("failed to configure registry: %w", err)
 	}
 
 	if packBeforePublish {
@@ -140,8 +96,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change into directory for executing script: %w", err)
 		}
 
-		if err := execRunner.RunExecutable("npm", "pack"); err != nil {
-			return err
+		if err := exec.Tool.Pack(); err != nil {
+			return fmt.Errorf("failed to run %s pack: %w", exec.Tool.Name, err)
 		}
 
 		tarballs, err := exec.Utils.Glob(filepath.Join(".", "*.tgz"))
@@ -166,41 +122,47 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		// if a user has a .npmrc file and if it has a scope (e.g @sap to download scoped dependencies)
 		// if the package to be published also has the same scope (@sap) then npm gets confused
 		// and tries to publish to the scope that comes from the npmrc file
-		// and is not the desired publish since we want to publish to the other registry (from .piperNpmrc)
-		// file and not to the one mentioned in the users npmrc file
+		// and is not the desired publish since we want to publish to the other configured registry,
+		// not the one mentioned in the user's existing .npmrc file
 		// to solve this we rename the users npmrc file before publish, the original npmrc is already
 		// packaged in the tarball and hence renaming it before publish should not have an effect
-		projectNpmrc := filepath.Join(".", ".npmrc")
-		projectNpmrcExists, _ := exec.Utils.FileExists(projectNpmrc)
-
-		if projectNpmrcExists {
-			// rename the .npmrc file since it interferes with publish
-			err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
+		// Only handle .npmrc rename for npm tool
+		if exec.Tool.Name == "npm" {
+			projectNpmrc := filepath.Join(".", ".npmrc")
+			projectNpmrcExists, err := exec.Utils.FileExists(projectNpmrc)
 			if err != nil {
-				return fmt.Errorf("error when renaming current .npmrc file : %w", err)
+				return fmt.Errorf("failed to check for .npmrc file: %w", err)
+			}
+
+			if projectNpmrcExists {
+				// Rename the .npmrc file since it interferes with publish
+				err = exec.Utils.FileRename(projectNpmrc, projectNpmrc+".tmp")
+				if err != nil {
+					return fmt.Errorf("error when renaming current .npmrc file: %w", err)
+				}
+				log.Entry().Debug("Renamed .npmrc to .npmrc.tmp to avoid scope conflicts")
+				defer func() {
+					err := exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
+					if err != nil {
+						log.Entry().Warnf("Unable to restore .npmrc file: %v", err)
+					} else {
+						log.Entry().Debug("Successfully restored .npmrc file")
+					}
+				}()
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
-		if err != nil {
-			return errors.Wrap(err, "failed publishing artifact")
-		}
-
-		if projectNpmrcExists {
-			// undo the renaming ot the .npmrc to keep the workspace like before
-			err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
-			if err != nil {
-				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
-			}
+		if err := exec.Tool.Publish("--tarball", tarballFilePath); err != nil {
+			return fmt.Errorf("failed to run %s publish: %w", exec.Tool.Name, err)
 		}
 
 		if err := exec.Utils.Chdir(oldWorkingDirectory); err != nil {
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
-		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
+		err := exec.Tool.Publish()
 		if err != nil {
-			return errors.Wrap(err, "failed publishing artifact")
+			return fmt.Errorf("failed to run publish command: %w", err)
 		}
 	}
 
