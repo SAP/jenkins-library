@@ -12,15 +12,15 @@ metadata:
       - If no lock file is found → defaults to `npm install` and continues execution
 
     Only the install command uses the detected package manager (npm, yarn, or pnpm).
-    All other commands (e.g., `run`, `pack`, `publish`) are executed via the `npm` CLI, regardless of which lock file is detected.
+    All other commands (e.g., `run`, `pack`, `publish`) are executed via the `npm` CLI, regardless of which lock file is detected.<br/>
 
     Rationale: In the Piper environment, using the npm CLI for non-install commands
     provides sufficient functionality without requiring additional CLI dependencies.
     Supporting yarn or pnpm for these commands was deemed unnecessary due to
-    lack of added benefit.
+    lack of added benefit.<br/>
 
     If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found.
-    One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.
+    One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.<br/>
     Currently multimodule pnpm projects are not supported.
     For such projects , it is necessary to use `buildDescriptorList` parameter pointing to package.json in root folder.
 
