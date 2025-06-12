@@ -386,7 +386,13 @@ func (c *Command) prepareOut() {
 		c.stdout = os.Stdout
 	}
 	if c.stderr == nil {
-		c.stderr = os.Stderr
+		// If we have step error patterns, route stderr through our log writer
+		// to enable error pattern matching
+		if len(log.GetStepErrors()) > 0 {
+			c.stderr = io.MultiWriter(os.Stderr, log.Writer())
+		} else {
+			c.stderr = os.Stderr
+		}
 	}
 }
 
