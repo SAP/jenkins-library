@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -44,47 +43,8 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	errDetails, _ := json.Marshal(&details)
-	
-	// Provide cleaner error output for GitHub Actions
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		// Extract meaningful error message from the error details
-		errorMsg := fmt.Sprint(details["error"])
-		stepName := fmt.Sprint(details["stepName"])
-		fatalMessage := entry.Message
-		
-		// Prioritize the actual error over generic messages like "step execution failed"
-		var displayMsg string
-		if errorMsg != "" && errorMsg != "<nil>" {
-			// Use the actual error message
-			displayMsg = errorMsg
-		} else if fatalMessage != "" {
-			// Fallback to the fatal message
-			displayMsg = fatalMessage
-		} else {
-			displayMsg = "Unknown error"
-		}
-		
-		// Clean up common verbose error patterns for better readability
-		if strings.Contains(displayMsg, "cmd.Run() failed: exit status") && strings.Contains(displayMsg, "running command") {
-			// Extract the command that failed for cleaner display
-			parts := strings.Split(displayMsg, "running command")
-			if len(parts) > 1 {
-				cmdPart := strings.Split(parts[1], "failed:")[0]
-				cmdPart = strings.Trim(cmdPart, " '")
-				displayMsg = fmt.Sprintf("Command '%s' failed", cmdPart)
-			}
-		}
-		
-		// Log as GitHub Actions error with step context
-		Entry().Errorf("❌ %s: %s", stepName, displayMsg)
-		
-		// Still log the detailed JSON for debugging, but with debug level
-		Entry().Debugf("fatal error: errorDetails%v", string(errDetails))
-	} else {
-		// Original behavior for non-GitHub Actions environments
-		// Logging information needed for error reporting -  do not modify.
-		Entry().Infof("fatal error: errorDetails%v", string(errDetails))
-	}
+	// Logging information needed for error reporting -  do not modify.
+	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
 	
 	// Sets the fatal error details in the logging framework to be consumed in the stepTelemetryData
 	SetFatalErrorDetail(errDetails)
