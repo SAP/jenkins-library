@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -19,6 +20,7 @@ const (
 	logFormatPlain         = "plain"
 	logFormatDefault       = "default"
 	logFormatWithTimestamp = "timestamp"
+	logFormatGitHubActions = "github"
 )
 
 // Format the log message
@@ -48,6 +50,19 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		message = fmt.Sprintf("%s %-5s %-6s %s%s\n", entry.Time.Format("15:04:05"), levelString, stepName, entry.Message, errorMessageSnippet)
 	case logFormatPlain:
 		message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
+	case logFormatGitHubActions:
+		// GitHub Actions format: use GitHub Actions logging commands and cleaner output
+		switch levelString {
+		case "error":
+			message = fmt.Sprintf("::error::%s%s\n", entry.Message, errorMessageSnippet)
+		case "warn":
+			message = fmt.Sprintf("::warning::%s%s\n", entry.Message, errorMessageSnippet)
+		case "debug":
+			message = fmt.Sprintf("::debug::%s%s\n", entry.Message, errorMessageSnippet)
+		default: // info and others
+			// For info messages, show clean output without step repetition
+			message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
+		}
 	default:
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
 		if err != nil {
@@ -68,12 +83,20 @@ var LibraryRepository string
 var LibraryName string
 var logger *logrus.Entry
 var secrets []string
+var currentGitHubGroup string
 
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
 	if logger == nil {
 		logger = logrus.WithField("library", LibraryRepository)
-		logger.Logger.SetFormatter(&PiperLogFormatter{})
+		
+		// Auto-detect GitHub Actions environment and set appropriate format
+		logFormat := logFormatDefault
+		if os.Getenv("GITHUB_ACTIONS") == "true" {
+			logFormat = logFormatGitHubActions
+		}
+		
+		logger.Logger.SetFormatter(&PiperLogFormatter{logFormat: logFormat})
 	}
 
 	return logger
@@ -105,6 +128,15 @@ func SetFormatter(logFormat string) {
 // SetStepName sets the stepName field.
 func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
+	
+	// For GitHub Actions, create a collapsible group for the step
+	if os.Getenv("GITHUB_ACTIONS") == "true" && currentGitHubGroup != stepName {
+		if currentGitHubGroup != "" {
+			fmt.Println("::endgroup::")
+		}
+		fmt.Printf("::group::%s\n", stepName)
+		currentGitHubGroup = stepName
+	}
 }
 
 // DeferExitHandler registers a logrus exit handler to allow cleanup activities.
