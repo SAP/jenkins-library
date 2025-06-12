@@ -1,0 +1,30 @@
+name: Publish ADR
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'documentation/adr/**'
+jobs:
+  build-adr-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # required by Log4brains to work correctly (needs the whole Git history)
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "14"
+      - name: Install Log4brains And Build ADRs
+        run: |
+          npm install -g log4brains
+          log4brains build --basePath /${GITHUB_REPOSITORY}/adr
+      - name: Publish ADRs
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: .log4brains/out
+          target-folder: adr

@@ -1,0 +1,31 @@
+name: Update go dependencies and create PR
+
+on:
+  # Allow to trigger this manually just in case updates are required outside of the schedule. See https://goobar.io/2019/12/07/manually-trigger-a-github-actions-workflow/ for info on how that works.
+  repository_dispatch:
+    types: update-dependencies
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: styfle/cancel-workflow-action@0.11.0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+      - name: Perform update
+        run: |
+          git checkout -B gh-action-update-golang-dependencies
+          go get -u
+          go mod tidy
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -am "Automated go dependency update"
+          git push origin gh-action-update-golang-dependencies -f
+      - name: Create Pull Request
+        uses: SAP/project-piper-action@master
+        with:
+          piper-version: master
+          command: githubCreatePullRequest
+          flags: --body="Automated update for Go dependencies by running `go get -u` and `go mod tidy`" --head=gh-action-update-golang-dependencies --title="Update Go dependencies" --token ${{ secrets.GO_DEPENDENCY_UPDATE_TOKEN }}
