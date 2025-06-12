@@ -4,8 +4,8 @@ metadata:
     - name: executeNpm
   description: Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
   longDescription: >
-    This step handles JavaScript dependency installation and basic npm commands.
-    Lock file detection:
+    ### Lock file detection:
+
       - If `package-lock.json` is found → runs `npm ci`
       - If `yarn.lock.json` is found → runs `yarn install --frozen-lockfile`
       - If `pnpm-lock.yaml` is found → runs `pnpm install --frozen-lockfile`
@@ -25,7 +25,8 @@ metadata:
     For such projects , it is necessary to use `buildDescriptorList` parameter pointing to package.json in root folder.
 
     ### Build with private dependencies from a repository
-    if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
+
+    If your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
     repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
 
     ```
