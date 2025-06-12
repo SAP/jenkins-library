@@ -7,7 +7,7 @@ metadata:
     ### build with dependencies from a private repository
 
     1. For Maven related settings refer [Maven build dependencies](./mavenBuild.md#build-with-dependencies-from-a-private-repository)
-    2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#Build-with-private-dependencies-from-a-repository)
+    2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-private-dependencies-from-a-repository)
 spec:
   inputs:
     params:
