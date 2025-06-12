@@ -122,6 +122,11 @@ func IsVerbose() bool {
 
 // SetFormatter specifies the log format to use for piper's output
 func SetFormatter(logFormat string) {
+	// Auto-detect GitHub Actions environment and override format if needed
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		// Override any format with GitHub Actions format when running in GitHub Actions
+		logFormat = logFormatGitHubActions
+	}
 	Entry().Logger.SetFormatter(&PiperLogFormatter{logFormat: logFormat})
 }
 
