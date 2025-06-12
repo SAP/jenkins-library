@@ -288,6 +288,33 @@ func npmExecuteScriptsMetadata() config.StepData {
 			Name:        "npmExecuteScripts",
 			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
 			Description: "Execute npm run scripts on all npm packages in a project",
+			Errors: []config.StepError{
+				{
+					Pattern:  "npm error code E401",
+					Message:  "NPM authentication failed. Check your credentials or token.",
+					Category: "authentication",
+				},
+				{
+					Pattern:  "npm error Incorrect or missing password",
+					Message:  "NPM authentication failed. Your password or token is incorrect.",
+					Category: "authentication",
+				},
+				{
+					Pattern:  "npm error 404.*Not Found",
+					Message:  "NPM package not found. Check package name and registry.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error ENOTFOUND",
+					Message:  "NPM registry not reachable. Check network connection and registry URL.",
+					Category: "network",
+				},
+				{
+					Pattern:  "npm error EACCES",
+					Message:  "NPM permission denied. Check file permissions or registry access rights.",
+					Category: "permission",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
