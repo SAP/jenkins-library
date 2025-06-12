@@ -15,7 +15,7 @@ const (
 	PyBomFilename           = "bom-pip.xml"
 	stepName                = "pythonBuild"
 	cycloneDxPackageVersion = "cyclonedx-bom==6.1.1"
-	cycloneDxSchemaVersion  = "1.4"
+	cycloneDxSchemaVersion  = "1.6"
 )
 
 type pythonBuildUtils interface {
