@@ -43,8 +43,6 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	errDetails, _ := json.Marshal(&details)
-	// Logging information needed for error reporting -  do not modify.
-	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
 	
 	// Sets the fatal error details in the logging framework to be consumed in the stepTelemetryData
 	SetFatalErrorDetail(errDetails)
