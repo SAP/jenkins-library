@@ -141,7 +141,7 @@ func MtaBuildCommand() *cobra.Command {
 ### build with dependencies from a private repository
 
 1. For Maven related settings refer [Maven build dependencies](./mavenBuild.md#build-with-dependencies-from-a-private-repository)
-2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-dependencies-from-a-private-repository)`,
+2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#Build-with-private-dependencies-from-a-repository)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
