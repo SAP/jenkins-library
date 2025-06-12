@@ -84,6 +84,14 @@ var LibraryName string
 var logger *logrus.Entry
 var secrets []string
 var currentGitHubGroup string
+var stepErrors []StepError
+
+// StepError defines a known error pattern that can be detected in step output
+type StepError struct {
+	Pattern  string `json:"pattern"`
+	Message  string `json:"message"`
+	Category string `json:"category,omitempty"`
+}
 
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
@@ -163,4 +171,14 @@ func RegisterSecret(secret string) {
 			secrets = append(secrets, encoded)
 		}
 	}
+}
+
+// SetStepErrors sets the error patterns for the current step
+func SetStepErrors(errors []StepError) {
+	stepErrors = errors
+}
+
+// GetStepErrors returns the current step error patterns
+func GetStepErrors() []StepError {
+	return stepErrors
 }

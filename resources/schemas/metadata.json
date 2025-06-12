@@ -43,7 +43,10 @@
             "properties": {
                 "name": { "type": "string" },
                 "description": { "type": "string" },
-                "longDescription": { "type": "string" }
+                "longDescription": { "type": "string" },
+                "errors": {
+                    "$ref": "#definitions/com.sap.piper.metadata.errors"
+                }
             },
             "required": ["name", "description", "longDescription"]
         },
@@ -123,6 +126,32 @@
             "items": {
                 "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
             }
+        },
+        "com.sap.piper.metadata.errors": {
+            "type": "array",
+            "items": {
+                "$ref": "#definitions/com.sap.piper.metadata.error"
+            }
+        },
+        "com.sap.piper.metadata.error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "pattern": { 
+                    "type": "string",
+                    "description": "Regular expression pattern to match error output"
+                },
+                "message": { 
+                    "type": "string",
+                    "description": "Human-readable error message to display"
+                },
+                "category": {
+                    "type": "string",
+                    "enum": ["authentication", "permission", "network", "configuration", "dependency", "build", "unknown"],
+                    "description": "Error category for better classification"
+                }
+            },
+            "required": ["pattern", "message"]
         }
     }
 }

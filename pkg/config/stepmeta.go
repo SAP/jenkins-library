@@ -23,10 +23,18 @@ type StepData struct {
 
 // StepMetadata defines the metadata for a step, like step descriptions, parameters, ...
 type StepMetadata struct {
-	Name            string  `json:"name"`
-	Aliases         []Alias `json:"aliases,omitempty"`
-	Description     string  `json:"description"`
-	LongDescription string  `json:"longDescription,omitempty"`
+	Name            string      `json:"name"`
+	Aliases         []Alias     `json:"aliases,omitempty"`
+	Description     string      `json:"description"`
+	LongDescription string      `json:"longDescription,omitempty"`
+	Errors          []StepError `json:"errors,omitempty"`
+}
+
+// StepError defines a known error pattern that can be detected in step output
+type StepError struct {
+	Pattern  string `json:"pattern"`
+	Message  string `json:"message"`
+	Category string `json:"category,omitempty"`
 }
 
 // StepSpec defines the spec details for a step, like step inputs, containers, sidecars, ...
