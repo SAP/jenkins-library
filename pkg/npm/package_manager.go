@@ -59,11 +59,6 @@ func (pm *PackageManager) InstallPnpm(execRunner ExecRunner) error {
 
 // detectPackageManager determines which package manager to use based on lock files
 func (exec *Execute) detectPackageManager() (*PackageManager, error) {
-	// List all files in current directory for debugging
-	if files, err := exec.Utils.Glob("*"); err == nil {
-		log.Entry().Infof("Files in current directory: %v", files)
-	}
-
 	for _, pm := range supportedPackageManagers {
 		exists, err := exec.Utils.FileExists(pm.LockFile)
 		if err != nil {
