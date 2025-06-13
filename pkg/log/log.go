@@ -110,11 +110,7 @@ type StepError struct {
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
 	if logger == nil {
-		if LibraryRepository != "" {
-			logger = logrus.WithField("library", LibraryRepository)
-		} else {
-			logger = logrus.NewEntry(logrus.StandardLogger())
-		}
+		logger = logrus.NewEntry(logrus.StandardLogger())
 
 		// Auto-detect GitHub Actions environment and set appropriate format
 		logFormat := logFormatDefault
