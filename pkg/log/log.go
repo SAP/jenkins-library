@@ -37,6 +37,20 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		errorMessageSnippet = fmt.Sprintf(" - %s", entry.Data[logrus.ErrorKey])
 	}
 
+	// Add structured fields (excluding stepName and error which are handled separately)
+	fieldsSnippet := ""
+	for key, value := range entry.Data {
+		if key != "stepName" && key != logrus.ErrorKey {
+			if fieldsSnippet != "" {
+				fieldsSnippet += " "
+			}
+			fieldsSnippet += fmt.Sprintf("%s=%v", key, value)
+		}
+	}
+	if fieldsSnippet != "" {
+		fieldsSnippet = " [" + fieldsSnippet + "]"
+	}
+
 	level, _ := entry.Level.MarshalText()
 	levelString := string(level)
 	if levelString == "warning" {
@@ -45,23 +59,23 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 
 	switch formatter.logFormat {
 	case logFormatDefault:
-		message = fmt.Sprintf("%-5s %-6s - %s%s\n", levelString, stepName, entry.Message, errorMessageSnippet)
+		message = fmt.Sprintf("%-5s %-6s - %s%s%s\n", levelString, stepName, entry.Message, fieldsSnippet, errorMessageSnippet)
 	case logFormatWithTimestamp:
-		message = fmt.Sprintf("%s %-5s %-6s %s%s\n", entry.Time.Format("15:04:05"), levelString, stepName, entry.Message, errorMessageSnippet)
+		message = fmt.Sprintf("%s %-5s %-6s %s%s%s\n", entry.Time.Format("15:04:05"), levelString, stepName, entry.Message, fieldsSnippet, errorMessageSnippet)
 	case logFormatPlain:
-		message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
+		message = fmt.Sprintf("%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 	case logFormatGitHubActions:
 		// GitHub Actions format: use GitHub Actions logging commands and cleaner output
 		switch levelString {
 		case "error", "fatal":
-			message = fmt.Sprintf("::error::%s%s\n", entry.Message, errorMessageSnippet)
+			message = fmt.Sprintf("::error::%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 		case "warn":
-			message = fmt.Sprintf("::warning::%s%s\n", entry.Message, errorMessageSnippet)
+			message = fmt.Sprintf("::warning::%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 		case "debug":
-			message = fmt.Sprintf("::debug::%s%s\n", entry.Message, errorMessageSnippet)
+			message = fmt.Sprintf("::debug::%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 		default: // info and others
 			// For info messages, show clean output without step repetition
-			message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
+			message = fmt.Sprintf("%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 		}
 	default:
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
