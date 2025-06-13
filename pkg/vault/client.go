@@ -111,6 +111,8 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 			log.Entry().Warnf("unable to start managing token lifecycle: %v", err)
 			continue
 		}
+
+		return
 	}
 }
 
