@@ -33,7 +33,7 @@ const (
 	integrationJsonReport       = "integration-report.out"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0"
 	sbomFilename                = "bom-golang.xml"
 )
 
@@ -519,7 +519,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.9"); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
