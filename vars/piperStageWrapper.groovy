@@ -29,6 +29,7 @@ void call(Map parameters = [:], body) {
         .dependingOn('stageName').mixin('ordinal')
         .use()
 
+    echo "DEBUG123: stageLocking = ${config.stageLocking}"
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
         List environment = []
@@ -70,6 +71,7 @@ private void withEnvWrapper(List environment, Closure body) {
 }
 
 private void stageLocking(Map config, Closure body) {
+    echo "DEBUG123: stageLocking = ${config.stageLocking}"
     if (config.stageLocking) {
         String resource = config.lockingResourceGroup?:env.JOB_NAME
         if(config.lockingResource){
@@ -92,7 +94,7 @@ private void stageLocking(Map config, Closure body) {
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
     boolean projectExtensions
     boolean globalExtensions
-    
+
     def startTime = System.currentTimeMillis()
 
     try {
