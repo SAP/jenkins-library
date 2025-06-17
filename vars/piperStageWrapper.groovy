@@ -29,6 +29,7 @@ void call(Map parameters = [:], body) {
         .dependingOn('stageName').mixin('ordinal')
         .use()
 
+    echo "DEBUG123: config = ${config}"
     echo "DEBUG123: stageLocking = ${config.stageLocking}"
     stageLocking(config) {
         def containerMap = ContainerMap.instance.getMap().get(stageName) ?: [:]
@@ -71,24 +72,27 @@ private void withEnvWrapper(List environment, Closure body) {
 }
 
 private void stageLocking(Map config, Closure body) {
-    echo "DEBUG123: stageLocking = ${config.stageLocking}"
-    if (config.stageLocking) {
-        String resource = config.lockingResourceGroup?:env.JOB_NAME
-        if(config.lockingResource){
-            resource += "/${config.lockingResource}"
-        }
-        else if(config.ordinal){
-            resource += "/${config.ordinal}"
-        }
-        lock(resource: resource, inversePrecedence: true) {
-            if(config.ordinal) {
-                milestone config.ordinal
-            }
-            body()
-        }
-    } else {
-        body()
-    }
+    echo "DEBUG123: ignoring stageLocking"
+    body()
+    return
+
+//     if (config.stageLocking) {
+//         String resource = config.lockingResourceGroup?:env.JOB_NAME
+//         if(config.lockingResource){
+//             resource += "/${config.lockingResource}"
+//         }
+//         else if(config.ordinal){
+//             resource += "/${config.ordinal}"
+//         }
+//         lock(resource: resource, inversePrecedence: true) {
+//             if(config.ordinal) {
+//                 milestone config.ordinal
+//             }
+//             body()
+//         }
+//     } else {
+//         body()
+//     }
 }
 
 private void executeStage(script, originalStage, stageName, config, utils, telemetryDisabled = false) {
