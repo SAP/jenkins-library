@@ -28,5 +28,63 @@
     "postUpdateOptions": [
         "gomodTidy",
         "gomodUpdateImportPaths"
+    ],
+    "customManagers": [
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "/resources/default_pipeline_environment.yml$/"
+            ],
+            "matchStrings": [
+                "cycloneDXgomodDownload: 'https://github.com/(?<depName>.*)/releases/download/v(?<currentValue>.*)/.*'"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$",
+            "autoReplaceStringTemplate": "cycloneDXgomodDownload: 'https://github.com/CycloneDX/{{depName}}/releases/download/v{{newValue}}/cyclonedx-gomod_{{newValue}}_linux_amd64.tar.gz'"
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "/resources/default_pipeline_environment.yml$/"
+            ],
+            "matchStrings": [
+                "cycloneDXmavenDownload: 'https://github.com/(?<depName>.*)/archive/refs/tags/.*'"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$",
+            "autoReplaceStringTemplate": "cycloneDXmavenDownload: 'https://github.com/CycloneDX/{{depName}}/archive/refs/tags/cyclonedx-maven-plugin-{{newValue}}.tar.gz'"
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "/resources/default_pipeline_environment.yml$/"
+            ],
+            "matchStrings": [
+                "cycloneDXgradleDownload: 'https://github.com/(?<depName>.*)/archive/refs/tags/.*'"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$",
+            "autoReplaceStringTemplate": "cycloneDXgradleDownload: 'https://github.com/CycloneDX/{{depName}}/archive/refs/tags/cyclonedx-maven-plugin-{{newValue}}.tar.gz'"
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "/resources/default_pipeline_environment.yml$/"
+            ],
+            "matchStrings": [
+                "cycloneDXpythonDownload: 'https://github.com/(?<depName>.*)/releases/download/v(?<currentValue>.*)/.*'"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^v(?<version>.*)$",
+            "autoReplaceStringTemplate": "cycloneDXpythonDownload: 'https://github.com/CycloneDX/{{depName}}/releases/download/v{{newValue}}/cyclonedx_bom-{{newValue}}.tar.gz'"
+        }
     ]
 }
