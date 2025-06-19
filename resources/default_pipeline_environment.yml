@@ -564,3 +564,13 @@ steps:
   cnbBuild:
     stashIncludes:
       stashBack: '**/target/*.exec, **/*.jtl, **/target/**/*.xml'
+  cycloneDX:
+    cycloneDXgomodDownload: >-
+      https://github.com/CycloneDX/cyclonedx-gomod/releases/download/v1.9.0/cyclonedx-gomod_1.9.0_linux_amd64.tar.gz
+    cycloneDXmavenDownload: >-
+      https://github.com/CycloneDX/cyclonedx-maven-plugin/archive/refs/tags/cyclonedx-maven-plugin-2.9.1.tar.gz
+    cycloneDXgradleDownload: >-
+      https://github.com/CycloneDX/cyclonedx-gradle-plugin/archive/refs/tags/cyclonedx-gradle-plugin-2.3.1.tar.gz
+    cycloneDXpythonDownload: >-
+      https://github.com/CycloneDX/cyclonedx-python/releases/download/v6.1.1/cyclonedx_bom-6.1.1.tar.gz
+

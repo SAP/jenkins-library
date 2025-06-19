@@ -29,7 +29,7 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 
 	container.assertHasOutput(t,
 		"info  golangBuild - running command: go install gotest.tools/gotestsum@latest",
-		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0",
+		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...",
 		"info  golangBuild - DONE 8 tests",
 		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
@@ -64,7 +64,7 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest",
-		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0",
+		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...",
 		"info  golangBuild - DONE 8 tests",
 		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
@@ -102,7 +102,7 @@ func TestGolangIntegrationBuildProject2(t *testing.T) {
 
 	container.assertHasNoOutput(t,
 		"info  golangBuild - running command: go install gotest.tools/gotestsum@latest",
-		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0",
+		"info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...",
 		"info  golangBuild - running command: go tool cover -html cover.out -o coverage.html",
 		"info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...",
