@@ -142,7 +142,7 @@ You find details about this stage on the page [**Acceptance**](acceptance.md).
 
 ### Security
 
-This stage can run security checks using Checkmarx, Synopsys Detect, Fortify and WhiteSource.
+This stage can run security checks using Checkmarx, Blackduck Detect, Fortify and WhiteSource.
 
 You find details about this stage on the page [**Security**](security.md).
 

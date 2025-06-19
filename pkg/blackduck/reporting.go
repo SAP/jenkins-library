@@ -160,7 +160,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 		Driver: format.Driver{
 			Name:           "Black Duck",
 			Version:        "unknown",
-			InformationUri: "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus",
+			InformationUri: "https://documentation.blackduck.com/bundle/detect/page/introduction.html",
 			Rules:          rules,
 		},
 	}
