@@ -17,7 +17,7 @@ class MavenArtifactVersioning extends ArtifactVersioning {
     @Override
     def setVersion(version) {
         script.mavenExecute script: script,
-            goals: ['org.codehaus.mojo:versions-maven-plugin:2.7:set'],
+            goals: ['org.codehaus.mojo:versions-maven-plugin:2.13:set'],
             defines: ["-DnewVersion=${version}", "-DgenerateBackupPoms=false"],
             pomPath: configuration.filePath
     }
