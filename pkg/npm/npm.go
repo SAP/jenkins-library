@@ -29,7 +29,7 @@ type Executor interface {
 	FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error)
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
-	InstallAllDependencies(packageJSONFiles []string) error
+	InstallAllDependencies(packageJSONFiles []string, string) error
 	PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error
 	SetNpmRegistries() error
 	CreateBOM(packageJSONFiles []string) error
@@ -284,7 +284,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 }
 
 // InstallAllDependencies executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
-func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
+func (exec *Execute) InstallAllDependencies(packageJSONFiles []string, pnpmVersion string) error {
 	for _, packageJSON := range packageJSONFiles {
 		fileExists, err := exec.Utils.FileExists(packageJSON)
 		if err != nil {
@@ -294,7 +294,7 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.install(packageJSON)
+		err = exec.install(packageJSON, pnpmVersion)
 		if err != nil {
 			return err
 		}
@@ -303,7 +303,7 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 }
 
 // install executes the appropriate package manager install command for package.json
-func (exec *Execute) install(packageJSON string) error {
+func (exec *Execute) install(packageJSON string, pnpmVersion string) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	oldWorkingDirectory, err := exec.Utils.Getwd()
@@ -322,12 +322,12 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	pm, err := exec.detectPackageManager()
+	pm, err := exec.detectPackageManager(pnpmVersion)
 	if err != nil {
 		return err
 	}
 
-	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
+	log.Entry().Info("Running Install in directory " + dir)
 
 	if !strings.HasPrefix(pm.LockFile, "package-lock.json") {
 		log.Entry().Info("Using " + pm.Name + " package manager")

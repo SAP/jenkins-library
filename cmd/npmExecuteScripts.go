@@ -31,7 +31,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	if config.Install {
 		if len(config.BuildDescriptorList) > 0 {
-			if err := npmExecutor.InstallAllDependencies(config.BuildDescriptorList); err != nil {
+			if err := npmExecutor.InstallAllDependencies(config.BuildDescriptorList, config.PnpmVersion); err != nil {
 				return err
 			}
 		} else {
@@ -40,7 +40,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 				return err
 			}
 
-			if err := npmExecutor.InstallAllDependencies(packageJSONFiles); err != nil {
+			if err := npmExecutor.InstallAllDependencies(packageJSONFiles, config.PnpmVersion); err != nil {
 				return err
 			}
 		}
