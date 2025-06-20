@@ -96,7 +96,7 @@ func (n *NpmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 }
 
 // InstallAllDependencies mock implementation
-func (n *NpmExecutorMock) InstallAllDependencies(packageJSONFiles []string) error {
+func (n *NpmExecutorMock) InstallAllDependencies(packageJSONFiles []string, pnpmVersion string) error {
 	allPackages := n.FindPackageJSONFiles()
 	if len(packageJSONFiles) != len(allPackages) {
 		return fmt.Errorf("packageJSONFiles != n.FindPackageJSONFiles()")

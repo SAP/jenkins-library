@@ -2,8 +2,9 @@ package npm
 
 import (
 	"fmt"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+	"os"
+	"path/filepath"
 )
 
 const pnpmPath = tmpInstallFolder + "/node_modules/.bin/pnpm"
@@ -39,26 +40,40 @@ var supportedPackageManagers = []PackageManager{
 }
 
 // IsPnpmInstalled checks if pnpm is available in the local project
-func (pm *PackageManager) IsPnpmInstalled(execRunner ExecRunner) bool {
+func (pm *PackageManager) IsPnpmInstalled(execRunner ExecRunner, pnpmVersion string) bool {
 	err := execRunner.RunExecutable(pnpmPath, "--version")
 	return err == nil
 }
 
 // InstallPnpm handles the special installation process for pnpm if not already installed
-func (pm *PackageManager) InstallPnpm(execRunner ExecRunner) error {
-	if pm.IsPnpmInstalled(execRunner) {
-		log.Entry().Info("pnpm is already installed locally, skipping installation")
+func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string) error {
+	if pm.IsPnpmInstalled(execRunner, pnpmVersion) {
+		log.Entry().Info("pnpm is already installed locally, skipping installation. pnpmVersion parameter will be ignored.")
 		return nil
 	}
-
-	if err := execRunner.RunExecutable("npm", "install", "pnpm", "--prefix", tmpInstallFolder); err != nil {
-		return err
+	installTarget := "pnpm"
+	if pnpmVersion != "" {
+		installTarget = fmt.Sprintf("pnpm@%s", pnpmVersion)
 	}
+	log.Entry().Debugf("Installing %s locally using npm", installTarget)
+
+	if err := execRunner.RunExecutable("npm", "install", installTarget, "--prefix", tmpInstallFolder); err != nil {
+		return fmt.Errorf("failed to install %s: %w", installTarget, err)
+	}
+	//Add pnpm installed path to PATH
+	binPath := filepath.Dir(pnpmPath)
+	currentPath := os.Getenv("PATH")
+	newPath := fmt.Sprintf("%s%c%s", binPath, os.PathListSeparator, currentPath)
+	if err := os.Setenv("PATH", newPath); err != nil {
+		return fmt.Errorf("failed to update PATH: %w", err)
+	}
+	log.Entry().Debugf("Updated PATH to include %s", binPath)
+
 	return nil
 }
 
 // detectPackageManager determines which package manager to use based on lock files
-func (exec *Execute) detectPackageManager() (*PackageManager, error) {
+func (exec *Execute) detectPackageManager(pnpmVersion string) (*PackageManager, error) {
 	for _, pm := range supportedPackageManagers {
 		exists, err := exec.Utils.FileExists(pm.LockFile)
 		if err != nil {
@@ -66,7 +81,7 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 		}
 		if exists {
 			if pm.Name == "pnpm" {
-				if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
+				if err := pm.InstallPnpm(exec.Utils.GetExecRunner(), pnpmVersion); err != nil {
 					return nil, fmt.Errorf("failed to install pnpm: %w", err)
 				}
 			}
@@ -75,6 +90,8 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 	}
 
 	// No lock file found - log warning and default to npm with regular install
+	log.Entry().Debugf("No lock file found , default to npm with regular install")
+
 	log.Entry().Warn("No package lock file found. " +
 		"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 		" Add this file to your version control. " +

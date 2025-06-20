@@ -235,7 +235,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 			buildDescriptorList = []string{"package.json"}
 		}
 
-		err := npmExecutor.InstallAllDependencies(buildDescriptorList)
+		err := npmExecutor.InstallAllDependencies(buildDescriptorList, "")
 		if err != nil {
 			return err
 		}

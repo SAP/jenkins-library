@@ -117,7 +117,7 @@ func (bundle *mtaBuildUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) e
 func (bundle *mtaBuildUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
 	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: defaultNpmRegistry, ExecRunner: bundle}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
-	return npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+	return npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles(), "")
 }
 
 func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {

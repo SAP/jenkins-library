@@ -70,7 +70,7 @@ func TestPackageManager(t *testing.T) {
 					Options: ExecutorOptions{},
 				}
 
-				pm, err := exec.detectPackageManager()
+				pm, err := exec.detectPackageManager("")
 
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedPM, pm.Name)
@@ -105,7 +105,7 @@ func TestPackageManager(t *testing.T) {
 					Options: ExecutorOptions{},
 				}
 
-				_, err := exec.detectPackageManager()
+				_, err := exec.detectPackageManager("")
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)
 			})
@@ -158,7 +158,7 @@ func TestPackageManager(t *testing.T) {
 					Options: ExecutorOptions{},
 				}
 
-				err := exec.install("package.json")
+				err := exec.install("package.json", "")
 
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.expectedError)

@@ -139,7 +139,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.install("package.json")
+		err := exec.install("package.json", "")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -159,7 +159,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.install("package.json")
+		err := exec.install("package.json", "")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -180,7 +180,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.install("package.json")
+		err := exec.install("package.json", "")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
@@ -205,7 +205,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.install("package.json")
+		err := exec.install("package.json", "")
 
 		if assert.NoError(t, err) {
 			fmt.Println(utils.execRunner.Calls)
@@ -236,7 +236,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.InstallAllDependencies([]string{"package.json", filepath.Join("src", "package.json")})
+		err := exec.InstallAllDependencies([]string{"package.json", filepath.Join("src", "package.json")}, "")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {

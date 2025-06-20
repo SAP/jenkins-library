@@ -191,6 +191,12 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: pnpmVersion
+        type: string
+        description: optional parameter to specify the pnpm version to be installed. By default installs latest pnpm version .Only needed when using pnpm package manager.
+        scope:
+          - STEPS
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
