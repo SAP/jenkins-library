@@ -788,7 +788,7 @@ spec:
           params:
             - name: buildTool
               value: sbt
-    - image: maven:3.8.6-jdk-8
+    - image: maven:3.5-jdk-8
       workingDir: /tmp
       env: []
       conditions:
