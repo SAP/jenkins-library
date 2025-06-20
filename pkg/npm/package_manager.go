@@ -2,7 +2,6 @@ package npm
 
 import (
 	"fmt"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -65,18 +64,15 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 			return nil, fmt.Errorf("failed to check for %s: %w", pm.LockFile, err)
 		}
 		if exists {
-			if pm.Name == "pnpm" {
-				if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
-					return nil, fmt.Errorf("failed to install pnpm: %w", err)
-				}
-			}
 			return &pm, nil
 		}
 	}
 
 	// No lock file found - log warning and default to npm with regular install
+	log.Entry().Debug("No lock file found, defaulting to npm with regular install")
+
 	log.Entry().Warn("No package lock file found. " +
-		"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
+		"It is recommended to create a `package-lock.json` file by running `npm install` locally." +
 		" Add this file to your version control. " +
 		"By doing so, the builds of your application become more reliable.")
 
@@ -87,3 +83,41 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 		InstallArgs:    []string{"install"},
 	}, nil
 }
+func (exec *Execute) ensurePnpmInstalledIfNeeded(pm *PackageManager) error {
+	if pm.Name == "pnpm" {
+		if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
+			return fmt.Errorf("failed to install pnpm: %w", err)
+		}
+	}
+	return nil
+}
+
+//func (exec *Execute) detectPackageManager() (*PackageManager, error) {
+//	for _, pm := range supportedPackageManagers {
+//		exists, err := exec.Utils.FileExists(pm.LockFile)
+//		if err != nil {
+//			return nil, fmt.Errorf("failed to check for %s: %w", pm.LockFile, err)
+//		}
+//		if exists {
+//			if pm.Name == "pnpm" {
+//				if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
+//					return nil, fmt.Errorf("failed to install pnpm: %w", err)
+//				}
+//			}
+//			return &pm, nil
+//		}
+//	}
+//
+//	// No lock file found - log warning and default to npm with regular install
+//	log.Entry().Warn("No package lock file found. " +
+//		"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
+//		" Add this file to your version control. " +
+//		"By doing so, the builds of your application become more reliable.")
+//
+//	return &PackageManager{
+//		Name:           "npm",
+//		LockFile:       "",
+//		InstallCommand: "npm",
+//		InstallArgs:    []string{"install"},
+//	}, nil
+//}
