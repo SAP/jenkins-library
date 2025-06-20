@@ -804,7 +804,7 @@ spec:
           params:
             - name: buildTool
               value: npm
-    - image: python:3.7.1-stretch
+    - image: python:3.6-stretch
       workingDir: /tmp
       env: []
       conditions:
