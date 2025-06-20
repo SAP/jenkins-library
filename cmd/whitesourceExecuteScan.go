@@ -144,7 +144,7 @@ func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ws.ScanOptions) ([
 }
 
 func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ws.ScanOptions, packageJSONFiles []string) error {
-	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
+	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles, "")
 }
 
 func (w *whitesourceUtilsBundle) SetOptions(o piperhttp.ClientOptions) {

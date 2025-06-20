@@ -38,7 +38,7 @@ var cycloneDxCliUrl = map[struct{ os, arch string }]string{
 // It supports both pnpm and other package managers (npm/yarn) with different BOM generation strategies.
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	log.Entry().Debug("Detecting package manager...")
-	pm, err := exec.detectPackageManager()
+	pm, err := exec.detectPackageManager("")
 	if err != nil {
 		return fmt.Errorf("failed to detect package manager (looking for package.json, package-lock.json, pnpm-lock.yaml): %w", err)
 	}

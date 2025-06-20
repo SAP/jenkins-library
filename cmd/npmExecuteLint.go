@@ -88,7 +88,7 @@ func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExe
 
 	if len(packagesWithLintScript) > 0 {
 		if config.Install {
-			err := npmExecutor.InstallAllDependencies(packagesWithLintScript)
+			err := npmExecutor.InstallAllDependencies(packagesWithLintScript, "")
 			if err != nil {
 				return err
 			}
@@ -100,7 +100,7 @@ func runNpmExecuteLint(npmExecutor npm.Executor, utils lintUtils, config *npmExe
 		}
 	} else {
 		if config.Install {
-			err := npmExecutor.InstallAllDependencies(packageJSONFiles)
+			err := npmExecutor.InstallAllDependencies(packageJSONFiles, "")
 			if err != nil {
 				return err
 			}
