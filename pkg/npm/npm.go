@@ -327,6 +327,11 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
+	err = exec.ensurePnpmInstalledIfNeeded(pm)
+	if err != nil {
+		return err
+	}
+
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
 
 	if !strings.HasPrefix(pm.LockFile, "package-lock.json") {
