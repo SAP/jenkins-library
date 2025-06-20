@@ -1113,7 +1113,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				{Image: "golang:1", WorkingDir: "/go", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "golang"}}}}},
 				{Image: "gradle", WorkingDir: "/home/gradle", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
-				{Image: "maven:3.8.6-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
+				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
 				{Image: "node:lts-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
 				{Image: "python:3.7.1-stretch", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
 				{Image: "node:lts-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
