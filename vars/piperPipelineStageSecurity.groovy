@@ -13,7 +13,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field STAGE_STEP_KEYS = [
     /** Executes a Checkmarx scan */
     'checkmarxExecuteScan',
-    /** Executes Synopsys Detect scans */
+    /** Executes Blackduck Detect scans */
     'detectExecuteScan',
     /** Executes a Fortify scan */
     'fortifyExecuteScan',

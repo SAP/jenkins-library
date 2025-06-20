@@ -1,9 +1,9 @@
 metadata:
   name: detectExecuteScan
-  description: Executes Synopsys Detect scan
+  description: Executes Blackduck Detect scan
   longDescription: |
-    This step executes [Synopsys Detect](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus) scans.
-    Synopsys Detect command line utlity can be used to run various scans including BlackDuck and Polaris scans. This step allows users to run BlackDuck scans by default.
+    This step executes [Blackduck Detect](https://documentation.blackduck.com/bundle/detect/page/introduction.html) scans.
+    Blackduck Detect command line utlity can be used to run various scans including BlackDuck scans. This step allows users to run BlackDuck scans by default.
     Please configure your BlackDuck server Url using the serverUrl parameter and the API token of your user using the apiToken parameter for this step.
 spec:
   inputs:
@@ -16,7 +16,7 @@ spec:
       - name: detectTokenCredentialsId
         aliases:
           - name: apiTokenCredentialsId
-        description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
+        description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Blackduck Detect Server.
         type: jenkins
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
@@ -33,7 +33,7 @@ spec:
             deprecated: true
           - name: detect/apiToken
             deprecated: true
-        description: Api token to be used for connectivity with Synopsis Detect server.
+        description: Api token to be used for connectivity with Blackduck Detect server.
         type: string
         mandatory: true
         secret: true
@@ -55,7 +55,7 @@ spec:
           - STAGES
           - STEPS
       - name: projectName
-        description: Name of the Synopsis Detect (formerly BlackDuck) project.
+        description: Name of the Blackduck Detect project.
         aliases:
           - name: detect/projectName
         type: string
@@ -65,7 +65,7 @@ spec:
           - STAGES
           - STEPS
       - name: scanners
-        description: List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.
+        description: List of scanners to be used for Blackduck Detect scan.
         aliases:
           - name: detect/scanners
         type: "[]string"
@@ -79,7 +79,7 @@ spec:
           - STAGES
           - STEPS
       - name: scanPaths
-        description: List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.
+        description: List of paths which should be scanned by the Blackduck Detect scan.
         aliases:
           - name: detect/scanPaths
         type: "[]string"
@@ -109,7 +109,7 @@ spec:
           - STAGES
           - STEPS
       - name: scanProperties
-        description: Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus)
+        description: Properties passed to the Blackduck Detect scan. You can find details in the [Blackduck Detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/basic-properties.html)
         aliases:
           - name: detect/scanProperties
         type: "[]string"
@@ -124,7 +124,7 @@ spec:
           - STAGES
           - STEPS
       - name: serverUrl
-        description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
+        description: Server URL to the Blackduck Detect Server.
         aliases:
           - name: detect/serverUrl
           - name: detectServerUrl
@@ -147,7 +147,7 @@ spec:
         description: Mark the current build as fail based on the policy categories applied.
         longDescription: |
           A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
-          The list of accepted values can be found at [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fproject.html&anchor=fail-on-policy-violation-severities&_LANG=enus)
+          The list of accepted values can be found at [Blackduck detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/configuration/project.html#fail-on-policy-violation-severities)
         aliases:
           - name: detect/failOn
         type: "[]string"
@@ -328,7 +328,7 @@ spec:
       - name: includedPackageManagers
         description:
           "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
-          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)"
+          For the complete list of possible values for this parameter, please refer [Blackduck detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/configuration/detector.html#ariaid-title5)"
         aliases:
           - name: detect/includedPackageManagers
         type: "[]string"
@@ -339,7 +339,7 @@ spec:
       - name: excludedPackageManagers
         description:
           "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder
-          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)"
+          For the complete list of possible values for this parameter, please refer [Blackduck detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/configuration/detector.html#ariaid-title4)"
         aliases:
           - name: detect/excludedPackageManagers
         type: "[]string"
@@ -359,7 +359,7 @@ spec:
       - name: detectTools
         description:
           "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included.
-          For the complete list of possible values, Please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fpaths.html&_LANG=enus&anchor=detect-tools-included)"
+          For the complete list of possible values, Please refer [Blackduck detect documentation](https://documentation.blackduck.com/bundle/detect/page/components/tools.html)"
         aliases:
           - name: detect/detectTools
         type: "[]string"
@@ -394,7 +394,7 @@ spec:
       - name: customEnvironmentVariables
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
-          Synopsys. The full list can be found [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fenvvars.html&_LANG=enus)
+          Blackduck. The full list can be found [here](https://documentation.blackduck.com/bundle/detect/page/configuring/envvars.html)
           This list affects the detect script downloaded while running the scan. Right now only detect7.sh is available for downloading"
         type: "[]string"
         scope:
