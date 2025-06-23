@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/SAP/jenkins-library/pkg/environment"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -117,7 +118,7 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 func DetectOrchestrator() Orchestrator {
 	if isAzure() {
 		return AzureDevOps
-	} else if isGitHubActions() {
+	} else if environment.IsGitHubActions() {
 		return GitHubActions
 	} else if isJenkins() {
 		return Jenkins

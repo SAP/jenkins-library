@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/environment"
 	"github.com/sirupsen/logrus"
 )
 
@@ -116,7 +116,7 @@ func Entry() *logrus.Entry {
 
 		// Auto-detect GitHub Actions environment and set appropriate format
 		logFormat := logFormatDefault
-		if os.Getenv("GITHUB_ACTIONS") == "true" {
+		if environment.IsGitHubActions() {
 			logFormat = logFormatGitHubActions
 		}
 
@@ -147,7 +147,7 @@ func IsVerbose() bool {
 // SetFormatter specifies the log format to use for piper's output
 func SetFormatter(logFormat string) {
 	// Auto-detect GitHub Actions environment and override format if needed
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
+	if environment.IsGitHubActions() {
 		// Override any format with GitHub Actions format when running in GitHub Actions
 		logFormat = logFormatGitHubActions
 	}
@@ -159,12 +159,25 @@ func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
 
 	// For GitHub Actions, create a collapsible group for the step
-	if os.Getenv("GITHUB_ACTIONS") == "true" && currentGitHubGroup != stepName {
-		if currentGitHubGroup != "" {
-			fmt.Println("::endgroup::")
-		}
-		fmt.Printf("::group::%s\n", stepName)
-		currentGitHubGroup = stepName
+	if environment.IsGitHubActions() && currentGitHubGroup != stepName {
+		EndGroup() // End current group if any
+		StartGroup(stepName)
+	}
+}
+
+// StartGroup starts a new GitHub Actions group
+func StartGroup(groupName string) {
+	if environment.IsGitHubActions() {
+		fmt.Printf("::group::%s\n", groupName)
+		currentGitHubGroup = groupName
+	}
+}
+
+// EndGroup ends the current GitHub Actions group
+func EndGroup() {
+	if environment.IsGitHubActions() && currentGitHubGroup != "" {
+		fmt.Println("::endgroup::")
+		currentGitHubGroup = ""
 	}
 }
 
