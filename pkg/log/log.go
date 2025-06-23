@@ -99,7 +99,6 @@ var LibraryRepository string
 var LibraryName string
 var logger *logrus.Entry
 var secrets []string
-var currentGitHubGroup string
 var stepErrors []StepError
 
 // StepError defines a known error pattern that can be detected in step output
@@ -157,28 +156,6 @@ func SetFormatter(logFormat string) {
 // SetStepName sets the stepName field.
 func SetStepName(stepName string) {
 	logger = Entry().WithField("stepName", stepName)
-
-	// For GitHub Actions, create a collapsible group for the step
-	if environment.IsGitHubActions() && currentGitHubGroup != stepName {
-		EndGroup() // End current group if any
-		StartGroup(stepName)
-	}
-}
-
-// StartGroup starts a new GitHub Actions group
-func StartGroup(groupName string) {
-	if environment.IsGitHubActions() {
-		fmt.Printf("::group::%s\n", groupName)
-		currentGitHubGroup = groupName
-	}
-}
-
-// EndGroup ends the current GitHub Actions group
-func EndGroup() {
-	if environment.IsGitHubActions() && currentGitHubGroup != "" {
-		fmt.Println("::endgroup::")
-		currentGitHubGroup = ""
-	}
 }
 
 // DeferExitHandler registers a logrus exit handler to allow cleanup activities.
