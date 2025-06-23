@@ -48,13 +48,13 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 func (w *logrusWriter) alwaysFlush() {
 	message := w.buffer.String()
 	w.buffer.Reset()
-	
+
 	// Check for known error patterns first
 	if matched, errorMsg := checkKnownErrorPatterns(message); matched {
 		w.logger.Error(errorMsg)
 		return
 	}
-	
+
 	// Align level with underlying tool (like maven or npm)
 	// This is to avoid confusion when maven or npm print errors or warnings which piper would print as "info"
 	if strings.Contains(message, "ERROR") || strings.Contains(message, "ERR!") {
@@ -73,14 +73,14 @@ func (w *logrusWriter) alwaysFlush() {
 // If not matched, returns (false, "")
 func checkKnownErrorPatterns(message string) (bool, string) {
 	errors := GetStepErrors()
-	
+
 	if len(errors) == 0 {
 		return false, ""
 	}
-	
+
 	// Normalize the message for better matching
 	normalizedMessage := strings.TrimSpace(message)
-	
+
 	for _, stepError := range errors {
 		// First try regex matching
 		matched, err := regexp.MatchString(stepError.Pattern, normalizedMessage)
@@ -102,7 +102,7 @@ func checkKnownErrorPatterns(message string) (bool, string) {
 			return true, message
 		}
 	}
-	
+
 	return false, ""
 }
 
