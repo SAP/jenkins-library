@@ -191,7 +191,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 		}
 	}
 	if secretValue == nil {
-		log.Entry().WithField("parameter", param.Name).Warn("Failed to resolve vault secret from all configured paths")
+		log.Entry().Warn("Failed to resolve vault secret from all configured paths")
 	}
 }
 
