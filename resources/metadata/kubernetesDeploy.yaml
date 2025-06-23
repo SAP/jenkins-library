@@ -545,18 +545,3 @@ spec:
       options:
         - name: -u
           value: "0"
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: deployTool
-              value: helm3
-    - image: dtzar/helm-kubectl:2.17.0
-      workingDir: /config
-      options:
-        - name: -u
-          value: "0"
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: deployTool
-              value: helm
