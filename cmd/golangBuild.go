@@ -519,7 +519,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.9"); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
