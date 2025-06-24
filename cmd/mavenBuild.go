@@ -53,7 +53,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	var defines []string
 
 	createBOMConfig := []string{
-		"-DschemaVersion=1.4",
+		"-DschemaVersion=1.6",
 		"-DincludeBomSerialNumber=true",
 		"-DincludeCompileScope=true",
 		"-DincludeProvidedScope=true",
