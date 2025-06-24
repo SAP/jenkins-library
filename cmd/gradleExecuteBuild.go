@@ -83,7 +83,7 @@ initscript {
     }
   }
   dependencies {
-    classpath "org.cyclonedx:cyclonedx-gradle-plugin:2.3.1"
+    classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.0"
   }
 }
 
