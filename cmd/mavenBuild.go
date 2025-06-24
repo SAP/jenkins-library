@@ -112,7 +112,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		// Append the makeAggregateBOM goal to the rest of the goals
 		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom")
 		createBOMConfig := []string{
-			"-DschemaVersion=1.4",
+			"-DschemaVersion=1.6",
 			"-DincludeBomSerialNumber=true",
 			"-DincludeCompileScope=true",
 			"-DincludeProvidedScope=true",
