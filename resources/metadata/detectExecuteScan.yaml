@@ -401,17 +401,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      ## --- to remove minScanInterval from parameters list ---
-      - name: minScanInterval
-        description:
-          "[DEPRECATED] This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
-          value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
-        type: int
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      ## -----------
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
