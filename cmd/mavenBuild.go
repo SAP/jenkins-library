@@ -53,7 +53,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	var defines []string
 
 	createBOMConfig := []string{
-		"-DschemaVersion=1.6",
+		"-DschemaVersion=1.4",
 		"-DincludeBomSerialNumber=true",
 		"-DincludeCompileScope=true",
 		"-DincludeProvidedScope=true",
@@ -66,7 +66,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	}
 	defines = append(defines, createBOMConfig...)
 
-	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeBom"}
+	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeBom"}
 
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
@@ -110,9 +110,9 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 
 	if config.CreateBOM {
 		// Append the makeAggregateBOM goal to the rest of the goals
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom")
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom")
 		createBOMConfig := []string{
-			"-DschemaVersion=1.6",
+			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",
 			"-DincludeCompileScope=true",
 			"-DincludeProvidedScope=true",
