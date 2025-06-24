@@ -250,7 +250,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write SARIF file")
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "Blackduck Detect Vulnerability SARIF file", Target: sarifReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Detect Vulnerability SARIF file", Target: sarifReportPath})
 
 	return reportPaths, nil
 }
