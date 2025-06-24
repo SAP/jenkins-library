@@ -96,7 +96,7 @@ allprojects {
         cyclonedxBom {
             outputName = "` + gradleBomFilename + `"
             outputFormat = "xml"
-            schemaVersion = "1.6"
+            schemaVersion = "1.4"
             includeConfigs = ["runtimeClasspath"]
             skipConfigs = ["compileClasspath", "testCompileClasspath"]
         }
