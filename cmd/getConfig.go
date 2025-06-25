@@ -180,10 +180,6 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
 		}
 
-		SetConfigOptions(ConfigCommandOptions{
-			OpenFile: config.OpenPiperFile,
-		})
-
 		// prepare output resource directories:
 		// this is needed in order to have proper directory permissions in case
 		// resources written inside a container image with a different user
