@@ -248,6 +248,17 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
