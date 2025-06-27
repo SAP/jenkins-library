@@ -96,7 +96,7 @@ type OtherViolation struct {
 const rapidReportMdTemplate = `
  {{if .Success}}:heavy_check_mark: **OSS related checks passed successfully**
   :clipboard: OSS related checks executed by Black Duck - rapid scan passed successfully.
- <h4><a href="https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/runningdetect/rapidscan.html">RAPID SCAN</a></h4>
+ <h4><a href="https://documentation.blackduck.com/bundle/detect/page/runningdetect/rapidscan.html">RAPID SCAN</a></h4>
 
 {{else}} :x: **OSS related checks failed**
   :clipboard: Policies violated by added OSS components
