@@ -224,23 +224,20 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 		return errors.Wrapf(err, "failed to check if file '%s' exists", agentFile)
 	}
 	if !exists {
-		const maxRetries = 3
-		log.Entry().Infof("Downloading Whitesource Unified Agent from %s to %s", config.AgentDownloadURL, agentFile)
-		for i := 0; i < maxRetries; i++ {
-			err = utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
-			if err == nil {
-				log.Entry().Infof("Successfully downloaded Whitesource Unified Agent to %s", agentFile)
-				break
+		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
+		if err != nil {
+			// we check if the copy and the unauthorized error occurs and retry the download
+			// if the copy error did not happen, we rerun the whole download mechanism once
+			if strings.Contains(err.Error(), "unable to copy content from url to file") || strings.Contains(err.Error(), "returned with response 404 Not Found") || strings.Contains(err.Error(), "returned with response 403 Forbidden") {
+				// retry the download once again
+				log.Entry().Warnf("[Retry] Previous download failed due to %v", err)
+				err = nil // reset error to nil
+				err = utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 			}
-			log.Entry().Warnf("Failed to download Whitesource Unified Agent: %v", err)
-			if i < maxRetries-1 {
-				log.Entry().Infof("Retrying download in 2 seconds...")
-				time.Sleep(2 * time.Second)
-			} else {
-				log.Entry().Errorf("Failed to download Whitesource Unified Agent after %d attempts", maxRetries)
-				return errors.Wrapf(err, "failed to download unified agent from URL '%s' to file '%s' after %d attempts", config.AgentDownloadURL, agentFile, maxRetries)
-			}
-			log.Entry().Infof("Retrying download of Whitesource Unified Agent, attempt %d/%d", i+2, maxRetries)
+		}
+
+		if err != nil {
+			return errors.Wrapf(err, "failed to download unified agent from URL '%s' to file '%s'", config.AgentDownloadURL, agentFile)
 		}
 	}
 	return nil
