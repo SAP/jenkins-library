@@ -19,6 +19,8 @@ type MonitoringData struct {
 	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
 	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
 	Orchestrator    string `json:"Orchestrator,omitempty"`
+	// TemplateName indicates what template was used to run the pipeline (GPP or custom)
+	TemplateName    string `json:"TemplateName,omitempty"`
 	PiperCommitHash string `json:"PiperCommitHash,omitempty"`
 	StageName       string `json:"StageName,omitempty"`
 	StepName        string `json:"StepName,omitempty"`
