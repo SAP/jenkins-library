@@ -213,11 +213,6 @@ func evaluateExitCode(exitCode int) {
 
 // downloadAgent downloads the unified agent jar file if one does not exist
 func downloadAgent(config *ScanOptions, utils Utils) error {
-	// full list of download urls currently (6/27/2025) supported by vendor:
-	// 1) https://unified-agent.s3.amazonaws.com/wss-unified-agent-latest.jar
-	// 2) https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
-	// 3) https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
-	// TODO: implement backup download URLs in case the first one fails
 	agentFile := config.AgentFileName
 	exists, err := utils.FileExists(agentFile)
 	if err != nil {
