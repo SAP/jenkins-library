@@ -52,7 +52,7 @@ spec:
         default: html
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer. Note that this step is defaulted to 'true' in the individual [build step(s)](../stages/README.md).
         scope:
           - GENERAL
           - STEPS
@@ -112,7 +112,7 @@ spec:
           - STEPS
       - name: publish
         type: bool
-        description: Configures the build to publish artifacts to a repository.
+        description: Configures the build to publish artifacts to a repository. Note that this step is defaulted to 'true' in the individual [build step(s)](../stages/README.md).
         scope:
           - STEPS
           - STAGES

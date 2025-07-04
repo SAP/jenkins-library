@@ -201,7 +201,7 @@ spec:
             param: custom/repositoryUrl
       - name: publish
         type: bool
-        description: pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true
+        description: Pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true. Note that this step is defaulted to 'true' in the individual [build step(s)](../stages/README.md).
         scope:
           - STEPS
           - STAGES
@@ -229,7 +229,7 @@ spec:
             param: custom/buildSettingsInfo
       - name: createBOM
         type: bool
-        description: Creates the bill of materials (BOM) using CycloneDX plugin.
+        description: Creates the bill of materials (BOM) using CycloneDX plugin. Note that this step is defaulted to 'true' in the individual [build step(s)](../stages/README.md).
         scope:
           - GENERAL
           - STEPS
