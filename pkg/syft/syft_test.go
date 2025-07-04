@@ -4,6 +4,7 @@
 package syft_test
 
 import (
+	"errors"
 	"net/http"
 	"testing"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 )
