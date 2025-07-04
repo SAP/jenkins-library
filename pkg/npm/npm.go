@@ -146,6 +146,7 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 
 	if len(packagesList) > 0 {
 		packageJSONFiles = packagesList
+		log.Entry().Info("Using provided package-list: " + packagesList)
 	} else {
 		packageJSONFiles, err = exec.FindPackageJSONFilesWithExcludes(excludeList)
 		if err != nil {
