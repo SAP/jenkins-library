@@ -20,6 +20,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         handlePipelineStepErrorsParameters.failOnError = true
     }
 
+    echo "DEBUG(PIPER_PIPELINE_TEMPLATE_NAME): before handlePipelineStepErrors piperExecuteBin: ${PIPER_PIPELINE_TEMPLATE_NAME}"
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
         Script script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
@@ -32,6 +33,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         Map stepParameters = prepareStepParameters(parameters)
         echo "Step params $stepParameters"
 
+        echo "DEBUG(PIPER_PIPELINE_TEMPLATE_NAME): before withEnv piperExecuteBin: ${PIPER_PIPELINE_TEMPLATE_NAME}"
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
@@ -90,6 +92,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                                         sh "ulimit -a"
                                     }
 
+                                    echo "DEBUG(PIPER_PIPELINE_TEMPLATE_NAME): before sh piperExecuteBin: ${PIPER_PIPELINE_TEMPLATE_NAME}"
                                     sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                                 }
                             } finally {
