@@ -99,7 +99,7 @@ jobs:
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} --repository ${{ github.event.repository.name }} --version ${{ steps.release.outputs.tag_name }} --assetPath ./target/jenkins-library.jar
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} --repository ${{ github.event.repository.name }} --version latest --assetPath ./target/jenkins-library.jar
 
   post:
     name: Post Action
