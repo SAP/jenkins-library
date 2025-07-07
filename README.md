@@ -1,4 +1,4 @@
-# **_Important:_** **_This project is no longer accepting contributions. We appreciate all the past contributions and support from the community._**
+# **_Important:_** **_This project is no longer accepting contributions. We appreciate all the past contributions and support from the community._** 
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
