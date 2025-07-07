@@ -38,7 +38,7 @@ jobs:
       - uses: styfle/cancel-workflow-action@0.11.0
       - uses: actions/checkout@v4
 
-      - name: Prepare assets and increment version
+      - name: Prepare assets
         run: |
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.x86_64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
@@ -46,27 +46,31 @@ jobs:
           cp ./piper_master ./piper
           cp ./piper_master-darwin.x86_64 ./piper-darwin.x86_64
           cp ./piper_master-darwin.arm64 ./piper-darwin.arm64
-          npm install semver --quiet
-          VERSION="v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))"
-          echo "PIPER_version=$VERSION" >> $GITHUB_ENV
-          echo "piper_version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Publish release
+        uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+          publish: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: SAP/project-piper-action@master
-        name: Publish prerelease
+        name: Upload assets to published release
         with:
           piper-version: master
           command: githubPublishRelease
           flags: >
-            --preRelease true
             --token ${{ secrets.GITHUB_TOKEN }}
+            --version latest
             --assetPathList ./piper --assetPathList ./piper_master
             --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
             --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-darwin.arm64
 
-      - name: Download Piper binary from recently published prerelease
+      - name: Download Piper binary from published release
         uses: robinraju/release-downloader@v1
         with:
-          tag: ${{ env.PIPER_version }}
+          latest: true
           fileName: 'piper'
 
       - name: Test binary (check output for 'commit:' substring)
@@ -79,24 +83,6 @@ jobs:
               ./piper version
               exit 1
           fi
-
-      - name: Get recently published prerelease id
-        id: release_id
-        run: >
-          curl -L -s -o resp.json
-          -H "Accept: application/vnd.github.raw+json"
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
-          ${{ github.api_url }}/repos/${{ github.repository }}/releases
-
-          echo "release_id=$(jq 'first(.[] | select(.tag_name == "${{ env.PIPER_version }}")).id' resp.json)" >> "$GITHUB_OUTPUT"
-
-      - name: Convert prerelease to Release
-        run: >
-          curl --fail-with-body -L -X PATCH
-          -H "Accept: application/vnd.github+json"
-          -H "Authorization: Bearer ${{ github.token }}"
-          ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.outputs.release_id }}
-          -d '{"prerelease": false, "make_latest": true}'
 
       # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
       - uses: actions/setup-java@v4

@@ -1,0 +1,29 @@
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - master
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  update_release_draft:
+    name: Release-Drafter
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: 🚀 Prepare release
+        uses: release-drafter/release-drafter@v6
+        with:
+          commitish: ${{ inputs.drafter-commitish }}  # codespell:ignore commitish
+          disable-releaser: ${{ github.event_name == 'pull_request' }}
+          disable-autolabeler: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
