@@ -3,7 +3,7 @@ name: Publish master branch binary
 on:
   push:
     branches:
-      - master  # yamllint disable-line rule:terminology
+      - master
 
 jobs:
   build:
