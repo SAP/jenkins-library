@@ -170,7 +170,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.Flags().BoolVar(&stepConfig.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
 	cmd.Flags().BoolVar(&stepConfig.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the release information that brings up all commits since the last release.")
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
-	cmd.Flags().IntVar(&stepConfig.GithubAPITimeout, "githubApiTimeout", 30, "Set HTTP timeout for GitHub API calls.")
+	cmd.Flags().IntVar(&stepConfig.GithubAPITimeout, "githubApiTimeout", 30, "Set HTTP timeout for GitHub API calls (in seconds)")
 	cmd.Flags().StringVar(&stepConfig.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringSliceVar(&stepConfig.AssetPathList, "assetPathList", []string{}, "List of paths to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringVar(&stepConfig.Commitish, "commitish", `master`, "Target git commitish for the release")
