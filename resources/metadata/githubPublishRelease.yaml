@@ -47,6 +47,15 @@ spec:
         type: string
         default: https://api.github.com
         mandatory: true
+      - name: githubApiTimeout
+        description: Set HTTP timeout for GitHub API calls.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: int
+        default: 30
       - name: assetPath
         description: Path to a release asset which should be uploaded to the list of release assets.
         scope:

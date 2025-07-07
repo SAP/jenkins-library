@@ -32,7 +32,7 @@ type githubIssueClient interface {
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
 	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).
-		WithTimeout(60 * time.Second).
+		WithTimeout(time.Duration(config.GithubAPITimeout) * time.Second).
 		WithUploadURL(config.UploadURL).
 		Build()
 	if err != nil {
