@@ -34,7 +34,7 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "/cmd/golangBuild.go$/"
+                "cmd/golangBuild.go$/"
             ],
             "matchStrings": [
                 "golangCycloneDXPackage = \"github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v(?<currentValue>.*)\""
@@ -48,7 +48,7 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "/cmd/gradleExecuteBuild.go$/"
+                "cmd/gradleExecuteBuild.go$/"
             ],
             "matchStrings": [
                 "classpath \"org.cyclonedx:cyclonedx-gradle-plugin:(?<currentValue>.*)\""
@@ -62,7 +62,7 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "/cmd/mavenBuild.go$/"
+                "cmd/mavenBuild.go$/"
             ],
             "matchStrings": [
                 "mvnCycloneDXPackage = \"org.cyclonedx:cyclonedx-maven-plugin:(?<currentValue>.*)\""
@@ -71,6 +71,34 @@
             "datasourceTemplate": "maven",
             "extractVersionTemplate": "^(?<version>.*)$",
             "autoReplaceStringTemplate": "mvnCycloneDXPackage = \"org.cyclonedx:cyclonedx-maven-plugin:{{newValue}}\""
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "integration/testdata/TestGradleIntegration/java-project-with-bom-plugin/build.gradle$/"
+            ],
+            "matchStrings": [
+                "id \"org.cyclonedx.bom\" version \"(?<currentValue>.*)\""
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "gradle",
+            "extractVersionTemplate": "^(?<version>.*)$",
+            "autoReplaceStringTemplate": "id \"org.cyclonedx.bom\" version \"{{newValue}}\""
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "integration/integration_golang_test.go$/"
+            ],
+            "matchStrings": [
+                "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v(?<currentValue>.*)"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^(?<version>.*)$",
+            "autoReplaceStringTemplate": "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v{{newValue}}"
         }
     ],
     "postUpdateOptions": [
