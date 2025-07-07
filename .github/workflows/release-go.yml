@@ -49,6 +49,7 @@ jobs:
 
       - name: 🚀 Publish release
         uses: release-drafter/release-drafter@v6
+        id: release
         with:
           config-name: release-drafter.yml
           publish: true
@@ -62,7 +63,7 @@ jobs:
           command: githubPublishRelease
           flags: >
             --token ${{ secrets.GITHUB_TOKEN }}
-            --version latest
+            --version ${{ steps.release.outputs.tag_name }}
             --assetPathList ./piper --assetPathList ./piper_master
             --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
             --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-darwin.arm64
@@ -70,7 +71,7 @@ jobs:
       - name: Download Piper binary from published release
         uses: robinraju/release-downloader@v1
         with:
-          latest: true
+          tag: ${{ steps.release.outputs.tag_name }}
           fileName: 'piper'
 
       - name: Test binary (check output for 'commit:' substring)
@@ -96,7 +97,7 @@ jobs:
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./target/jenkins-library.jar
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --version ${{ steps.release.outputs.tag_name }} --assetPath ./target/jenkins-library.jar
 
   post:
     name: Post Action
