@@ -3,7 +3,7 @@ name: Release Drafter
 on:
   push:
     branches:
-      - master
+      - master  # yamllint disable-line rule:terminology
   pull_request_target:
     types: [opened, reopened, synchronize]
 

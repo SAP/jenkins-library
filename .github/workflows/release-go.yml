@@ -14,23 +14,23 @@ on:
     - cron: '0 9 * * 1'
 
 jobs:
-  # run_integration_tests:
-  #   name: Run Integration Tests
-  #   uses: ./.github/workflows/integration-tests.yml
-  #   permissions:
-  #     contents: read
-  #     actions: read
-  #   secrets:
-  #     INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
-  #     PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
-  #     PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
-  #     PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
+  run_integration_tests:
+    name: Run Integration Tests
+    uses: ./.github/workflows/integration-tests.yml
+    permissions:
+      contents: read
+      actions: read
+    secrets:
+      INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+      PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
+      PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
+      PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
 
   publish:
-    # needs: run_integration_tests
-    # if: |
-    #   needs.run_integration_tests.outputs.test_status == 'success' &&
-    #   github.event.inputs.dry_run != 'true'
+    needs: run_integration_tests
+    if: |
+      needs.run_integration_tests.outputs.test_status == 'success' &&
+      github.event.inputs.dry_run != 'true'
     permissions: write-all
     name: Publish Release
     runs-on: ubuntu-latest
