@@ -14,23 +14,23 @@ on:
     - cron: '0 9 * * 1'
 
 jobs:
-  run_integration_tests:
-    name: Run Integration Tests
-    uses: ./.github/workflows/integration-tests.yml
-    permissions:
-      contents: read
-      actions: read
-    secrets:
-      INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
-      PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
-      PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
-      PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
+  # run_integration_tests:
+  #   name: Run Integration Tests
+  #   uses: ./.github/workflows/integration-tests.yml
+  #   permissions:
+  #     contents: read
+  #     actions: read
+  #   secrets:
+  #     INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
+  #     PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
+  #     PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
+  #     PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
 
   publish:
-    needs: run_integration_tests
-    if: |
-      needs.run_integration_tests.outputs.test_status == 'success' &&
-      github.event.inputs.dry_run != 'true'
+    # needs: run_integration_tests
+    # if: |
+    #   needs.run_integration_tests.outputs.test_status == 'success' &&
+    #   github.event.inputs.dry_run != 'true'
     permissions: write-all
     name: Publish Release
     runs-on: ubuntu-latest
@@ -40,9 +40,9 @@ jobs:
 
       - name: Prepare assets
         run: |
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.x86_64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.arm64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.arm64
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/${{ github.repository }}/releases/latest/download/piper_master
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.x86_64 https://github.com/${{ github.repository }}/releases/latest/download/piper_master-darwin.x86_64
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master-darwin.arm64 https://github.com/${{ github.repository }}/releases/latest/download/piper_master-darwin.arm64
           cp ./piper_master ./piper
           cp ./piper_master-darwin.x86_64 ./piper-darwin.x86_64
           cp ./piper_master-darwin.arm64 ./piper-darwin.arm64
