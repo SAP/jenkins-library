@@ -6,6 +6,13 @@ on:
       - master  # yamllint disable-line rule:terminology
   pull_request_target:
     types: [opened, reopened, synchronize]
+  workflow_call:
+    inputs:
+      commitish:
+        description: 'Target commitish for the release'
+        required: false
+        default: 'master'
+        type: string
 
 permissions:
   contents: read
@@ -22,7 +29,7 @@ jobs:
       - name: 🚀 Prepare release
         uses: release-drafter/release-drafter@v6
         with:
-          commitish: ${{ inputs.drafter-commitish }}  # codespell:ignore commitish
+          commitish: ${{ inputs.commitish }}  # codespell:ignore commitish
           disable-releaser: ${{ github.event_name == 'pull_request' }}
           disable-autolabeler: false
         env:
