@@ -63,6 +63,8 @@ jobs:
           command: githubPublishRelease
           flags: >
             --token ${{ secrets.GITHUB_TOKEN }}
+            --owner ${{ github.repository_owner }}
+            --repository ${{ github.event.repository.name }}
             --version ${{ steps.release.outputs.tag_name }}
             --assetPathList ./piper --assetPathList ./piper_master
             --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
@@ -97,7 +99,7 @@ jobs:
         with:
           piper-version: master
           command: githubPublishRelease
-          flags: --token ${{ secrets.GITHUB_TOKEN }} --version ${{ steps.release.outputs.tag_name }} --assetPath ./target/jenkins-library.jar
+          flags: --token ${{ secrets.GITHUB_TOKEN }} --owner ${{ github.repository_owner }} --repository ${{ github.event.repository.name }} --version ${{ steps.release.outputs.tag_name }} --assetPath ./target/jenkins-library.jar
 
   post:
     name: Post Action
