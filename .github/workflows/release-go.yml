@@ -65,7 +65,7 @@ jobs:
             --token ${{ secrets.GITHUB_TOKEN }}
             --owner ${{ github.repository_owner }}
             --repository ${{ github.event.repository.name }}
-            --version ${{ steps.release.outputs.tag_name }}
+            --version latest
             --assetPathList ./piper --assetPathList ./piper_master
             --assetPathList ./piper-darwin.x86_64 --assetPathList ./piper_master-darwin.x86_64
             --assetPathList ./piper-darwin.arm64 --assetPathList ./piper_master-darwin.arm64
