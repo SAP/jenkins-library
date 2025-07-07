@@ -48,7 +48,7 @@ spec:
         default: https://api.github.com
         mandatory: true
       - name: githubApiTimeout
-        description: Set HTTP timeout for GitHub API calls.
+        description: Set HTTP timeout for GitHub API calls (in seconds)
         scope:
           - GENERAL
           - PARAMETERS
