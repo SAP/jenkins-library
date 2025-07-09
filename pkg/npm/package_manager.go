@@ -2,6 +2,7 @@ package npm
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -73,11 +74,18 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 						exec.pnpmSetup.command = "pnpm"
 						log.Entry().Info("Using globally installed pnpm")
 					} else {
+						// Get absolute path for local pnpm installation
+						currentDir, err := exec.Utils.Getwd()
+						if err != nil {
+							return nil, fmt.Errorf("failed to get current working directory: %w", err)
+						}
+						absolutePnpmPath := filepath.Join(currentDir, tmpInstallFolder, "node_modules", ".bin", "pnpm")
+						
 						// Check if pnpm is locally installed
-						if err := execRunner.RunExecutable(pnpmPath, "--version"); err == nil {
+						if err := execRunner.RunExecutable(absolutePnpmPath, "--version"); err == nil {
 							// Use local pnpm
 							exec.pnpmSetup.installed = true
-							exec.pnpmSetup.command = pnpmPath
+							exec.pnpmSetup.command = absolutePnpmPath
 							log.Entry().Info("Using locally installed pnpm")
 						} else {
 							// Install pnpm locally with configured version (only once)
@@ -86,7 +94,7 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 							}
 							// Use local pnpm after installation
 							exec.pnpmSetup.installed = true
-							exec.pnpmSetup.command = pnpmPath
+							exec.pnpmSetup.command = absolutePnpmPath
 							log.Entry().Info("Using locally installed pnpm")
 						}
 					}

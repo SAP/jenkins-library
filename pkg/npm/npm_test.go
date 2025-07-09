@@ -194,9 +194,11 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 
+		// Mock expects absolute path for locally installed pnpm
+		absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 		utils.execRunner.ShouldFailOnCommand = map[string]error{
-			"pnpm --version":        fmt.Errorf("pnpm not installed globally"),
-			pnpmPath + " --version": fmt.Errorf("pnpm not installed locally"),
+			"pnpm --version":              fmt.Errorf("pnpm not installed globally"),
+			absolutePnpmPath + " --version": fmt.Errorf("pnpm not installed locally"),
 		}
 
 		options := ExecutorOptions{PnpmVersion: "latest"}
@@ -215,11 +217,11 @@ func TestNpm(t *testing.T) {
 				// Check global pnpm version command
 				assert.Equal(t, mock.ExecCall{Exec: "pnpm", Params: []string{"--version"}}, utils.execRunner.Calls[1])
 				// Check local pnpm version command
-				assert.Equal(t, mock.ExecCall{Exec: pnpmPath, Params: []string{"--version"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: absolutePnpmPath, Params: []string{"--version"}}, utils.execRunner.Calls[2])
 				// Check pnpm install command
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[3])
 				// Check pnpm install --frozen-lockfile command
-				assert.Equal(t, mock.ExecCall{Exec: pnpmPath, Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[4])
+				assert.Equal(t, mock.ExecCall{Exec: absolutePnpmPath, Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[4])
 			}
 		}
 	})

@@ -146,12 +146,14 @@ func TestPackageManager(t *testing.T) {
 					utils.AddFile(tt.lockFile, []byte("{}"))
 				}
 				if tt.execError != nil {
+					// Mock expects absolute path for locally installed pnpm
+					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"npm ci":                                tt.execError,
-						"yarn install --frozen-lockfile":        tt.execError,
-						"pnpm --version":                        fmt.Errorf("not found"),
-						pnpmPath + " --version":                 fmt.Errorf("not found"),
-						pnpmPath + " install --frozen-lockfile": tt.execError,
+						"npm ci":                                          tt.execError,
+						"yarn install --frozen-lockfile":                  tt.execError,
+						"pnpm --version":                                  fmt.Errorf("not found"),
+						absolutePnpmPath + " --version":                   fmt.Errorf("not found"),
+						absolutePnpmPath + " install --frozen-lockfile":   tt.execError,
 					}
 				}
 
@@ -224,14 +226,16 @@ func TestPackageManager(t *testing.T) {
 						"pnpm --version": nil,
 					}
 				} else if tt.localPnpm {
+					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"pnpm --version":        fmt.Errorf("command not found"),
-						pnpmPath + " --version": nil,
+						"pnpm --version":              fmt.Errorf("command not found"),
+						absolutePnpmPath + " --version": nil,
 					}
 				} else {
+					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"pnpm --version":        fmt.Errorf("command not found"),
-						pnpmPath + " --version": fmt.Errorf("command not found"),
+						"pnpm --version":              fmt.Errorf("command not found"),
+						absolutePnpmPath + " --version": fmt.Errorf("command not found"),
 					}
 				}
 
@@ -248,9 +252,11 @@ func TestPackageManager(t *testing.T) {
 				if tt.globalPnpm {
 					assert.Equal(t, "pnpm", pm.InstallCommand)
 				} else if tt.localPnpm {
-					assert.Equal(t, pnpmPath, pm.InstallCommand)
+					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
+					assert.Equal(t, absolutePnpmPath, pm.InstallCommand)
 				} else {
-					assert.Equal(t, pnpmPath, pm.InstallCommand)
+					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
+					assert.Equal(t, absolutePnpmPath, pm.InstallCommand)
 					// Verify the npm install command was called with correct version
 					if tt.expectedCmd != "" {
 						expectedParams := []string{"install", "pnpm", "--prefix", "./tmp"}
