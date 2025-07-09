@@ -220,3 +220,6 @@ spec:
   containers:
     - name: node
       image: node:lts-bookworm
+
+  sidecars:
+    - name: ""
