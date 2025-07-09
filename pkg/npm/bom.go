@@ -218,7 +218,7 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 		executable := "npx"
 
 		if !fallback {
-			params = append(params, packageJSONFile)
+			params = append(params, "package.json")
 			executable = filepath.Join(oldWorkingDirectory, tmpInstallFolder, "node_modules", ".bin", "cyclonedx-npm")
 		} else {
 			params = append(params, ".")
