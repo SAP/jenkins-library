@@ -40,13 +40,16 @@ var supportedPackageManagers = []PackageManager{
 }
 
 // InstallPnpm handles the special installation process for pnpm locally
-func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string) error {
+func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string, rootDir string) error {
 	pnpmPackage := "pnpm"
 	if pnpmVersion != "" && pnpmVersion != "latest" {
 		pnpmPackage = fmt.Sprintf("pnpm@%s", pnpmVersion)
 	}
 
-	if err := execRunner.RunExecutable("npm", "install", pnpmPackage, "--prefix", tmpInstallFolder); err != nil {
+	// Calculate the prefix path relative to root directory
+	prefixPath := filepath.Join(rootDir, tmpInstallFolder)
+	
+	if err := execRunner.RunExecutable("npm", "install", pnpmPackage, "--prefix", prefixPath); err != nil {
 		return err
 	}
 	return nil
@@ -74,27 +77,24 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 						exec.pnpmSetup.command = "pnpm"
 						log.Entry().Info("Using globally installed pnpm")
 					} else {
-						// Get absolute path for local pnpm installation
-						currentDir, err := exec.Utils.Getwd()
-						if err != nil {
-							return nil, fmt.Errorf("failed to get current working directory: %w", err)
+						// Determine pnpm path in root directory (root directory was captured at initialization)
+						if exec.pnpmSetup.command == "" {
+							absolutePnpmPath := filepath.Join(exec.pnpmSetup.rootDir, tmpInstallFolder, "node_modules", ".bin", "pnpm")
+							exec.pnpmSetup.command = absolutePnpmPath
 						}
-						absolutePnpmPath := filepath.Join(currentDir, tmpInstallFolder, "node_modules", ".bin", "pnpm")
 						
-						// Check if pnpm is locally installed
-						if err := execRunner.RunExecutable(absolutePnpmPath, "--version"); err == nil {
+						// Check if pnpm is locally installed at root
+						if err := execRunner.RunExecutable(exec.pnpmSetup.command, "--version"); err == nil {
 							// Use local pnpm
 							exec.pnpmSetup.installed = true
-							exec.pnpmSetup.command = absolutePnpmPath
 							log.Entry().Info("Using locally installed pnpm")
 						} else {
-							// Install pnpm locally with configured version (only once)
-							if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion); err != nil {
+							// Install pnpm locally with configured version (only once, in root directory)
+							if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion, exec.pnpmSetup.rootDir); err != nil {
 								return nil, fmt.Errorf("failed to install pnpm: %w", err)
 							}
 							// Use local pnpm after installation
 							exec.pnpmSetup.installed = true
-							exec.pnpmSetup.command = absolutePnpmPath
 							log.Entry().Info("Using locally installed pnpm")
 						}
 					}

@@ -29,6 +29,7 @@ type pnpmSetupState struct {
 	checked     bool
 	installed   bool
 	command     string
+	rootDir     string
 }
 
 // Executor interface to enable mocking for testing
@@ -57,9 +58,16 @@ func NewExecutor(executorOptions ExecutorOptions) Executor {
 		execRunner:     executorOptions.ExecRunner,
 		downloadClient: &piperhttp.Client{},
 	}
+	
+	// Capture the root directory at initialization time
+	rootDir, _ := utils.Getwd()
+	
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
+		pnpmSetup: pnpmSetupState{
+			rootDir: rootDir,
+		},
 	}
 }
 

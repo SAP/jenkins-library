@@ -68,6 +68,9 @@ func TestPackageManager(t *testing.T) {
 				exec := &Execute{
 					Utils:   &utils,
 					Options: ExecutorOptions{PnpmVersion: "latest"},
+					pnpmSetup: pnpmSetupState{
+						rootDir: "/", // Mock root directory
+					},
 				}
 
 				pm, err := exec.detectPackageManager()
@@ -103,6 +106,9 @@ func TestPackageManager(t *testing.T) {
 				exec := &Execute{
 					Utils:   &utils,
 					Options: ExecutorOptions{PnpmVersion: "latest"},
+					pnpmSetup: pnpmSetupState{
+						rootDir: "/", // Mock root directory
+					},
 				}
 
 				_, err := exec.detectPackageManager()
@@ -160,6 +166,9 @@ func TestPackageManager(t *testing.T) {
 				exec := &Execute{
 					Utils:   &utils,
 					Options: ExecutorOptions{PnpmVersion: "latest"},
+					pnpmSetup: pnpmSetupState{
+						rootDir: "/", // Mock root directory
+					},
 				}
 
 				err := exec.install("package.json")
@@ -242,6 +251,9 @@ func TestPackageManager(t *testing.T) {
 				exec := &Execute{
 					Utils:   &utils,
 					Options: ExecutorOptions{PnpmVersion: tt.pnpmVersion},
+					pnpmSetup: pnpmSetupState{
+						rootDir: "/", // Mock root directory
+					},
 				}
 
 				pm, err := exec.detectPackageManager()
@@ -259,14 +271,14 @@ func TestPackageManager(t *testing.T) {
 					assert.Equal(t, absolutePnpmPath, pm.InstallCommand)
 					// Verify the npm install command was called with correct version
 					if tt.expectedCmd != "" {
-						expectedParams := []string{"install", "pnpm", "--prefix", "./tmp"}
+						expectedParams := []string{"install", "pnpm", "--prefix", "/tmp"}
 						if tt.pnpmVersion != "latest" && tt.pnpmVersion != "" {
 							expectedParams[1] = fmt.Sprintf("pnpm@%s", tt.pnpmVersion)
 						}
 						found := false
 						for _, call := range utils.execRunner.Calls {
 							if call.Exec == "npm" && len(call.Params) == 4 &&
-								call.Params[0] == "install" && call.Params[2] == "--prefix" && call.Params[3] == "./tmp" {
+								call.Params[0] == "install" && call.Params[2] == "--prefix" && call.Params[3] == "/tmp" {
 								if (tt.pnpmVersion == "latest" || tt.pnpmVersion == "") && call.Params[1] == "pnpm" {
 									found = true
 									break
