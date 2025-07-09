@@ -3,6 +3,7 @@ package piperutils
 import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"strings"
 )
 
 func Title(in string) string {
@@ -10,8 +11,9 @@ func Title(in string) string {
 }
 
 func StringWithDefault(input, defaultValue string) string {
-	if input == "" {
+	inputCleared := strings.TrimSpace(input)
+	if inputCleared == "" {
 		return defaultValue
 	}
-	return input
+	return inputCleared
 }

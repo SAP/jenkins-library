@@ -61,7 +61,7 @@ func (t *Telemetry) Initialize(stepName string) {
 
 	t.baseData = BaseData{
 		Orchestrator:    t.provider.OrchestratorType(),
-		TemplateName:    piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "custom"),
+		TemplateName:    piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
 		StageName:       t.provider.StageName(),
 		URL:             LibraryRepository,
 		ActionName:      actionName,
