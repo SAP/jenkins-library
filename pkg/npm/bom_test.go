@@ -90,6 +90,7 @@ func TestBom(t *testing.T) {
 
 		options := ExecutorOptions{
 			DefaultNpmRegistry: "foo.bar",
+			PnpmVersion:        "latest",
 		}
 
 		exec := &Execute{
@@ -108,6 +109,12 @@ func TestBom(t *testing.T) {
 
 			// Verify command execution sequence
 			assert.Equal(t, 4, len(utils.execRunner.Calls))
+
+			// Check pnpm version check call
+			assert.Equal(t, mock.ExecCall{
+				Exec:   "pnpm",
+				Params: []string{"--version"},
+			}, utils.execRunner.Calls[0])
 
 			// Check cdxgen install
 			assert.Equal(t, mock.ExecCall{

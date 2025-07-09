@@ -38,20 +38,14 @@ var supportedPackageManagers = []PackageManager{
 	},
 }
 
-// IsPnpmInstalled checks if pnpm is available in the local project
-func (pm *PackageManager) IsPnpmInstalled(execRunner ExecRunner) bool {
-	err := execRunner.RunExecutable(pnpmPath, "--version")
-	return err == nil
-}
-
-// InstallPnpm handles the special installation process for pnpm if not already installed
-func (pm *PackageManager) InstallPnpm(execRunner ExecRunner) error {
-	if pm.IsPnpmInstalled(execRunner) {
-		log.Entry().Info("pnpm is already installed locally, skipping installation")
-		return nil
+// InstallPnpm handles the special installation process for pnpm locally
+func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string) error {
+	pnpmPackage := "pnpm"
+	if pnpmVersion != "" && pnpmVersion != "latest" {
+		pnpmPackage = fmt.Sprintf("pnpm@%s", pnpmVersion)
 	}
 
-	if err := execRunner.RunExecutable("npm", "install", "pnpm", "--prefix", tmpInstallFolder); err != nil {
+	if err := execRunner.RunExecutable("npm", "install", pnpmPackage, "--prefix", tmpInstallFolder); err != nil {
 		return err
 	}
 	return nil
@@ -66,8 +60,28 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 		}
 		if exists {
 			if pm.Name == "pnpm" {
-				if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
-					return nil, fmt.Errorf("failed to install pnpm: %w", err)
+				execRunner := exec.Utils.GetExecRunner()
+
+				// Check if pnpm is globally installed first
+				if err := execRunner.RunExecutable("pnpm", "--version"); err == nil {
+					// Use global pnpm
+					pm.InstallCommand = "pnpm"
+					log.Entry().Info("Using globally installed pnpm")
+				} else {
+					// Check if pnpm is locally installed
+					if err := execRunner.RunExecutable(pnpmPath, "--version"); err == nil {
+						// Use local pnpm
+						pm.InstallCommand = pnpmPath
+						log.Entry().Info("Using locally installed pnpm")
+					} else {
+						// Install pnpm locally with configured version
+						if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion); err != nil {
+							return nil, fmt.Errorf("failed to install pnpm: %w", err)
+						}
+						// Use local pnpm after installation
+						pm.InstallCommand = pnpmPath
+						log.Entry().Info("Using locally installed pnpm")
+					}
 				}
 			}
 			return &pm, nil

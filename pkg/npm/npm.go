@@ -39,6 +39,7 @@ type Executor interface {
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
 	ExecRunner         ExecRunner
+	PnpmVersion        string
 }
 
 // NewExecutor instantiates Execute struct and sets executeOptions

@@ -67,7 +67,7 @@ func TestPackageManager(t *testing.T) {
 
 				exec := &Execute{
 					Utils:   &utils,
-					Options: ExecutorOptions{},
+					Options: ExecutorOptions{PnpmVersion: "latest"},
 				}
 
 				pm, err := exec.detectPackageManager()
@@ -102,7 +102,7 @@ func TestPackageManager(t *testing.T) {
 
 				exec := &Execute{
 					Utils:   &utils,
-					Options: ExecutorOptions{},
+					Options: ExecutorOptions{PnpmVersion: "latest"},
 				}
 
 				_, err := exec.detectPackageManager()
@@ -149,13 +149,15 @@ func TestPackageManager(t *testing.T) {
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
 						"npm ci":                                tt.execError,
 						"yarn install --frozen-lockfile":        tt.execError,
+						"pnpm --version":                        fmt.Errorf("not found"),
+						pnpmPath + " --version":                 fmt.Errorf("not found"),
 						pnpmPath + " install --frozen-lockfile": tt.execError,
 					}
 				}
 
 				exec := &Execute{
 					Utils:   &utils,
-					Options: ExecutorOptions{},
+					Options: ExecutorOptions{PnpmVersion: "latest"},
 				}
 
 				err := exec.install("package.json")
@@ -166,4 +168,112 @@ func TestPackageManager(t *testing.T) {
 		}
 	})
 
+	t.Run("Test pnpm version configuration", func(t *testing.T) {
+		tests := []struct {
+			name        string
+			pnpmVersion string
+			expectedCmd string
+			globalPnpm  bool
+			localPnpm   bool
+		}{
+			{
+				name:        "pnpm version empty",
+				pnpmVersion: "",
+				expectedCmd: "npm install pnpm --prefix ./tmp",
+				globalPnpm:  false,
+				localPnpm:   false,
+			},
+			{
+				name:        "pnpm version latest",
+				pnpmVersion: "latest",
+				expectedCmd: "npm install pnpm --prefix ./tmp",
+				globalPnpm:  false,
+				localPnpm:   false,
+			},
+			{
+				name:        "pnpm version 8.15.0",
+				pnpmVersion: "8.15.0",
+				expectedCmd: "npm install pnpm@8.15.0 --prefix ./tmp",
+				globalPnpm:  false,
+				localPnpm:   false,
+			},
+			{
+				name:        "global pnpm available",
+				pnpmVersion: "latest",
+				expectedCmd: "",
+				globalPnpm:  true,
+				localPnpm:   false,
+			},
+			{
+				name:        "local pnpm available",
+				pnpmVersion: "latest",
+				expectedCmd: "",
+				globalPnpm:  false,
+				localPnpm:   true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				utils := newNpmMockUtilsBundle()
+				utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+				// Mock pnpm version checks
+				if tt.globalPnpm {
+					utils.execRunner.ShouldFailOnCommand = map[string]error{
+						"pnpm --version": nil,
+					}
+				} else if tt.localPnpm {
+					utils.execRunner.ShouldFailOnCommand = map[string]error{
+						"pnpm --version":        fmt.Errorf("command not found"),
+						pnpmPath + " --version": nil,
+					}
+				} else {
+					utils.execRunner.ShouldFailOnCommand = map[string]error{
+						"pnpm --version":        fmt.Errorf("command not found"),
+						pnpmPath + " --version": fmt.Errorf("command not found"),
+					}
+				}
+
+				exec := &Execute{
+					Utils:   &utils,
+					Options: ExecutorOptions{PnpmVersion: tt.pnpmVersion},
+				}
+
+				pm, err := exec.detectPackageManager()
+				assert.NoError(t, err)
+				assert.Equal(t, "pnpm", pm.Name)
+
+				// Check the install command is set correctly
+				if tt.globalPnpm {
+					assert.Equal(t, "pnpm", pm.InstallCommand)
+				} else if tt.localPnpm {
+					assert.Equal(t, pnpmPath, pm.InstallCommand)
+				} else {
+					assert.Equal(t, pnpmPath, pm.InstallCommand)
+					// Verify the npm install command was called with correct version
+					if tt.expectedCmd != "" {
+						expectedParams := []string{"install", "pnpm", "--prefix", "./tmp"}
+						if tt.pnpmVersion != "latest" && tt.pnpmVersion != "" {
+							expectedParams[1] = fmt.Sprintf("pnpm@%s", tt.pnpmVersion)
+						}
+						found := false
+						for _, call := range utils.execRunner.Calls {
+							if call.Exec == "npm" && len(call.Params) == 4 &&
+								call.Params[0] == "install" && call.Params[2] == "--prefix" && call.Params[3] == "./tmp" {
+								if (tt.pnpmVersion == "latest" || tt.pnpmVersion == "") && call.Params[1] == "pnpm" {
+									found = true
+									break
+								} else if tt.pnpmVersion != "latest" && tt.pnpmVersion != "" && call.Params[1] == fmt.Sprintf("pnpm@%s", tt.pnpmVersion) {
+									found = true
+									break
+								}
+							}
+						}
+						assert.True(t, found, "Expected npm install command not found in exec calls")
+					}
+				}
+			})
+		}
+	})
 }

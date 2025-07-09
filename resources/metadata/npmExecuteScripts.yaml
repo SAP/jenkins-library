@@ -191,6 +191,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: pnpmVersion
+        type: string
+        description: Version of pnpm to use for installation. If not specified, will use the latest version. Only used when pnpm-lock.yaml is detected.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "latest"
   outputs:
     resources:
       - name: commonPipelineEnvironment
