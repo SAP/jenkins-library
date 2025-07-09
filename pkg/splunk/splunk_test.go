@@ -356,6 +356,7 @@ func Test_prepareTelemetry(t *testing.T) {
 				telemetryData: telemetry.Data{
 					BaseData: telemetry.BaseData{
 						Orchestrator: "Jenkins",
+						TemplateName: "hyperspace-piper-gpp",
 					},
 					CustomData: telemetry.CustomData{
 						Duration:      "1234",
@@ -368,6 +369,7 @@ func Test_prepareTelemetry(t *testing.T) {
 				PipelineUrlHash: "",
 				BuildUrlHash:    "",
 				Orchestrator:    "Jenkins",
+				TemplateName:    "hyperspace-piper-gpp",
 				StageName:       "",
 				StepName:        "",
 				ExitCode:        "0",

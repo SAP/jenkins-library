@@ -271,4 +271,4 @@ spec:
             type: jacoco-coverage
   containers:
     - name: mvn
-      image: maven:3.6-jdk-8
+      image: maven:3.8-jdk-8

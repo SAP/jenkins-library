@@ -7,11 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	config2 "github.com/SAP/jenkins-library/pkg/config"
 )
 
 var cpe mavenBuildCommonPipelineEnvironment
 
 func TestMavenBuild(t *testing.T) {
+	SetConfigOptions(ConfigCommandOptions{
+		OpenFile: config2.OpenPiperFile,
+	})
+
 	t.Run("mavenBuild should install the artifact", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
@@ -51,7 +57,7 @@ func TestMavenBuild(t *testing.T) {
 		assert.Nil(t, err)
 		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (default + makeAggregateBom)") {
 			assert.Equal(t, "mvn", mockedUtils.Calls[1].Exec)
-			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom")
+			assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom")
 			assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputName=bom-maven")
 		}
 	})

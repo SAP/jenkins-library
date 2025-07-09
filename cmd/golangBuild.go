@@ -33,7 +33,7 @@ const (
 	integrationJsonReport       = "integration-report.out"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0"
 	sbomFilename                = "bom-golang.xml"
 )
 

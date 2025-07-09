@@ -139,7 +139,7 @@ func TestCreateMarkdownReport(t *testing.T) {
 			components: &Components{},
 			expectedReport: "\n :heavy_check_mark: **OSS related checks passed successfully**\n  :clipboard: OSS related checks executed by Black Duck " +
 				"- rapid scan passed successfully.\n" +
-				" <h4><a href=\"https://sig-product-docs.synopsys.com/bundle/integrations-detect/page/runningdetect/rapidscan.html\">" +
+				" <h4><a href=\"https://documentation.blackduck.com/bundle/detect/page/runningdetect/rapidscan.html\">" +
 				"RAPID SCAN</a></h4>\n\n\n",
 		},
 	}
