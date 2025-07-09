@@ -43,8 +43,9 @@ func TestBom(t *testing.T) {
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src", "package.json"))}, utils.execRunner.Calls[2])
+				// BOM generation now uses absolute paths and runs from package directory
+				assert.Equal(t, mock.ExecCall{Exec: "/tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "/tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[2])
 			}
 		}
 	})
@@ -77,8 +78,9 @@ func TestBom(t *testing.T) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxBomInstallParams}, utils.execRunner.Calls[1])
+				// BOM generation now uses relative paths and runs from package directory
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src"))}, utils.execRunner.Calls[3])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[3])
 			}
 		}
 	})
@@ -122,8 +124,8 @@ func TestBom(t *testing.T) {
 				Params: []string{"install", cdxgenPackageVersion, "--prefix", tmpInstallFolder},
 			}, utils.execRunner.Calls[1])
 
-			// Check cdxgen execution generating JSON
-			cdxgenPath := tmpInstallFolder + "/node_modules/.bin/cdxgen"
+			// Check cdxgen execution generating JSON (uses absolute path)
+			cdxgenPath := "/tmp/node_modules/.bin/cdxgen"
 			assert.Equal(t, mock.ExecCall{
 				Exec: cdxgenPath,
 				Params: []string{

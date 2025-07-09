@@ -104,11 +104,23 @@ func (exec *Execute) installCdxgen(execRunner ExecRunner) error {
 // generatePnpmBOMFiles generates BOM files for each package.json file using cdxgen and cyclonedx-cli
 func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath string, execRunner ExecRunner) error {
 	for _, packageJSONFile := range packageJSONFiles {
-		path := filepath.Dir(packageJSONFile)
-		jsonBomPath := filepath.Join(path, tempBomFilename)
-		xmlBomPath := filepath.Join(path, npmBomFilename)
+		oldWorkingDirectory, err := exec.Utils.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current working directory before BOM generation: %w", err)
+		}
 
-		cdxgenExecutable := tmpInstallFolder + "/node_modules/.bin/cdxgen"
+		path := filepath.Dir(packageJSONFile)
+		err = exec.Utils.Chdir(path)
+		if err != nil {
+			return fmt.Errorf("failed to change into directory for BOM generation: %w", err)
+		}
+
+		// Use relative paths within the package directory
+		jsonBomPath := tempBomFilename
+		xmlBomPath := npmBomFilename
+
+		// Use absolute path for cdxgen executable
+		cdxgenExecutable := filepath.Join(oldWorkingDirectory, tmpInstallFolder, "node_modules", ".bin", "cdxgen")
 		params := []string{
 			"-r",
 			"-o", jsonBomPath,
@@ -117,23 +129,38 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 
 		log.Entry().Debugf("Executing cdxgen with params: %v", params)
 		log.Entry().Debugf("cdxgen executable path: %s", cdxgenExecutable)
+		log.Entry().Debugf("Working directory: %s", path)
 
 		if err := execRunner.RunExecutable(cdxgenExecutable, params...); err != nil {
+			// Change back to original directory before returning error
+			if chdirErr := exec.Utils.Chdir(oldWorkingDirectory); chdirErr != nil {
+				log.Entry().Errorf("Failed to change back to original directory: %v", chdirErr)
+			}
 			return fmt.Errorf("failed to generate CycloneDX BOM with cdxgen for package: %s. Error: %w", packageJSONFile, err)
 		}
 
-		log.Entry().Infof("Generated CycloneDX BOM in JSON format at %s", jsonBomPath)
+		log.Entry().Infof("Generated CycloneDX BOM in JSON format at %s", filepath.Join(path, jsonBomPath))
 
 		// Convert JSON to XML using cyclonedx-cli
 		log.Entry().Debugf("Converting BOM from JSON to XML using cyclonedx-cli at: %s", cliPath)
 		log.Entry().Debugf("Input file: %s, Output file: %s", jsonBomPath, xmlBomPath)
 
 		if err := execRunner.RunExecutable(cliPath, "convert", "--input-file", jsonBomPath, "--output-format", "xml", "--output-file", xmlBomPath); err != nil {
+			// Change back to original directory before returning error
+			if chdirErr := exec.Utils.Chdir(oldWorkingDirectory); chdirErr != nil {
+				log.Entry().Errorf("Failed to change back to original directory: %v", chdirErr)
+			}
 			return fmt.Errorf("failed to convert BOM to XML format for package: %s. Input: %s, Output: %s, Error: %w",
 				packageJSONFile, jsonBomPath, xmlBomPath, err)
 		}
 
-		log.Entry().Infof("Converted CycloneDX BOM to XML format at %s", xmlBomPath)
+		log.Entry().Infof("Converted CycloneDX BOM to XML format at %s", filepath.Join(path, xmlBomPath))
+
+		// Change back to original directory
+		err = exec.Utils.Chdir(oldWorkingDirectory)
+		if err != nil {
+			return fmt.Errorf("failed to change back into original directory after BOM generation: %w", err)
+		}
 	}
 	return nil
 }
@@ -175,23 +202,45 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 	}
 
 	for _, packageJSONFile := range packageJSONFiles {
+		oldWorkingDirectory, err := exec.Utils.Getwd()
+		if err != nil {
+			return fmt.Errorf("failed to get current working directory before BOM generation: %w", err)
+		}
+
 		path := filepath.Dir(packageJSONFile)
-		params := append(packageRunParams, filepath.Join(path, npmBomFilename))
+		err = exec.Utils.Chdir(path)
+		if err != nil {
+			return fmt.Errorf("failed to change into directory for BOM generation: %w", err)
+		}
+
+		// Use relative paths within the package directory
+		params := append(packageRunParams, npmBomFilename)
 		executable := "npx"
 
 		if !fallback {
 			params = append(params, packageJSONFile)
-			executable = tmpInstallFolder + "/node_modules/.bin/cyclonedx-npm"
+			executable = filepath.Join(oldWorkingDirectory, tmpInstallFolder, "node_modules", ".bin", "cyclonedx-npm")
 		} else {
-			params = append(params, path)
+			params = append(params, ".")
 		}
 
 		log.Entry().Debugf("Generating BOM for package: %s", packageJSONFile)
 		log.Entry().Debugf("Using executable: %s with params: %v", executable, params)
+		log.Entry().Debugf("Working directory: %s", path)
 
 		if err := execRunner.RunExecutable(executable, params...); err != nil {
+			// Change back to original directory before returning error
+			if chdirErr := exec.Utils.Chdir(oldWorkingDirectory); chdirErr != nil {
+				log.Entry().Errorf("Failed to change back to original directory: %v", chdirErr)
+			}
 			return fmt.Errorf("failed to generate CycloneDX BOM for package %s using %s: %w",
 				packageJSONFile, executable, err)
+		}
+
+		// Change back to original directory
+		err = exec.Utils.Chdir(oldWorkingDirectory)
+		if err != nil {
+			return fmt.Errorf("failed to change back into original directory after BOM generation: %w", err)
 		}
 	}
 
