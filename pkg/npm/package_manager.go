@@ -62,27 +62,38 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 			if pm.Name == "pnpm" {
 				execRunner := exec.Utils.GetExecRunner()
 
-				// Check if pnpm is globally installed first
-				if err := execRunner.RunExecutable("pnpm", "--version"); err == nil {
-					// Use global pnpm
-					pm.InstallCommand = "pnpm"
-					log.Entry().Info("Using globally installed pnpm")
-				} else {
-					// Check if pnpm is locally installed
-					if err := execRunner.RunExecutable(pnpmPath, "--version"); err == nil {
-						// Use local pnpm
-						pm.InstallCommand = pnpmPath
-						log.Entry().Info("Using locally installed pnpm")
+				// Check pnpm installation only once per Execute instance
+				if !exec.pnpmSetup.checked {
+					exec.pnpmSetup.checked = true
+
+					// Check if pnpm is globally installed first
+					if err := execRunner.RunExecutable("pnpm", "--version"); err == nil {
+						// Use global pnpm
+						exec.pnpmSetup.installed = true
+						exec.pnpmSetup.command = "pnpm"
+						log.Entry().Info("Using globally installed pnpm")
 					} else {
-						// Install pnpm locally with configured version
-						if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion); err != nil {
-							return nil, fmt.Errorf("failed to install pnpm: %w", err)
+						// Check if pnpm is locally installed
+						if err := execRunner.RunExecutable(pnpmPath, "--version"); err == nil {
+							// Use local pnpm
+							exec.pnpmSetup.installed = true
+							exec.pnpmSetup.command = pnpmPath
+							log.Entry().Info("Using locally installed pnpm")
+						} else {
+							// Install pnpm locally with configured version (only once)
+							if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion); err != nil {
+								return nil, fmt.Errorf("failed to install pnpm: %w", err)
+							}
+							// Use local pnpm after installation
+							exec.pnpmSetup.installed = true
+							exec.pnpmSetup.command = pnpmPath
+							log.Entry().Info("Using locally installed pnpm")
 						}
-						// Use local pnpm after installation
-						pm.InstallCommand = pnpmPath
-						log.Entry().Info("Using locally installed pnpm")
 					}
 				}
+
+				// Use cached pnpm command
+				pm.InstallCommand = exec.pnpmSetup.command
 			}
 			return &pm, nil
 		}

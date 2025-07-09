@@ -19,8 +19,16 @@ const tmpInstallFolder = "./tmp" // This folder is also added to npmignore in pu
 
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
-	Utils   Utils
-	Options ExecutorOptions
+	Utils          Utils
+	Options        ExecutorOptions
+	pnpmSetup      pnpmSetupState
+}
+
+// pnpmSetupState holds the cached pnpm installation state
+type pnpmSetupState struct {
+	checked     bool
+	installed   bool
+	command     string
 }
 
 // Executor interface to enable mocking for testing
