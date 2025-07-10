@@ -48,7 +48,7 @@ func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string,
 
 	// Calculate the prefix path relative to root directory
 	prefixPath := filepath.Join(rootDir, tmpInstallFolder)
-	
+
 	if err := execRunner.RunExecutable("npm", "install", pnpmPackage, "--prefix", prefixPath); err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 							absolutePnpmPath := filepath.Join(exec.pnpmSetup.rootDir, tmpInstallFolder, "node_modules", ".bin", "pnpm")
 							exec.pnpmSetup.command = absolutePnpmPath
 						}
-						
+
 						// Check if pnpm is locally installed at root
 						if err := execRunner.RunExecutable(exec.pnpmSetup.command, "--version"); err == nil {
 							// Use local pnpm

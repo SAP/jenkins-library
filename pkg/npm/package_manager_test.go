@@ -155,11 +155,11 @@ func TestPackageManager(t *testing.T) {
 					// Mock expects absolute path for locally installed pnpm
 					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"npm ci":                                          tt.execError,
-						"yarn install --frozen-lockfile":                  tt.execError,
-						"pnpm --version":                                  fmt.Errorf("not found"),
-						absolutePnpmPath + " --version":                   fmt.Errorf("not found"),
-						absolutePnpmPath + " install --frozen-lockfile":   tt.execError,
+						"npm ci":                                        tt.execError,
+						"yarn install --frozen-lockfile":                tt.execError,
+						"pnpm --version":                                fmt.Errorf("not found"),
+						absolutePnpmPath + " --version":                 fmt.Errorf("not found"),
+						absolutePnpmPath + " install --frozen-lockfile": tt.execError,
 					}
 				}
 
@@ -237,13 +237,13 @@ func TestPackageManager(t *testing.T) {
 				} else if tt.localPnpm {
 					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"pnpm --version":              fmt.Errorf("command not found"),
+						"pnpm --version":                fmt.Errorf("command not found"),
 						absolutePnpmPath + " --version": nil,
 					}
 				} else {
 					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					utils.execRunner.ShouldFailOnCommand = map[string]error{
-						"pnpm --version":              fmt.Errorf("command not found"),
+						"pnpm --version":                fmt.Errorf("command not found"),
 						absolutePnpmPath + " --version": fmt.Errorf("command not found"),
 					}
 				}

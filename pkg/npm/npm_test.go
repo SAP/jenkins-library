@@ -218,7 +218,7 @@ func TestNpm(t *testing.T) {
 		// Mock expects absolute path for locally installed pnpm
 		absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 		utils.execRunner.ShouldFailOnCommand = map[string]error{
-			"pnpm --version":              fmt.Errorf("pnpm not installed globally"),
+			"pnpm --version":                fmt.Errorf("pnpm not installed globally"),
 			absolutePnpmPath + " --version": fmt.Errorf("pnpm not installed locally"),
 		}
 
