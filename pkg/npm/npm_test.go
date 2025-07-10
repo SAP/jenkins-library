@@ -50,7 +50,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -72,7 +72,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile(filepath.Join("node_modules", "package.json"), []byte("{}")) // is filtered out
 		utils.AddFile(filepath.Join("gen", "package.json"), []byte("{}"))          // is filtered out
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -99,7 +99,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile(filepath.Join("filterPath", "package.json"), []byte("{}"))           // is filtered out
 		utils.AddFile(filepath.Join("filter", "Path", "To", "package.json"), []byte("{}")) // is filtered out
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -122,7 +122,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{ \"name\": \"test\" }"))
 		utils.AddFile(filepath.Join("test", "package.json"), []byte("{ \"scripts\": { \"test\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -144,7 +144,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("package-lock.json", []byte("{}"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
 		exec := &Execute{
@@ -167,7 +167,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
 		exec := &Execute{
@@ -191,7 +191,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("yarn.lock", []byte("{}"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
 		exec := &Execute{
@@ -222,7 +222,7 @@ func TestNpm(t *testing.T) {
 			absolutePnpmPath + " --version": fmt.Errorf("pnpm not installed locally"),
 		}
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
 		exec := &Execute{
@@ -257,7 +257,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
 
 		exec := &Execute{
@@ -281,7 +281,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 
 		exec := &Execute{
 			Utils:   &utils,
@@ -304,7 +304,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		runScripts := []string{"ci-lint", "ci-build"}
 
 		exec := &Execute{
@@ -329,7 +329,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))                        // is filtered out
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }")) // should NOT be filtered out
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		runScripts := []string{"ci-lint", "ci-build"}
 		buildDescriptorList := []string{filepath.Join("src", "package.json"), "package.json"}
 
@@ -354,7 +354,7 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
 		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry -ws=false -iwr": "undefined"}}
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "https://example.org/npm"
 
 		exec := &Execute{
@@ -378,7 +378,7 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"foo\": \"\" } }"))
 
-		options := ExecutorOptions{PnpmVersion: "latest"}
+		options := ExecutorOptions{}
 
 		exec := &Execute{
 			Utils:   &utils,

@@ -67,7 +67,7 @@ func TestPackageManager(t *testing.T) {
 
 				exec := &Execute{
 					Utils:   &utils,
-					Options: ExecutorOptions{PnpmVersion: "latest"},
+					Options: ExecutorOptions{},
 					pnpmSetup: pnpmSetupState{
 						rootDir: "/", // Mock root directory
 					},
@@ -105,7 +105,7 @@ func TestPackageManager(t *testing.T) {
 
 				exec := &Execute{
 					Utils:   &utils,
-					Options: ExecutorOptions{PnpmVersion: "latest"},
+					Options: ExecutorOptions{},
 					pnpmSetup: pnpmSetupState{
 						rootDir: "/", // Mock root directory
 					},
@@ -165,7 +165,7 @@ func TestPackageManager(t *testing.T) {
 
 				exec := &Execute{
 					Utils:   &utils,
-					Options: ExecutorOptions{PnpmVersion: "latest"},
+					Options: ExecutorOptions{},
 					pnpmSetup: pnpmSetupState{
 						rootDir: "/", // Mock root directory
 					},
@@ -195,9 +195,23 @@ func TestPackageManager(t *testing.T) {
 				localPnpm:   false,
 			},
 			{
+				name:        "global pnpm available no version specified",
+				pnpmVersion: "",
+				expectedCmd: "",
+				globalPnpm:  true,
+				localPnpm:   false,
+			},
+			{
+				name:        "local pnpm available no version specified",
+				pnpmVersion: "",
+				expectedCmd: "",
+				globalPnpm:  false,
+				localPnpm:   true,
+			},
+			{
 				name:        "pnpm version latest",
 				pnpmVersion: "latest",
-				expectedCmd: "npm install pnpm --prefix ./tmp",
+				expectedCmd: "npm install pnpm@latest --prefix ./tmp",
 				globalPnpm:  false,
 				localPnpm:   false,
 			},
@@ -209,16 +223,16 @@ func TestPackageManager(t *testing.T) {
 				localPnpm:   false,
 			},
 			{
-				name:        "global pnpm available",
+				name:        "global pnpm available with latest version specified",
 				pnpmVersion: "latest",
-				expectedCmd: "",
+				expectedCmd: "npm install pnpm@latest --prefix ./tmp",
 				globalPnpm:  true,
 				localPnpm:   false,
 			},
 			{
-				name:        "local pnpm available",
+				name:        "local pnpm available with latest version specified",
 				pnpmVersion: "latest",
-				expectedCmd: "",
+				expectedCmd: "npm install pnpm@latest --prefix ./tmp",
 				globalPnpm:  false,
 				localPnpm:   true,
 			},
@@ -261,28 +275,25 @@ func TestPackageManager(t *testing.T) {
 				assert.Equal(t, "pnpm", pm.Name)
 
 				// Check the install command is set correctly
-				if tt.globalPnpm {
+				if tt.pnpmVersion == "" && tt.globalPnpm {
 					assert.Equal(t, "pnpm", pm.InstallCommand)
-				} else if tt.localPnpm {
-					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
-					assert.Equal(t, absolutePnpmPath, pm.InstallCommand)
 				} else {
 					absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 					assert.Equal(t, absolutePnpmPath, pm.InstallCommand)
 					// Verify the npm install command was called with correct version
 					if tt.expectedCmd != "" {
 						expectedParams := []string{"install", "pnpm", "--prefix", "/tmp"}
-						if tt.pnpmVersion != "latest" && tt.pnpmVersion != "" {
+						if tt.pnpmVersion != "" {
 							expectedParams[1] = fmt.Sprintf("pnpm@%s", tt.pnpmVersion)
 						}
 						found := false
 						for _, call := range utils.execRunner.Calls {
 							if call.Exec == "npm" && len(call.Params) == 4 &&
 								call.Params[0] == "install" && call.Params[2] == "--prefix" && call.Params[3] == "/tmp" {
-								if (tt.pnpmVersion == "latest" || tt.pnpmVersion == "") && call.Params[1] == "pnpm" {
+								if tt.pnpmVersion == "" && call.Params[1] == "pnpm" {
 									found = true
 									break
-								} else if tt.pnpmVersion != "latest" && tt.pnpmVersion != "" && call.Params[1] == fmt.Sprintf("pnpm@%s", tt.pnpmVersion) {
+								} else if tt.pnpmVersion != "" && call.Params[1] == fmt.Sprintf("pnpm@%s", tt.pnpmVersion) {
 									found = true
 									break
 								}

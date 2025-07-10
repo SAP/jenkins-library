@@ -264,7 +264,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().BoolVar(&stepConfig.PackBeforePublish, "packBeforePublish", false, "used for executing npm pack first, followed by npm publish. This two step maybe required in two cases. case 1) When building multiple npm packages (multiple package.json) please keep this parameter true and also see `buildDescriptorList` or  `buildDescriptorExcludeList` to choose which package(s) to publish. case 2)when you are building a single npm (single `package.json` in your repo) / multiple npm (multiple package.json) scoped package(s) and have npm dependencies from the same scope.")
 	cmd.Flags().BoolVar(&stepConfig.Production, "production", false, "used for omitting installation of dev. dependencies if true")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
-	cmd.Flags().StringVar(&stepConfig.PnpmVersion, "pnpmVersion", `latest`, "Version of pnpm to use for installation. If not specified, will use the latest version. Only used when pnpm-lock.yaml is detected.")
+	cmd.Flags().StringVar(&stepConfig.PnpmVersion, "pnpmVersion", os.Getenv("PIPER_pnpmVersion"), "Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.")
 
 }
 
@@ -468,7 +468,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `latest`,
+						Default:     os.Getenv("PIPER_pnpmVersion"),
 					},
 				},
 			},

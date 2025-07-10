@@ -90,7 +90,6 @@ func TestBom(t *testing.T) {
 
 		options := ExecutorOptions{
 			DefaultNpmRegistry: "foo.bar",
-			PnpmVersion:        "latest",
 		}
 
 		exec := &Execute{
