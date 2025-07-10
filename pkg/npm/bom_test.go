@@ -43,7 +43,6 @@ func TestBom(t *testing.T) {
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
-				// BOM generation now uses absolute paths and runs from package directory
 				assert.Equal(t, mock.ExecCall{Exec: "/tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "/tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[2])
 			}
@@ -78,7 +77,6 @@ func TestBom(t *testing.T) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxBomInstallParams}, utils.execRunner.Calls[1])
-				// BOM generation now uses relative paths and runs from package directory
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[2])
 				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[3])
 			}
