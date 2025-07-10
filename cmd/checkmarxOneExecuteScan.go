@@ -89,9 +89,11 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	if cx1sh.Project == nil {
-		cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to get application - will attempt to create the project on the Tenant level")
+		if len(c.config.ApplicationName) > 0 {
+			cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
+			if err != nil {
+				return fmt.Errorf("failed to get application: %v")
+			}
 		}
 		cx1sh.Project, err = cx1sh.CreateProject() // requires groups, repoUrl, mainBranch, origin, tags, criticality
 		if err != nil {
