@@ -98,7 +98,7 @@ spec:
           - STEPS
       - name: output
         type: string
-        description: Defines the build result or output directory as per `go build` documentation.
+        description: Defines the resulting executable or object name as per `go build` documentation. For multiple architectures, output serves as prefix, and the resulting name will be in format `<output>-<os>.<arch>`.
         scope:
           - PARAMETERS
           - STAGES
@@ -187,7 +187,7 @@ spec:
           - PARAMETERS
       - name: targetArchitectures
         type: "[]string"
-        description: Defines the target architectures for which the build should run using OS and architecture separated by a comma.
+        description: Defines the target architectures for which the build should run using OS and architecture separated by a comma. If you specify multiple architectures, make sure to set [output](#output) parameter as well.
         default: linux,amd64
         scope:
           - GENERAL

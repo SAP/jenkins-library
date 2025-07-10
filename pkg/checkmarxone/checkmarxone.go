@@ -21,7 +21,7 @@ import (
 
 // ReportsDirectory defines the subfolder for the Checkmarx reports which are generated
 const ReportsDirectory = "checkmarxOne"
-const cxOrigin = "GolangScript"
+const cxOrigin = ""
 
 // AuthToken - Structure to store OAuth2 token
 // Updated for Cx1
@@ -653,6 +653,15 @@ func (sys *SystemInstance) UpdateApplication(app *Application) error {
 func (sys *SystemInstance) UpdateProject(project *Project) error {
 	sys.logger.Debugf("Updating project: %v", project.Name)
 	jsonBody, err := json.Marshal(*project)
+
+	// Remove fields that can cause API errors in Cx1 3.30
+	var filteredMap map[string]interface{}
+	json.Unmarshal(jsonBody, &filteredMap)
+	delete(filteredMap, "applicationIds")
+	delete(filteredMap, "createdAt")
+	delete(filteredMap, "updatedAt")
+	jsonBody, err = json.Marshal(filteredMap)
+
 	if err != nil {
 		return err
 	}
@@ -1330,55 +1339,7 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
-	if strings.EqualFold("pdf", reportType) || strings.EqualFold("json", reportType) {
-		version, err := sys.GetVersion()
-		if err == nil {
-			if version.CheckCxOne("3.20.0") >= 0 && version.CheckCxOne("3.21.0") == -1 {
-				sys.logger.Debugf("Current version is %v - between 3.20.0 and 3.21.0 - using v2 %v report", reportType, version.CxOne)
-				return sys.RequestNewReportV2(scanID, reportType)
-			}
-			sys.logger.Debugf("Current version is %v - using v1 %v report", reportType, version.CxOne)
-		} else {
-			sys.logger.Errorf("Failed to get the CxOne version during report-gen request, will use v1 %v report. Error: %s", reportType, err)
-		}
-	}
-
-	jsonData := map[string]interface{}{
-		"fileFormat": reportType,
-		"reportType": "ui",
-		"reportName": "scan-report",
-		"data": map[string]interface{}{
-			"scanId":     scanID,
-			"projectId":  projectID,
-			"branchName": branch,
-			"sections": []string{
-				"ScanSummary",
-				"ExecutiveSummary",
-				"ScanResults",
-			},
-			"scanners": []string{"SAST"},
-			"host":     "",
-		},
-	}
-
-	jsonValue, _ := json.Marshal(jsonData)
-
-	header := http.Header{}
-	header.Set("cxOrigin", cxOrigin)
-	header.Set("Content-Type", "application/json")
-	data, err := sendRequest(sys, http.MethodPost, "/reports", bytes.NewBuffer(jsonValue), header, []int{})
-	if err != nil {
-		return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
-	} else {
-		sys.logger.Infof("Generating report %v", string(data))
-	}
-
-	var reportResponse struct {
-		ReportId string
-	}
-	err = json.Unmarshal(data, &reportResponse)
-
-	return reportResponse.ReportId, err
+	return sys.RequestNewReportV2(scanID, reportType) // Report generation v1 API is removed in CxONE 3.36, use RequestNewReportV2 instead
 }
 
 // Use the new V2 Report API to generate a PDF report

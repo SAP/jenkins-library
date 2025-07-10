@@ -108,7 +108,7 @@ func (p *npmExecuteScriptsReports) persist(stepConfig npmExecuteScriptsOptions, 
 	}
 }
 
-// NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
+// NpmExecuteScriptsCommand Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
 func NpmExecuteScriptsCommand() *cobra.Command {
 	const STEP_NAME = "npmExecuteScripts"
 
@@ -123,23 +123,21 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Execute npm run scripts on all npm packages in a project",
-		Long: `Execute npm run scripts in all package json files, if they implement the scripts.
+		Short: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
+		Long: `### Lock file detection:
 
-### build with depedencies from a private repository
-if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
-repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` value(s) with a valid private repo url) :
+  - If ` + "`" + `package-lock.json` + "`" + ` is found → runs ` + "`" + `npm ci` + "`" + `
+  - If ` + "`" + `yarn.lock.json` + "`" + ` is found → runs ` + "`" + `yarn install --frozen-lockfile` + "`" + `
+  - If ` + "`" + `pnpm-lock.yaml` + "`" + ` is found → runs ` + "`" + `pnpm install --frozen-lockfile` + "`" + `
+  - If no lock file is found → defaults to ` + "`" + `npm install` + "`" + ` and continues execution
 
-` + "`" + `` + "`" + `` + "`" + `
-@privateScope:registry=https://private.repository.com/
-//private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER}
-//private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64}
-//private.repository.com/:always-auth=true
-registry=https://registry.npmjs.org
-` + "`" + `` + "`" + `` + "`" + `
-` + "`" + `PIPER_VAULTCREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository
-and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
-[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
+Only the install command uses the detected package manager (npm, yarn, or pnpm). All other commands (e.g., ` + "`" + `run` + "`" + `, ` + "`" + `pack` + "`" + `, ` + "`" + `publish` + "`" + `) are executed via the ` + "`" + `npm` + "`" + ` CLI, regardless of which lock file is detected.<br/>
+Rationale: In the Piper environment, using the npm CLI for non-install commands provides sufficient functionality without requiring additional CLI dependencies. Supporting yarn or pnpm for these commands was deemed unnecessary due to lack of added benefit.<br/>
+If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found. One can use ` + "`" + `buildDescriptorList` + "`" + ` or ` + "`" + `buildDescriptorExcludeList` + "`" + ` (more details below) to override the default behaviour.<br/> Currently multimodule pnpm projects are not supported. For such projects , it is necessary to use ` + "`" + `buildDescriptorList` + "`" + ` parameter pointing to package.json in root folder.
+### Build with private dependencies from a repository
+If your build has scoped/unscoped dependencies from a private repository you can include a ` + "`" + `.npmrc` + "`" + ` into the source code repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` value(s) with a valid private repo url) :<br/>
+` + "`" + `` + "`" + `` + "`" + ` @privateScope:registry=https://private.repository.com/ //private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER} //private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64} //private.repository.com/:always-auth=true registry=https://registry.npmjs.org ` + "`" + `` + "`" + `` + "`" + `
+` + "`" + `PIPER_VAULTCREDENTIAL_USER` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` + "`" + ` (Base64 encoded password) are the username and password for the private repository and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using : [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -274,7 +272,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "npmExecuteScripts",
 			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
-			Description: "Execute npm run scripts on all npm packages in a project",
+			Description: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -464,7 +462,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-buster"},
+				{Name: "node", Image: "node:lts-bookworm"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

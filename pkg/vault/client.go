@@ -106,6 +106,11 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 			initialLoginSucceed = true
 		}
 
+		if !vaultLoginResp.Auth.Renewable {
+			log.Entry().Debugf("Vault token is not configured to be renewable.")
+			return
+		}
+
 		tokenErr := c.manageTokenLifecycle(vaultLoginResp)
 		if tokenErr != nil {
 			log.Entry().Warnf("unable to start managing token lifecycle: %v", err)
@@ -117,11 +122,6 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 // Starts token lifecycle management. Returns only fatal errors as errors,
 // otherwise returns nil, so we can attempt login again.
 func (c *Client) manageTokenLifecycle(authResp *vaultAPI.Secret) error {
-	if !authResp.Auth.Renewable {
-		log.Entry().Debugf("Token is not configured to be renewable. Re-attempting login.")
-		return nil
-	}
-
 	watcher, err := c.vaultApiClient.NewLifetimeWatcher(&vaultAPI.LifetimeWatcherInput{Secret: authResp})
 	if err != nil {
 		return fmt.Errorf("unable to initialize new lifetime watcher for renewing auth token: %w", err)

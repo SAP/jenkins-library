@@ -202,12 +202,12 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "docker.io/paketobuildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
-		"Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:2.0.0]'",
-		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
+		"Setting custom buildpacks: '[docker.io/paketobuildpacks/nodejs:2.0.0]'",
+		"Downloading buildpack 'docker.io/paketobuildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
 		"running command: /cnb/lifecycle/creator",
 		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
@@ -230,11 +230,11 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "docker.io/paketobuildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:2.0.0]'",
-		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
+	container.assertHasOutput(t, "Setting custom buildpacks: '[docker.io/paketobuildpacks/nodejs:2.0.0]'",
+		"Downloading buildpack 'docker.io/paketobuildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
 		"running command: /cnb/lifecycle/creator",
 		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),

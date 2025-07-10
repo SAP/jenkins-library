@@ -179,11 +179,11 @@ func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) 
 	})
 	if logEntry.Status == `Error` {
 		for _, entry := range logProtocols {
-			log.Entry().Info(entry.Description)
+			log.Entry().Infof("%s %s", entry.Type, entry.Description)
 		}
 	} else {
 		for _, entry := range logProtocols {
-			log.Entry().Debug(entry.Description)
+			log.Entry().Debugf("%s %s", entry.Type, entry.Description)
 		}
 	}
 }

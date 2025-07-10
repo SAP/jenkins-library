@@ -49,7 +49,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
+        default: https://downloads.mend.io/wss-unified-agent.jar
       - name: agentFileName
         type: string
         description: "Locally used name for the Unified Agent jar file after download."
@@ -796,7 +796,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:lts-buster
+    - image: node:lts-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -812,7 +812,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:lts-buster
+    - image: node:lts-bookworm
       workingDir: /home/node
       env: []
       conditions:

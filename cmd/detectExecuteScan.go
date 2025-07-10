@@ -183,7 +183,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 }
 
 func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, influx *detectExecuteScanInflux) error {
-	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
+	// detect execution details, see https://documentation.blackduck.com/bundle/detect/page/runningdetect/basics/runningwithblackduck.html
 	err := getDetectScript(config, utils)
 	if err != nil {
 		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
@@ -257,21 +257,24 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 
 	blackduckSystem := newBlackduckSystem(config)
 
-	args := []string{"./detect.sh"}
-	args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
-	if err != nil {
-		return err
-	}
-	script := strings.Join(args, " ")
-
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
 	envs = append(envs, config.CustomEnvironmentVariables...)
 
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	err = mapDetectError(utils.RunShell("/bin/bash", script), config, utils)
-	if config.ScanContainerDistro != "" {
+	// When containerScan is set to true, only the container scan will be executed
+	if !config.ContainerScan {
+		args := []string{"./detect.sh"}
+		args, err = addDetectArgs(args, config, utils, blackduckSystem, NO_VERSION_SUFFIX, NO_VERSION_SUFFIX)
+		if err != nil {
+			return err
+		}
+		script := strings.Join(args, " ")
+		err = mapDetectError(utils.RunShell("bash", script), config, utils)
+	}
+
+	if config.ScanContainerDistro != "" || config.ContainerScan {
 		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 		if imageError != nil {
 			if err != nil {
@@ -348,7 +351,7 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		}
 		script := strings.Join(args, " ")
 
-		err = utils.RunShell("/bin/bash", script)
+		err = utils.RunShell("bash", script)
 		err = mapDetectError(err, config, utils)
 
 		if err != nil {
@@ -622,10 +625,15 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 	if err != nil {
 		return []string{}, err
 	}
+	if config.ContainerScan {
+		args = append(args, "--detect.tools=CONTAINER_SCAN")
+		args = append(args, fmt.Sprintf("--detect.container.scan.file.path=./%s", imageTar))
+		return args, nil
+	}
 
 	args = append(args, fmt.Sprintf("--detect.docker.tar=./%s", imageTar))
 	args = append(args, "--detect.target.type=IMAGE")
-	// https://community.synopsys.com/s/article/Docker-image-scanning-CLI-examples-and-some-Q-As
+	// https://community.blackduck.com/s/article/Docker-image-scanning-CLI-examples-and-some-Q-As
 	args = append(args, "--detect.tools.excluded=DETECTOR")
 	args = append(args, "--detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/")
 	args = append(args, "--detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared")

@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package orchestrator
 
@@ -232,7 +231,6 @@ func TestGitHubActionsConfigProvider_GetLog(t *testing.T) {
 	g.client = github.NewClient(http.DefaultClient)
 
 	// setup http mock
-	rand.Seed(time.Now().UnixNano())
 	latencyMin, latencyMax := 15, 500 // milliseconds
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
