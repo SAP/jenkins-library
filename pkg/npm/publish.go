@@ -198,7 +198,19 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
+		// Change to package directory to ensure npm publish uses the correct package.json
+		if err := exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
+			return fmt.Errorf("failed to change into directory for publishing: %w", err)
+		}
+
+		// Run npm publish from the package directory
 		err := execRunner.RunExecutable("npm", "publish", "--userconfig", npmrc.filepath, "--registry", registry)
+
+		// Change back to original directory
+		if chdirErr := exec.Utils.Chdir(oldWorkingDirectory); chdirErr != nil {
+			return fmt.Errorf("failed to change back into original directory: %w", chdirErr)
+		}
+
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
