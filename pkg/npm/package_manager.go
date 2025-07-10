@@ -91,7 +91,7 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 						} else {
 							// Install pnpm locally with configured version (only once, in root directory)
 							if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion, exec.pnpmSetup.rootDir); err != nil {
-								return nil, fmt.Errorf("failed to install pnpm: %w", err)
+								return nil, fmt.Errorf("failed to install specified pnpm version: %w", err)
 							}
 							// Use local pnpm after installation
 							exec.pnpmSetup.installed = true
