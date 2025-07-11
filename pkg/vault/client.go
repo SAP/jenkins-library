@@ -91,14 +91,17 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 	retryAttemptDuration := c.vaultApiClient.MinRetryWait()
 	for i := 0; i <= c.vaultApiClient.MaxRetries(); i++ {
 		if i != 0 {
-			log.Entry().Infof("Retrying Vault login in %.0f seconds. Attempt %d of %d",
-				retryAttemptDuration.Seconds(), i, c.vaultApiClient.MaxRetries())
+			log.Entry().WithField("attempt", i).WithField("maxRetries", c.vaultApiClient.MaxRetries()).WithField("retryDelay", retryAttemptDuration.Seconds()).Info("Retrying Vault login")
 			time.Sleep(retryAttemptDuration)
 		}
 
 		vaultLoginResp, err := c.login()
 		if err != nil {
-			log.Entry().Warnf("unable to authenticate to Vault: %v", err)
+			if i == 0 {
+				log.Entry().WithError(err).Warn("Vault authentication failed")
+			} else {
+				log.Entry().WithError(err).WithField("attempt", i).Warn("Vault authentication retry failed")
+			}
 			continue
 		}
 		if !initialLoginSucceed {
