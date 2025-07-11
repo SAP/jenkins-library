@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -30,9 +31,10 @@ type githubIssueClient interface {
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.
-		NewClientBuilder(config.Token, config.APIURL).
-		WithUploadURL(config.UploadURL).Build()
+	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).
+		WithTimeout(time.Duration(config.GithubAPITimeout) * time.Second).
+		WithUploadURL(config.UploadURL).
+		Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}
