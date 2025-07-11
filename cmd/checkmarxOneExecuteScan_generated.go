@@ -36,6 +36,7 @@ type checkmarxOneExecuteScanOptions struct {
 	GitBranch                            string   `json:"gitBranch,omitempty"`
 	ClientSecret                         string   `json:"clientSecret,omitempty"`
 	APIKey                               string   `json:"APIKey,omitempty"`
+	AccessToken                          string   `json:"accessToken,omitempty"`
 	Preset                               string   `json:"preset,omitempty"`
 	LanguageMode                         string   `json:"languageMode,omitempty"`
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
@@ -280,6 +281,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.ClientSecret)
 			log.RegisterSecret(stepConfig.APIKey)
+			log.RegisterSecret(stepConfig.AccessToken)
 			log.RegisterSecret(stepConfig.ClientID)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -382,6 +384,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.GitBranch, "gitBranch", os.Getenv("PIPER_gitBranch"), "Set the GitHub repository branch.")
 	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", os.Getenv("PIPER_clientSecret"), "The clientSecret to authenticate using a service account")
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
+	cmd.Flags().StringVar(&stepConfig.AccessToken, "accessToken", os.Getenv("PIPER_accessToken"), "Token for APIs access. This parameter is used uniquely for the integration with Trust Engine API and the value will be filled automatically by the system. Outside this usecase, OAuth client (clientId/clientSecret) or APIKey must be used for authentication.")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", `3`, "The criticality of the checkmarxOne project, used during project creation")
@@ -413,6 +416,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 
 	cmd.MarkFlagRequired("clientSecret")
 	cmd.MarkFlagRequired("APIKey")
+	cmd.MarkFlagRequired("accessToken")
 	cmd.MarkFlagRequired("projectCriticality")
 	cmd.MarkFlagRequired("projectName")
 	cmd.MarkFlagRequired("branch")
@@ -602,6 +606,21 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_APIKey"),
+					},
+					{
+						Name: "accessToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "cxoneSystemtrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "cxone",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_accessToken"),
 					},
 					{
 						Name:        "preset",
