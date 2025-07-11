@@ -18,6 +18,7 @@ type HttpClientMock struct {
 	FileUploads            map[string]string // set by mock
 	ReturnFileUploadStatus int               // expected to be set upfront
 	ReturnFileUploadError  error             // expected to be set upfront
+	ReturnDownloadError    error             // expected to be set upfront
 }
 
 // SendRequest mock
@@ -53,6 +54,9 @@ func (utils *HttpClientMock) UploadFile(url, file, fieldName string, header http
 
 // DownloadFile mock
 func (utils *HttpClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if utils.ReturnDownloadError != nil {
+		return utils.ReturnDownloadError
+	}
 	if utils.HTTPFileUtils != nil {
 		utils.HTTPFileUtils.AddFile(filename, []byte("some content"))
 	}
