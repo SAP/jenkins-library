@@ -191,6 +191,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: pnpmVersion
+        type: string
+        description: Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -212,3 +219,6 @@ spec:
   containers:
     - name: node
       image: node:lts-bookworm
+
+  sidecars:
+    - name: ""

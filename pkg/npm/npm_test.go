@@ -55,6 +55,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
@@ -74,6 +77,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
@@ -98,6 +104,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes([]string{"filter/**", "filterPath/package.json"})
@@ -118,6 +127,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFilesWithScript, err := exec.FindPackageJSONFilesWithScript([]string{"package.json", filepath.Join("src", "package.json"), filepath.Join("test", "package.json")}, "ci-lint")
@@ -138,6 +150,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
@@ -158,6 +173,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
@@ -179,6 +197,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
@@ -194,8 +215,11 @@ func TestNpm(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 
+		// Mock expects absolute path for locally installed pnpm
+		absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
 		utils.execRunner.ShouldFailOnCommand = map[string]error{
-			pnpmPath + " --version": fmt.Errorf("pnpm not installed"),
+			"pnpm --version":                fmt.Errorf("pnpm not installed globally"),
+			absolutePnpmPath + " --version": fmt.Errorf("pnpm not installed locally"),
 		}
 
 		options := ExecutorOptions{}
@@ -204,20 +228,24 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
 		if assert.NoError(t, err) {
-			fmt.Println(utils.execRunner.Calls)
-			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+			if assert.Equal(t, 5, len(utils.execRunner.Calls)) {
 				// Set npm registry
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
-				// Check pnpm version command
-				assert.Equal(t, mock.ExecCall{Exec: pnpmPath, Params: []string{"--version"}}, utils.execRunner.Calls[1])
+				// Check global pnpm version command
+				assert.Equal(t, mock.ExecCall{Exec: "pnpm", Params: []string{"--version"}}, utils.execRunner.Calls[1])
+				// Check local pnpm version command
+				assert.Equal(t, mock.ExecCall{Exec: absolutePnpmPath, Params: []string{"--version"}}, utils.execRunner.Calls[2])
 				// Check pnpm install command
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "./tmp"}}, utils.execRunner.Calls[2])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "/tmp"}}, utils.execRunner.Calls[3])
 				// Check pnpm install --frozen-lockfile command
-				assert.Equal(t, mock.ExecCall{Exec: pnpmPath, Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[3])
+				assert.Equal(t, mock.ExecCall{Exec: absolutePnpmPath, Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[4])
 			}
 		}
 	})
@@ -235,6 +263,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.InstallAllDependencies([]string{"package.json", filepath.Join("src", "package.json")})
 
@@ -255,6 +286,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
 
@@ -276,6 +310,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, nil)
 
@@ -299,6 +336,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
 
@@ -320,6 +360,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.SetNpmRegistries()
 
@@ -340,6 +383,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil, nil)
 
