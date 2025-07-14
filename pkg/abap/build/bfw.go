@@ -318,6 +318,18 @@ func (b *Build) DetermineFailureCause() (string, error) {
 	if err := b.getTasks(); err != nil {
 		return "", err
 	}
+	//First Check status of tasks. Erronous Tasks could be in the middle
+	for _, task := range b.Tasks {
+		if task.ResultState == Aborted {
+			if err := task.getLogs(); err != nil {
+				return "", err
+			}
+			return task.determineFailureCause(), nil
+		} else {
+			continue
+		}
+	}
+
 	//The errors of the last executed task should contain some hints about the cause of the failure
 	lastTaskIndex := len(b.Tasks) - 1
 	if lastTaskIndex < 0 {
