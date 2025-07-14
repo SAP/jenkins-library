@@ -346,11 +346,11 @@ func TestHotSpotService(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// Severities
-		var hotspots []HotSpotSecurityIssue
+		var hotspots []SecurityHotspot
 		// test
 		err := serviceUnderTest.GetHotSpotSecurityIssues(&hotspots)
 		// assert
-		assert.Equal(t, []HotSpotSecurityIssue{{IssueType: "MEDIUM", Count: 1}}, hotspots)
+		assert.Equal(t, []SecurityHotspot{{Priority: "MEDIUM", Hotspots: 1}}, hotspots)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
@@ -365,7 +365,7 @@ func TestHotSpotService(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// Severities
-		var hotspots []HotSpotSecurityIssue
+		var hotspots []SecurityHotspot
 		// test
 		err := serviceUnderTest.GetHotSpotSecurityIssues(&hotspots)
 		// assert
@@ -384,13 +384,13 @@ func TestHotSpotService(t *testing.T) {
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// Severities
 		// Severities
-		var hotspots []HotSpotSecurityIssue
+		var hotspots []SecurityHotspot
 		// test
 		err := serviceUnderTest.GetHotSpotSecurityIssues(&hotspots)
 		// assert
-		assert.Equal(t, []HotSpotSecurityIssue{
-			{IssueType: "MEDIUM", Count: 2},
-			{IssueType: "LOW", Count: 1},
+		assert.Equal(t, []SecurityHotspot{
+			{Priority: "MEDIUM", Hotspots: 2},
+			{Priority: "LOW", Hotspots: 1},
 		}, hotspots)
 		assert.NoError(t, err)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")

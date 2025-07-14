@@ -146,7 +146,7 @@ func (service *IssueService) GetNumberOfInfoIssues(categories *[]Severity) (int,
 	return service.getIssueCount(info, categories)
 }
 
-func (service *IssueService) GetHotSpotSecurityIssues(hotspotissues *[]HotSpotSecurityIssue) error {
+func (service *IssueService) GetHotSpotSecurityIssues(securityHotspots *[]SecurityHotspot) error {
 	options := &HotSpotSearchOption{
 		Project: service.Project,
 		Status:  to_review,
@@ -158,11 +158,11 @@ func (service *IssueService) GetHotSpotSecurityIssues(hotspotissues *[]HotSpotSe
 
 	table := map[string]int{}
 	service.updateHotSpotTypesTable(&result.HotSpots, table)
-	for issueType, issuesCount := range table {
-		var hotspot HotSpotSecurityIssue
-		hotspot.IssueType = issueType
-		hotspot.Count = issuesCount
-		*hotspotissues = append(*hotspotissues, hotspot)
+	for priority, hotspots := range table {
+		var hotspot SecurityHotspot
+		hotspot.Priority = priority
+		hotspot.Hotspots = hotspots
+		*securityHotspots = append(*securityHotspots, hotspot)
 	}
 	return nil
 }

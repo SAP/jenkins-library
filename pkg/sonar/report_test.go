@@ -64,14 +64,14 @@ func TestWriteCodeCheckReport(t *testing.T) {
 
 func TestWriteHotSpotReport(t *testing.T) {
 	// init
-	const expected = `{"serverUrl":"https://sonarcloud.io","projectKey":"Piper-Validation/Golang","taskId":"mock.Anything","hotSpotSecurityIssues":[{"type":"MAJOR","count":1},{"type":"LOW","count":4}]}`
+	const expected = `{"serverUrl":"https://sonarcloud.io","projectKey":"Piper-Validation/Golang","taskId":"mock.Anything","securityHotspots":[{"priority":"HIGH","hotspots":1},{"priority":"LOW","hotspots":4}]}`
 	testData := ReportHotSpotData{
 		ServerURL:  "https://sonarcloud.io",
 		ProjectKey: "Piper-Validation/Golang",
 		TaskID:     mock.Anything,
-		HotSpotSecurityIssues: []HotSpotSecurityIssue{
-			{IssueType: "MAJOR", Count: 1},
-			{IssueType: "LOW", Count: 4},
+		SecurityHotspots: []SecurityHotspot{
+			{Priority: "HIGH", Hotspots: 1},
+			{Priority: "LOW", Hotspots: 4},
 		},
 	}
 	// test

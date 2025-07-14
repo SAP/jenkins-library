@@ -329,20 +329,20 @@ func getStaticCodeCheckResults(config sonarExecuteScanOptions, taskReport *Sonar
 func getHotSpotSecurityCheckResults(config sonarExecuteScanOptions, taskReport *SonarUtils.TaskReportData, serverUrl string, apiClient SonarUtils.Sender) error {
 	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
-	var hotspotissues []SonarUtils.HotSpotSecurityIssue
+	var hotspotissues []SonarUtils.SecurityHotspot
 	err := issueService.GetHotSpotSecurityIssues(&hotspotissues)
 	if err != nil {
 		return err
 	}
 
 	reportData := SonarUtils.ReportHotSpotData{
-		ServerURL:             taskReport.ServerURL,
-		ProjectKey:            taskReport.ProjectKey,
-		TaskID:                taskReport.TaskID,
-		ChangeID:              config.ChangeID,
-		BranchName:            config.BranchName,
-		Organization:          config.Organization,
-		HotSpotSecurityIssues: hotspotissues[:],
+		ServerURL:        taskReport.ServerURL,
+		ProjectKey:       taskReport.ProjectKey,
+		TaskID:           taskReport.TaskID,
+		ChangeID:         config.ChangeID,
+		BranchName:       config.BranchName,
+		Organization:     config.Organization,
+		SecurityHotspots: hotspotissues[:],
 	}
 
 	return SonarUtils.WriteHotSpotReport(reportData, sonar.workingDir, os.WriteFile)

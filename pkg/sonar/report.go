@@ -25,19 +25,19 @@ type ReportCodeCheckData struct {
 
 // ReportCodeCheckData is representing the data of the step report JSON
 type ReportHotSpotData struct {
-	ServerURL             string                 `json:"serverUrl"`
-	ProjectKey            string                 `json:"projectKey"`
-	TaskID                string                 `json:"taskId"`
-	ChangeID              string                 `json:"changeID,omitempty"`
-	BranchName            string                 `json:"branchName,omitempty"`
-	Organization          string                 `json:"organization,omitempty"`
-	HotSpotSecurityIssues []HotSpotSecurityIssue `json:"hotSpotSecurityIssues"`
+	ServerURL        string            `json:"serverUrl"`
+	ProjectKey       string            `json:"projectKey"`
+	TaskID           string            `json:"taskId"`
+	ChangeID         string            `json:"changeID,omitempty"`
+	BranchName       string            `json:"branchName,omitempty"`
+	Organization     string            `json:"organization,omitempty"`
+	SecurityHotspots []SecurityHotspot `json:"securityHotspots"`
 }
 
 // HotSpot Security Issues
-type HotSpotSecurityIssue struct {
-	IssueType string `json:"type"`
-	Count     int    `json:"count"`
+type SecurityHotspot struct {
+	Priority string `json:"priority"`
+	Hotspots int    `json:"hotspots"`
 }
 
 // Issues ...
