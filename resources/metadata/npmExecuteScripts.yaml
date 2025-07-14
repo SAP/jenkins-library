@@ -21,8 +21,10 @@ metadata:
 
     If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found.
     One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.<br/>
-    Currently multimodule pnpm projects are not supported.
-    For such projects , it is necessary to use `buildDescriptorList` parameter pointing to package.json in root folder.
+    
+    ### pnpm multi-module support:
+    pnpm multi-module projects are supported when each package has its own `pnpm-lock.yaml` file.
+    Workspace-based pnpm projects are not supported.
 
     ### Build with private dependencies from a repository
 
