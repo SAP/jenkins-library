@@ -55,36 +55,25 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	{{ if $reportsOutputExists -}}
-	"reflect"
-	"strings"
-	{{ end -}}
-	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}
 	"path/filepath"
-	{{ end -}}
-	"time"
 
-	{{ if .ExportPrefix -}}
-	{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"
-	{{ end -}}
-	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	{{ if $reportsOutputExists -}}
-	"github.com/bmatcuk/doublestar"
-	"github.com/SAP/jenkins-library/pkg/gcs"
-	{{ end -}}
-	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	{{ end -}}
-	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/splunk"
-	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
+const (
+	StepName = {{ .StepName | quote }}
+)
+
+type generalConfig struct {
+	Verbose bool
+}
+
 type {{ .StepName }}Options struct {
+	generalConfig
 	{{- $names := list ""}}
 	{{- range $key, $value := uniqueName .StepParameters }}
 	{{ if ne (has $value.Name $names) true -}}
@@ -99,157 +88,85 @@ type {{ .StepName }}Options struct {
 	{{ end }}
 }
 
-{{ range $notused, $oRes := .OutputResources }}
-{{ index $oRes "def"}}
-{{ end }}
+func (cfg *{{ .StepName }}Options) readInValues() error {
+	err := viper.Unmarshal(cfg)
+	if err != nil {
+		return fmt.Errorf("unable to read inputs step configuration, %v", err)
+	}
+
+	return nil
+}
 
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
-	const STEP_NAME = {{ .StepName | quote }}
-
-	metadata := {{ .StepName }}Metadata()
 	var stepConfig {{.StepName}}Options
-	var startTime time.Time
-	{{- range $notused, $oRes := .OutputResources }}
-	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
-	var logCollector *log.CollectorHook
-	var splunkClient *splunk.Splunk
-	telemetryClient := &telemetry.Telemetry{}
+	var commonPipelineEnvironment golangBuildCommonPipelineEnvironment
+	var dummyTelemetryData telemetry.CustomData
 
-	var {{.CreateCmdVar}} = &cobra.Command{
-		Use:   STEP_NAME,
+	var {{.StepName}}Cmd = &cobra.Command{
+		Use:   StepName,
 		Short: {{.Short | quote }},
 		Long: {{ $tick := "` + "`" + `" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
-			startTime = time.Now()
-			log.SetStepName(STEP_NAME)
-			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
-
-			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
-
-			path, err := os.Getwd()
+			err := stepConfig.readInValues()
 			if err != nil {
 				return err
 			}
-			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
-			log.RegisterHook(fatalHook)
 
-			err = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return err
-			}
+			log.SetStepName(StepName)
+			log.SetVerbose(stepConfig.Verbose)
 
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
 
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SentryConfig.Dsn, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
-				log.RegisterHook(&sentryHook)
-			}
-
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
-				splunkClient = &splunk.Splunk{}
-				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
-				log.RegisterHook(logCollector)
-			}
-
-			if err = log.RegisterANSHookIfConfigured({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID); err != nil {
-				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
-			}
-
-			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
-			if err != nil {
-				return err
-			}
-			if err = validation.ValidateStruct(stepConfig); err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return err
-			}
-
 			return nil
 		},
-		Run: func(_ *cobra.Command, _ []string) {
-			vaultClient := config.GlobalVaultClient()
-			if vaultClient != nil {
-				defer vaultClient.MustRevokeToken()
-			}
-
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
-			handler := func() {
-				{{- range $notused, $oRes := .OutputResources }}
-				{{ index $oRes "name" }}.persist(
-				{{- if eq (index $oRes "type") "reports" -}}stepConfig,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCPJsonKeyFilePath,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSBucketId,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSFolderPath,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSSubFolder
-				{{- else -}}
-					{{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
-				){{- end }}
-				config.RemoveVaultSecretFiles()
-				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
-				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitCommit
-				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.LogStepTelemetryData()
-				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunkClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Token,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-					splunkClient.Send(telemetryClient.GetData(), logCollector)
-				}
-				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
-					splunkClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
-					splunkClient.Send(telemetryClient.GetData(), logCollector)
-				}
-				if {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
-					}
-				}
-			}
-			log.DeferExitHandler(handler)
-			defer handler()
-			telemetryClient.Initialize(STEP_NAME)
-			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})
-			stepTelemetryData.ErrorCode = "0"
+		Run: func(cmd *cobra.Command, args []string) {
+			{{.StepName}}(stepConfig, &dummyTelemetryData, &commonPipelineEnvironment)
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	{{.FlagsFunc}}({{.CreateCmdVar}}, &stepConfig)
-	return {{.CreateCmdVar}}
+	defineInputSources({{.StepName}}Cmd, &stepConfig)
+	return {{.StepName}}Cmd
 }
 
-func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
+func defineInputSources(stepCmd *cobra.Command, stepConfig *golangBuildOptions) {
+	// General configuration
+	stepCmd.Flags().BoolVarP(&stepConfig.Verbose, "verbose", "v", false, "Enables verbose output for the step.")
+	
+	// Define flags
 	{{- range $key, $value := uniqueName .StepParameters }}
-	{{ if isCLIParam $value.Type }}cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, {{ $value.Name | quote }}, {{ $value.Default }}, {{ $value.Description | quote }}){{end}}{{ end }}
+	{{ if isCLIParam $value.Type }}stepCmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, {{ $value.Name | quote }}, {{ $value.Default }}, {{ $value.Description | quote }}){{end}}{{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}
 	{{- if $value.Mandatory }}
-	cmd.MarkFlagRequired({{ $value.Name | quote }})
+	stepCmd.MarkFlagRequired({{ $value.Name | quote }})
 	{{- end }}
 	{{- if $value.DeprecationMessage }}
-	cmd.Flags().MarkDeprecated({{ $value.Name | quote }}, {{ $value.DeprecationMessage | quote }})
+	stepCmd.Flags().MarkDeprecated({{ $value.Name | quote }}, {{ $value.DeprecationMessage | quote }})
 	{{- end }}
+	{{- end }}
+
+	bindEnvToFlag(stepCmd)
+
+	// Set prefix for all environment variables. e.g. PIPER_STEP_verbose
+	viper.SetEnvPrefix("PIPER_STEP")
+	viper.AutomaticEnv()
+}
+
+// Bind environment variables to flags
+func bindEnvToFlag(stepCmd *cobra.Command) {
+	_ = viper.BindPFlag("verbose", stepCmd.Flags().Lookup("verbose"))
+	{{- printf "\n" }}
+	{{- range $key, $value := uniqueName .StepParameters }}
+	_ = viper.BindPFlag({{ $value.Name | quote }}, stepCmd.Flags().Lookup({{ $value.Name | quote }}))
 	{{- end }}
 }
+
+{{ range $notused, $oRes := .OutputResources }}
+{{ index $oRes "def"}}
+{{ end }}
 
 {{ define "resourceRefs"}}
 							{{ "{" }}
@@ -266,109 +183,6 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 							{{ "}" }},
 							{{- nindent 24 ""}}
 {{- end -}}
-
-// retrieve step metadata
-func {{ .StepName }}Metadata() config.StepData {
-	var theMetaData = config.StepData{
-		Metadata: config.StepMetadata{
-			Name:    {{ .StepName | quote }},
-			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: {{ $alias.Name | quote }}, Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
-			Description: {{ .Short | quote }},
-		},
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				{{ if .Secrets -}}
-				Secrets: []config.StepSecrets{
-					{{- range $secrets := .Secrets }}
-					{
-						{{- if $secrets.Name -}} Name: {{ $secrets.Name | quote }},{{- end }}
-						{{- if $secrets.Description -}} Description: {{$secrets.Description | quote}},{{- end }}
-						{{- if $secrets.Type -}} Type: {{ $secrets.Type | quote }},{{- end }}
-						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: {{ $a.Name | quote }}, Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
-					}, {{ end }}
-				},
-				{{ end -}}
-				{{ if .Resources -}}
-				Resources: []config.StepResources{
-					{{- range $resource := .Resources }}
-					{
-						{{- if $resource.Name -}} Name: {{ $resource.Name | quote }},{{- end }}
-						{{- if $resource.Description -}} Description: {{ $resource.Description | quote }},{{- end }}
-						{{- if $resource.Type -}} Type: {{ $resource.Type | quote }},{{- end }}
-						{{- if $resource.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $resource.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}
-					},{{- end }}
-				},
-				{{ end -}}
-				Parameters: []config.StepParameters{
-					{{- range $key, $value := .StepParameters }}
-					{
-						Name:      {{ $value.Name | quote }},
-						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ template "resourceRefs" $ref }}{{ end }}{{ "}" }},
-						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}{{ $scope | quote }},{{ end }}{{ "}" }},
-						Type:      {{ $value.Type | quote }},
-						Mandatory: {{ $value.Mandatory }},
-						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: {{ $alias.Name | quote }}{{ if $alias.Deprecated }}, Deprecated: {{$alias.Deprecated}}{{ end }}{{ "}" }},{{ end }}{{ "}" }},
-						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
-						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{- end }}
-						{{- if $value.DeprecationMessage }}
-						DeprecationMessage: {{ $value.DeprecationMessage | quote }},
-						{{- end}}
-					},{{ end }}
-				},
-			},
-			{{ if .Containers -}}
-			Containers: []config.Container{
-				{{- range $container := .Containers }}
-				{
-					{{- if $container.Name -}} Name: {{ $container.Name | quote }},{{- end }}
-					{{- if $container.Image -}} Image: {{ $container.Image | quote }},{{- end }}
-					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: {{ $env.Name | quote }}, Value: {{ $env.Value | quote }}}, {{ end -}}  },{{- end }}
-					{{- if $container.WorkingDir -}} WorkingDir: {{ $container.WorkingDir | quote }},{{- end }}
-					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: {{ $option.Name | quote }}, Value: {{ $option.Value | quote }}}, {{ end -}} },{{ end }}
-					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}
-				}, {{ end }}
-			},
-			{{ end -}}
-			{{ if .Sidecars -}}
-			Sidecars: []config.Container{
-				{{- range $container := .Sidecars }}
-				{
-					{{- if $container.Name -}} Name: {{ $container.Name | quote }}, {{- end }}
-					{{- if $container.Image -}} Image: {{ $container.Image | quote }}, {{- end }}
-					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: {{ $env.Name | quote }}, Value: {{ $env.Value | quote }}}, {{ end -}}  }, {{- end }}
-					{{- if $container.WorkingDir -}} WorkingDir: {{ $container.WorkingDir | quote }}, {{- end }}
-					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: {{ $option.Name | quote }}, Value: {{ $option.Value | quote }}}, {{ end -}} }, {{- end }}
-					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} }, {{- end }}
-				}, {{ end }}
-			},
-			{{ end -}}
-			{{- if .Outputs.Resources -}}
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
-					{{- range $res := .Outputs.Resources }}
-					{
-						{{ if $res.Name }}Name: {{ $res.Name | quote }}, {{- end }}
-						{{ if $res.Type }}Type: {{ $res.Type | quote }}, {{- end }}
-						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
-						{{ range $i, $p := $res.Parameters }}
-							{{ if $p }}{ {{- end -}}
-							{{ if $p.name}}"name": {{ $p.name | quote }},{{ end -}}
-							{{ if $p.fields}}"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} },{{ end -}}
-							{{ if $p.tags}}"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} },{{ end -}}
-							{{ if $p.filePattern}}"filePattern": {{ $p.filePattern | quote }},{{ end -}}
-							{{ if $p.type}}"type": {{ $p.type | quote }},{{ end -}}
-							{{ if $p.subFolder}}"subFolder": {{ $p.subFolder | quote }},{{ end -}}
-							{{ if $p }}}, {{- end -}}
-						{{ end }}
-						{{ if $res.Parameters -}} }, {{- end }}
-						{{- if $res.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $res.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}
-					}, {{- end }}
-				},
-			}, {{- end }}
-		},
-	}
-	return theMetaData
-}
 `
 
 // StepTestGoTemplate ...
@@ -630,7 +444,7 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "int":
 				param.Default = "0"
 			case "string":
-				param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
+				param.Default = `""`
 				osImportRequired = true
 			case "[]string":
 				// ToDo: Check if default should be read from env
@@ -653,9 +467,9 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "int":
 				param.Default = fmt.Sprintf("%v", param.Default)
 			case "string":
-				param.Default = fmt.Sprintf("`%v`", param.Default)
+				param.Default = fmt.Sprintf(`"%v"`, param.Default)
 			case "[]string":
-				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
+				param.Default = fmt.Sprintf(`[]string{"%v"}`, strings.Join(getStringSliceFromInterface(param.Default), `", "`))
 			case "map[string]interface{}", "[]map[string]interface{}":
 				// Currently we don't need to set a default here since in this case the default
 				// is never used. Needs to be changed in case we enable cli parameter handling

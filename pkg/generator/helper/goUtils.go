@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/ghodss/yaml"
 )
 
@@ -56,15 +55,6 @@ func (c *ContextDefaultData) readContextDefaultMap() map[string]interface{} {
 	return m
 }
 
-func readContextInformation(contextDetailsPath string, contextDetails *config.StepData) {
-	contextDetailsFile, err := os.Open(contextDetailsPath)
-	checkError(err)
-	defer contextDetailsFile.Close()
-
-	err = contextDetails.ReadPipelineStepData(contextDetailsFile)
-	checkError(err)
-}
-
 func checkError(err error) {
 	if err != nil {
 		fmt.Printf("Error occurred: %v\n", err)
@@ -79,11 +69,4 @@ func contains(v []string, s string) bool {
 		}
 	}
 	return false
-}
-
-func ifThenElse(condition bool, positive string, negative string) string {
-	if condition {
-		return positive
-	}
-	return negative
 }
