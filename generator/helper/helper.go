@@ -199,7 +199,8 @@ import (
 func main() {
 	err := cmd.{{.CobraCmdFuncName}}().Execute()
 	if err != nil {
-		return
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 `
@@ -617,6 +618,9 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["objectname"] = influxResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "reports":
+
+			continue // POC: disable reports output for now
+
 			var reportsResource ReportsResource
 			reportsResource.Name = res.Name
 			reportsResource.StepName = stepData.Metadata.Name

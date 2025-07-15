@@ -65,6 +65,7 @@ func main() {
 		os.Exit(1)
 	}
 }
+
 func openMetaFile(name string) (io.ReadCloser, error) {
 	return os.Open(name)
 }
