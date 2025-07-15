@@ -436,7 +436,6 @@ func TestPublishDownloadedResults(t *testing.T) {
 
 func TestDetermineFailureCause(t *testing.T) {
 	build := Build{
-		BuildID: "123",
 		Tasks: []task{
 			{
 				TaskID:      0,
@@ -485,23 +484,27 @@ func TestDetermineFailureCause(t *testing.T) {
 	t.Run("TestErronous", func(t *testing.T) {
 		//arrange
 		errorMessage := "Error: something went wrong, contact your admin :-P"
-		build.Tasks[1].ResultState = Erroneous
-		build.Tasks[1].Logs = append(build.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
+		errorBuild := Build{}
+		errorBuild.Tasks = append(errorBuild.Tasks, build.Tasks[0], task{}, build.Tasks[2])
+		errorBuild.Tasks[1].ResultState = Erroneous
+		errorBuild.Tasks[1].Logs = append(errorBuild.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
 		//act
-		cause, err := build.DetermineFailureCause()
+		cause, err := errorBuild.DetermineFailureCause()
 		//assert
 		assert.NoError(t, err)
 		assert.Contains(t, cause, errorMessage)
 	})
-	t.Run("TestErronous", func(t *testing.T) {
+	t.Run("TestAborting", func(t *testing.T) {
 		//arrange
-		errorMessage := "Aborting: something went wrong, contact your admin :-P"
-		build.Tasks[2].ResultState = Aborted
-		build.Tasks[2].Logs = append(build.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
+		abortMessage := "Aborting: something went wrong, contact your admin :-P"
+		abortBuild := Build{}
+		abortBuild.Tasks = append(abortBuild.Tasks, build.Tasks[0], build.Tasks[1], task{})
+		abortBuild.Tasks[2].ResultState = Aborted
+		abortBuild.Tasks[2].Logs = append(abortBuild.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: abortMessage})
 		//act
-		cause, err := build.DetermineFailureCause()
+		cause, err := abortBuild.DetermineFailureCause()
 		//assert
 		assert.NoError(t, err)
-		assert.Contains(t, cause, errorMessage)
+		assert.Contains(t, cause, abortMessage)
 	})
 }
