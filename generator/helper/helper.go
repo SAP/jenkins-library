@@ -100,7 +100,7 @@ func (cfg *{{ .StepName }}Options) readInValues() error {
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
 	var stepConfig {{.StepName}}Options
-	var commonPipelineEnvironment golangBuildCommonPipelineEnvironment
+	var commonPipelineEnvironment {{ .StepName }}CommonPipelineEnvironment
 	var dummyTelemetryData telemetry.CustomData
 
 	var {{.StepName}}Cmd = &cobra.Command{
@@ -131,7 +131,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	return {{.StepName}}Cmd
 }
 
-func defineInputSources(stepCmd *cobra.Command, stepConfig *golangBuildOptions) {
+func defineInputSources(stepCmd *cobra.Command, stepConfig *{{ .StepName }}Options) {
 	// General configuration
 	stepCmd.Flags().BoolVarP(&stepConfig.Verbose, "verbose", "v", false, "Enables verbose output for the step.")
 	

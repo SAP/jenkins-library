@@ -172,6 +172,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 
 // StructString returns the golang coding for the struct definition of the InfluxResource
 func (i *InfluxResource) StructString() (string, error) {
+	return "", nil // disable this resource
 	funcMap := template.FuncMap{
 		"title":             piperutils.Title,
 		"golangName":        golangName,
@@ -254,6 +255,7 @@ func (p *ReportsResource) StructName() string {
 
 // StructString returns the golang coding for the struct definition of the environment resource
 func (p *ReportsResource) StructString() (string, error) {
+	return "", nil // disable this resource
 	funcMap := template.FuncMap{
 		"title":             piperutils.Title,
 		"golangName":        golangName,
