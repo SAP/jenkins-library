@@ -407,9 +407,10 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
 		checkError(err)
 
-		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644)
-		checkError(err)
+		// do not generate these tests for POC
+		//test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
+		//err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644)
+		//checkError(err)
 
 		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)))
 		if !exists {
@@ -418,12 +419,13 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 			checkError(err)
 		}
 
-		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
-		if !exists {
-			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
-			checkError(err)
-		}
+		// do not generate these tests for POC
+		//exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
+		//if !exists {
+		//	impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
+		//	err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
+		//	checkError(err)
+		//}
 	}
 
 	// expose metadata functions
