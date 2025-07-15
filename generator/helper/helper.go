@@ -421,8 +421,7 @@ func ProcessMetaFiles(metadataFiles []string, moduleName, targetDir string, step
 		myStepInfo.ModuleName = moduleName
 		checkError(err)
 
-		err = os.Mkdir(targetDir, 0644)
-		checkError(err)
+		_ = os.Mkdir(targetDir, 0644)
 
 		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
 		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
