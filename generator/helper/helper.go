@@ -196,6 +196,9 @@ const mainGoTemplate = `
 package main
 
 import (
+	"fmt"
+	"os"
+	
 	"{{ .ModuleName }}/cmd"
 )
 
