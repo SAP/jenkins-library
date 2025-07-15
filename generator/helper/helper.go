@@ -426,7 +426,7 @@ func ProcessMetaFiles(metadataFiles []string, moduleName, targetDir string, step
 
 		if myStepInfo.ModuleName != "" {
 			mainGo := generateCode(myStepInfo, "main", mainGoTemplate, nil)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), mainGo, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(".", "main.go"), mainGo, 0644)
 			checkError(err)
 		}
 
