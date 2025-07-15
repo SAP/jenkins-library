@@ -12,9 +12,10 @@ import (
 )
 
 func main() {
-	metadataFile := *flag.String("metadataFile", "", "Single metadata file used to generate code for a step.")
-	metadataPath := *flag.String("metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
-	targetDir := *flag.String("targetDir", "./cmd", "The target directory for the generated commands.")
+	var metadataFile, metadataPath, targetDir string
+	flag.StringVar(&metadataFile, "metadataFile", "", "Single metadata file used to generate code for a step.")
+	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
+	flag.StringVar(&targetDir, "targetDir", "./cmd", "The target directory for the generated commands.")
 	flag.Parse()
 	fmt.Printf("metadataFile: %v\nmetadataDir: %v\ntargetDir: %v\n", metadataFile, metadataPath, targetDir)
 
