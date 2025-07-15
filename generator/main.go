@@ -16,7 +16,7 @@ func main() {
 	metadataPath := *flag.String("metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	targetDir := *flag.String("targetDir", "./cmd", "The target directory for the generated commands.")
 	flag.Parse()
-	fmt.Printf("metadataFile: %v\n,metadataDir: %v\n, targetDir: %v\n", metadataFile, metadataPath, targetDir)
+	fmt.Printf("metadataFile: %v\nmetadataDir: %v\ntargetDir: %v\n", metadataFile, metadataPath, targetDir)
 
 	var metadataFiles []string
 	var err error
