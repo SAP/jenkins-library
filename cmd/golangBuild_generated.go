@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type golangBuildOptions struct {
+type golangBuildOptions2 struct {
 	BuildFlags                   []string `json:"buildFlags,omitempty"`
 	BuildSettingsInfo            string   `json:"buildSettingsInfo,omitempty"`
 	CgoEnabled                   bool     `json:"cgoEnabled,omitempty"`
@@ -51,14 +51,14 @@ type golangBuildOptions struct {
 	GolangciLintURL              string   `json:"golangciLintUrl,omitempty"`
 }
 
-type golangBuildCommonPipelineEnvironment struct {
+type golangBuildCommonPipelineEnvironment2 struct {
 	custom struct {
 		buildSettingsInfo string
 		artifacts         piperenv.Artifacts
 	}
 }
 
-func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *golangBuildCommonPipelineEnvironment2) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
@@ -81,10 +81,10 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 	}
 }
 
-type golangBuildReports struct {
+type golangBuildReport2s struct {
 }
 
-func (p *golangBuildReports) persist(stepConfig golangBuildOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+func (p *golangBuildReport2s) persist(stepConfig golangBuildOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
 	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
@@ -118,7 +118,7 @@ func (p *golangBuildReports) persist(stepConfig golangBuildOptions, gcpJsonKeyFi
 }
 
 // GolangBuildCommand This step will execute a golang build.
-func GolangBuildCommand() *cobra.Command {
+func GolangBuildCommand2() *cobra.Command {
 	const STEP_NAME = "golangBuild"
 
 	metadata := golangBuildMetadata()
