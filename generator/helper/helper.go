@@ -123,7 +123,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			{{.StepName}}(stepConfig, &dummyTelemetryData, &commonPipelineEnvironment)
+			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})
 			log.Entry().Info("SUCCESS")
 		},
 	}
@@ -556,9 +556,6 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["objectname"] = envResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "influx":
-
-			continue // disable this resource
-
 			var influxResource InfluxResource
 			influxResource.Name = res.Name
 			influxResource.StepName = stepData.Metadata.Name
@@ -589,9 +586,6 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["objectname"] = influxResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "reports":
-
-			continue // disable this resource
-
 			var reportsResource ReportsResource
 			reportsResource.Name = res.Name
 			reportsResource.StepName = stepData.Metadata.Name
