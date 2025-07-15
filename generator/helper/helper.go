@@ -102,7 +102,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var stepConfig {{.StepName}}Options
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
-	fmt.Println({{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }}) // POC: suppress unused variable warning
+	fmt.Println({{ range $notused, $oRes := .OutputResources}}{{ index $oRes "name" }}, {{ end }}) // POC: suppress unused variable warning
 
 	var stepTelemetryData telemetry.CustomData // POC: dummy
 
