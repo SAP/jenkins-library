@@ -61,6 +61,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	{{ if $influxOutputExists -}}
+	"github.com/SAP/jenkins-library/pkg/config"
+	{{ end -}}
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
