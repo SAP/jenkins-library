@@ -19,8 +19,17 @@ const tmpInstallFolder = "./tmp" // This folder is also added to npmignore in pu
 
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
-	Utils   Utils
-	Options ExecutorOptions
+	Utils     Utils
+	Options   ExecutorOptions
+	pnpmSetup pnpmSetupState
+}
+
+// pnpmSetupState holds the cached pnpm installation state
+type pnpmSetupState struct {
+	checked   bool
+	installed bool
+	command   string
+	rootDir   string
 }
 
 // Executor interface to enable mocking for testing
@@ -39,6 +48,7 @@ type Executor interface {
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
 	ExecRunner         ExecRunner
+	PnpmVersion        string
 }
 
 // NewExecutor instantiates Execute struct and sets executeOptions
@@ -48,9 +58,16 @@ func NewExecutor(executorOptions ExecutorOptions) Executor {
 		execRunner:     executorOptions.ExecRunner,
 		downloadClient: &piperhttp.Client{},
 	}
+
+	// Capture the root directory at initialization time
+	rootDir, _ := utils.Getwd()
+
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
+		pnpmSetup: pnpmSetupState{
+			rootDir: rootDir,
+		},
 	}
 }
 

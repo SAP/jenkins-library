@@ -2,6 +2,7 @@ package npm
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -38,21 +39,18 @@ var supportedPackageManagers = []PackageManager{
 	},
 }
 
-// IsPnpmInstalled checks if pnpm is available in the local project
-func (pm *PackageManager) IsPnpmInstalled(execRunner ExecRunner) bool {
-	err := execRunner.RunExecutable(pnpmPath, "--version")
-	return err == nil
-}
-
-// InstallPnpm handles the special installation process for pnpm if not already installed
-func (pm *PackageManager) InstallPnpm(execRunner ExecRunner) error {
-	if pm.IsPnpmInstalled(execRunner) {
-		log.Entry().Info("pnpm is already installed locally, skipping installation")
-		return nil
+// InstallPnpm handles the special installation process for pnpm locally
+func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string, rootDir string) error {
+	pnpmPackage := "pnpm"
+	if pnpmVersion != "" {
+		pnpmPackage = fmt.Sprintf("pnpm@%s", pnpmVersion)
 	}
 
-	if err := execRunner.RunExecutable("npm", "install", "pnpm", "--prefix", tmpInstallFolder); err != nil {
-		return err
+	// Calculate the prefix path relative to root directory
+	prefixPath := filepath.Join(rootDir, tmpInstallFolder)
+
+	if err := execRunner.RunExecutable("npm", "install", pnpmPackage, "--prefix", prefixPath); err != nil {
+		return fmt.Errorf("failed to install pnpm locally: %w", err)
 	}
 	return nil
 }
@@ -66,9 +64,11 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 		}
 		if exists {
 			if pm.Name == "pnpm" {
-				if err := pm.InstallPnpm(exec.Utils.GetExecRunner()); err != nil {
-					return nil, fmt.Errorf("failed to install pnpm: %w", err)
+				if err := exec.setupPnpm(&pm); err != nil {
+					return nil, fmt.Errorf("failed to set up pnpm: %w", err)
 				}
+				// Use cached pnpm command
+				pm.InstallCommand = exec.pnpmSetup.command
 			}
 			return &pm, nil
 		}
@@ -86,4 +86,53 @@ func (exec *Execute) detectPackageManager() (*PackageManager, error) {
 		InstallCommand: "npm",
 		InstallArgs:    []string{"install"},
 	}, nil
+}
+
+// setupPnpm handles the pnpm installation and setup process
+func (exec *Execute) setupPnpm(pm *PackageManager) error {
+	// Check pnpm installation only once per Execute instance
+	if !exec.pnpmSetup.checked {
+		exec.pnpmSetup.checked = true
+		execRunner := exec.Utils.GetExecRunner()
+
+		// Set up local pnpm path if not already set
+		if exec.pnpmSetup.command == "" {
+			absolutePnpmPath := filepath.Join(exec.pnpmSetup.rootDir, tmpInstallFolder, "node_modules", ".bin", "pnpm")
+			exec.pnpmSetup.command = absolutePnpmPath
+		}
+
+		// If a specific pnpm version is requested, always install and use it locally
+		if exec.Options.PnpmVersion != "" {
+			// Install the specified pnpm version locally
+			if err := pm.InstallPnpm(execRunner, exec.Options.PnpmVersion, exec.pnpmSetup.rootDir); err != nil {
+				return fmt.Errorf("failed to install specified pnpm version: %w", err)
+			}
+			exec.pnpmSetup.installed = true
+			log.Entry().Infof("Using locally installed pnpm version %s", exec.Options.PnpmVersion)
+		} else {
+			// Check if pnpm is globally installed first
+			if err := execRunner.RunExecutable("pnpm", "--version"); err == nil {
+				// Use global pnpm
+				exec.pnpmSetup.installed = true
+				exec.pnpmSetup.command = "pnpm"
+				log.Entry().Info("Using globally installed pnpm")
+			} else {
+				// Check if pnpm is locally installed at root
+				if err := execRunner.RunExecutable(exec.pnpmSetup.command, "--version"); err == nil {
+					// Use local pnpm
+					exec.pnpmSetup.installed = true
+					log.Entry().Info("Using locally installed pnpm")
+				} else {
+					// Install pnpm locally with configured version (only once, in root directory)
+					if err := pm.InstallPnpm(execRunner, "", exec.pnpmSetup.rootDir); err != nil {
+						return fmt.Errorf("failed to install specified pnpm version: %w", err)
+					}
+					// Use local pnpm after installation
+					exec.pnpmSetup.installed = true
+					log.Entry().Info("Using locally installed pnpm")
+				}
+			}
+		}
+	}
+	return nil
 }

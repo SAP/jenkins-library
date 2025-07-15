@@ -1,0 +1,11 @@
+{
+  "name": "pnpm-test-project-scripts",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo 'Running tests'",
+    "build": "echo 'Building project'"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}
