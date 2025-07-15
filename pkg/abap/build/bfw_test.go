@@ -433,3 +433,75 @@ func TestPublishDownloadedResults(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestDetermineFailureCause(t *testing.T) {
+	build := Build{
+		BuildID: "123",
+		Tasks: []task{
+			{
+				TaskID:      0,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Build successfully initialized",
+					},
+					{
+						Msgty:   loginfo,
+						Logline: "2 Plugins will be executed",
+					},
+				},
+			},
+			{
+				TaskID:      1,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Plugin 1 did something",
+					},
+				},
+			},
+			{
+				TaskID:      2,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Plugin 2 did something",
+					},
+				},
+			},
+		},
+	}
+
+	t.Run("TestSuccess", func(t *testing.T) {
+		//act
+		cause, err := build.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "", cause)
+	})
+	t.Run("TestErronous", func(t *testing.T) {
+		//arrange
+		errorMessage := "Error: something went wrong, contact your admin :-P"
+		build.Tasks[1].ResultState = Erroneous
+		build.Tasks[1].Logs = append(build.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
+		//act
+		cause, err := build.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Contains(t, cause, errorMessage)
+	})
+	t.Run("TestErronous", func(t *testing.T) {
+		//arrange
+		errorMessage := "Aborting: something went wrong, contact your admin :-P"
+		build.Tasks[2].ResultState = Aborted
+		build.Tasks[2].Logs = append(build.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
+		//act
+		cause, err := build.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Contains(t, cause, errorMessage)
+	})
+}
