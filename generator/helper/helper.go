@@ -17,6 +17,7 @@ import (
 )
 
 type stepInfo struct {
+	ModuleName       string
 	CobraCmdFuncName string
 	CreateCmdVar     string
 	ExportPrefix     string
@@ -186,6 +187,21 @@ func bindEnvToFlag(stepCmd *cobra.Command) {
 							{{ "}" }},
 							{{- nindent 24 ""}}
 {{- end -}}
+`
+
+const mainGoTemplate = `
+package main
+
+import (
+	"{{ .ModuleName }}/cmd"
+)
+
+func main() {
+	err := cmd.{{.CobraCmdFuncName}}().Execute()
+	if err != nil {
+		return
+	}
+}
 `
 
 // StepTestGoTemplate ...
@@ -362,7 +378,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
+func ProcessMetaFiles(metadataFiles []string, moduleName, targetDir string, stepHelperData StepHelperData) error {
 
 	allSteps := struct{ Steps []string }{}
 	for key := range metadataFiles {
@@ -401,11 +417,18 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		checkError(err)
 
 		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
+		myStepInfo.ModuleName = moduleName
 		checkError(err)
 
 		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
 		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
 		checkError(err)
+
+		if myStepInfo.ModuleName != "" {
+			mainGo := generateCode(myStepInfo, "main", mainGoTemplate, nil)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), mainGo, 0644)
+			checkError(err)
+		}
 
 		// do not generate these tests for POC
 		//test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)

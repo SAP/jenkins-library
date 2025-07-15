@@ -12,18 +12,21 @@ import (
 )
 
 func main() {
-	var metadataFile, metadataPath, targetDir string
+	var metadataFile, moduleName, metadataPath, targetDir string
 	flag.StringVar(&metadataFile, "metadataFile", "", "Single metadata file used to generate code for a step.")
+	flag.StringVar(&moduleName, "moduleName", "", "Name of the module created with go mod init.")
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	flag.StringVar(&targetDir, "targetDir", "./cmd", "The target directory for the generated commands.")
 	flag.Parse()
-	fmt.Printf("metadataFile: %v\nmetadataDir: %v\ntargetDir: %v\n", metadataFile, metadataPath, targetDir)
+	fmt.Printf("metadataFile: %v\nmoduleName: %v\nmetadataDir: %v\ntargetDir: %v\n", metadataFile, moduleName, metadataPath, targetDir)
 
 	var metadataFiles []string
 	var err error
 	if metadataFile != "" {
 		fmt.Printf("Using single metadata file: %v\n", metadataFile)
 		metadataFiles = []string{metadataFile}
+		fmt.Println("Setting target directory to './cmd' as only one step is being generated.")
+		targetDir = "./cmd"
 	} else {
 		fmt.Printf("Using metadata directory: %v\n", metadataPath)
 		metadataFiles, err = helper.MetadataFiles(metadataPath)
@@ -33,7 +36,7 @@ func main() {
 		}
 	}
 
-	err = helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
+	err = helper.ProcessMetaFiles(metadataFiles, moduleName, targetDir, helper.StepHelperData{
 		OpenFile:     openMetaFile,
 		WriteFile:    os.WriteFile,
 		ExportPrefix: "",
