@@ -37,12 +37,13 @@
                 "cmd/golangBuild.go$/"
             ],
             "matchStrings": [
-                "golangCycloneDXPackage = \"(?<depName>github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod)@v(?<currentValue>.*)\""
+                "golangCycloneDXPackage\\s*=\\s*\"github.com\\/CycloneDX\\/(?<depName>cyclonedx-gomod)\\/cmd\\/cyclonedx-gomod@v(?<currentValue>.*)\""
             ],
             "depTypeTemplate": "dependencies",
             "datasourceTemplate": "github-releases",
+            "depNameTemplate": "CycloneDX/{{depName}}",
             "extractVersionTemplate": "^v(?<version>.*)$",
-            "autoReplaceStringTemplate": "golangCycloneDXPackage = \"{{depName}}@v{{newValue}}\""
+            "autoReplaceStringTemplate": "golangCycloneDXPackage = \"github.com/CycloneDX/{{depName}}/cmd/cyclonedx-gomod@v{{newValue}}\""
         },
         {
             "customType": "regex",
@@ -51,12 +52,13 @@
                 "cmd/gradleExecuteBuild.go$/"
             ],
             "matchStrings": [
-                "classpath \"(?<depName>org.cyclonedx:cyclonedx-gradle-plugin):(?<currentValue>.*)\""
+                "classpath \"org.cyclonedx:(?<depName>cyclonedx-gradle-plugin):(?<currentValue>.*)\""
             ],
             "depTypeTemplate": "dependencies",
-            "datasourceTemplate": "gradle-version",
+            "datasourceTemplate": "github-releases",
+            "depNameTemplate": "CycloneDX/{{depName}}",
             "extractVersionTemplate": "^(?<version>.*)$",
-            "autoReplaceStringTemplate": "classpath \"{{depName}}:{{newValue}}\""
+            "autoReplaceStringTemplate": "classpath \"org.cyclonedx:{{depName}}:{{newValue}}\""
         },
         {
             "customType": "regex",
@@ -65,12 +67,13 @@
                 "cmd/mavenBuild.go$/"
             ],
             "matchStrings": [
-                "mvnCycloneDXPackage = \"(?<depName>org.cyclonedx:cyclonedx-maven-plugin):(?<currentValue>.*)\""
+                "mvnCycloneDXPackage\\s*=\\s*\"org.cyclonedx:(?<depName>cyclonedx-maven-plugin):(?<currentValue>.*)\""
             ],
             "depTypeTemplate": "dependencies",
             "datasourceTemplate": "maven",
+            "depNameTemplate": "{{depName}}",
             "extractVersionTemplate": "^(?<version>.*)$",
-            "autoReplaceStringTemplate": "mvnCycloneDXPackage = \"{{depName}}:{{newValue}}\""
+            "autoReplaceStringTemplate": "mvnCycloneDXPackage = \"org.cyclonedx:{{depName}}:{{newValue}}\""
         },
         {
             "customType": "regex",
@@ -83,6 +86,7 @@
             ],
             "depTypeTemplate": "dependencies",
             "datasourceTemplate": "gradle-version",
+            "depNameTemplate": "{{depName}}",
             "extractVersionTemplate": "^(?<version>.*)$",
             "autoReplaceStringTemplate": "id \"{{depName}}\" version \"{{newValue}}\""
         },
@@ -93,12 +97,13 @@
                 "integration/integration_golang_test.go$/"
             ],
             "matchStrings": [
-                "(?<depName>github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod)@v(?<currentValue>.*)"
+                "github.com/CycloneDX/(?<depName>cyclonedx-gomod)/cmd/cyclonedx-gomod@v(?<currentValue>.*)"
             ],
             "depTypeTemplate": "dependencies",
             "datasourceTemplate": "github-releases",
+            "depNameTemplate": "CycloneDX/{{depName}}",
             "extractVersionTemplate": "^(?<version>.*)$",
-            "autoReplaceStringTemplate": "{{depName}}@v{{newValue}}"
+            "autoReplaceStringTemplate": "github.com/CycloneDX/{{depName}}/cmd/cyclonedx-gomod@v{{newValue}}"
         }
     ],
     "postUpdateOptions": [
