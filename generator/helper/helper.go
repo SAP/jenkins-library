@@ -100,7 +100,8 @@ func (cfg *{{ .StepName }}Options) readInValues() error {
 // {{.CobraCmdFuncName}} {{.Short}}
 func {{.CobraCmdFuncName}}() *cobra.Command {
 	var stepConfig {{.StepName}}Options
-	var commonPipelineEnvironment {{ .StepName }}CommonPipelineEnvironment
+	{{- range $notused, $oRes := .OutputResources }}
+	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
 	var dummyTelemetryData telemetry.CustomData
 
 	var {{.StepName}}Cmd = &cobra.Command{
@@ -555,6 +556,9 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["objectname"] = envResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "influx":
+
+			continue // disable this resource
+
 			var influxResource InfluxResource
 			influxResource.Name = res.Name
 			influxResource.StepName = stepData.Metadata.Name
@@ -585,6 +589,9 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			currentResource["objectname"] = influxResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "reports":
+
+			continue // disable this resource
+
 			var reportsResource ReportsResource
 			reportsResource.Name = res.Name
 			reportsResource.StepName = stepData.Metadata.Name
