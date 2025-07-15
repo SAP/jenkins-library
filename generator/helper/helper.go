@@ -429,9 +429,10 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 	}
 
 	// expose metadata functions
-	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, sprig.HermeticTxtFuncMap())
-	err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
-	checkError(err)
+	// POC: disabled. no need for a single step in work-item
+	//code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, sprig.HermeticTxtFuncMap())
+	//err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
+	//checkError(err)
 
 	return nil
 }
