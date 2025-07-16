@@ -167,6 +167,7 @@ func defineInputSources(stepCmd *cobra.Command, stepConfig *{{ .StepName }}Optio
 // Bind environment variables to flags
 func bindEnvToFlag(stepCmd *cobra.Command) {
 	_ = viper.BindPFlag("verbose", stepCmd.Flags().Lookup("verbose"))
+	_ = viper.BindPFlag("workingDirectory", stepCmd.Flags().Lookup("workingDirectory"))
 	{{- printf "\n" }}
 	{{- range $key, $value := uniqueName .StepParameters }}
 	_ = viper.BindPFlag({{ $value.Name | quote }}, stepCmd.Flags().Lookup({{ $value.Name | quote }}))
