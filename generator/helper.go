@@ -73,7 +73,8 @@ const (
 )
 
 type generalConfig struct {
-	Verbose bool
+	Verbose          bool
+	WorkingDirectory string
 }
 
 type {{ .StepName }}Options struct {
@@ -141,6 +142,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 func defineInputSources(stepCmd *cobra.Command, stepConfig *{{ .StepName }}Options) {
 	// General configuration
 	stepCmd.Flags().BoolVarP(&stepConfig.Verbose, "verbose", "v", false, "Enables verbose output for the step.")
+	stepCmd.Flags().StringVar(&stepConfig.WorkingDirectory, "workingDirectory", "", "The working directory where the step will be executed. If not set, the current working directory will be used.")
 	
 	// Define flags
 	{{- range $key, $value := uniqueName .StepParameters }}
