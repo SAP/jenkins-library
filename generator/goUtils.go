@@ -1,4 +1,4 @@
-package helper
+package main
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	"github.com/ghodss/yaml"
 )
 
-// StepHelperData is used to transport the needed parameters and functions from the step generator to the step generation.
-type StepHelperData struct {
+// stepHelperData is used to transport the needed parameters and functions from the step generator to the step generation.
+type stepHelperData struct {
 	OpenFile     func(s string) (io.ReadCloser, error)
 	WriteFile    func(filename string, data []byte, perm os.FileMode) error
 	ExportPrefix string

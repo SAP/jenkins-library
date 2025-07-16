@@ -4,11 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/generator/helper"
 	"io"
 	"os"
 	"os/exec"
-
-	"github.com/SAP/jenkins-library/generator/helper"
 )
 
 func main() {
@@ -36,7 +35,7 @@ func main() {
 		}
 	}
 
-	err = helper.ProcessMetaFiles(metadataFiles, moduleName, targetDir, helper.StepHelperData{
+	err = processMetaFiles(metadataFiles, moduleName, targetDir, stepHelperData{
 		OpenFile:     openMetaFile,
 		WriteFile:    os.WriteFile,
 		ExportPrefix: "",

@@ -1,7 +1,7 @@
 //go:build unit
 // +build unit
 
-package helper
+package main
 
 import (
 	"fmt"
@@ -124,8 +124,8 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 
 func TestProcessMetaFiles(t *testing.T) {
 
-	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
-	ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
+	stepHelperData := stepHelperData{configOpenFileMock, writeFileMock, ""}
+	processMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -149,8 +149,8 @@ func TestProcessMetaFiles(t *testing.T) {
 	})
 
 	t.Run("custom step code", func(t *testing.T) {
-		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
-		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
+		stepHelperData = stepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
+		processMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
 		expected, err := os.ReadFile(goldenFilePath)

@@ -1,4 +1,4 @@
-package helper
+package main
 
 import (
 	"bytes"
@@ -384,8 +384,8 @@ func GetAllStepMetadata() map[string]config.StepData {
 }
 `
 
-// ProcessMetaFiles generates step coding based on step configuration provided in yaml files
-func ProcessMetaFiles(metadataFiles []string, moduleName, targetDir string, stepHelperData StepHelperData) error {
+// processMetaFiles generates step coding based on step configuration provided in yaml files
+func processMetaFiles(metadataFiles []string, moduleName, targetDir string, stepHelperData stepHelperData) error {
 
 	allSteps := struct{ Steps []string }{}
 	for key := range metadataFiles {
