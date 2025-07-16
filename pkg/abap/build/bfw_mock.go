@@ -77,27 +77,22 @@ func fakeResponse(method string, url string) string {
 
 var responseGetBuild = `{
 	"d": {
-		"__metadata": {
-			"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPOVMXK4DNPBDRW2M')",
-			"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPOVMXK4DNPBDRW2M')",
-			"type": "BUILD.CORE_SRV.xBUILDxVIEW_BUILDSType"
-		},
 		"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 		"run_state": "FINISHED",
 		"result_state": "SUCCESSFUL",
 		"phase": "test1",
 		"entitytype": "P",
-		"startedby": "BENTELER",
+		"startedby": "SOME_USER",
 		"started_at": "/Date(1591718108103+0000)/",
 		"finished_at": "/Date(1591718129432+0000)/",
 		"tasks": {
 			"__deferred": {
-				"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPOVMXK4DNPBDRW2M')/tasks"
+				"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPOVMXK4DNPBDRW2M')/tasks"
 			}
 		},
 		"values": {
 			"__deferred": {
-				"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPOVMXK4DNPBDRW2M')/values"
+				"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPOVMXK4DNPBDRW2M')/values"
 			}
 		}
 	}
@@ -105,22 +100,17 @@ var responseGetBuild = `{
 
 var responsePOST = `{
 	"d": {
-		"__metadata": {
-			"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPNVMOUQL2LHUFAUA')",
-			"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPNVMOUQL2LHUFAUA')",
-			"type": "BUILD.CORE_SRV.xBUILDxVIEW_BUILDSType"
-		},
 		"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 		"run_state": "ACCEPTED",
 		"result_state": "",
 		"phase": "test1",
 		"entitytype": "",
-		"startedby": "BENTELER",
+		"startedby": "SOME_USER",
 		"started_at": null,
 		"finished_at": null,
 		"tasks": {
 			"__deferred": {
-				"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPNVMOUQL2LHUFAUA')/tasks"
+				"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/builds('ABIFNLDCSQPNVMOUQL2LHUFAUA')/tasks"
 			}
 		},
 		"values": {
@@ -133,11 +123,6 @@ var responseGetTasks = `{
 	"d": {
 		"results": [
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1)",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1)",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_TASKSType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 1,
 				"log_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M_1",
@@ -147,21 +132,16 @@ var responseGetTasks = `{
 				"result_state": "SUCCESSFUL",
 				"logs": {
 					"__deferred": {
-						"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1)/logs"
+						"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1)/logs"
 					}
 				},
 				"results": {
 					"__deferred": {
-						"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1)/results"
+						"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1)/results"
 					}
 				}
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0)",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0)",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_TASKSType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 0,
 				"log_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M_0",
@@ -171,12 +151,12 @@ var responseGetTasks = `{
 				"result_state": "SUCCESSFUL",
 				"logs": {
 					"__deferred": {
-						"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0)/logs"
+						"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0)/logs"
 					}
 				},
 				"results": {
 					"__deferred": {
-						"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0)/results"
+						"uri": "https://some_server:44334/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0)/results"
 					}
 				}
 			}
@@ -188,11 +168,6 @@ var responseGetLog0 = `{
 	"d": {
 		"results": [
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_0')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_0')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_LOGSType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 0,
 				"log_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M_0",
@@ -202,11 +177,6 @@ var responseGetLog0 = `{
 				"TIME_STMP": "20200721133523"
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_0')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=0,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_0')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_LOGSType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 0,
 				"log_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M_0",
@@ -223,11 +193,6 @@ var responseGetLog1 = `{
 	"d": {
 		"results": [
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_1')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_1')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_LOGSType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 1,
 				"log_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M_1",
@@ -237,11 +202,6 @@ var responseGetLog1 = `{
 				"TIME_STMP": "20200721133528"
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_1')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/logs(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,log_id='ABIFNLDCSQPOVMXK4DNPBDRW2M_1')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_LOGSType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 1,
 				"log_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M_1",
@@ -264,13 +224,6 @@ var responseGetResults1 = `{
 	"d": {
 		"results": [
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/results(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,name='HT-6111.JPG')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/results(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,name='HT-6111.JPG')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_RESULTSType",
-					"content_type": "image/jpeg",
-					"media_src": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/results(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,name='HT-6111.JPG')/$value"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 1,
 				"name": "HT-6111.JPG",
@@ -278,13 +231,6 @@ var responseGetResults1 = `{
 				"mimetype": "image/jpeg"
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/results(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,name='2times_hello')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/results(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,name='2times_hello')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_RESULTSType",
-					"content_type": "text/plain",
-					"media_src": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/results(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',task_id=1,name='2times_hello')/$value"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"task_id": 1,
 				"name": "SAR_XML",
@@ -299,41 +245,21 @@ var responseGetValues = `{
 	"d": {
 		"results": [
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='PHASE')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='PHASE')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_VALUESType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"value_id": "PHASE",
 				"value": "test1"
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='PACKAGES')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='PACKAGES')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_VALUESType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"value_id": "PACKAGES",
 				"value": "/BUILD/CORE"
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='season')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='season')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_VALUESType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"value_id": "season",
 				"value": "winter"
 			},
 			{
-				"__metadata": {
-					"id": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='SUN')",
-					"uri": "https://ldai3yi3.wdf.sap.corp:44334/sap/opu/odata/BUILD/CORE_SRV/values(build_id='ABIFNLDCSQPOVMXK4DNPBDRW2M',value_id='SUN')",
-					"type": "BUILD.CORE_SRV.xBUILDxVIEW_VALUESType"
-				},
 				"build_id": "ABIFNLDCSQPOVMXK4DNPBDRW2M",
 				"value_id": "SUN",
 				"value": "FLOWER"
