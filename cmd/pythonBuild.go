@@ -171,6 +171,10 @@ func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virut
 }
 
 func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+	if config.TargetRepositoryUser == "" || config.TargetRepositoryPassword == "" || config.TargetRepositoryURL == "" {
+		return fmt.Errorf("publishing enabled, but missing credentials or repository URL")
+	}
+
 	pipInstallFlags = append(pipInstallFlags, "twine")
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
