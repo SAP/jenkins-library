@@ -421,7 +421,7 @@ func mavenBuildMetadata() config.StepData {
 							{
 								Name:    "altDeploymentRepositoryPasswordFileVaultSecretName",
 								Type:    "vaultSecretFile",
-								Default: "alt-deployment-repository-passowrd",
+								Default: "alt-deployment-repository-password",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -544,7 +544,7 @@ func mavenBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.6-jdk-8"},
+				{Name: "mvn", Image: "maven:3.8-jdk-8"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

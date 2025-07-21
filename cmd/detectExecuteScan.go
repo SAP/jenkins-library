@@ -183,7 +183,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 }
 
 func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, influx *detectExecuteScanInflux) error {
-	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
+	// detect execution details, see https://documentation.blackduck.com/bundle/detect/page/runningdetect/basics/runningwithblackduck.html
 	err := getDetectScript(config, utils)
 	if err != nil {
 		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
@@ -546,7 +546,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	args = append(args, fmt.Sprintf("\"--detect.code.location.name=%v\"", codelocation))
 
 	if len(mavenArgs) > 0 && !checkIfArgumentIsInScanProperties(config, "detect.maven.build.command") {
-		args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%v\"", strings.Join(mavenArgs, " ")))
+		args = append(args, fmt.Sprintf("\"--detect.maven.build.command=%s\"", quoteMavenArgs(mavenArgs)))
 	}
 
 	args = append(args, fmt.Sprintf("\"--detect.force.success.on.skip=true\""))
@@ -633,7 +633,7 @@ func addDetectArgsImages(args []string, config detectExecuteScanOptions, utils d
 
 	args = append(args, fmt.Sprintf("--detect.docker.tar=./%s", imageTar))
 	args = append(args, "--detect.target.type=IMAGE")
-	// https://community.synopsys.com/s/article/Docker-image-scanning-CLI-examples-and-some-Q-As
+	// https://community.blackduck.com/s/article/Docker-image-scanning-CLI-examples-and-some-Q-As
 	args = append(args, "--detect.tools.excluded=DETECTOR")
 	args = append(args, "--detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/")
 	args = append(args, "--detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared")
@@ -1187,4 +1187,17 @@ func findItemInStringSlice(slice []string, item string) int {
 		}
 	}
 	return -1
+}
+
+func quoteMavenArgs(args []string) string {
+	// Quote any argument containing spaces to handle paths properly
+	quotedArgs := make([]string, len(args))
+	for i, arg := range args {
+		if strings.Contains(arg, " ") {
+			quotedArgs[i] = fmt.Sprintf("'%s'", arg)
+		} else {
+			quotedArgs[i] = arg
+		}
+	}
+	return strings.Join(quotedArgs, " ")
 }

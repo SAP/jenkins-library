@@ -386,13 +386,13 @@ spec:
           - name: git/headCommitId
           - name: git/commitMessage
   containers:
-    - image: maven:3.6-jdk-8
+    - image: maven:3.8.6-jdk-8
       conditions:
         - conditionRef: strings-equal
           params:
             - name: buildTool
               value: maven
-    - image: maven:3.6-jdk-8
+    - image: maven:3.8.6-jdk-8
       conditions:
         - conditionRef: strings-equal
           params:

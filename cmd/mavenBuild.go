@@ -24,6 +24,7 @@ import (
 const (
 	mvnBomFilename       = "bom-maven"
 	mvnSimpleBomFilename = "simple-bom-maven"
+	mvnCycloneDXPackage  = "org.cyclonedx:cyclonedx-maven-plugin:2.9.1"
 )
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) {
@@ -66,7 +67,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	}
 	defines = append(defines, createBOMConfig...)
 
-	goals := []string{"org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeBom"}
+	goals := []string{mvnCycloneDXPackage + ":makeBom"}
 
 	if config.Flatten {
 		goals = append(goals, "flatten:flatten")
@@ -110,7 +111,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 
 	if config.CreateBOM {
 		// Append the makeAggregateBOM goal to the rest of the goals
-		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:2.7.9:makeAggregateBom")
+		goals = append(goals, mvnCycloneDXPackage+":makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
 			"-DincludeBomSerialNumber=true",

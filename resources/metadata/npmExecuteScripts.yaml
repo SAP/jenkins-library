@@ -2,13 +2,34 @@ metadata:
   name: npmExecuteScripts
   aliases:
     - name: executeNpm
-  description: Execute npm run scripts on all npm packages in a project
-  longDescription: |
-    Execute npm run scripts in all package json files, if they implement the scripts.
+  description: Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
+  longDescription: >
+    ### Lock file detection:
 
-    ### build with depedencies from a private repository
-    if your build has scoped/unscoped dependencies from a private repository you can include a .npmrc into the source code
-    repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :
+      - If `package-lock.json` is found → runs `npm ci`
+      - If `yarn.lock.json` is found → runs `yarn install --frozen-lockfile`
+      - If `pnpm-lock.yaml` is found → runs `pnpm install --frozen-lockfile`
+      - If no lock file is found → defaults to `npm install` and continues execution
+
+    Only the install command uses the detected package manager (npm, yarn, or pnpm).
+    All other commands (e.g., `run`, `pack`, `publish`) are executed via the `npm` CLI, regardless of which lock file is detected.<br/>
+
+    Rationale: In the Piper environment, using the npm CLI for non-install commands
+    provides sufficient functionality without requiring additional CLI dependencies.
+    Supporting yarn or pnpm for these commands was deemed unnecessary due to
+    lack of added benefit.<br/>
+
+    If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found.
+    One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.<br/>
+
+    ### pnpm multi-module support:
+    pnpm multi-module projects are supported when each package has its own `pnpm-lock.yaml` file.
+    Workspace-based pnpm projects are not yet supported.
+
+    ### Build with private dependencies from a repository
+
+    If your build has scoped/unscoped dependencies from a private repository you can include a `.npmrc` into the source code
+    repository as below (replace the `@privateScope:registry` value(s) with a valid private repo url) :<br/>
 
     ```
     @privateScope:registry=https://private.repository.com/
@@ -17,6 +38,7 @@ metadata:
     //private.repository.com/:always-auth=true
     registry=https://registry.npmjs.org
     ```
+
     `PIPER_VAULTCREDENTIAL_USER` and `PIPER_VAULTCREDENTIAL_PASSWORD_BASE64` (Base64 encoded password) are the username and password for the private repository
     and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
     [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)
@@ -171,6 +193,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: pnpmVersion
+        type: string
+        description: Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment

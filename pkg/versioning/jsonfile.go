@@ -1,6 +1,7 @@
 package versioning
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -67,11 +68,14 @@ func (j *JSONfile) SetVersion(version string) error {
 	}
 	j.content.Set(j.versionField, version)
 
-	content, err := json.MarshalIndent(j.content, "", "  ")
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(j.content); err != nil {
 		return errors.Wrapf(err, "failed to create json content for '%v'", j.path)
 	}
-	err = j.writeFile(j.path, content, 0700)
+	err := j.writeFile(j.path, buf.Bytes(), 0700)
 	if err != nil {
 		return errors.Wrapf(err, "failed to write file '%v'", j.path)
 	}

@@ -8,20 +8,31 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
 // NpmMockUtilsBundle for mocking
 type NpmMockUtilsBundle struct {
 	*mock.FilesMock
-	execRunner *mock.ExecMockRunner
+	execRunner     *mock.ExecMockRunner
+	downloadClient *mock.HttpClientMock
 }
 
 // GetExecRunner return the execRunner mock
 func (u *NpmMockUtilsBundle) GetExecRunner() npm.ExecRunner {
 	return u.execRunner
+}
+
+func (u *NpmMockUtilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.FilesMock
+}
+
+func (u *NpmMockUtilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	return u.downloadClient
 }
 
 // newNpmMockUtilsBundle creates an instance of NpmMockUtilsBundle

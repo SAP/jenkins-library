@@ -1,0 +1,8 @@
+{
+  "name": "pnpm-test-project",
+  "version": "1.0.0",
+  "description": "Test project for pnpm integration tests",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}

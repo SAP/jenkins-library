@@ -155,7 +155,7 @@ spec:
             deprecated: true
       - name: waitForQualityGate
         type: bool
-        description: "Whether the scan should wait for and consider the result of the quality gate."
+        description: "Whether the scan should wait for and consider the result of the quality gate. This sets parameter `sonar.qualitygate.wait`."
         scope:
           - PARAMETERS
           - STAGES
