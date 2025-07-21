@@ -370,6 +370,17 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	if len(config.AdditionalParameters) > 0 {
 		kubeParams = append(kubeParams, config.AdditionalParameters...)
 	}
+
+	// Add extra kubectl set image flag if provided in config
+	if len(config.KubectlSetImage) > 0 {
+		// config.KubectlSetImage should be a slice of strings, e.g. []string{"deployment/my-deployment=my-image:tag"}
+		setImageParams := []string{"set", "image"}
+		setImageParams = append(setImageParams, config.KubectlSetImage...)
+		// Add kubeParams for context, namespace, etc.
+		kubeParams = append(kubeParams, setImageParams...)
+		log.Entry().Infof("Setting image for deployment(s) using kubectl set image: %v", setImageParams)
+	}
+
 	if err := utils.RunExecutable("kubectl", kubeParams...); err != nil {
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
