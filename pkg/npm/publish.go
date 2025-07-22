@@ -181,7 +181,17 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
+		if len(scope) > 0 {
+			err = execRunner.RunExecutable("npm", "publish",
+				"--tarball", tarballFilePath,
+				"--userconfig", ".piperNpmrc",
+				fmt.Sprintf("--%s:registry", scope), registry)
+		} else {
+			err = execRunner.RunExecutable("npm", "publish",
+				"--tarball", tarballFilePath,
+				"--userconfig", ".piperNpmrc",
+				"--registry", registry)
+		}
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
