@@ -998,7 +998,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
-		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong secret creation command")
+		assert.Equal(t, "helm", mockUtils.Calls[0].Exec, "Wrong init command")
+		assert.Equal(t, []string{"init", "--client-only"}, mockUtils.Calls[0].Params, "Wrong init parameters")
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[1].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{
 			"create",
 			"secret",
@@ -1009,22 +1012,18 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--insecure-skip-tls-verify=true",
 			"--dry-run=client",
 			"--output=json"},
-			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
+			mockUtils.Calls[1].Params, "Wrong secret creation parameters")
 
-		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
+		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
 			"path/to/chart",
-			"--values",
-			"values1.yaml",
-			"--values",
-			"values2.yaml",
 			"--install",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,image.path/to/Image.repository=my.registry:55555/path/to/Image,image.path/to/Image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
 			"--force",
 			"--wait",
 			"--timeout",
@@ -1033,7 +1032,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"testCluster",
 			"--testParam",
 			"testValue",
-		}, mockUtils.Calls[1].Params, "Wrong upgrade parameters")
+		}, mockUtils.Calls[2].Params, "Wrong upgrade parameters")
 	})
 
 	t.Run("test helm v3 - no container credentials", func(t *testing.T) {
@@ -1381,7 +1380,7 @@ image3: {{ .Values.image.myImage_sub1.repository }}:{{ .Values.image.myImage_sub
 			Namespace:               "deploymentNamespace",
 			DeployCommand:           "apply",
 			ValuesMapping: map[string]interface{}{
-				"subchart.image.repository": "image.myImage.repository",
+				"subchart.image.registry": "image.myImage.repository",
 				"subchart.image.tag":        "image.myImage.tag",
 			},
 			ImageNames:    []string{"myImage", "myImage-sub1", "myImage-sub2"},
@@ -1545,6 +1544,40 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
 	})
 
+	t.Run("kubectl - uses set image flag", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL: "https://my.registry:55555",
+			DeployTool: "kubectl",
+			Namespace: "test-ns",
+			AppTemplate: "test-template.yaml",
+			DeployCommand: "apply",
+			KubectlSetImage: []string{"deployment/my-deployment=my-image:tag"},
+			Image: "nginx:latest",
+		}
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+
+		// Mock reading the app template file
+		mockUtils.On("FileRead", "test-template.yaml").Return([]byte("apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: my-deployment\n"), nil)
+		// Mock writing the app template file
+		mockUtils.On("FileWrite", "test-template.yaml", mock.Anything, mock.Anything).Return(nil)
+		// Mock running kubectl executable (for set image and for apply)
+		mockUtils.On("RunExecutable", "kubectl", mock.Anything).Return(nil)
+
+		err := runKubectlDeploy(opts, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		// Check that RunExecutable was called with "set", "image", and the KubectlSetImage value
+		mockUtils.AssertCalled(t, "RunExecutable", "kubectl", mock.MatchedBy(func(args []string) bool {
+			for i := 0; i < len(args)-2; i++ {
+				if args[i] == "set" && args[i+1] == "image" && args[i+2] == "deployment/my-deployment=my-image:tag" {
+					return true
+				}
+			}
+			return false
+		}))
+	})
+
 }
 
 func TestSplitRegistryURL(t *testing.T) {
@@ -1589,3 +1622,5 @@ func TestSplitImageName(t *testing.T) {
 		assert.Equal(t, test.outError, err, "Error value not as expected")
 	}
 }
+
+
