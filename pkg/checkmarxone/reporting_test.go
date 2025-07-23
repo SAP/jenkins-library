@@ -21,11 +21,18 @@ func TestCreateJSONReport(t *testing.T) {
 	resultMap["ProjectId"] = `f5702f86-b396-417f-82e2-4949a55d5382`
 	resultMap["ScanId"] = `21e40b36-0dd7-48e5-9768-da1a8f36c907`
 
+	resultMap["Critical"] = map[string]int{}
 	resultMap["High"] = map[string]int{}
 	resultMap["Medium"] = map[string]int{}
 	resultMap["Low"] = map[string]int{}
 	resultMap["Information"] = map[string]int{}
+
 	submap := map[string]int{}
+	submap["Issues"] = 10
+	submap["NotFalsePositive"] = 10
+	resultMap["Critical"] = submap
+
+	submap = map[string]int{}
 	submap["Issues"] = 10
 	submap["NotFalsePositive"] = 10
 	resultMap["High"] = submap
@@ -74,7 +81,7 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, "v1", reportingData.ToolVersion)
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 
-	lowList := (*reportingData.Findings)[2].LowPerQuery
+	lowList := (*reportingData.Findings)[3].LowPerQuery
 	lowListLen := len(*lowList)
 	assert.Equal(t, 2, lowListLen)
 
