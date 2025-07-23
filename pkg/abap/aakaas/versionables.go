@@ -59,6 +59,7 @@ func (v *versionable) resolveWildCards(statusFilter string) error {
 	if err := v.resolveMax(statusFilter); err != nil {
 		return err
 	}
+	var err error
 	if v.Version, err = v.getDottedVersionString(); err != nil {
 		return err
 	}
