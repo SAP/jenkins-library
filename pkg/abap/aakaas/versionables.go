@@ -59,6 +59,9 @@ func (v *versionable) resolveWildCards(statusFilter string) error {
 	if err := v.resolveMax(statusFilter); err != nil {
 		return err
 	}
+	if v.Version, err = v.getDottedVersionString(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -79,9 +82,6 @@ func (v *versionable) resolveNext(statusFilter string) error {
 			err = v.resolvePatchLevel(statusFilter, 1)
 		}
 		if err != nil {
-			return err
-		}
-		if v.Version, err = v.getDottedVersionString(); err != nil {
 			return err
 		}
 	default:
@@ -107,6 +107,7 @@ func (v *versionable) resolveMax(statusFilter string) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
