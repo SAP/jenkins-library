@@ -55,6 +55,7 @@ type kubernetesDeployOptions struct {
 	SetupScript                string                 `json:"setupScript,omitempty"`
 	VerificationScript         string                 `json:"verificationScript,omitempty"`
 	TeardownScript             string                 `json:"teardownScript,omitempty"`
+	KubectlSetImage            []string               `json:"kubectlSetImage,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -238,6 +239,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "HTTP location of setup script")
 	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
 	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
+	cmd.Flags().StringSliceVar(&stepConfig.KubectlSetImage, "kubectlSetImage", []string{`false`}, "If set, the step will use `kubectl set image` command to update the image of the deployment.")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -712,6 +714,15 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_teardownScript"),
+					},
+					{
+						Name:        "kubectlSetImage",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{`false`},
 					},
 				},
 			},

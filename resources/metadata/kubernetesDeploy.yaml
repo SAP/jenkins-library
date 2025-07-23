@@ -539,8 +539,8 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: KubectlSetImage
-        type: string
+      - name: kubectlSetImage
+        type: '[]string'
         description: "If set, the step will use `kubectl set image` command to update the image of the deployment."
         default: false
         scope:
