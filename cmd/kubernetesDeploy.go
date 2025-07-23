@@ -371,7 +371,26 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		kubeParams = append(kubeParams, config.AdditionalParameters...)
 	}
 
-	// Add extra kubectl set image flag if provided in config
+	// Run kubectl set image only if KubectlSetImage is set
+	if len(config.KubectlSetImage) > 0 {
+		// config.KubectlSetImage should be a slice of strings, e.g. []string{"deployment/my-deployment=my-image:tag"}
+		setImageParams := []string{"set", "image"}
+		setImageParams = append(setImageParams, config.KubectlSetImage...)
+		// Add kubeParams for context, namespace, etc.
+		setImageFullParams := append([]string{}, kubeParams...)
+		setImageFullParams = append(setImageFullParams, setImageParams...)
+		log.Entry().Infof("Setting image for deployment(s) using kubectl set image: %v", setImageParams)
+		if err := utils.RunExecutable("kubectl", setImageFullParams...); err != nil {
+			log.Entry().Debugf("Running kubectl with following parameters: %v", setImageFullParams)
+			log.Entry().WithError(err).Fatal("kubectl set image failed.")
+		}
+	} else {
+		if err := utils.RunExecutable("kubectl", kubeParams...); err != nil {
+			log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
+			log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
+		}
+	}
+	return nil
 	if len(config.KubectlSetImage) > 0 {
 		// config.KubectlSetImage should be a slice of strings, e.g. []string{"deployment/my-deployment=my-image:tag"}
 		setImageParams := []string{"set", "image"}
