@@ -391,25 +391,6 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		}
 	}
 	return nil
-	if len(config.KubectlSetImage) > 0 {
-		// config.KubectlSetImage should be a slice of strings, e.g. []string{"deployment/my-deployment=my-image:tag"}
-		setImageParams := []string{"set", "image"}
-		setImageParams = append(setImageParams, config.KubectlSetImage...)
-		// Add kubeParams for context, namespace, etc.
-		setImageFullParams := append([]string{}, kubeParams...)
-		setImageFullParams = append(setImageFullParams, setImageParams...)
-		log.Entry().Infof("Setting image for deployment(s) using kubectl set image: %v", setImageParams)
-		if err := utils.RunExecutable("kubectl", setImageFullParams...); err != nil {
-			log.Entry().Debugf("Running kubectl with following parameters: %v", setImageFullParams)
-			log.Entry().WithError(err).Fatal("kubectl set image failed.")
-		}
-	}
-
-	if err := utils.RunExecutable("kubectl", kubeParams...); err != nil {
-		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
-		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
-	}
-	return nil
 }
 
 type deploymentValues struct {
