@@ -433,3 +433,78 @@ func TestPublishDownloadedResults(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestDetermineFailureCause(t *testing.T) {
+	build := Build{
+		Tasks: []task{
+			{
+				TaskID:      0,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Build successfully initialized",
+					},
+					{
+						Msgty:   loginfo,
+						Logline: "2 Plugins will be executed",
+					},
+				},
+			},
+			{
+				TaskID:      1,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Plugin 1 did something",
+					},
+				},
+			},
+			{
+				TaskID:      2,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Plugin 2 did something",
+					},
+				},
+			},
+		},
+	}
+
+	t.Run("TestSuccess", func(t *testing.T) {
+		//act
+		cause, err := build.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "", cause)
+	})
+	t.Run("TestErronous", func(t *testing.T) {
+		//arrange
+		errorMessage := "Error: something went wrong, contact your admin :-P"
+		errorBuild := Build{}
+		errorBuild.Tasks = append(errorBuild.Tasks, build.Tasks[0], task{}, build.Tasks[2])
+		errorBuild.Tasks[1].ResultState = Erroneous
+		errorBuild.Tasks[1].Logs = append(errorBuild.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
+		//act
+		cause, err := errorBuild.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Contains(t, cause, errorMessage)
+	})
+	t.Run("TestAborting", func(t *testing.T) {
+		//arrange
+		abortMessage := "Aborting: something went wrong, contact your admin :-P"
+		abortBuild := Build{}
+		abortBuild.Tasks = append(abortBuild.Tasks, build.Tasks[0], build.Tasks[1], task{})
+		abortBuild.Tasks[2].ResultState = Aborted
+		abortBuild.Tasks[2].Logs = append(abortBuild.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: abortMessage})
+		//act
+		cause, err := abortBuild.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Contains(t, cause, abortMessage)
+	})
+}

@@ -52,7 +52,7 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
-    jnlpAgent: 'eu.gcr.io/sap-scp-jaas-prod/jnlp:3283.v92c105e0f819-9'
+    jnlpAgent: 'jenkins/inbound-agent:jdk17'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000

@@ -14,7 +14,7 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## Rapid scan
 
-In addition to the full scan, Black Duck also offers a faster and easier scan option, called <a href="https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=downloadingandrunning%2Frapidscan.html&_LANG=enus" target="_blank">Rapid Scan</a>.
+In addition to the full scan, Black Duck also offers a faster and easier scan option, called <a href="https://documentation.blackduck.com/bundle/detect/page/runningdetect/rapidscan.html" target="_blank">Rapid Scan</a>.
 Its main advantage is speed. In most cases, the scan is completed in less than 30 seconds. It doesn't save any information on the Black Duck side.
 The result can be found in the pipeline console.
 
