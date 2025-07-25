@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -47,6 +48,13 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 func (w *logrusWriter) alwaysFlush() {
 	message := w.buffer.String()
 	w.buffer.Reset()
+
+	// Check for known error patterns first
+	if matched, errorMsg := checkKnownErrorPatterns(message); matched {
+		w.logger.Error(errorMsg)
+		return
+	}
+
 	// Align level with underlying tool (like maven or npm)
 	// This is to avoid confusion when maven or npm print errors or warnings which piper would print as "info"
 	if strings.Contains(message, "ERROR") || strings.Contains(message, "ERR!") {
@@ -56,6 +64,46 @@ func (w *logrusWriter) alwaysFlush() {
 	} else {
 		w.logger.Info(message)
 	}
+}
+
+// checkKnownErrorPatterns checks if the message matches any known error patterns
+// Returns (matched bool, messageToUse string)
+// If matched and custom message exists, returns custom message
+// If matched but no custom message, returns original message
+// If not matched, returns (false, "")
+func checkKnownErrorPatterns(message string) (bool, string) {
+	errors := GetStepErrors()
+
+	if len(errors) == 0 {
+		return false, ""
+	}
+
+	// Normalize the message for better matching
+	normalizedMessage := strings.TrimSpace(message)
+
+	for _, stepError := range errors {
+		// First try regex matching
+		matched, err := regexp.MatchString(stepError.Pattern, normalizedMessage)
+		if err != nil {
+			// If regex is invalid, try robust substring matching
+			normalizedPattern := strings.TrimSpace(stepError.Pattern)
+			if strings.Contains(normalizedMessage, normalizedPattern) {
+				// Pattern matched - return custom message if provided, otherwise original
+				if stepError.Message != "" {
+					return true, stepError.Message
+				}
+				return true, message
+			}
+		} else if matched {
+			// Pattern matched - return custom message if provided, otherwise original
+			if stepError.Message != "" {
+				return true, stepError.Message
+			}
+			return true, message
+		}
+	}
+
+	return false, ""
 }
 
 func (w *logrusWriter) Flush() {
