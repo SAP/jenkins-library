@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -171,14 +172,15 @@ func (a *azureDevopsConfigProvider) FullLogs() ([]byte, error) {
 func (a *azureDevopsConfigProvider) PipelineStartTime() time.Time {
 	//"2022-03-18T07:30:31.1915758Z"
 	a.fetchAPIInformation()
-	if val, ok := a.apiInformation["startTime"]; ok {
-		parsed, err := time.Parse(time.RFC3339, val.(string))
-		if err != nil {
-			log.Entry().Errorf("could not parse timestamp, %v", err)
-			parsed = time.Time{}
+	if timestamp, ok := a.apiInformation["startTime"]; ok {
+		t, err := time.Parse(time.RFC3339, timestamp.(string))
+		if err == nil {
+			return t.UTC()
 		}
-		return parsed.UTC()
+		log.Entry().WithError(err).Error(fmt.Errorf("failed to parse startTime (%s), returning empty time: %v", timestamp.(string), err))
+		return time.Time{}.UTC()
 	}
+	log.Entry().Error("could not determine startTime, returning empty time")
 	return time.Time{}.UTC()
 }
 
