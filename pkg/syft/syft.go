@@ -3,6 +3,7 @@ package syft
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 type SyftScanner struct {
@@ -40,7 +40,7 @@ func CreateSyftScanner(syftDownloadURL string, fileUtils piperutils.FileUtils, h
 
 	err = install(syftDownloadURL, syftFile, fileUtils, httpClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to install syft")
+		return nil, fmt.Errorf("failed to install syft: %w", err)
 	}
 
 	return &SyftScanner{syftFile: syftFile}, nil
@@ -86,7 +86,7 @@ func install(syftDownloadURL, dest string, fileUtils piperutils.FileUtils, httpC
 
 	err = extractSyft(response.Body, dest, fileUtils)
 	if err != nil {
-		return errors.Wrap(err, "failed to extract syft binary")
+		return fmt.Errorf("failed to extract syft binary: %w", err)
 	}
 
 	err = fileUtils.Chmod(dest, 0755)
@@ -114,7 +114,7 @@ func extractSyft(archive io.Reader, dest string, fileUtils piperutils.FileUtils)
 		}
 
 		if err != nil {
-			return errors.Wrap(err, "failed to read archive")
+			return fmt.Errorf("failed to read archive: %w", err)
 		}
 
 		if filepath.Base(f.Name) == "syft" {
@@ -122,7 +122,7 @@ func extractSyft(archive io.Reader, dest string, fileUtils piperutils.FileUtils)
 
 			df, err := fileUtils.Create(dest)
 			if err != nil {
-				return errors.Wrapf(err, "failed to create file %q", dest)
+				return fmt.Errorf("failed to create file %q: %w", dest, err)
 			}
 
 			size, err := io.Copy(df, tr)
