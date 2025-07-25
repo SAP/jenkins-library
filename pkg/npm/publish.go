@@ -185,13 +185,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			// if the package has a scope, we need to use the scoped registry by using npm login, e.g.: npm login --registry=http://reg.example.com --scope=@myco
 			log.Entry().Debugf("publishing package with scope %s", scope)
 			err = execRunner.RunExecutable("npm", "login",
-				"--registry", registry,
 				"--userconfig", ".piperNpmrc",
-				fmt.Sprintf("--scope=%s", scope)
-			)
+				"--registry", registry,
+				fmt.Sprintf("--scope=%s", scope))
 			if err != nil {
 				return errors.Wrap(err, "failed logging into scoped registry")
 			}
+		}
 
 		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
 		// if len(scope) > 0 {
