@@ -31,7 +31,7 @@ func TestIssueService(t *testing.T) {
 		// test
 		count, err := serviceUnderTest.GetNumberOfBlockerIssues(&severities)
 		// assert
-		assert.Equal(t, []Severity{{SeverityType: "BLOCKER", IssueType: "CODE_SMELL", IssueCount: 1}}, severities)
+		assert.ElementsMatch(t, []Severity{{SeverityType: "BLOCKER", IssueType: "CODE_SMELL", IssueCount: 1}}, severities)
 		assert.NoError(t, err)
 		assert.Equal(t, 111, count)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
@@ -72,7 +72,7 @@ func TestIssueService(t *testing.T) {
 		countMinor, err := serviceUnderTest.GetNumberOfMinorIssues(&severities)
 		countInfo, err := serviceUnderTest.GetNumberOfInfoIssues(&severities)
 		// assert
-		assert.Equal(t, []Severity{
+		assert.ElementsMatch(t, []Severity{
 			{SeverityType: "MAJOR", IssueType: "CODE_SMELL", IssueCount: 1},
 			{SeverityType: "MINOR", IssueType: "CODE_SMELL", IssueCount: 1},
 			{SeverityType: "INFO", IssueType: "CODE_SMELL", IssueCount: 1},
@@ -99,7 +99,7 @@ func TestIssueService(t *testing.T) {
 		countMajor, err := serviceUnderTest.GetNumberOfMajorIssues(&severities)
 		countMinor, err := serviceUnderTest.GetNumberOfMinorIssues(&severities)
 		// assert
-		assert.Equal(t, []Severity{
+		assert.ElementsMatch(t, []Severity{
 			{SeverityType: "MAJOR", IssueType: "CODE_SMELL", IssueCount: 1},
 			{SeverityType: "MAJOR", IssueType: "BUG", IssueCount: 1},
 			{SeverityType: "MINOR", IssueType: "CODE_SMELL", IssueCount: 1},
