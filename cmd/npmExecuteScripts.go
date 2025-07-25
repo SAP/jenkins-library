@@ -13,7 +13,10 @@ import (
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
+	npmExecutorOptions := npm.ExecutorOptions{
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		PnpmVersion:        config.PnpmVersion,
+	}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runNpmExecuteScripts(npmExecutor, &config, commonPipelineEnvironment)

@@ -57,7 +57,6 @@ type detectExecuteScanOptions struct {
 	ScanOnChanges                   bool     `json:"scanOnChanges,omitempty"`
 	SuccessOnSkip                   bool     `json:"successOnSkip,omitempty"`
 	CustomEnvironmentVariables      []string `json:"customEnvironmentVariables,omitempty"`
-	MinScanInterval                 int      `json:"minScanInterval,omitempty"`
 	GithubToken                     string   `json:"githubToken,omitempty"`
 	CreateResultIssue               bool     `json:"createResultIssue,omitempty"`
 	GithubAPIURL                    string   `json:"githubApiUrl,omitempty"`
@@ -337,7 +336,6 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
 	cmd.Flags().BoolVar(&stepConfig.SuccessOnSkip, "successOnSkip", true, "This flag allows forces Black Duck to exit with 0 error code if any step is skipped")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by BlackDuck. The full list can be found [here](https://documentation.blackduck.com/bundle/detect/page/configuring/envvars.html) This list affects the detect script downloaded while running the scan. Right now only detect7.sh is available for downloading")
-	cmd.Flags().IntVar(&stepConfig.MinScanInterval, "minScanInterval", 0, "[DEPRECATED] This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.CreateResultIssue, "createResultIssue", false, "Activate creation of result issues in GitHub.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
@@ -707,15 +705,6 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
-					},
-					{
-						Name:        "minScanInterval",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     0,
 					},
 					{
 						Name: "githubToken",
