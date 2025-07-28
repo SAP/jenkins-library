@@ -386,39 +386,6 @@ func Test_prepareTelemetry(t *testing.T) {
 				GitRepository:   "N/A",
 			},
 		},
-		{name: "Testing prepare telemetry information with error",
-			args: args{
-				telemetryData: telemetry.Data{
-					BaseData: telemetry.BaseData{
-						Orchestrator: "Jenkins",
-						TemplateName: "hyperspace-piper-gpp",
-					},
-					CustomData: telemetry.CustomData{
-						Duration:      "1234",
-						ErrorCode:     "1",
-						ErrorCategory: "Build",
-					},
-				},
-			},
-			want: MonitoringData{
-				PipelineUrlHash: "",
-				BuildUrlHash:    "",
-				Orchestrator:    "Jenkins",
-				TemplateName:    "hyperspace-piper-gpp",
-				StageName:       "",
-				StepName:        "",
-				ExitCode:        "1",
-				Duration:        "1234",
-				ErrorCode:       "1",
-				ErrorCategory:   "Build",
-				ErrorMessage:    "",
-				CorrelationID:   "Correlation-Test",
-				CommitHash:      "N/A",
-				Branch:          "N/A",
-				GitOwner:        "N/A",
-				GitRepository:   "N/A",
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -436,52 +403,63 @@ func Test_prepareTelemetry(t *testing.T) {
 }
 
 func Test_prepareTelemetry_ErrorMessageCapture(t *testing.T) {
-	t.Run("captures error message when step fails", func(t *testing.T) {
-		fatalErrorDetail := map[string]any{
-			"error": "failed publishing artifact: npm ERR! 401 Unauthorized - authentication required",
-		}
-		errorDetailBytes, err := json.Marshal(fatalErrorDetail)
-		require.NoError(t, err)
-
-		log.SetFatalErrorDetail(errorDetailBytes)
-		defer log.SetFatalErrorDetail(nil)
-
-		telemetryData := telemetry.Data{
-			BaseData: telemetry.BaseData{
-				Orchestrator: "Jenkins",
+	tests := []struct {
+		name             string
+		errorCode        string
+		fatalErrorDetail map[string]any
+		expectedMessage  string
+	}{
+		{
+			name:      "captures error message when step fails",
+			errorCode: "1",
+			fatalErrorDetail: map[string]any{
+				"error": "failed publishing artifact: npm ERR! 401 Unauthorized - authentication required",
 			},
-			CustomData: telemetry.CustomData{
-				ErrorCode: "1",
-			},
-		}
+			expectedMessage: "failed publishing artifact: npm ERR! 401 Unauthorized - authentication required",
+		},
+		{
+			name:             "no error message when step succeeds",
+			errorCode:        "0",
+			fatalErrorDetail: nil,
+			expectedMessage:  "",
+		},
+		{
+			name:             "no error message when step fails but no fatal error detail available",
+			errorCode:        "1",
+			fatalErrorDetail: nil,
+			expectedMessage:  "",
+		},
+	}
 
-		splunkClient := &Splunk{}
-		err = splunkClient.Initialize("test", "url", "token", "index", false)
-		require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.fatalErrorDetail != nil {
+				errorDetailBytes, err := json.Marshal(tt.fatalErrorDetail)
+				require.NoError(t, err)
+				log.SetFatalErrorDetail(errorDetailBytes)
+			} else {
+				log.SetFatalErrorDetail(nil)
+			}
+			defer log.SetFatalErrorDetail(nil)
 
-		result := splunkClient.prepareTelemetry(telemetryData)
+			telemetryData := telemetry.Data{
+				BaseData: telemetry.BaseData{
+					Orchestrator: "Jenkins",
+				},
+				CustomData: telemetry.CustomData{
+					ErrorCode: tt.errorCode,
+				},
+			}
 
-		assert.Equal(t, "failed publishing artifact: npm ERR! 401 Unauthorized - authentication required", result.ErrorMessage)
-	})
+			splunkClient := &Splunk{}
+			err := splunkClient.Initialize("test", "url", "token", "index", false)
+			require.NoError(t, err)
 
-	t.Run("no error message when step succeeds", func(t *testing.T) {
-		telemetryData := telemetry.Data{
-			BaseData: telemetry.BaseData{
-				Orchestrator: "Jenkins",
-			},
-			CustomData: telemetry.CustomData{
-				ErrorCode: "0",
-			},
-		}
+			result := splunkClient.prepareTelemetry(telemetryData)
 
-		splunkClient := &Splunk{}
-		err := splunkClient.Initialize("test", "url", "token", "index", false)
-		require.NoError(t, err)
-
-		result := splunkClient.prepareTelemetry(telemetryData)
-
-		assert.Empty(t, result.ErrorMessage)
-	})
+			assert.Equal(t, tt.expectedMessage, result.ErrorMessage)
+		})
+	}
 }
 
 func Test_tryPostMessages(t *testing.T) {
