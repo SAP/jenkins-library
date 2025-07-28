@@ -293,9 +293,15 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		if err != nil {
 			return err
 		}
+
 		coordinate, err := builtArtifact.GetCoordinates()
 		if err != nil {
-			log.Entry().Warnf("unable to get artifact metdata : %v", err)
+			log.Entry().Warnf("unable to get artifact co-ordinates for build artifact metadata : %v", err)
+		}
+
+		coordinate.Version, err = builtArtifact.GetVersion()
+		if err != nil {
+			log.Entry().Warnf("unable to get artifact version for build artifact metadata: %v", err)
 		}
 
 		for _, binary := range binaries {
