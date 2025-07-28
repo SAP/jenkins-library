@@ -265,7 +265,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			}
 
 			artifactVersion, err = artifact.GetVersion()
-
 			if err != nil {
 				return err
 			}
@@ -286,6 +285,17 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		utils.SetOptions(repoClientOptions)
 
 		var binaryArtifacts piperenv.Artifacts
+		options := versioning.Options{}
+		buildCoordinates := []versioning.Coordinates{}
+		builtArtifact, err := versioning.GetArtifact("golang", "", &options, utils)
+		if err != nil {
+			return err
+		}
+		coordinate, err := builtArtifact.GetCoordinates()
+		if err != nil {
+			log.Entry().Warnf("unable to get artifact metdata : %v", err)
+		}
+
 		for _, binary := range binaries {
 
 			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, artifactVersion, binary)
@@ -312,6 +322,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			binaryArtifacts = append(binaryArtifacts, piperenv.Artifact{
 				Name: binary,
 			})
+
+			coordinate.BuildPath = filepath.Dir("go.mod")
+			coordinate.URL = config.TargetRepositoryURL
+			coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
+
+			buildCoordinates = append(buildCoordinates, coordinate)
 		}
 		commonPipelineEnvironment.custom.artifacts = binaryArtifacts
 

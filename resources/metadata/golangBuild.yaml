@@ -263,6 +263,7 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/goBuildArtifacts
           - name: custom/artifacts
             type: "piperenv.Artifacts"
       - name: reports
