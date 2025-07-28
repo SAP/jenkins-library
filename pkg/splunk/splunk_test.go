@@ -465,24 +465,21 @@ func Test_prepareTelemetry_ErrorMessageCapture(t *testing.T) {
 	})
 
 	t.Run("no error message when step succeeds", func(t *testing.T) {
-		// Test data with no error
 		telemetryData := telemetry.Data{
 			BaseData: telemetry.BaseData{
 				Orchestrator: "Jenkins",
 			},
 			CustomData: telemetry.CustomData{
-				ErrorCode: "0", // Success
+				ErrorCode: "0",
 			},
 		}
 
-		// Execute
 		splunkClient := &Splunk{}
 		err := splunkClient.Initialize("test", "url", "token", "index", false)
 		require.NoError(t, err)
 
 		result := splunkClient.prepareTelemetry(telemetryData)
 
-		// Verify no error message
 		assert.Empty(t, result.ErrorMessage)
 	})
 }
