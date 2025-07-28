@@ -84,5 +84,5 @@ func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t, "added 2 packages in")
+	container.assertHasOutput(t, "added 2 packages, and audited 3 packages in")
 }
