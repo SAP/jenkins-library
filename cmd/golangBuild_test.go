@@ -111,6 +111,8 @@ require (
 
 go 1.17`
 
+	VERSIONFile := "1.0.0"
+
 	t.Run("success - no tests", func(t *testing.T) {
 		config := golangBuildOptions{
 			TargetArchitectures: []string{"linux,amd64"},
@@ -898,8 +900,6 @@ require (
 )
 
 go 1.17`
-
-	VERSIONFile := "1.0.0"
 
 	type expectations struct {
 		envVars          []string
