@@ -213,7 +213,7 @@ go 1.17`
 			ArtifactVersion:     "1.0.0",
 		}
 
-		fileExists = func(s string) (bool, error) {
+		fileExists := func(s string) (bool, error) {
 			if s == "go.mod" {
 				return false, nil
 			}
