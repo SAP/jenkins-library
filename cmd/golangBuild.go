@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -331,6 +333,18 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			buildCoordinates = append(buildCoordinates, coordinate)
 		}
 		commonPipelineEnvironment.custom.artifacts = binaryArtifacts
+		if config.CreateBuildArtifactsMetadata {
+			if len(buildCoordinates) == 0 {
+				log.Entry().Warnf("unable to identify artifact coordinates for the go binary(s) published")
+				return nil
+			}
+
+			var buildArtifacts build.BuildArtifacts
+
+			buildArtifacts.Coordinates = buildCoordinates
+			jsonResult, _ := json.Marshal(buildArtifacts)
+			commonPipelineEnvironment.custom.goBuildArtifacts = string(jsonResult)
+		}
 
 	}
 
