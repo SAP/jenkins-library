@@ -213,6 +213,13 @@ go 1.17`
 			ArtifactVersion:     "1.0.0",
 		}
 
+		fileExists = func(s string) (bool, error) {
+			if s == "go.mod" {
+				return false, nil
+			}
+			return true, nil
+		}
+
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
