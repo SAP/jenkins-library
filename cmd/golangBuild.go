@@ -324,6 +324,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			})
 
 			coordinate.BuildPath = filepath.Dir("go.mod")
+			coordinate.ArtifactID = binary
 			coordinate.URL = config.TargetRepositoryURL
 			coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
 
