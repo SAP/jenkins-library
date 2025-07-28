@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/environment"
 	"github.com/google/go-github/v68/github"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -304,7 +303,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	assert.Equal(t, "ffac537e6cbbf934b08745a378932722df287a53", p.CommitSHA())
 	assert.Equal(t, "https://api.github.com/repos/SAP/jenkins-library/actions", actionsURL())
 	assert.True(t, p.IsPullRequest())
-	assert.True(t, environment.IsGitHubActions())
+	assert.True(t, isGitHubActions())
 }
 
 func TestWorkflowFileName(t *testing.T) {

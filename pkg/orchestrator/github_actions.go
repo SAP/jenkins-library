@@ -240,6 +240,11 @@ func (g *githubActionsConfigProvider) IsPullRequest() bool {
 	return envVarIsTrue("GITHUB_HEAD_REF")
 }
 
+func isGitHubActions() bool {
+	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
+	return envVarsAreSet(envVars)
+}
+
 // actionsURL returns URL to actions resource. For example,
 // https://api.github.com/repos/SAP/jenkins-library/actions
 func actionsURL() string {

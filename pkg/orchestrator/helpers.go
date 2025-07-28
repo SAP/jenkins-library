@@ -1,7 +1,6 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 )
 
@@ -31,10 +30,7 @@ func envVarIsTrue(key string) bool {
 // Wrapper function to read env variable and set default value
 func getEnv(key, fallback string) string {
 	if value, found := os.LookupEnv(key); found {
-		log.Entry().Debugf("For: %s, found: %s", key, value)
 		return value
 	}
-
-	log.Entry().Debugf("Could not read env variable %v using fallback value %v", key, fallback)
 	return fallback
 }

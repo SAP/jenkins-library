@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/environment"
 	"github.com/sirupsen/logrus"
 )
 
@@ -115,7 +115,7 @@ func Entry() *logrus.Entry {
 
 		// Auto-detect GitHub Actions environment and set appropriate format
 		logFormat := logFormatDefault
-		if environment.IsGitHubActions() {
+		if isGitHubActions() {
 			logFormat = logFormatGitHubActions
 		}
 
@@ -146,7 +146,7 @@ func IsVerbose() bool {
 // SetFormatter specifies the log format to use for piper's output
 func SetFormatter(logFormat string) {
 	// Auto-detect GitHub Actions environment and override format if needed
-	if environment.IsGitHubActions() {
+	if isGitHubActions() {
 		// Override any format with GitHub Actions format when running in GitHub Actions
 		logFormat = logFormatGitHubActions
 	}
@@ -187,4 +187,15 @@ func SetStepErrors(errors []StepError) {
 // GetStepErrors returns the current step error patterns
 func GetStepErrors() []StepError {
 	return stepErrors
+}
+
+// FIXME: The one from orchestrator/github_actions.go cannot be reused here because of circular dependency
+func isGitHubActions() bool {
+	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
+	for _, v := range envVars {
+		if val, exists := os.LookupEnv(v); exists && len(val) > 0 && val != "false" && val != "0" {
+			return true
+		}
+	}
+	return false
 }
