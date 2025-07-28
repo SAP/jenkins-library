@@ -214,6 +214,7 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
+		utils.FilesMock.AddFile("VERSION", []byte(VERSIONFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -234,6 +235,7 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		utils.FilesMock.AddFile("VERSION", []byte(VERSIONFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -896,6 +898,8 @@ require (
 )
 
 go 1.17`
+
+	VERSIONFile := "1.0.0"
 
 	type expectations struct {
 		envVars          []string
