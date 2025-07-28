@@ -576,8 +576,8 @@ func artifactPrepareVersionMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "maven:3.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
-				{Image: "maven:3.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "CAP"}}}}},
+				{Image: "maven:3.8.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
+				{Image: "maven:3.8.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "CAP"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

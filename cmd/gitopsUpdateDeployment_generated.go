@@ -390,8 +390,8 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:3.8.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
+				{Image: "dtzar/helm-kubectl:3.18.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
+				{Image: "dtzar/helm-kubectl:3.18.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
 				{Image: "nekottyo/kustomize-kubeval:kustomizev4", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kustomize"}}}}},
 			},
 		},

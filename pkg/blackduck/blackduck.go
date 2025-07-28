@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ReportsDirectory defines the subfolder for the Blackduck reports which are generated
+// ReportsDirectory defines the subfolder for the BlackDuck reports which are generated
 const ReportsDirectory = "blackduck"
 const maxLimit = 50
 
@@ -330,7 +330,7 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	}
 
 	//While sending a request to 'versions', get all 100 versions from that project by setting limit=100
-	//More than 100 project versions is currently not supported/recommended by Blackduck
+	//More than 100 project versions is currently not supported/recommended by BlackDuck
 	respBody, err := b.sendRequest("GET", versionPath, map[string]string{"offset": "0", "limit": "100"}, nil, headers)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project version '%v:%v'", projectName, projectVersion)

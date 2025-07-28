@@ -37,8 +37,10 @@ metadata:
 
     If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found.
     One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.<br/>
-    Currently multimodule pnpm projects are not supported.
-    For such projects , it is necessary to use `buildDescriptorList` parameter pointing to package.json in root folder.
+
+    ### pnpm multi-module support:
+    pnpm multi-module projects are supported when each package has its own `pnpm-lock.yaml` file.
+    Workspace-based pnpm projects are not yet supported.
 
     ### Build with private dependencies from a repository
 
@@ -207,6 +209,13 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: pnpmVersion
+        type: string
+        description: Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
