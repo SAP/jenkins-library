@@ -299,10 +299,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			log.Entry().Warnf("unable to get artifact co-ordinates for build artifact metadata : %v", err)
 		}
 
-		coordinate.Version, err = builtArtifact.GetVersion()
-		if err != nil {
-			log.Entry().Warnf("unable to get artifact version for build artifact metadata: %v", err)
-		}
+		coordinate.Version = artifactVersion
 
 		for _, binary := range binaries {
 
