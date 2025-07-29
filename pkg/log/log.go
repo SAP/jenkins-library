@@ -110,7 +110,6 @@ type StepError struct {
 	Category string `json:"category,omitempty"`
 }
 
-
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
 	if logger == nil {

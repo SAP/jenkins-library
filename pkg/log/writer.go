@@ -65,7 +65,6 @@ func (w *logrusWriter) alwaysFlush() {
 	}
 }
 
-
 func (w *logrusWriter) Flush() {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
