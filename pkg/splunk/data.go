@@ -28,6 +28,7 @@ type MonitoringData struct {
 	Duration        string `json:"Duration,omitempty"`
 	ErrorCode       string `json:"ErrorCode,omitempty"`
 	ErrorCategory   string `json:"ErrorCategory,omitempty"`
+	ErrorMessage    string `json:"ErrorMessage,omitempty"`
 	CorrelationID   string `json:"CorrelationId,omitempty"`
 	CommitHash      string `json:"CommitHash,omitempty"`
 	Branch          string `json:"Branch,omitempty"`
