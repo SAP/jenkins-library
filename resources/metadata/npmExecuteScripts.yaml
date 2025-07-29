@@ -19,6 +19,9 @@ metadata:
     - pattern: "npm error EACCES"
       message: "NPM permission denied. Check file permissions or registry access rights."
       category: "permission"
+    - pattern: "ERR_PNPM_FETCH_401"
+      message: "PNPM authentication failed. Check your credentials or token."
+      category: "authentication"
   longDescription: >
     ### Lock file detection:
 
