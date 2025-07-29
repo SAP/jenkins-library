@@ -2,7 +2,6 @@ package log
 
 import (
 	"bytes"
-	"regexp"
 	"strings"
 	"sync"
 )
@@ -50,7 +49,7 @@ func (w *logrusWriter) alwaysFlush() {
 	w.buffer.Reset()
 
 	// Check for known error patterns first
-	if matched, errorMsg := checkKnownErrorPatterns(message); matched {
+	if matched, errorMsg := checkErrorPatterns(message); matched {
 		w.logger.Error(errorMsg)
 		return
 	}
@@ -66,45 +65,6 @@ func (w *logrusWriter) alwaysFlush() {
 	}
 }
 
-// checkKnownErrorPatterns checks if the message matches any known error patterns
-// Returns (matched bool, messageToUse string)
-// If matched and custom message exists, returns custom message
-// If matched but no custom message, returns original message
-// If not matched, returns (false, "")
-func checkKnownErrorPatterns(message string) (bool, string) {
-	errors := GetStepErrors()
-
-	if len(errors) == 0 {
-		return false, ""
-	}
-
-	// Normalize the message for better matching
-	normalizedMessage := strings.TrimSpace(message)
-
-	for _, stepError := range errors {
-		// First try regex matching
-		matched, err := regexp.MatchString(stepError.Pattern, normalizedMessage)
-		if err != nil {
-			// If regex is invalid, try robust substring matching
-			normalizedPattern := strings.TrimSpace(stepError.Pattern)
-			if strings.Contains(normalizedMessage, normalizedPattern) {
-				// Pattern matched - combine custom message with original message
-				if stepError.Message != "" {
-					return true, stepError.Message + ": " + message
-				}
-				return true, message
-			}
-		} else if matched {
-			// Pattern matched - combine custom message with original message
-			if stepError.Message != "" {
-				return true, stepError.Message + ": " + message
-			}
-			return true, message
-		}
-	}
-
-	return false, ""
-}
 
 func (w *logrusWriter) Flush() {
 	w.mutex.Lock()
