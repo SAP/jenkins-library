@@ -88,16 +88,16 @@ func checkKnownErrorPatterns(message string) (bool, string) {
 			// If regex is invalid, try robust substring matching
 			normalizedPattern := strings.TrimSpace(stepError.Pattern)
 			if strings.Contains(normalizedMessage, normalizedPattern) {
-				// Pattern matched - return custom message if provided, otherwise original
+				// Pattern matched - combine custom message with original message
 				if stepError.Message != "" {
-					return true, stepError.Message
+					return true, stepError.Message + ": " + message
 				}
 				return true, message
 			}
 		} else if matched {
-			// Pattern matched - return custom message if provided, otherwise original
+			// Pattern matched - combine custom message with original message
 			if stepError.Message != "" {
-				return true, stepError.Message
+				return true, stepError.Message + ": " + message
 			}
 			return true, message
 		}
