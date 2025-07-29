@@ -313,6 +313,11 @@ func npmExecuteScriptsMetadata() config.StepData {
 					Message:  "NPM permission denied. Check file permissions or registry access rights.",
 					Category: "permission",
 				},
+				{
+					Pattern:  "ERR_PNPM_FETCH_401",
+					Message:  "PNPM authentication failed. Check your credentials or token.",
+					Category: "authentication",
+				},
 			},
 		},
 		Spec: config.StepSpec{
