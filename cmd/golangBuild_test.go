@@ -216,7 +216,7 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte(modTestFile))
-		utils.AddFile("VERSION", []byte(VERSIONFile))
+		utils.AddFile(filepath.Join(".", "VERSION"), []byte(VERSIONFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -238,7 +238,7 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
-		utils.AddFile("VERSION", []byte(VERSIONFile))
+		utils.AddFile(filepath.Join(".", "VERSION"), []byte(VERSIONFile))
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
