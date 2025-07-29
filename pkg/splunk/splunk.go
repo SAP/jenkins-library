@@ -117,8 +117,18 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		if fatalErrorDetail := log.GetFatalErrorDetail(); fatalErrorDetail != nil {
 			var errorDetail map[string]any
 			if err := json.Unmarshal(fatalErrorDetail, &errorDetail); err == nil {
+				var parts []string
+				
+				if messageVal, exists := errorDetail["message"]; exists && messageVal != nil {
+					parts = append(parts, fmt.Sprintf("%v", messageVal))
+				}
+				
 				if errorVal, exists := errorDetail["error"]; exists && errorVal != nil {
-					errorMessage = fmt.Sprintf("%v", errorVal)
+					parts = append(parts, fmt.Sprintf("%v", errorVal))
+				}
+				
+				if len(parts) > 0 {
+					errorMessage = strings.Join(parts, " ")
 				}
 			}
 		}
