@@ -350,6 +350,7 @@ func createGoBuildArtifactsMetadata(binary string, repositoryURL string, artifac
 	}
 	coordinate.ArtifactID = binary
 	coordinate.URL = repositoryURL
+	coordinate.BuildPath = filepath.Dir(binary)
 	coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
 	coordinate.Version = artifactVersion
 
