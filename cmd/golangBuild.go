@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -23,6 +24,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -132,6 +134,11 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		return err
 	}
 
+	// Pre-warm dependencies for better caching
+	if err := preWarmDependencies(utils); err != nil {
+		return err
+	}
+
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
 		if err := utils.RunExecutable("go", "install", golangTestsumPackage); err != nil {
@@ -217,15 +224,29 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		return err
 	}
 
-	for _, platform := range platforms {
-		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
-		if err != nil {
-			return err
-		}
+	// Parallelize multi-architecture builds for better performance
+	var g errgroup.Group
+	var mu sync.Mutex
+	log.Entry().Infof("Building for %d platforms in parallel", len(platforms))
 
-		if len(binaryNames) > 0 {
-			binaries = append(binaries, binaryNames...)
-		}
+	for _, platform := range platforms {
+		g.Go(func() error {
+			binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
+			if err != nil {
+				return err
+			}
+
+			if len(binaryNames) > 0 {
+				mu.Lock()
+				binaries = append(binaries, binaryNames...)
+				mu.Unlock()
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	log.Entry().Debugf("creating build settings information...")
@@ -345,7 +366,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
-	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./..."}
+	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "-parallel=4", "./..."}
 	testOptions = append(testOptions, config.TestOptions...)
 	if err := utils.RunExecutable("gotestsum", testOptions...); err != nil {
 		exists, fileErr := utils.FileExists(golangUnitTestOutput)
@@ -366,7 +387,7 @@ func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, e
 func runGolangIntegrationTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
 	// for integration tests coverage data is not meaningful and thus not being created
-	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--jsonfile", integrationJsonReport, "--", "-tags=integration", "./..."); err != nil {
+	if err := utils.RunExecutable("gotestsum", "--junitfile", golangIntegrationTestOutput, "--jsonfile", integrationJsonReport, "--", "-tags=integration", "-parallel=4", "./..."); err != nil {
 		exists, fileErr := utils.FileExists(golangIntegrationTestOutput)
 		if !exists || fileErr != nil {
 			log.SetErrorCategory(log.ErrorBuild)
@@ -594,5 +615,15 @@ func gitConfigurationForPrivateModules(privateMod string, token string, utils go
 
 	}
 
+	return nil
+}
+
+// preWarmDependencies downloads dependencies without building to optimize cache usage
+func preWarmDependencies(utils golangBuildUtils) error {
+	log.Entry().Debug("Pre-warming Go module dependencies")
+	if err := utils.RunExecutable("go", "mod", "download"); err != nil {
+		log.Entry().Warnf("Failed to pre-warm dependencies: %v", err)
+		// Don't fail the build if pre-warming fails
+	}
 	return nil
 }
