@@ -129,10 +129,12 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 
 	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
 
-	if config.Verify {
-		goals = append(goals, "verify")
-	} else {
-		goals = append(goals, "install")
+	if !config.Publish {
+		if config.Verify {
+			goals = append(goals, "verify")
+		} else {
+			goals = append(goals, "install")
+		}
 	}
 
 	mavenOptions := maven.ExecuteOptions{
