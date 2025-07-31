@@ -62,7 +62,7 @@ func TestMavenBuild(t *testing.T) {
 		}
 	})
 
-	t.Run("mavenBuild include install and deploy when publish is true", func(t *testing.T) {
+	t.Run("mavenBuild doesn't include verify/install, but only deploy when publish is true", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 
 		config := mavenBuildOptions{Publish: true, Verify: false, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com", AltDeploymentRepositoryUser: "user", AltDeploymentRepositoryPassword: "pass"}
@@ -71,7 +71,22 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (main and deploy)") {
-			assert.Contains(t, mockedUtils.Calls[0].Params, "install")
+			assert.NotContains(t, mockedUtils.Calls[0].Params, "install")
+			assert.NotContains(t, mockedUtils.Calls[0].Params, "verify")
+			assert.Contains(t, mockedUtils.Calls[1].Params, "deploy")
+		}
+	})
+
+	t.Run("mavenBuild doesn't include verify/install, but only deploy when verify and publish are true", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		config := mavenBuildOptions{Publish: true, Verify: true, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com", AltDeploymentRepositoryUser: "user", AltDeploymentRepositoryPassword: "pass"}
+
+		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
+
+		assert.Nil(t, err)
+		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (main and deploy)") {
+			assert.NotContains(t, mockedUtils.Calls[0].Params, "install")
 			assert.NotContains(t, mockedUtils.Calls[0].Params, "verify")
 			assert.Contains(t, mockedUtils.Calls[1].Params, "deploy")
 		}
@@ -112,7 +127,7 @@ func TestMavenBuild(t *testing.T) {
 		err := runMavenBuild(&config, nil, &mockedUtils, &cpe)
 		assert.Nil(t, err)
 		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
-		assert.Contains(t, mockedUtils.Calls[0].Params, "install")
+		assert.NotContains(t, mockedUtils.Calls[0].Params, "install")
 		assert.Empty(t, cpe.custom.mavenBuildArtifacts)
 	})
 

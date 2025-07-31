@@ -183,7 +183,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if err == nil {
-		if config.Publish && !config.Verify {
+		if config.Publish {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
