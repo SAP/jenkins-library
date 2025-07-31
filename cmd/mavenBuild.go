@@ -186,7 +186,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		if config.Publish {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
-			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
+			if config.AltDeploymentRepositoryID != "" && config.AltDeploymentRepositoryPassword != "" && config.AltDeploymentRepositoryUser != "" {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
 				if err != nil {
 					return errors.Wrap(err, "Could not create or update project settings xml")
