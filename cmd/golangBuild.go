@@ -345,13 +345,16 @@ func createGoBuildArtifactsMetadata(binary string, repositoryURL string, artifac
 	options := versioning.Options{}
 	builtArtifact, err := versioning.GetArtifact("golang", "", &options, utils)
 	coordinate, err := builtArtifact.GetCoordinates()
+	purl := piperutils.GetPurl(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
+	// golang purls contain the hex code for & with GOOS and GOARC and should be reomved from the PURL
+	purl = strings.ReplaceAll(purl, "\\u0026", "&")
 	if err != nil {
 		return err, coordinate
 	}
 	coordinate.ArtifactID = binary
 	coordinate.URL = repositoryURL
 	coordinate.BuildPath = filepath.Dir(binary)
-	coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
+	coordinate.PURL = purl
 	coordinate.Version = artifactVersion
 
 	return nil, coordinate
