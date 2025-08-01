@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -189,6 +190,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		}
+
+		if config.CreateBuildArtifactsMetadata {
+			return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+		}
 		return nil
 
 	case config.MultipleImages != nil:
@@ -286,6 +291,14 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		}
+
+		if config.CreateBuildArtifactsMetadata {
+			return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+		}
+
+		if config.CreateBuildArtifactsMetadata {
+			return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+		}
 		return nil
 
 	case slices.Contains(config.BuildOptions, "--destination"):
@@ -365,6 +378,9 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		// Syft for single image, generates bom-docker-0.xml
 		return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 	}
+	if config.CreateBuildArtifactsMetadata {
+		return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+	}
 
 	return nil
 }
@@ -416,6 +432,48 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 	}
 
 	return nil
+}
+
+func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+	// buildCoordinates := []versioning.Coordinates{}
+
+	pattern := "bom*.xml"
+
+	files, err := filepath.Glob(pattern)
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 0 {
+		log.Entry().Warnf("no sbom files for build not creating build artifact metadata")
+		return nil
+	}
+
+	for _, file := range files {
+		purl := piperutils.GetPurl(file)
+		imageNameTag := findImageNameTagInPurl(containerImageNameTags, purl)
+		if imageNameTag != "" {
+			return nil
+			// coordinates := versioning.Coordinates{
+			// 	PURL: purl,
+			// 	 b
+			// }
+		}
+
+		// You can open or process the file here
+	}
+
+	return nil
+}
+
+func findImageNameTagInPurl(containerImageNameTags []string, purl string) string {
+	for _, entry := range containerImageNameTags {
+		if strings.Contains(purl, entry) || strings.Contains(entry, purl) {
+			log.Entry().Infof("found image name tag %s in purl %s", entry, purl)
+			return entry
+		}
+	}
+	return ""
 }
 
 type multipleImageConf struct {
