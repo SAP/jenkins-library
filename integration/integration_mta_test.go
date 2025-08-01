@@ -13,7 +13,7 @@ import (
 func TestMTAIntegrationMavenProject(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
+		Image:   "devxci/mbtci-java21-node22",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven"},
 	})
@@ -28,14 +28,14 @@ func TestMTAIntegrationMavenProject(t *testing.T) {
 		"Installing /project/.flattened-pom.xml to /project/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom",
 		"Installing /project/app/target/mymvn-app-1.0-SNAPSHOT.war to /project/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war",
 		"Installing /project/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /project/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar",
-		"added 2 packages from 3 contributors and audited 2 packages in",
+		"added 2 packages, and audited 3 packages in",
 	)
 }
 
 func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
+		Image:   "devxci/mbtci-java21-node22",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
 	})
@@ -56,7 +56,7 @@ func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 func TestMTAIntegrationNPMProject(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
+		Image:   "devxci/mbtci-java21-node22",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
@@ -73,7 +73,7 @@ func TestMTAIntegrationNPMProject(t *testing.T) {
 func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java11-node14",
+		Image:   "devxci/mbtci-java21-node22",
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
 	})
@@ -84,5 +84,5 @@ func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 		t.Fatalf("Piper command failed %s", err)
 	}
 
-	container.assertHasOutput(t, "added 2 packages in")
+	container.assertHasOutput(t, "added 2 packages, and audited 3 packages in")
 }
