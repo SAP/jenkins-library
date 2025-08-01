@@ -76,7 +76,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.1.0.4889-linux-x64.zip"
         scope:
           - PARAMETERS
           - STAGES
@@ -155,7 +155,7 @@ spec:
             deprecated: true
       - name: waitForQualityGate
         type: bool
-        description: "Whether the scan should wait for and consider the result of the quality gate."
+        description: "Whether the scan should wait for and consider the result of the quality gate. This sets parameter `sonar.qualitygate.wait`."
         scope:
           - PARAMETERS
           - STAGES
@@ -314,7 +314,7 @@ spec:
                 type: int
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:5.0
+      image: sonarsource/sonar-scanner-cli:11
       options:
         - name: -u
           value: "0"

@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-
 	"io"
 	"net/http"
 	"os"
@@ -376,6 +375,22 @@ func TestRunDetect(t *testing.T) {
 		expectedParam2 := "--detect.docker.tar=./bar_bazz_latest.tar --detect.target.type=IMAGE --detect.tools.excluded=DETECTOR --detect.docker.passthrough.shared.dir.path.local=/opt/blackduck/blackduck-imageinspector/shared/ --detect.docker.passthrough.shared.dir.path.imageinspector=/opt/blackduck/blackduck-imageinspector/shared --detect.docker.passthrough.imageinspector.service.distro.default=ubuntu --detect.docker.passthrough.imageinspector.service.start=false --detect.docker.passthrough.output.include.squashedimage=false --detect.docker.passthrough.imageinspector.service.url=http://localhost:8082"
 		assert.Contains(t, utilsMock.Calls[2], expectedParam2)
 	})
+
+	t.Run("container scan only", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		utilsMock := newDetectTestUtilsBundle(false)
+		utilsMock.AddFile("detect.sh", []byte(""))
+		err := runDetect(ctx, detectExecuteScanOptions{
+			ContainerScan: true,
+			ImageNameTags: []string{"foo/bar:latest"},
+		}, utilsMock, &detectExecuteScanInflux{})
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utilsMock.Calls), "Only one detect script call should have been executed")
+		assert.Contains(t, utilsMock.Calls[0], "--detect.tools=CONTAINER_SCAN", "Container scan tool should be specified")
+		assert.Contains(t, utilsMock.Calls[0], "--detect.container.scan.file.path=./foo_bar_latest.tar", "Container scan file path should be specified")
+	})
 }
 
 func TestAddDetectArgs(t *testing.T) {
@@ -536,86 +551,6 @@ func TestAddDetectArgs(t *testing.T) {
 				"\"--detect.force.success.on.skip=true\"",
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 				"--detect.source.path=pathx",
-			},
-		},
-		{
-			args: []string{"--testProp1=1"},
-			options: detectExecuteScanOptions{
-				ServerURL:               "https://server.url",
-				Token:                   "apiToken",
-				ProjectName:             "testName",
-				CodeLocation:            "testLocation",
-				FailOn:                  []string{"BLOCKER", "MAJOR"},
-				Scanners:                []string{"source"},
-				ScanPaths:               []string{"path1", "path2"},
-				Groups:                  []string{"testGroup", "testGroup2"},
-				Version:                 "1.0",
-				VersioningModel:         "major-minor",
-				DependencyPath:          "pathx",
-				Unmap:                   true,
-				IncludedPackageManagers: []string{"maven", "GRADLE"},
-				ExcludedPackageManagers: []string{"npm", "NUGET"},
-				MavenExcludedScopes:     []string{"TEST", "compile"},
-				DetectTools:             []string{"DETECTOR"},
-			},
-			expected: []string{
-				"--testProp1=1",
-				"--detect.excluded.directories=.pipeline/*",
-				"--detect.project.codelocation.unmap=true",
-				"--blackduck.url=https://server.url",
-				"--blackduck.api.token=apiToken",
-				"\"--detect.project.name=testName\"",
-				"\"--detect.project.version.name=1.0\"",
-				"\"--detect.project.user.groups=testGroup,testGroup2\"",
-				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
-				"\"--detect.code.location.name=testLocation\"",
-				"\"--detect.force.success.on.skip=true\"",
-				"--detect.blackduck.signature.scanner.paths=path1,path2",
-				"--detect.source.path=pathx",
-				"--detect.included.detector.types=MAVEN,GRADLE",
-				"--detect.excluded.detector.types=NPM,NUGET",
-				"--detect.maven.excluded.scopes=test,compile",
-				"--detect.tools=DETECTOR",
-			},
-		},
-		{
-			args: []string{"--testProp1=1"},
-			options: detectExecuteScanOptions{
-				ServerURL:               "https://server.url",
-				Token:                   "apiToken",
-				ProjectName:             "testName",
-				CodeLocation:            "testLocation",
-				FailOn:                  []string{"BLOCKER", "MAJOR"},
-				Scanners:                []string{"source"},
-				ScanPaths:               []string{"path1", "path2"},
-				Groups:                  []string{"testGroup", "testGroup2"},
-				Version:                 "1.0",
-				VersioningModel:         "major-minor",
-				DependencyPath:          "pathx",
-				Unmap:                   true,
-				IncludedPackageManagers: []string{"maven", "GRADLE"},
-				ExcludedPackageManagers: []string{"npm", "NUGET"},
-				MavenExcludedScopes:     []string{"TEST", "compile"},
-				DetectTools:             []string{"DETECTOR"},
-			},
-			expected: []string{
-				"--testProp1=1",
-				"--detect.excluded.directories=.pipeline/*",
-				"--detect.project.codelocation.unmap=true",
-				"--blackduck.url=https://server.url",
-				"--blackduck.api.token=apiToken",
-				"\"--detect.project.name=testName\"",
-				"\"--detect.project.version.name=1.0\"",
-				"\"--detect.project.user.groups=testGroup,testGroup2\"",
-				"--detect.policy.check.fail.on.severities=BLOCKER,MAJOR",
-				"\"--detect.code.location.name=testLocation\"",
-				"\"--detect.force.success.on.skip=true\"",
-				"--detect.blackduck.signature.scanner.paths=path1,path2",
-				"--detect.source.path=pathx",
-				"--detect.included.detector.types=MAVEN,GRADLE",
-				"--detect.excluded.detector.types=NPM,NUGET",
-				"--detect.maven.excluded.scopes=test,compile",
-				"--detect.tools=DETECTOR",
 			},
 		},
 		{
@@ -1008,4 +943,108 @@ func TestGetVulnerabilitiesWithComponents(t *testing.T) {
 		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j1.Component)
 		assert.Equal(t, vulnerableComponentLog4j, vulnerabilityLog4j2.Component)
 	})
+}
+
+func TestAddDetectArgsImages(t *testing.T) {
+	t.Parallel()
+
+	t.Run("with docker inspector", func(t *testing.T) {
+		args := []string{"./detect.sh"}
+		config := detectExecuteScanOptions{
+			ServerURL:           "https://server.url",
+			Token:               "apiToken",
+			ProjectName:         "testProject",
+			Version:             "1.0",
+			ScanContainerDistro: "ubuntu",
+		}
+		utils := newDetectTestUtilsBundle(false)
+		sys := newBlackduckMockSystem(config)
+
+		result, err := addDetectArgsImages(args, config, utils, &sys, "test.tar")
+
+		assert.NoError(t, err)
+		assert.Contains(t, result, "--detect.docker.tar=./test.tar")
+		assert.Contains(t, result, "--detect.target.type=IMAGE")
+		assert.Contains(t, result, "--detect.tools.excluded=DETECTOR")
+	})
+
+	t.Run("with container scan", func(t *testing.T) {
+		args := []string{"./detect.sh"}
+		config := detectExecuteScanOptions{
+			ServerURL:     "https://server.url",
+			Token:         "apiToken",
+			ProjectName:   "testProject",
+			Version:       "1.0",
+			ContainerScan: true,
+		}
+		utils := newDetectTestUtilsBundle(false)
+		sys := newBlackduckMockSystem(config)
+
+		result, err := addDetectArgsImages(args, config, utils, &sys, "test.tar")
+
+		assert.NoError(t, err)
+		assert.Contains(t, result, "--detect.tools=CONTAINER_SCAN")
+		assert.Contains(t, result, "--detect.container.scan.file.path=./test.tar")
+		assert.NotContains(t, result, "--detect.docker.tar=./test.tar")
+		assert.NotContains(t, result, "--detect.target.type=IMAGE")
+	})
+}
+
+func TestRunDetectWithContainerScanAndDistro(t *testing.T) {
+	t.Parallel()
+	t.Run("both containerScan and scanContainerDistro set", func(t *testing.T) {
+		ctx := context.Background()
+		utilsMock := newDetectTestUtilsBundle(false)
+		utilsMock.AddFile("detect.sh", []byte(""))
+		err := runDetect(ctx, detectExecuteScanOptions{
+			ContainerScan:       true,
+			ScanContainerDistro: "ubuntu",
+			ImageNameTags:       []string{"foo/bar:latest"},
+		}, utilsMock, &detectExecuteScanInflux{})
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utilsMock.Calls), "Only one detect script call should have been executed")
+		assert.Contains(t, utilsMock.Calls[0], "--detect.tools=CONTAINER_SCAN", "Container scan tool should be specified")
+		assert.Contains(t, utilsMock.Calls[0], "--detect.container.scan.file.path=./foo_bar_latest.tar", "Container scan file path should be specified")
+		assert.NotContains(t, utilsMock.Calls[0], "--detect.docker.passthrough.imageinspector.service.distro.default=ubuntu",
+			"Docker inspector parameters should not be included when containerScan is true")
+	})
+}
+
+func TestQuoteMavenArgs(t *testing.T) {
+	t.Parallel()
+	tt := []struct {
+		name     string
+		args     []string
+		expected string
+	}{
+		{
+			name:     "no spaces in arguments",
+			args:     []string{"--global-settings", "/path/without/spaces.xml"},
+			expected: "--global-settings /path/without/spaces.xml",
+		},
+		{
+			name:     "arguments with spaces",
+			args:     []string{"--global-settings", "/path with spaces/settings.xml"},
+			expected: "--global-settings '/path with spaces/settings.xml'",
+		},
+		{
+			name:     "mixed arguments",
+			args:     []string{"--global-settings", "/path with spaces/settings.xml", "--settings", "/normal/path.xml"},
+			expected: "--global-settings '/path with spaces/settings.xml' --settings /normal/path.xml",
+		},
+		{
+			name:     "multiple arguments with spaces",
+			args:     []string{"--global-settings", "/path with spaces/settings.xml", "--settings", "/another path/with spaces.xml"},
+			expected: "--global-settings '/path with spaces/settings.xml' --settings '/another path/with spaces.xml'",
+		},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			result := quoteMavenArgs(test.args)
+			assert.Equal(t, test.expected, result)
+		})
+	}
 }

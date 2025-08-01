@@ -89,9 +89,11 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	if cx1sh.Project == nil {
-		cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to get application - will attempt to create the project on the Tenant level")
+		if len(config.ApplicationName) > 0 {
+			cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
+			if err != nil {
+				return fmt.Errorf("failed to get application: %v", err)
+			}
 		}
 		cx1sh.Project, err = cx1sh.CreateProject() // requires groups, repoUrl, mainBranch, origin, tags, criticality
 		if err != nil {
@@ -806,6 +808,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	resultMap["Preset"] = scanmeta.PresetName
 	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, url.QueryEscape(scan.Branch))
 	resultMap["ReportCreationTime"] = time.Now().String()
+	resultMap["Critical"] = map[string]int{}
 	resultMap["High"] = map[string]int{}
 	resultMap["Medium"] = map[string]int{}
 	resultMap["Low"] = map[string]int{}
@@ -815,6 +818,8 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 		for _, result := range *results {
 			key := "Information"
 			switch result.Severity {
+			case "CRITICAL":
+				key = "Critical"
 			case "HIGH":
 				key = "High"
 			case "MEDIUM":
@@ -1001,22 +1006,44 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 		return false, nil
 	}
 
+	// Check if it is matched by at least one include pattern
+	includeMatch := false
 	for _, pattern := range patterns {
-		negative := false
+		if strings.HasPrefix(pattern, "!") {
+			continue
+		}
+		match, err := utils.PathMatch(pattern, path)
+		if err != nil {
+			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
+		}
+		if match {
+			includeMatch = true
+			break
+		}
+	}
+
+	if !includeMatch {
+		return true, nil // if there is no include pattern matching, the file is necessarily excluded
+	}
+
+	// Check if it is matched by at least one exclude pattern
+	for _, pattern := range patterns {
 		if strings.HasPrefix(pattern, "!") {
 			pattern = strings.TrimLeft(pattern, "!")
-			negative = true
+		} else {
+			continue
 		}
 		match, err := utils.PathMatch(pattern, path)
 		if err != nil {
 			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
 		}
 
-		if match {
-			return negative, nil
+		if match { // match with an exclude pattern, the file is excluded
+			return true, nil
 		}
 	}
-	return true, nil
+
+	return false, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]interface{}) (string, error) {
@@ -1051,20 +1078,29 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	insecureResults := []string{}
 	insecure := false
 
+	cxCriticalThreshold := c.config.VulnerabilityThresholdCritical
 	cxHighThreshold := c.config.VulnerabilityThresholdHigh
 	cxMediumThreshold := c.config.VulnerabilityThresholdMedium
 	cxLowThreshold := c.config.VulnerabilityThresholdLow
 	cxLowThresholdPerQuery := c.config.VulnerabilityThresholdLowPerQuery
 	cxLowThresholdPerQueryMax := c.config.VulnerabilityThresholdLowPerQueryMax
+	criticalValue := (*results)["Critical"].(map[string]int)["NotFalsePositive"]
 	highValue := (*results)["High"].(map[string]int)["NotFalsePositive"]
 	mediumValue := (*results)["Medium"].(map[string]int)["NotFalsePositive"]
 	lowValue := (*results)["Low"].(map[string]int)["NotFalsePositive"]
 	var unit string
+	criticalViolation := ""
 	highViolation := ""
 	mediumViolation := ""
 	lowViolation := ""
 	if c.config.VulnerabilityThresholdUnit == "percentage" {
 		unit = "%"
+		criticalAudited := (*results)["Critical"].(map[string]int)["Issues"] - (*results)["Critical"].(map[string]int)["NotFalsePositive"]
+		criticalOverall := (*results)["Critical"].(map[string]int)["Issues"]
+		if criticalOverall == 0 {
+			criticalAudited = 1
+			criticalOverall = 1
+		}
 		highAudited := (*results)["High"].(map[string]int)["Issues"] - (*results)["High"].(map[string]int)["NotFalsePositive"]
 		highOverall := (*results)["High"].(map[string]int)["Issues"]
 		if highOverall == 0 {
@@ -1083,10 +1119,15 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 			lowAudited = 1
 			lowOverall = 1
 		}
+		criticalValue = int(float32(criticalAudited) / float32(criticalOverall) * 100.0)
 		highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
 		mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
 		lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
 
+		if criticalValue < cxCriticalThreshold {
+			insecure = true
+			criticalViolation = fmt.Sprintf("<-- %v %v deviation", cxCriticalThreshold-criticalValue, unit)
+		}
 		if highValue < cxHighThreshold {
 			insecure = true
 			highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
@@ -1124,6 +1165,10 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	}
 	if c.config.VulnerabilityThresholdUnit == "absolute" {
 		unit = " findings"
+		if criticalValue > cxCriticalThreshold {
+			insecure = true
+			criticalViolation = fmt.Sprintf("<-- %v%v deviation", criticalValue-cxCriticalThreshold, unit)
+		}
 		if highValue > cxHighThreshold {
 			insecure = true
 			highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
@@ -1138,9 +1183,17 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 	}
 
+	criticalText := fmt.Sprintf("Critical %v%v %v", criticalValue, unit, criticalViolation)
 	highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
 	mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
 	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+	if len(criticalViolation) > 0 {
+		insecureResults = append(insecureResults, criticalText)
+		log.Entry().Error(criticalText)
+	} else {
+		neutralResults = append(neutralResults, criticalText)
+		log.Entry().Info(criticalText)
+	}
 	if len(highViolation) > 0 {
 		insecureResults = append(insecureResults, highText)
 		log.Entry().Error(highText)
@@ -1167,6 +1220,13 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 }
 
 func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]interface{}) {
+	c.influx.checkmarxOne_data.fields.critical_issues = (*results)["Critical"].(map[string]int)["Issues"]
+	c.influx.checkmarxOne_data.fields.critical_not_false_postive = (*results)["Critical"].(map[string]int)["NotFalsePositive"]
+	c.influx.checkmarxOne_data.fields.critical_not_exploitable = (*results)["Critical"].(map[string]int)["NotExploitable"]
+	c.influx.checkmarxOne_data.fields.critical_confirmed = (*results)["Critical"].(map[string]int)["Confirmed"]
+	c.influx.checkmarxOne_data.fields.critical_urgent = (*results)["Critical"].(map[string]int)["Urgent"]
+	c.influx.checkmarxOne_data.fields.critical_proposed_not_exploitable = (*results)["Critical"].(map[string]int)["ProposedNotExploitable"]
+	c.influx.checkmarxOne_data.fields.critical_to_verify = (*results)["Critical"].(map[string]int)["ToVerify"]
 
 	c.influx.checkmarxOne_data.fields.high_issues = (*results)["High"].(map[string]int)["Issues"]
 	c.influx.checkmarxOne_data.fields.high_not_false_postive = (*results)["High"].(map[string]int)["NotFalsePositive"]
