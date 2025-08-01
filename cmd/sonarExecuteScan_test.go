@@ -154,6 +154,7 @@ func TestRunSonar(t *testing.T) {
 	// add response handler
 	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointCeTask+"", httpmock.NewStringResponder(http.StatusOK, `{ "task": { "componentId": "AXERR2JBbm9IiM5TEST", "status": "SUCCESS" }}`))
 	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, `{ "total": 0 }`))
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointHotSpotsSearch+"", httpmock.NewStringResponder(http.StatusOK, `{ "total": 0 }`))
 	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, measuresComponentResponse))
 
 	t.Run("default", func(t *testing.T) {
@@ -185,7 +186,7 @@ func TestRunSonar(t *testing.T) {
 		// load sonarscan report file
 		reportFile, err := os.ReadFile(filepath.Join(tmpFolder, "sonarscan.json"))
 		assert.NoError(t, err)
-		var reportData SonarUtils.ReportData
+		var reportData SonarUtils.ReportCodeCheckData
 		err = json.Unmarshal(reportFile, &reportData)
 		assert.NoError(t, err)
 		// assert
