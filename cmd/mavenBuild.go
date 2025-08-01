@@ -129,10 +129,12 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 
 	goals = append(goals, "org.jacoco:jacoco-maven-plugin:prepare-agent")
 
-	if config.Verify {
-		goals = append(goals, "verify")
-	} else {
-		goals = append(goals, "install")
+	if !config.Publish {
+		if config.Verify {
+			goals = append(goals, "verify")
+		} else {
+			goals = append(goals, "install")
+		}
 	}
 
 	mavenOptions := maven.ExecuteOptions{
@@ -181,10 +183,10 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	if err == nil {
-		if config.Publish && !config.Verify {
+		if config.Publish {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
-			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
+			if config.AltDeploymentRepositoryID != "" && config.AltDeploymentRepositoryPassword != "" && config.AltDeploymentRepositoryUser != "" {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
 				if err != nil {
 					return errors.Wrap(err, "Could not create or update project settings xml")
