@@ -79,6 +79,8 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
 	}
 
+	fmt.Printf("ContainerRegistryURL: %s\n", config.ContainerRegistryURL)
+
 	helmValues, err := defineDeploymentValues(config, containerRegistry)
 	if err != nil {
 		return errors.Wrap(err, "failed to process deployment values")
@@ -534,6 +536,9 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry string) (*deploymentValues, error) {
 	var err error
 	var useDigests bool
+
+	fmt.Printf("containerRegistry: %s\n", containerRegistry)
+
 	dv := &deploymentValues{
 		mapping: config.ValuesMapping,
 	}
@@ -550,7 +555,13 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 
 			useDigests = true
 		}
+
 		for i, key := range config.ImageNames {
+			containerRegistryPrefix := containerRegistry
+			if strings.HasPrefix(config.ImageNames[i], containerRegistryPrefix) {
+				// cds-dk chart templates creates images in format "<global.image.registry>/<imageName>:<tag>"
+				containerRegistryPrefix = ""
+			}
 			name, tag, err := splitFullImageName(config.ImageNameTags[i])
 			if err != nil {
 				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.ImageNameTags[i])
@@ -560,17 +571,17 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 				tag = fmt.Sprintf("%s@%s", tag, config.ImageDigests[i])
 			}
 
-			dv.add(createGoKey("image", key, "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createGoKey("image", key, "repository"), formatRepository(containerRegistryPrefix, name))
 			dv.add(createGoKey("image", key, "tag"), tag)
 			// usable for subcharts:
-			dv.add(createGoKey(key, "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createGoKey(key, "image", "repository"), formatRepository(containerRegistryPrefix, name))
 			dv.add(createGoKey(key, "image", "tag"), tag)
-			dv.add(createHelmKey(key, "image", "repository"), fmt.Sprintf("%v/%v", containerRegistry, name))
+			dv.add(createHelmKey(key, "image", "repository"), formatRepository(containerRegistryPrefix, name))
 			dv.add(createHelmKey(key, "image", "tag"), tag)
 
 			if len(config.ImageNames) == 1 {
 				dv.singleImage = true
-				dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, name))
+				dv.add("image.repository", formatRepository(containerRegistryPrefix, name))
 				dv.add("image.tag", tag)
 			}
 		}
@@ -580,7 +591,13 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 		containerImageTag := ""
 		dv.singleImage = true
 
+		containerRegistryPrefix := containerRegistry
+
 		if len(config.Image) > 0 {
+			// cds-dk chart templates creates images in format "<global.image.registry>/<imageName>:<tag>"
+			if strings.HasPrefix(config.Image, containerRegistryPrefix) {
+				containerRegistryPrefix = ""
+			}
 			containerImageName, containerImageTag, err = splitFullImageName(config.Image)
 			if err != nil {
 				log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
@@ -591,14 +608,23 @@ func defineDeploymentValues(config kubernetesDeployOptions, containerRegistry st
 		} else {
 			return nil, fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 		}
-		dv.add("image.repository", fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		dv.add("image.repository", formatRepository(containerRegistryPrefix, containerImageName))
+
 		dv.add("image.tag", containerImageTag)
 
-		dv.add(createGoKey("image", containerImageName, "repository"), fmt.Sprintf("%v/%v", containerRegistry, containerImageName))
+		dv.add(createGoKey("image", containerImageName, "repository"), formatRepository(containerRegistryPrefix, containerImageName))
 		dv.add(createGoKey("image", containerImageName, "tag"), containerImageTag)
 	}
 
 	return dv, nil
+}
+
+// formatRepository returns the repository string in the format "<registry>/<imageName>"
+func formatRepository(containerRegistry, containerImageName string) string {
+	if len(containerRegistry) == 0 {
+		return containerImageName
+	}
+	return fmt.Sprintf("%v/%v", containerRegistry, containerImageName)
 }
 
 func downloadAndExecuteExtensionScript(script, githubToken string, utils kubernetes.DeployUtils) error {

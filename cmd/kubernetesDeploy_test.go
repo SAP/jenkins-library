@@ -31,6 +31,117 @@ func newKubernetesDeployMockUtils() kubernetesDeployMockUtils {
 	return utils
 }
 
+func TestDefineDeploymentValues(t *testing.T) {
+	tt := []struct {
+		name              string
+		config            kubernetesDeployOptions
+		containerRegistry string
+		expectedResult    deploymentValues
+		expectedError     error
+	}{
+		{
+			name: "single image",
+			config: kubernetesDeployOptions{
+				ImageNames: []string{},
+				Image:      "myImage:myTag",
+			},
+			containerRegistry: "my.registry",
+			expectedResult: deploymentValues{
+				mapping:     map[string]interface{}(nil),
+				singleImage: true,
+				values: []struct{ key, value string }{
+					{key: "image.repository", value: "my.registry/myImage"},
+					{key: "image.tag", value: "myTag"},
+					{key: "image.myImage.repository", value: "my.registry/myImage"},
+					{key: "image.myImage.tag", value: "myTag"},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "single image with registry prefix",
+			config: kubernetesDeployOptions{
+				ImageNames: []string{},
+				Image:      "my.registry/myImage:myTag",
+			},
+			containerRegistry: "my.registry",
+			expectedResult: deploymentValues{
+				mapping:     map[string]interface{}(nil),
+				singleImage: true,
+				values: []struct{ key, value string }{
+					{key: "image.repository", value: "my.registry/myImage"},
+					{key: "image.tag", value: "myTag"},
+					{key: "image.my_registry/myImage.repository", value: "my.registry/myImage"},
+					{key: "image.my_registry/myImage.tag", value: "myTag"},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "multiple images",
+			config: kubernetesDeployOptions{
+				ImageNames:    []string{"myImage/sub1", "myImage/sub2"},
+				ImageNameTags: []string{"myImage/sub1:myTag", "myImage/sub2:myTag"},
+			},
+			containerRegistry: "my.registry",
+			expectedResult: deploymentValues{
+				mapping:     map[string]interface{}(nil),
+				singleImage: false,
+				values: []struct{ key, value string }{
+					{key: "image.myImage/sub1.repository", value: "my.registry/myImage/sub1"},
+					{key: "image.myImage/sub1.tag", value: "myTag"},
+					{key: "myImage/sub1.image.repository", value: "my.registry/myImage/sub1"},
+					{key: "myImage/sub1.image.tag", value: "myTag"},
+					{key: "myImage/sub1.image.repository", value: "my.registry/myImage/sub1"},
+					{key: "myImage/sub1.image.tag", value: "myTag"},
+					{key: "image.myImage/sub2.repository", value: "my.registry/myImage/sub2"},
+					{key: "image.myImage/sub2.tag", value: "myTag"},
+					{key: "myImage/sub2.image.repository", value: "my.registry/myImage/sub2"},
+					{key: "myImage/sub2.image.tag", value: "myTag"},
+					{key: "myImage/sub2.image.repository", value: "my.registry/myImage/sub2"},
+					{key: "myImage/sub2.image.tag", value: "myTag"},
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			name: "multiple images with registry prefix",
+			config: kubernetesDeployOptions{
+				ImageNames:    []string{"my.registry/myImage/sub1", "my.registry/myImage/sub2"},
+				ImageNameTags: []string{"my.registry/myImage/sub1:myTag", "my.registry/myImage/sub2:myTag"},
+			},
+			containerRegistry: "my.registry",
+			expectedResult: deploymentValues{
+				mapping:     map[string]interface{}(nil),
+				singleImage: false,
+				values: []struct{ key, value string }{
+					{key: "image.my_registry/myImage/sub1.repository", value: "my.registry/myImage/sub1"},
+					{key: "image.my_registry/myImage/sub1.tag", value: "myTag"},
+					{key: "my_registry/myImage/sub1.image.repository", value: "my.registry/myImage/sub1"},
+					{key: "my_registry/myImage/sub1.image.tag", value: "myTag"},
+					{key: "my_registry/myImage/sub1.image.repository", value: "my.registry/myImage/sub1"},
+					{key: "my_registry/myImage/sub1.image.tag", value: "myTag"},
+					{key: "image.my_registry/myImage/sub2.repository", value: "my.registry/myImage/sub2"},
+					{key: "image.my_registry/myImage/sub2.tag", value: "myTag"},
+					{key: "my_registry/myImage/sub2.image.repository", value: "my.registry/myImage/sub2"},
+					{key: "my_registry/myImage/sub2.image.tag", value: "myTag"},
+					{key: "my_registry/myImage/sub2.image.repository", value: "my.registry/myImage/sub2"},
+					{key: "my_registry/myImage/sub2.image.tag", value: "myTag"},
+				},
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := defineDeploymentValues(test.config, test.containerRegistry)
+			assert.Equal(t, test.expectedResult, *result)
+			assert.Equal(t, test.expectedError, err, "Error value not as expected")
+		})
+	}
+}
+
 func TestRunKubernetesDeploy(t *testing.T) {
 
 	t.Run("test helm", func(t *testing.T) {
