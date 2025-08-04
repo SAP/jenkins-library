@@ -235,6 +235,11 @@ spec:
       - name: deployFlags
         type: "[]string"
         description: maven deploy flags that will be used when publish is detected.
+        longDescription: |
+          Maven deploy flags that will be used when publish is detected.
+
+          `Build with optimized goals:`
+          Please note that the default deploy flags are set to skip the main, test and install phases. This is done to optimize the build time and avoid unnecessary steps when the artifacts are already built and installed in the local repository. This optimization is only applicable for users who use deployFlags by default and adding new flags will override the default values.
         scope:
           - STEPS
           - STAGES
