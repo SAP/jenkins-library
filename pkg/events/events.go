@@ -1,6 +1,7 @@
 package events
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 
@@ -76,6 +77,21 @@ func (e Event) ToBytes() ([]byte, error) {
 		return nil, errors.Wrap(err, "failed to marshal event data")
 	}
 	return data, nil
+}
+
+func (e Event) ToBytesWithEscapeHTML() ([]byte, error) {
+	var buf bytes.Buffer
+	encoder := json.NewEncoder(&buf)
+	encoder.SetEscapeHTML(false) // Disable HTML escaping
+
+	err := encoder.Encode(e.cloudEvent)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to json encode event data")
+	}
+
+	jsonBytes := buf.Bytes() // []byte here
+
+	return jsonBytes, nil
 }
 
 func (e *Event) AddToCloudEventData(additionalDataString string) error {
