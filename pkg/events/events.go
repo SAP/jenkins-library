@@ -79,7 +79,7 @@ func (e Event) ToBytes() ([]byte, error) {
 	return data, nil
 }
 
-func (e Event) ToBytesWithEscapeHTML() ([]byte, error) {
+func (e Event) ToBytesWithoutEscapeHTML() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
 	encoder.SetEscapeHTML(false) // Disable HTML escaping
