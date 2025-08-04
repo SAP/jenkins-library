@@ -6,38 +6,20 @@ import (
 	"path/filepath"
 )
 
-const reportCodeCheckFileName = "sonarscan.json"
-const reportHotSpotFileName = "hotspot.json"
+const reportFileName = "sonarscan.json"
 
-// ReportCodeCheckData is representing the data of the step report JSON
-type ReportCodeCheckData struct {
+// ReportData is representing the data of the step report JSON
+type ReportData struct {
 	ServerURL      string            `json:"serverUrl"`
 	ProjectKey     string            `json:"projectKey"`
 	TaskID         string            `json:"taskId"`
 	ChangeID       string            `json:"changeID,omitempty"`
 	BranchName     string            `json:"branchName,omitempty"`
 	Organization   string            `json:"organization,omitempty"`
-	NumberOfIssues *Issues           `json:"numberOfIssues"`
+	NumberOfIssues Issues            `json:"numberOfIssues"`
 	Errors         []Severity        `json:"errors"`
 	Coverage       *SonarCoverage    `json:"coverage,omitempty"`
 	LinesOfCode    *SonarLinesOfCode `json:"linesOfCode,omitempty"`
-}
-
-// ReportCodeCheckData is representing the data of the step report JSON
-type ReportHotSpotData struct {
-	ServerURL        string            `json:"serverUrl"`
-	ProjectKey       string            `json:"projectKey"`
-	TaskID           string            `json:"taskId"`
-	ChangeID         string            `json:"changeID,omitempty"`
-	BranchName       string            `json:"branchName,omitempty"`
-	Organization     string            `json:"organization,omitempty"`
-	SecurityHotspots []SecurityHotspot `json:"securityHotspots"`
-}
-
-// HotSpot Security Issues
-type SecurityHotspot struct {
-	Priority string `json:"priority"`
-	Hotspots int    `json:"hotspots"`
 }
 
 // Issues ...
@@ -56,18 +38,10 @@ type Severity struct {
 }
 
 // WriteReport ...
-func WriteCodeCheckReport(data ReportCodeCheckData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func WriteReport(data ReportData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
-	return writeToFile(filepath.Join(reportPath, reportCodeCheckFileName), jsonData, 0644)
-}
-
-func WriteHotSpotReport(data ReportHotSpotData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	return writeToFile(filepath.Join(reportPath, reportHotSpotFileName), jsonData, 0644)
+	return writeToFile(filepath.Join(reportPath, reportFileName), jsonData, 0644)
 }

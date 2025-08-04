@@ -12,9 +12,6 @@ import (
 // EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/issues/search
 const EndpointIssuesSearch = "issues/search"
 
-// EndpointHotSpotSearch API endpoint for https://sonarcloud.io/web_api/api/hotspots/search
-const EndpointHotSpotsSearch = "hotspots/search"
-
 // IssueService ...
 type IssueService struct {
 	Organization string
@@ -46,35 +43,6 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 
 	// decode JSON response
 	result := new(sonargo.IssuesSearchObject)
-	err = service.apiClient.decode(response, result)
-	if err != nil {
-		return nil, response, err
-	}
-	return result, response, nil
-}
-
-// SearchIssues ...
-func (service *IssueService) SearchHotSpots(options *HotSpotSearchOption) (*HotSpotSearchObject, *http.Response, error) {
-	request, err := service.apiClient.create("GET", EndpointHotSpotsSearch, options)
-	if err != nil {
-		return nil, nil, err
-	}
-	// use custom HTTP client to send request
-	response, err := service.apiClient.send(request)
-	if err != nil {
-		return nil, nil, err
-	}
-	// reuse response verrification from sonargo
-	err = sonargo.CheckResponse(response)
-	if err != nil {
-		return nil, response, err
-	}
-
-	// log response
-	log.Entry().Debugf("HTTP Response: %v", func() string { rsp, _ := httputil.DumpResponse(response, true); return string(rsp) }())
-
-	// decode JSON response
-	result := new(HotSpotSearchObject)
 	err = service.apiClient.decode(response, result)
 	if err != nil {
 		return nil, response, err
@@ -144,34 +112,6 @@ func (service *IssueService) GetNumberOfMinorIssues(categories *[]Severity) (int
 // GetNumberOfInfoIssues returns the number of issue with INFO severity.
 func (service *IssueService) GetNumberOfInfoIssues(categories *[]Severity) (int, error) {
 	return service.getIssueCount(info, categories)
-}
-
-func (service *IssueService) GetHotSpotSecurityIssues(securityHotspots *[]SecurityHotspot) error {
-	options := &HotSpotSearchOption{
-		Project: service.Project,
-		Status:  to_review,
-	}
-	result, _, err := service.SearchHotSpots(options)
-	if err != nil {
-		return errors.Wrapf(err, "failed to fetch the numer of hotspots.")
-	}
-
-	table := map[string]int{}
-	service.updateHotSpotTypesTable(&result.HotSpots, table)
-	for priority, hotspots := range table {
-		var hotspot SecurityHotspot
-		hotspot.Priority = priority
-		hotspot.Hotspots = hotspots
-		*securityHotspots = append(*securityHotspots, hotspot)
-	}
-	return nil
-}
-
-func (service *IssueService) updateHotSpotTypesTable(issues *[]HotSpot, table map[string]int) {
-	for _, issue := range *issues {
-		table[issue.VulnerabilityProbability]++
-	}
-	delete(table, "") // remove undefined key if any exists in response
 }
 
 // NewIssuesService returns a new instance of a service for the issues API endpoint.
