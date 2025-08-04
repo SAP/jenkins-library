@@ -242,7 +242,7 @@ spec:
         default:
           - -Dmaven.main.skip=true
           - -Dmaven.test.skip=true
-          - -Dmaven.install.skip=true
+          - -Dmaven.install.skip=false
       - name: createBuildArtifactsMetadata
         type: bool
         default: false
