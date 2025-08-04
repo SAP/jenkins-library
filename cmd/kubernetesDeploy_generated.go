@@ -25,6 +25,7 @@ type kubernetesDeployOptions struct {
 	ContainerImageName         string                 `json:"containerImageName,omitempty"`
 	ContainerImageTag          string                 `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL       string                 `json:"containerRegistryUrl,omitempty"`
+	NoContainerRegistryPrefix  bool                   `json:"noContainerRegistryPrefix,omitempty"`
 	ContainerRegistryUser      string                 `json:"containerRegistryUser,omitempty"`
 	ContainerRegistrySecret    string                 `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool                   `json:"createDockerRegistrySecret,omitempty"`
@@ -208,6 +209,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
+	cmd.Flags().BoolVar(&stepConfig.NoContainerRegistryPrefix, "noContainerRegistryPrefix", false, "Defines whether the URL is concatenated as a prefix to the image name. Since the cds-dk templates already include the registry, this concatenation must be optionally disabled.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
@@ -368,6 +370,15 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
+					},
+					{
+						Name:        "noContainerRegistryPrefix",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "containerRegistryUser",

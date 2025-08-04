@@ -197,6 +197,15 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+      - name: noContainerRegistryPrefix
+        type: bool
+        description: "Defines whether the URL is concatenated as a prefix to the image name. Since the cds-dk templates already include the registry, this concatenation must be optionally disabled."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: containerRegistryUser
         description: Username for container registry access - typically provided by the CI/CD environment.
         type: string
