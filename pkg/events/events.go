@@ -88,10 +88,7 @@ func (e Event) ToBytesWithEscapeHTML() ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to json encode event data")
 	}
-
-	jsonBytes := buf.Bytes() // []byte here
-
-	return jsonBytes, nil
+	return buf.Bytes(), nil
 }
 
 func (e *Event) AddToCloudEventData(additionalDataString string) error {
