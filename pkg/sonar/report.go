@@ -6,8 +6,7 @@ import (
 	"path/filepath"
 )
 
-const reportCodeCheckFileName = "codecheck.json"
-const reportCombinedFileName = "sonarscan.json"
+const reportCodeCheckFileName = "sonarscan.json"
 const reportHotSpotFileName = "hotspot.json"
 
 // ReportCodeCheckData is representing the data of the step report JSON
@@ -19,7 +18,7 @@ type ReportCodeCheckData struct {
 	BranchName     string            `json:"branchName,omitempty"`
 	Organization   string            `json:"organization,omitempty"`
 	NumberOfIssues *Issues           `json:"numberOfIssues"`
-	ScanResults    []Severity        `json:"scanResults"`
+	Errors         []Severity        `json:"errors"`
 	Coverage       *SonarCoverage    `json:"coverage,omitempty"`
 	LinesOfCode    *SonarLinesOfCode `json:"linesOfCode,omitempty"`
 }
@@ -32,12 +31,6 @@ type ReportHotSpotData struct {
 	ChangeID         string            `json:"changeID,omitempty"`
 	BranchName       string            `json:"branchName,omitempty"`
 	Organization     string            `json:"organization,omitempty"`
-	SecurityHotspots []SecurityHotspot `json:"securityHotspots"`
-}
-
-type ReportCombinedData struct {
-	NumberOfIssues   *Issues           `json:"numberOfIssues"`
-	ScanResults      []Severity        `json:"scanResults"`
 	SecurityHotspots []SecurityHotspot `json:"securityHotspots"`
 }
 
@@ -77,12 +70,4 @@ func WriteHotSpotReport(data ReportHotSpotData, reportPath string, writeToFile f
 		return err
 	}
 	return writeToFile(filepath.Join(reportPath, reportHotSpotFileName), jsonData, 0644)
-}
-
-func WriteCombinedReport(data ReportCombinedData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	return writeToFile(filepath.Join(reportPath, reportCombinedFileName), jsonData, 0644)
 }

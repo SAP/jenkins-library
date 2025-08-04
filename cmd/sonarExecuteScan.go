@@ -251,17 +251,12 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 
-	codeCheckData, err := getStaticCodeCheckResults(config, &taskReport, serverUrl, influx, apiClient)
+	err = getStaticCodeCheckResults(config, &taskReport, serverUrl, influx, apiClient)
 	if err != nil {
 		return err
 	}
 
-	hotSpotData, err := getHotSpotSecurityCheckResults(config, &taskReport, serverUrl, apiClient)
-	if err != nil {
-		return err
-	}
-
-	err = getCombinedReport(&codeCheckData, &hotSpotData)
+	err = getHotSpotSecurityCheckResults(config, &taskReport, serverUrl, apiClient)
 	if err != nil {
 		return err
 	}
@@ -269,30 +264,30 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	return nil
 }
 
-func getStaticCodeCheckResults(config sonarExecuteScanOptions, taskReport *SonarUtils.TaskReportData, serverUrl string, influx *sonarExecuteScanInflux, apiClient SonarUtils.Sender) (SonarUtils.ReportCodeCheckData, error) {
+func getStaticCodeCheckResults(config sonarExecuteScanOptions, taskReport *SonarUtils.TaskReportData, serverUrl string, influx *sonarExecuteScanInflux, apiClient SonarUtils.Sender) error {
 	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	var categories []SonarUtils.Severity
 	var err error
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues(&categories)
 	if err != nil {
-		return SonarUtils.ReportCodeCheckData{}, err
+		return err
 	}
 	influx.sonarqube_data.fields.critical_issues, err = issueService.GetNumberOfCriticalIssues(&categories)
 	if err != nil {
-		return SonarUtils.ReportCodeCheckData{}, err
+		return err
 	}
 	influx.sonarqube_data.fields.major_issues, err = issueService.GetNumberOfMajorIssues(&categories)
 	if err != nil {
-		return SonarUtils.ReportCodeCheckData{}, err
+		return err
 	}
 	influx.sonarqube_data.fields.minor_issues, err = issueService.GetNumberOfMinorIssues(&categories)
 	if err != nil {
-		return SonarUtils.ReportCodeCheckData{}, err
+		return err
 	}
 	influx.sonarqube_data.fields.info_issues, err = issueService.GetNumberOfInfoIssues(&categories)
 	if err != nil {
-		return SonarUtils.ReportCodeCheckData{}, err
+		return err
 	}
 
 	reportData := SonarUtils.ReportCodeCheckData{
@@ -302,7 +297,7 @@ func getStaticCodeCheckResults(config sonarExecuteScanOptions, taskReport *Sonar
 		ChangeID:     config.ChangeID,
 		BranchName:   config.BranchName,
 		Organization: config.Organization,
-		ScanResults:  categories[:],
+		Errors:       categories[:],
 		NumberOfIssues: &SonarUtils.Issues{
 			Blocker:  influx.sonarqube_data.fields.blocker_issues,
 			Critical: influx.sonarqube_data.fields.critical_issues,
@@ -328,16 +323,16 @@ func getStaticCodeCheckResults(config sonarExecuteScanOptions, taskReport *Sonar
 
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 
-	return reportData, SonarUtils.WriteCodeCheckReport(reportData, sonar.workingDir, os.WriteFile)
+	return SonarUtils.WriteCodeCheckReport(reportData, sonar.workingDir, os.WriteFile)
 }
 
-func getHotSpotSecurityCheckResults(config sonarExecuteScanOptions, taskReport *SonarUtils.TaskReportData, serverUrl string, apiClient SonarUtils.Sender) (SonarUtils.ReportHotSpotData, error) {
+func getHotSpotSecurityCheckResults(config sonarExecuteScanOptions, taskReport *SonarUtils.TaskReportData, serverUrl string, apiClient SonarUtils.Sender) error {
 	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	var hotspotissues []SonarUtils.SecurityHotspot
 	err := issueService.GetHotSpotSecurityIssues(&hotspotissues)
 	if err != nil {
-		return SonarUtils.ReportHotSpotData{}, err
+		return err
 	}
 
 	reportData := SonarUtils.ReportHotSpotData{
@@ -350,17 +345,7 @@ func getHotSpotSecurityCheckResults(config sonarExecuteScanOptions, taskReport *
 		SecurityHotspots: hotspotissues[:],
 	}
 
-	return reportData, SonarUtils.WriteHotSpotReport(reportData, sonar.workingDir, os.WriteFile)
-}
-
-func getCombinedReport(codeCheckData *SonarUtils.ReportCodeCheckData, hotSpotData *SonarUtils.ReportHotSpotData) error {
-	reportData := SonarUtils.ReportCombinedData{
-		NumberOfIssues:   codeCheckData.NumberOfIssues,
-		ScanResults:      codeCheckData.ScanResults,
-		SecurityHotspots: hotSpotData.SecurityHotspots,
-	}
-
-	return SonarUtils.WriteCombinedReport(reportData, sonar.workingDir, os.WriteFile)
+	return SonarUtils.WriteHotSpotReport(reportData, sonar.workingDir, os.WriteFile)
 }
 
 // isInOptions returns true, if the given property is already provided in config.Options.
