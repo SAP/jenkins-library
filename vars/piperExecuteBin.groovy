@@ -77,8 +77,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
-            echo "[DEBUG] Before dockerWrapper"
-            sh  'find . -mindepth 1 -maxdepth 10'
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     writePipelineEnv(script: script, piperGoPath: piperGoPath)
