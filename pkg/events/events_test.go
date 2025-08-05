@@ -36,7 +36,11 @@ func TestEventCreation(t *testing.T) {
 		event.AddToCloudEventData(additionalData)
 		// asserts
 		assert.NoError(t, err)
-		assert.Equal(t, string(event.cloudEvent.Data()), `{"additionalKey":"additionalValue","testKey":"testValue"}`)
+		assert.Equal(
+			t,
+			string(event.cloudEvent.Data()),
+			`{"additionalKey":"additionalValue","testKey":"testValue"}`,
+		)
 	})
 }
 
@@ -52,5 +56,18 @@ func TestGetUUID(t *testing.T) {
 	if uuid != uuid2 {
 		t.Fatalf("expected the same UUID but got different ones")
 	}
+}
 
+func TestSkipEscapeForHTML(t *testing.T) {
+	// init
+	testData := `{"testKey": "testValue&testValue1"}`
+	// test
+	event, err := NewEvent(mock.Anything, mock.Anything, "").CreateWithJSONData(testData)
+	_, err = event.ToBytesWithoutEscapeHTML()
+	assert.NoError(t, err)
+	assert.Equal(
+		t,
+		string(event.cloudEvent.Data()),
+		`{"testKey":"testValue\u0026testValue1"}`,
+	)
 }
