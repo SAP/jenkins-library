@@ -79,14 +79,12 @@ func (e Event) ToBytes() ([]byte, error) {
 	return data, nil
 }
 
-func (e Event) ToBytesWithoutEscapeHTML() ([]byte, error) {
+func (e *Event) ToBytesWithoutEscapeHTML() ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := json.NewEncoder(&buf)
-	encoder.SetEscapeHTML(false) // Disable HTML escaping
-
-	err := encoder.Encode(e.cloudEvent)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to json encode event data")
+	encoder.SetEscapeHTML(false) // disable escaping
+	if err := encoder.Encode(e.cloudEvent); err != nil {
+		return nil, err
 	}
 	return buf.Bytes(), nil
 }

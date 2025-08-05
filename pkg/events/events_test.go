@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
 func TestEventCreation(t *testing.T) {
@@ -59,15 +61,38 @@ func TestGetUUID(t *testing.T) {
 }
 
 func TestSkipEscapeForHTML(t *testing.T) {
-	// init
-	testData := `{"testKey": "testValue&testValue1"}`
-	// test
-	event, err := NewEvent(mock.Anything, mock.Anything, "").CreateWithJSONData(testData)
-	_, err = event.ToBytesWithoutEscapeHTML()
+	event := cloudevents.NewEvent()
+	event.SetSource("test/source")
+	event.SetType("test.type")
+	event.SetID("fixed-id-1234")
+
+	event.SetData(cloudevents.ApplicationJSON, map[string]string{
+		"message": "Hello & welcome",
+	})
+
+	eventWrapper := Event{
+		cloudEvent: event,
+	}
+	result, err := eventWrapper.ToBytesWithoutEscapeHTML()
+	t.Log(string(result))
+
+	got := string(result)
+
+	expected := `{
+	  "specversion": "1.0",
+	"type": "test.type",
+	"source": "test/source",
+	"id": "fixed-id-1234",
+	"datacontenttype": "application/json",
+	"data": {
+			"message": "Hello & welcome"
+		}
+	}
+	`
 	assert.NoError(t, err)
-	assert.Equal(
+	assert.JSONEq(
 		t,
-		string(event.cloudEvent.Data()),
-		`{"testKey":"testValue\u0026testValue1"}`,
+		expected,
+		got,
 	)
 }
