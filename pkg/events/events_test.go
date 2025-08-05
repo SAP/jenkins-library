@@ -74,7 +74,6 @@ func TestSkipEscapeForHTML(t *testing.T) {
 		cloudEvent: event,
 	}
 	result, err := eventWrapper.ToBytesWithoutEscapeHTML()
-	t.Log(string(result))
 
 	got := string(result)
 
