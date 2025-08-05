@@ -653,6 +653,7 @@ spec:
           - STAGES
           - STEPS
         default: false
+        deprecated: true
       - name: useDetect9
         description:
           "This flag enables the use of the supported version 9 of the Detect script instead of default version 10"
