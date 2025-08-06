@@ -33,7 +33,12 @@ func (pd *npmMinimalPackageDescriptor) Scope() string {
 }
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
-func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
+func (exec *Execute) PublishAllPackages(
+	packageJSONFiles []string,
+	registry, username, password string,
+	packBeforePublish bool,
+	buildCoordinates *[]versioning.Coordinates,
+) error {
 	for _, packageJSON := range packageJSONFiles {
 		log.Entry().Infof("triggering publish for %s", packageJSON)
 
@@ -45,7 +50,14 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.publish(packageJSON, registry, username, password, packBeforePublish, buildCoordinates)
+		err = exec.publish(
+			packageJSON,
+			registry,
+			username,
+			password,
+			packBeforePublish,
+			buildCoordinates,
+		)
 		if err != nil {
 			return err
 		}
@@ -54,7 +66,11 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 }
 
 // publish executes npm publish for package.json
-func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
+func (exec *Execute) publish(
+	packageJSON, registry, username, password string,
+	packBeforePublish bool,
+	buildCoordinates *[]versioning.Coordinates,
+) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	oldWorkingDirectory, err := exec.Utils.Getwd()
@@ -80,6 +96,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	npmignore.Add("**/piper")
 	log.Entry().Debug("adding **/sap-piper")
 	npmignore.Add("**/sap-piper")
+	log.Entry().Debug("adding **/trust")
+	npmignore.Add("**/trust")
 	// temporary installation folder used to install BOM to be ignored
 	log.Entry().Debug("adding tmp to npmignore")
 	npmignore.Add("tmp/")
@@ -123,7 +141,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			// See https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
 			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
 			// is no longer supported and will throw errors
-			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
+			npmrc.Set(
+				fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"),
+				CredentialUtils.EncodeUsernamePassword(username, password),
+			)
 			npmrc.Set("always-auth", "true")
 		}
 		// update .npmrc
@@ -181,7 +202,16 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
+		err = execRunner.RunExecutable(
+			"npm",
+			"publish",
+			"--tarball",
+			tarballFilePath,
+			"--userconfig",
+			".piperNpmrc",
+			"--registry",
+			registry,
+		)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
