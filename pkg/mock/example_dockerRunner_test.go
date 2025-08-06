@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package mock_test
 
 import (

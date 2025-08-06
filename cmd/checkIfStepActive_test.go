@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -35,8 +32,8 @@ spec:
             - configKey: testConfig`
 	case ".pipeline/config.yml":
 		fileContent = `
-steps: 
-  testStep: 
+steps:
+  testStep:
     testConfig: 'testValue'`
 	default:
 		fileContent = ""

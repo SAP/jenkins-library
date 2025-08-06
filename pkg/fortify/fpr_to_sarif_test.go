@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package fortify
 
 import (
@@ -122,7 +119,7 @@ func TestParse(t *testing.T) {
   <Abstract>This scan contains project-specific custom rules. Please see the recommendation section on how to proceed.</Abstract>
   <Explanation>Custom rules can help improve scan quality. They can reduce both false positives and false negatives by tailoring the scan settings to match the threat model and other specifics of an application. At the same time, custom rules need to be part of the review when a scan is reviewed by an auditor. This issue is a reminder of this fact.</Explanation>
   <Recommendations>If you are an auditor reviewing this project, please review the custom rules and the associated documentation. If unsure, please consult the Security Testing team.
-                
+
 If you are a developer or other project member, please mark this finding as "Not an issue".</Recommendations>
 </Description>
 <Description contentType="preformatted" classID="C02261BC-DUMMY">
@@ -526,7 +523,7 @@ func TestParse_EmptySourceBasePath(t *testing.T) {
   <Abstract>This scan contains project-specific custom rules. Please see the recommendation section on how to proceed.</Abstract>
   <Explanation>Custom rules can help improve scan quality. They can reduce both false positives and false negatives by tailoring the scan settings to match the threat model and other specifics of an application. At the same time, custom rules need to be part of the review when a scan is reviewed by an auditor. This issue is a reminder of this fact.</Explanation>
   <Recommendations>If you are an auditor reviewing this project, please review the custom rules and the associated documentation. If unsure, please consult the Security Testing team.
-                
+
 If you are a developer or other project member, please mark this finding as "Not an issue".</Recommendations>
 </Description>
 <Description contentType="preformatted" classID="C02261BC-DUMMY">

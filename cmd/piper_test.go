@@ -1,13 +1,9 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,9 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cfg "github.com/SAP/jenkins-library/config"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 )
 
 func resetEnv(e []string) {
@@ -82,13 +80,14 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 
 			// assert
 			// Order of if-clauses reflects wanted precedence.
-			if test.stageNameArg != "" {
+			switch {
+			case test.stageNameArg != "":
 				assert.Equal(t, test.stageNameArg, GeneralConfig.StageName)
-			} else if test.stageNameJSON != "" {
+			case test.stageNameJSON != "":
 				assert.Equal(t, test.stageNameJSON, GeneralConfig.StageName)
-			} else if test.stageNameEnv != "" {
+			case test.stageNameEnv != "":
 				assert.Equal(t, test.stageNameEnv, GeneralConfig.StageName)
-			} else {
+			default:
 				assert.Equal(t, "", GeneralConfig.StageName)
 			}
 		})
@@ -165,13 +164,16 @@ func TestPrepareConfig(t *testing.T) {
 func TestRetrieveHookConfig(t *testing.T) {
 	tt := []struct {
 		hookJSON           []byte
-		expectedHookConfig HookConfiguration
+		expectedHookConfig cfg.HookConfiguration
 	}{
-		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
-		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+		{hookJSON: []byte(""), expectedHookConfig: cfg.HookConfiguration{}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: cfg.HookConfiguration{SentryConfig: cfg.SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
 		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}, "splunk":{"dsn":"https://my.splunk.dsn", "token": "mytoken", "index": "myindex", "sendLogs": true}}`),
-			expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"},
-				SplunkConfig: SplunkConfiguration{
+			expectedHookConfig: cfg.HookConfiguration{
+				SentryConfig: cfg.SentryConfiguration{
+					Dsn: "https://my.sentry.dsn",
+				},
+				SplunkConfig: cfg.SplunkConfiguration{
 					Dsn:      "https://my.splunk.dsn",
 					Token:    "mytoken",
 					Index:    "myindex",
@@ -182,7 +184,7 @@ func TestRetrieveHookConfig(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		var target HookConfiguration
+		var target cfg.HookConfiguration
 		var hookJSONinterface map[string]interface{}
 		if len(test.hookJSON) > 0 {
 			err := json.Unmarshal(test.hookJSON, &hookJSONinterface)
@@ -534,6 +536,6 @@ func TestAccessTokensFromEnvJSON(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		assert.Equal(t, test.expectedTokenList, AccessTokensFromEnvJSON(test.inputJSON), test.description)
+		assert.Equal(t, test.expectedTokenList, accessTokensFromEnvJSON(test.inputJSON), test.description)
 	}
 }

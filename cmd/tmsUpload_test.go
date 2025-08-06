@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -145,6 +142,20 @@ func (cim *communicationInstanceMock) UploadFileToNode(fileInfo tms.FileInfo, no
 		return nodeUploadResponseEntity, errors.New("Something went wrong on uploading file to node")
 	} else {
 		return cim.uploadFileToNodeResponse, nil
+	}
+}
+
+func (cim *communicationInstanceMock) ExportFileToNode(fileInfo tms.FileInfo, nodeName, description, namedUser string) (tms.NodeUploadResponseEntity, error) {
+	fileId := strconv.FormatInt(fileInfo.Id, 10)
+	var nodeUploadResponseEntity tms.NodeUploadResponseEntity
+	if description != CUSTOM_DESCRIPTION || nodeName != NODE_NAME || fileId != strconv.FormatInt(FILE_ID, 10) || namedUser != NAMED_USER {
+		return nodeUploadResponseEntity, errors.New(INVALID_INPUT_MSG)
+	}
+
+	if cim.isErrorOnExportFileToNode {
+		return nodeUploadResponseEntity, errors.New("Something went wrong on exporting file to node")
+	} else {
+		return cim.exportFileToNodeResponse, nil
 	}
 }
 
