@@ -1,0 +1,3861 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../images/favicon.ico">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>apiKeyValueMapDownload - Project "Piper": Continuous Delivery for the SAP Ecosystem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#009485">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#apikeyvaluemapdownload" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Project &#34;Piper&#34;: Continuous Delivery for the SAP Ecosystem" class="md-header__button md-logo" aria-label="Project "Piper": Continuous Delivery for the SAP Ecosystem" data-md-component="logo">
+      
+  <img src="../../images/piper_400_white.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Project "Piper": Continuous Delivery for the SAP Ecosystem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              apiKeyValueMapDownload
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SAP/jenkins-library" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Project &#34;Piper&#34;: Continuous Delivery for the SAP Ecosystem" class="md-nav__button md-logo" aria-label="Project "Piper": Continuous Delivery for the SAP Ecosystem" data-md-component="logo">
+      
+  <img src="../../images/piper_400_white.png" alt="logo">
+
+    </a>
+    Project "Piper": Continuous Delivery for the SAP Ecosystem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SAP/jenkins-library" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guidedtour/" class="md-nav__link">
+        Getting Started With Project "Piper"
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Infrastructure
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Infrastructure" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Infrastructure
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/customjenkins/" class="md-nav__link">
+        Custom Jenkins Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/vault/" class="md-nav__link">
+        Vault For Pipline Secrets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/docker-rate-limit/" class="md-nav__link">
+        Fixing docker rate limit
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Pipelines
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipelines" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Pipelines
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1" type="checkbox" id="__nav_5_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1">
+          ABAP Environment pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="ABAP Environment pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          ABAP Environment pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/introduction/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/extensibility/" class="md-nav__link">
+        Extensibility
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1_4" type="checkbox" id="__nav_5_1_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1_4">
+          Stages
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stages" data-md-level="3">
+        <label class="md-nav__title" for="__nav_5_1_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stages
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/initialChecks/" class="md-nav__link">
+        Initial Checks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/prepareSystem/" class="md-nav__link">
+        Prepare System
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/cloneRepositories/" class="md-nav__link">
+        Clone Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/test/" class="md-nav__link">
+        Test
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/build/" class="md-nav__link">
+        Build
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/integrationTest/" class="md-nav__link">
+        Integration Tests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/confirm/" class="md-nav__link">
+        Confirm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/publish/" class="md-nav__link">
+        Publish
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/post/" class="md-nav__link">
+        Post
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2">
+          General purpose pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="General purpose pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          General purpose pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/introduction/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/examples/" class="md-nav__link">
+        Examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2_3" type="checkbox" id="__nav_5_2_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2_3">
+          Stages
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stages" data-md-level="3">
+        <label class="md-nav__title" for="__nav_5_2_3">
+          <span class="md-nav__icon md-icon"></span>
+          Stages
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/init/" class="md-nav__link">
+        Init Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/prvoting/" class="md-nav__link">
+        Pull-Request Voting Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/build/" class="md-nav__link">
+        Build Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/additionalunittests/" class="md-nav__link">
+        Additional Unit Test Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/integration/" class="md-nav__link">
+        Integration Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/acceptance/" class="md-nav__link">
+        Acceptance Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/security/" class="md-nav__link">
+        Security Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/performance/" class="md-nav__link">
+        Performance Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/compliance/" class="md-nav__link">
+        Compliance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/confirm/" class="md-nav__link">
+        Confirm Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/promote/" class="md-nav__link">
+        Promote Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/release/" class="md-nav__link">
+        Release Stage
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Scenarios
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Scenarios" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Scenarios
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/changeManagement/" class="md-nav__link">
+        Build and Deploy Hybrid Applications with SAP Solution Manager
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/ui5-sap-cp/Readme/" class="md-nav__link">
+        Build and Deploy SAPUI5/SAP Fiori Applications on SAP BTP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/CAP_Scenario/" class="md-nav__link">
+        Build and Deploy SAP Cloud Application Programming Model Applications
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/TMS_Extension/" class="md-nav__link">
+        Integrate SAP Cloud Transport Management Into Your CI/CD Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/xsa-deploy/Readme/" class="md-nav__link">
+        Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/upload-to-transportrequest/Readme/" class="md-nav__link">
+        Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/abapEnvironmentAddons/" class="md-nav__link">
+        Build and Publish Add-on Products on SAP BTP, ABAP Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/abapEnvironmentTest/" class="md-nav__link">
+        Continuous Testing on SAP BTP, ABAP Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../scenarios/gCTS_Scenario/" class="md-nav__link">
+        Set up a Pipeline-Based ABAP Development and Testing Process Using Git-Enabled Change and Transport System
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extensibility/" class="md-nav__link">
+        Extensibility
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Library steps
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Library steps" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Library steps
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8_1" type="checkbox" id="__nav_8_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8_1">
+          abapAddonAssemblyKit
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="abapAddonAssemblyKit" data-md-level="2">
+        <label class="md-nav__title" for="__nav_8_1">
+          <span class="md-nav__icon md-icon"></span>
+          abapAddonAssemblyKit
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitCheck/" class="md-nav__link">
+        Check
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitCheckCVs/" class="md-nav__link">
+        CheckCVs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitCheckPV/" class="md-nav__link">
+        CheckPV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitCreateTargetVector/" class="md-nav__link">
+        CreateTargetVector
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitPublishTargetVector/" class="md-nav__link">
+        PublishTargetVector
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitRegisterPackages/" class="md-nav__link">
+        RegisterPackages
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitReleasePackages/" class="md-nav__link">
+        ReleasePackages
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapAddonAssemblyKitReserveNextPackages/" class="md-nav__link">
+        ReserveNextPackages
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentBuild/" class="md-nav__link">
+        abapEnvironmentBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentAssemblePackages/" class="md-nav__link">
+        abapEnvironmentAssemblePackages
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentAssembleConfirm/" class="md-nav__link">
+        abapEnvironmentAssembleConfirm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentCheckoutBranch/" class="md-nav__link">
+        abapEnvironmentCheckoutBranch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentCloneGitRepo/" class="md-nav__link">
+        abapEnvironmentCloneGitRepo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentCreateSystem/" class="md-nav__link">
+        abapEnvironmentCreateSystem
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentCreateTag/" class="md-nav__link">
+        abapEnvironmentCreateTag
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentPullGitRepo/" class="md-nav__link">
+        abapEnvironmentPullGitRepo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentPushATCSystemConfig/" class="md-nav__link">
+        abapEnvironmentPushATCSystemConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentRunATCCheck/" class="md-nav__link">
+        abapEnvironmentRunATCCheck
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentRunAUnitTest/" class="md-nav__link">
+        abapEnvironmentRunAUnitTest
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          apiKeyValueMapDownload
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        apiKeyValueMapDownload
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    Parameters
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview-step" class="md-nav__link">
+    Overview - Step
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overview-execution-environment" class="md-nav__link">
+    Overview - Execution Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    Details
+  </a>
+  
+    <nav class="md-nav" aria-label="Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apiservicekey" class="md-nav__link">
+    apiServiceKey
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#downloadpath" class="md-nav__link">
+    downloadPath
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyvaluemapname" class="md-nav__link">
+    keyValueMapName
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script" class="md-nav__link">
+    script
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verbose" class="md-nav__link">
+    verbose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apimapiservicekeycredentialsid" class="md-nav__link">
+    apimApiServiceKeyCredentialsId
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiKeyValueMapUpload/" class="md-nav__link">
+        apiKeyValueMapUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiProxyDownload/" class="md-nav__link">
+        apiProxyDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiProxyList/" class="md-nav__link">
+        apiProxyList
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiProviderDownload/" class="md-nav__link">
+        apiProviderDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiProviderList/" class="md-nav__link">
+        apiProviderList
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiProviderUpload/" class="md-nav__link">
+        apiProviderUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiProxyUpload/" class="md-nav__link">
+        apiProxyUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifactPrepareVersion/" class="md-nav__link">
+        artifactPrepareVersion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../awsS3Upload/" class="md-nav__link">
+        awsS3Upload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azureBlobUpload/" class="md-nav__link">
+        azureBlobUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batsExecuteTests/" class="md-nav__link">
+        batsExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../buildExecute/" class="md-nav__link">
+        buildExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checkmarxExecuteScan/" class="md-nav__link">
+        checkmarxExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checkmarxOneExecuteScan/" class="md-nav__link">
+        checkmarxOneExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checksPublishResults/" class="md-nav__link">
+        checksPublishResults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cfManifestSubstituteVariables/" class="md-nav__link">
+        cfManifestSubstituteVariables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudFoundryCreateService/" class="md-nav__link">
+        cloudFoundryCreateService
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudFoundryCreateServiceKey/" class="md-nav__link">
+        cloudFoundryCreateServiceKey
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudFoundryDeleteService/" class="md-nav__link">
+        cloudFoundryDeleteService
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudFoundryDeploy/" class="md-nav__link">
+        cloudFoundryDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cnbBuild/" class="md-nav__link">
+        cnbBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../codeqlExecuteScan/" class="md-nav__link">
+        codeqlExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commonPipelineEnvironment/" class="md-nav__link">
+        commonPipelineEnvironment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../containerExecuteStructureTests/" class="md-nav__link">
+        containerExecuteStructureTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../containerPushToRegistry/" class="md-nav__link">
+        containerPushToRegistry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contrastExecuteScan/" class="md-nav__link">
+        contrastExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credentialdiggerScan/" class="md-nav__link">
+        credentialdiggerScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debugReportArchive/" class="md-nav__link">
+        debugReportArchive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../detectExecuteScan/" class="md-nav__link">
+        detectExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dockerExecute/" class="md-nav__link">
+        dockerExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dockerExecuteOnKubernetes/" class="md-nav__link">
+        dockerExecuteOnKubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dubExecute/" class="md-nav__link">
+        dubExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../durationMeasure/" class="md-nav__link">
+        durationMeasure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fortifyExecuteScan/" class="md-nav__link">
+        fortifyExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gatlingExecuteTests/" class="md-nav__link">
+        gatlingExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gaugeExecuteTests/" class="md-nav__link">
+        gaugeExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gctsCloneRepository/" class="md-nav__link">
+        gctsCloneRepository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gctsCreateRepository/" class="md-nav__link">
+        gctsCreateRepository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gctsDeploy/" class="md-nav__link">
+        gctsDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gctsExecuteABAPQualityChecks/" class="md-nav__link">
+        gctsExecuteABAPQualityChecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gctsRollback/" class="md-nav__link">
+        gctsRollback
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../githubCheckBranchProtection/" class="md-nav__link">
+        githubCheckBranchProtection
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../githubCommentIssue/" class="md-nav__link">
+        githubCommentIssue
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../githubCreateIssue/" class="md-nav__link">
+        githubCreateIssue
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../githubCreatePullRequest/" class="md-nav__link">
+        githubCreatePullRequest
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../githubPublishRelease/" class="md-nav__link">
+        githubPublishRelease
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../githubSetCommitStatus/" class="md-nav__link">
+        githubSetCommitStatus
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gitopsUpdateDeployment/" class="md-nav__link">
+        gitopsUpdateDeployment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../golangBuild/" class="md-nav__link">
+        golangBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gradleExecuteBuild/" class="md-nav__link">
+        gradleExecuteBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hadolintExecute/" class="md-nav__link">
+        hadolintExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../handlePipelineStepErrors/" class="md-nav__link">
+        handlePipelineStepErrors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../healthExecuteCheck/" class="md-nav__link">
+        healthExecuteCheck
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../helmExecute/" class="md-nav__link">
+        helmExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../imagePushToRegistry/" class="md-nav__link">
+        imagePushToRegistry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../influxWriteData/" class="md-nav__link">
+        influxWriteData
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactDeploy/" class="md-nav__link">
+        integrationArtifactDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactDownload/" class="md-nav__link">
+        integrationArtifactDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactGetMplStatus/" class="md-nav__link">
+        integrationArtifactGetMplStatus
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactGetServiceEndpoint/" class="md-nav__link">
+        integrationArtifactGetServiceEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactResource/" class="md-nav__link">
+        integrationArtifactResource
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactTransport/" class="md-nav__link">
+        integrationArtifactTransport
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactUnDeploy/" class="md-nav__link">
+        integrationArtifactUnDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactUpdateConfiguration/" class="md-nav__link">
+        integrationArtifactUpdateConfiguration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrationArtifactUpload/" class="md-nav__link">
+        integrationArtifactUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../isChangeInDevelopment/" class="md-nav__link">
+        isChangeInDevelopment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../jenkinsMaterializeLog/" class="md-nav__link">
+        jenkinsMaterializeLog
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kanikoExecute/" class="md-nav__link">
+        kanikoExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../karmaExecuteTests/" class="md-nav__link">
+        karmaExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubernetesDeploy/" class="md-nav__link">
+        kubernetesDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mailSendNotification/" class="md-nav__link">
+        mailSendNotification
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../malwareExecuteScan/" class="md-nav__link">
+        malwareExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mavenBuild/" class="md-nav__link">
+        mavenBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mavenExecute/" class="md-nav__link">
+        mavenExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mavenExecuteIntegration/" class="md-nav__link">
+        mavenExecuteIntegration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mavenExecuteStaticCodeChecks/" class="md-nav__link">
+        mavenExecuteStaticCodeChecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mtaBuild/" class="md-nav__link">
+        mtaBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multicloudDeploy/" class="md-nav__link">
+        multicloudDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../neoDeploy/" class="md-nav__link">
+        neoDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../newmanExecute/" class="md-nav__link">
+        newmanExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nexusUpload/" class="md-nav__link">
+        nexusUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../npmExecuteEndToEndTests/" class="md-nav__link">
+        npmExecuteEndToEndTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../npmExecuteLint/" class="md-nav__link">
+        npmExecuteLint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../npmExecuteScripts/" class="md-nav__link">
+        npmExecuteScripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../npmExecuteTests/" class="md-nav__link">
+        npmExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelineExecute/" class="md-nav__link">
+        pipelineExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelineRestartSteps/" class="md-nav__link">
+        pipelineRestartSteps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelineStashFiles/" class="md-nav__link">
+        pipelineStashFiles
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelineStashFilesAfterBuild/" class="md-nav__link">
+        pipelineStashFilesAfterBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelineStashFilesBeforeBuild/" class="md-nav__link">
+        pipelineStashFilesBeforeBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../piperLoadGlobalExtensions/" class="md-nav__link">
+        piperLoadGlobalExtensions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../piperPublishWarnings/" class="md-nav__link">
+        piperPublishWarnings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prepareDefaultValues/" class="md-nav__link">
+        prepareDefaultValues
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../protecodeExecuteScan/" class="md-nav__link">
+        protecodeExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pythonBuild/" class="md-nav__link">
+        pythonBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../seleniumExecuteTests/" class="md-nav__link">
+        seleniumExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setupCommonPipelineEnvironment/" class="md-nav__link">
+        setupCommonPipelineEnvironment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shellExecute/" class="md-nav__link">
+        shellExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../slackSendNotification/" class="md-nav__link">
+        slackSendNotification
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../snykExecute/" class="md-nav__link">
+        snykExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sonarExecuteScan/" class="md-nav__link">
+        sonarExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spinnakerTriggerPipeline/" class="md-nav__link">
+        spinnakerTriggerPipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testsPublishResults/" class="md-nav__link">
+        testsPublishResults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tmsUpload/" class="md-nav__link">
+        tmsUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tmsExport/" class="md-nav__link">
+        tmsExport
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestDocIDFromGit/" class="md-nav__link">
+        transportRequestDocIDFromGit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestReqIDFromGit/" class="md-nav__link">
+        transportRequestReqIDFromGit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestUploadCTS/" class="md-nav__link">
+        transportRequestUploadCTS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestUploadRFC/" class="md-nav__link">
+        transportRequestUploadRFC
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestUploadSOLMAN/" class="md-nav__link">
+        transportRequestUploadSOLMAN
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../uiVeri5ExecuteTests/" class="md-nav__link">
+        uiVeri5ExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vaultRotateSecretId/" class="md-nav__link">
+        vaultRotateSecretId
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../whitesourceExecuteScan/" class="md-nav__link">
+        whitesourceExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../writeTemporaryCredentials/" class="md-nav__link">
+        writeTemporaryCredentials
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../xsDeploy/" class="md-nav__link">
+        xsDeploy
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_9">
+          Library Steps (deprecated)
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Library Steps (deprecated)" data-md-level="1">
+        <label class="md-nav__title" for="__nav_9">
+          <span class="md-nav__icon md-icon"></span>
+          Library Steps (deprecated)
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifactSetVersion/" class="md-nav__link">
+        artifactSetVersion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../checkChangeInDevelopment/" class="md-nav__link">
+        checkChangeInDevelopment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../npmExecute/" class="md-nav__link">
+        npmExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestCreate/" class="md-nav__link">
+        transportRequestCreate
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestRelease/" class="md-nav__link">
+        transportRequestRelease
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transportRequestUploadFile/" class="md-nav__link">
+        transportRequestUploadFile
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gctsExecuteABAPUnitTests/" class="md-nav__link">
+        gctsExecuteABAPUnitTests
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        Command line tool
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    Usage
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    Parameters
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview-step" class="md-nav__link">
+    Overview - Step
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overview-execution-environment" class="md-nav__link">
+    Overview - Execution Environment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#details" class="md-nav__link">
+    Details
+  </a>
+  
+    <nav class="md-nav" aria-label="Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apiservicekey" class="md-nav__link">
+    apiServiceKey
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#downloadpath" class="md-nav__link">
+    downloadPath
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyvaluemapname" class="md-nav__link">
+    keyValueMapName
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script" class="md-nav__link">
+    script
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verbose" class="md-nav__link">
+    verbose
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apimapiservicekeycredentialsid" class="md-nav__link">
+    apimApiServiceKeyCredentialsId
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/SAP/jenkins-library/edit/master/documentation/docs/steps/apiKeyValueMapDownload.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="apikeyvaluemapdownload">apiKeyValueMapDownload<a class="headerlink" href="#apikeyvaluemapdownload" title="Permanent link">&para;</a></h1>
+<p>Download a specific Key Value Map from the API Portal</p>
+<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>With this step you can download a specific Key Value Map from the API Portal, which returns a zip file with the Key Value Map contents in to current workspace using the OData API.
+Learn more about the SAP API Management API for downloading an Key Value Map artifact <a href="https://help.sap.com/viewer/66d066d903c2473f81ec33acfe2ccdb4/Cloud/en-US/e26b3320cd534ae4bc743af8013a8abb.html">here</a>.</p>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>We recommend to define values of <a href="#parameters">step parameters</a> via <a href="../../configuration/">.pipeline/config.yml file</a>.<br />In this case, calling the step is essentially reduced to defining the step name.<br />Calling the step can be done either in an orchestrator specific way (e.g. via a Jenkins library step) or on the command line.</p>
+<div class="admonition tip">
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Jenkins</label><label for="__tabbed_1_2">Command Line</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="n">library</span><span class="o">(</span><span class="s1">&#39;piper-lib-os&#39;</span><span class="o">)</span><span class="w"></span>
+
+<span class="n">apiKeyValueMapDownload</span><span class="w"> </span><span class="nl">script:</span><span class="w"> </span><span class="k">this</span><span class="w"></span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>piper apiKeyValueMapDownload
+</code></pre></div>
+</div>
+</div>
+</div>
+</div>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<h3 id="overview-step">Overview - Step<a class="headerlink" href="#overview-step" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Mandatory</th>
+<th>Additional information</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#apiservicekey">apiServiceKey</a></td>
+<td><strong>(yes)</strong></td>
+<td><img alt="Secret" src="https://img.shields.io/badge/-Secret-yellowgreen" /> pass via ENV or Jenkins credentials (<a href="#apimapiservicekeycredentialsid"><code>apimApiServiceKeyCredentialsId</code></a>)</td>
+</tr>
+<tr>
+<td><a href="#downloadpath">downloadPath</a></td>
+<td><strong>yes</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="#keyvaluemapname">keyValueMapName</a></td>
+<td><strong>yes</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><a href="#script">script</a></td>
+<td><strong>(yes)</strong></td>
+<td><img alt="Jenkins only" src="https://img.shields.io/badge/-Jenkins%20only-yellowgreen" /> reference to Jenkins main pipeline script</td>
+</tr>
+<tr>
+<td><a href="#verbose">verbose</a></td>
+<td>no</td>
+<td>activates debug output</td>
+</tr>
+</tbody>
+</table>
+<h3 id="overview-execution-environment">Overview - Execution Environment<a class="headerlink" href="#overview-execution-environment" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Orchestrator-specific only</p>
+<p>These parameters are relevant for orchestrator usage and not considered when using the command line option.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Mandatory</th>
+<th>Additional information</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="details">Details<a class="headerlink" href="#details" title="Permanent link">&para;</a></h3>
+<h4 id="apiservicekey">apiServiceKey<a class="headerlink" href="#apiservicekey" title="Permanent link">&para;</a></h4>
+<p>Service key JSON string to access the API Management Runtime service instance of plan 'api'</p>
+<p><a href="#parameters">back to overview</a></p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aliases</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td>Mandatory</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td>Default</td>
+<td><code>$PIPER_apiServiceKey</code> (if set)</td>
+</tr>
+<tr>
+<td>Secret</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td>Configuration scope</td>
+<td><ul><li>&#9746; parameter</li><li>&#9744; general</li><li>&#9744; steps</li><li>&#9744; stages</li></ul></td>
+</tr>
+<tr>
+<td>Resource references</td>
+<td>Jenkins credential id:<br />&nbsp;&nbsp;id: <a href="#apimapiservicekeycredentialsid"><code>apimApiServiceKeyCredentialsId</code></a><br />&nbsp;&nbsp;reference to: <code>apiServiceKey</code><br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="downloadpath">downloadPath<a class="headerlink" href="#downloadpath" title="Permanent link">&para;</a></h4>
+<p>Specifies Key Value Map download CSV file location.</p>
+<p><a href="#parameters">back to overview</a></p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aliases</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td>Mandatory</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td>Default</td>
+<td><code>$PIPER_downloadPath</code> (if set)</td>
+</tr>
+<tr>
+<td>Secret</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Configuration scope</td>
+<td><ul><li>&#9746; parameter</li><li>&#9744; general</li><li>&#9746; steps</li><li>&#9746; stages</li></ul></td>
+</tr>
+<tr>
+<td>Resource references</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<h4 id="keyvaluemapname">keyValueMapName<a class="headerlink" href="#keyvaluemapname" title="Permanent link">&para;</a></h4>
+<p>Specifies the name of the Key Value Map.</p>
+<p><a href="#parameters">back to overview</a></p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aliases</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td>Mandatory</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td>Default</td>
+<td><code>$PIPER_keyValueMapName</code> (if set)</td>
+</tr>
+<tr>
+<td>Secret</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Configuration scope</td>
+<td><ul><li>&#9746; parameter</li><li>&#9744; general</li><li>&#9746; steps</li><li>&#9746; stages</li></ul></td>
+</tr>
+<tr>
+<td>Resource references</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<h4 id="script">script<a class="headerlink" href="#script" title="Permanent link">&para;</a></h4>
+<p>The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the <code>this</code> parameter, as in <code>script: this</code>. This allows the function to access the <code>commonPipelineEnvironment</code> for retrieving, e.g. configuration parameters.</p>
+<p><a href="#parameters">back to overview</a></p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aliases</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>Jenkins Script</code></td>
+</tr>
+<tr>
+<td>Mandatory</td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td>Default</td>
+<td></td>
+</tr>
+<tr>
+<td>Secret</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Configuration scope</td>
+<td><ul><li>&#9744; parameter</li><li>&#9744; general</li><li>&#9744; steps</li><li>&#9744; stages</li></ul></td>
+</tr>
+<tr>
+<td>Resource references</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<h4 id="verbose">verbose<a class="headerlink" href="#verbose" title="Permanent link">&para;</a></h4>
+<p>verbose output</p>
+<p><a href="#parameters">back to overview</a></p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aliases</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>bool</code></td>
+</tr>
+<tr>
+<td>Mandatory</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Default</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>Possible values</td>
+<td>- <code>true</code><br />- <code>false</code></td>
+</tr>
+<tr>
+<td>Secret</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Configuration scope</td>
+<td><ul><li>&#9746; parameter</li><li>&#9746; general</li><li>&#9746; steps</li><li>&#9746; stages</li></ul></td>
+</tr>
+<tr>
+<td>Resource references</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<h4 id="apimapiservicekeycredentialsid">apimApiServiceKeyCredentialsId<a class="headerlink" href="#apimapiservicekeycredentialsid" title="Permanent link">&para;</a></h4>
+<p>Jenkins secret text credential ID containing the service key to the API Management Runtime service instance of plan 'api'</p>
+<p><a href="#parameters">back to overview</a></p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aliases</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>string</code></td>
+</tr>
+<tr>
+<td>Configuration scope</td>
+<td><ul><li>&#9746; parameter</li><li>&#9746; general</li><li>&#9746; steps</li><li>&#9746; stages</li></ul></td>
+</tr>
+</tbody>
+</table>
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<p>Example configuration for the use in a <code>Jenkinsfile</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">apiKeyValueMapDownload</span><span class="w"> </span><span class="nl">script:</span><span class="w"> </span><span class="k">this</span><span class="w"></span>
+</code></pre></div>
+<p>Example for the use in a YAML configuration file (such as <code>.pipeline/config.yaml</code>).</p>
+<div class="highlight"><pre><span></span><code><span class="nt">steps</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">&lt;...&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">apiKeyValueMapDownload</span><span class="p p-Indicator">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">apimApiServiceKeyCredentialsId</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;MY_API_SERVICE_KEY&#39;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">apiProxyName</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;MY_API_KEY_VALUE_MAP_NAME&#39;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">downloadPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MY_API_KEY_VALUE_MAP_CSV_FILE_DOWNLOAD_PATH</span><span class="w"></span>
+</code></pre></div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../abapEnvironmentRunAUnitTest/" class="md-footer__link md-footer__link--prev" aria-label="Previous: abapEnvironmentRunAUnitTest" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              abapEnvironmentRunAUnitTest
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../apiKeyValueMapUpload/" class="md-footer__link md-footer__link--next" aria-label="Next: apiKeyValueMapUpload" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              apiKeyValueMapUpload
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
