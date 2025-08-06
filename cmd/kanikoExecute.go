@@ -18,6 +18,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/moby/buildkit/util/purl"
 )
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
@@ -436,7 +438,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
 	// buildCoordinates := []versioning.Coordinates{}
-
+	// for docker the logic will be slighlty different since we need to co-relate the sbom generated to the actual built docker images
 	pattern := "bom*.xml"
 
 	files, err := filepath.Glob(pattern)
@@ -450,15 +452,21 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 	}
 
 	for _, file := range files {
-		purl := piperutils.GetPurl(file)
-		imageNameTag := findImageNameTagInPurl(containerImageNameTags, purl)
-		if imageNameTag != "" {
-			return nil
-			// coordinates := versioning.Coordinates{
-			// 	PURL: purl,
-			// 	 b
-			// }
+		name := piperutils.GetName(file)
+		version := piperutils.GetVersion(file)
+		purl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
+		if err != nil {
+			return err
 		}
+		log.Entry().Infof("purl is %s", purl)
+		// imageNameTag := findImageNameTagInPurl(containerImageNameTags, purl)
+		// if imageNameTag != "" {
+		// 	return nil
+		// 	coordinates := versioning.Coordinates{
+		// 		PURL: purl,
+		// 		 b
+		// 	}
+		// }
 
 		// You can open or process the file here
 	}

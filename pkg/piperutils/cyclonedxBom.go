@@ -24,7 +24,9 @@ type BomProperty struct {
 }
 
 type BomComponent struct {
-	Purl string `xml:"purl"`
+	Purl    string `xml:"purl"`
+	Name    string `xml:"name"`
+	Version string `xml:"version"`
 }
 
 func GetBom(absoluteBomPath string) (Bom, error) {
@@ -55,4 +57,22 @@ func GetPurl(bomFilePath string) string {
 		return ""
 	}
 	return bom.Metadata.Component.Purl
+}
+
+func GetName(bomFilePath string) string {
+	bom, err := GetBom(bomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metadata name: %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Name
+}
+
+func GetVersion(bomFilePath string) string {
+	bom, err := GetBom(bomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metadata version: %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Version
 }
