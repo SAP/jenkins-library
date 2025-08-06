@@ -189,11 +189,17 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		}
 		if config.CreateBOM {
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
-			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			if err != nil {
+				return err
+			}
 		}
 
 		if config.CreateBuildArtifactsMetadata {
-			return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			err := createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 
@@ -290,15 +296,17 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 		if config.CreateBOM {
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
-			return syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			if err != nil {
+				return err
+			}
 		}
 
 		if config.CreateBuildArtifactsMetadata {
-			return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
-		}
-
-		if config.CreateBuildArtifactsMetadata {
-			return createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			err := createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 
