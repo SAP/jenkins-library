@@ -271,7 +271,7 @@ httpClient.SetOptions(clientOptions)
 1. [Global function pointers](#global-function-pointers)
 1. [Test Parallelization](#test-parallelization)
 
-Unit tests are done using basic `golang` means. As the test files are tagged add the corresponding tag to the run command, as for example `go test -run ^TestRunAbapAddonAssemblyKitCheck$ github.com/SAP/jenkins-library/cmd -tags=unit`. In VSCode this can be done by adding the flag `"-tags=unit"` to the list of `"go.testFlags"` in the `settings.json` of the go extension.
+Unit tests are done using basic `golang` means. As the test files are tagged add the corresponding tag to the run command, as for example `go test -run ^TestRunAbapAddonAssemblyKitCheck$ github.com/SAP/jenkins-library/cmd`.
 
 Additionally, we encourage you to use [github.com/stretchr/testify/assert](https://github.com/stretchr/testify/assert)
 in order to have slimmer assertions if you like. A good pattern to follow is this:
@@ -581,7 +581,7 @@ void call(Map piperParams) {
     // e.g. only this singele step of the stage
     somePiperStep( script: piperParams.script, someConfigParameter: '<...>' )
   }
-  
+
   echo "End - Extension for stage: ${piperParams.stageName}"
 }
 return this
