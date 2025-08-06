@@ -644,9 +644,10 @@ spec:
             param: container/repositoryPassword
       - name: useDetect8
         description:
-          "This flag enables the use of the supported version 8 of the Detect script instead of default version 10"
+          "DEPRECATED: This flag enables the use of the supported version 8 of the Detect script instead of default version 10"
         aliases:
           - name: detect/useDetect8
+            deprecated: true
         type: bool
         scope:
           - PARAMETERS
