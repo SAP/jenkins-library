@@ -13,5 +13,4 @@ func TestTmsExportCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "tmsExport", testCmd.Use, "command name incorrect")
-
 }

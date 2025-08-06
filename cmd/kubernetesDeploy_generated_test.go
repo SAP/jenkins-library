@@ -13,5 +13,4 @@ func TestKubernetesDeployCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "kubernetesDeploy", testCmd.Use, "command name incorrect")
-
 }

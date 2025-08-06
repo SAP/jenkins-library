@@ -13,5 +13,4 @@ func TestAbapAddonAssemblyKitCheckCVsCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "abapAddonAssemblyKitCheckCVs", testCmd.Use, "command name incorrect")
-
 }

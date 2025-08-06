@@ -13,5 +13,4 @@ func TestTransportRequestReqIDFromGitCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "transportRequestReqIDFromGit", testCmd.Use, "command name incorrect")
-
 }

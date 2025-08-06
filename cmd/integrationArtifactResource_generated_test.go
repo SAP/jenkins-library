@@ -13,5 +13,4 @@ func TestIntegrationArtifactResourceCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "integrationArtifactResource", testCmd.Use, "command name incorrect")
-
 }

@@ -13,5 +13,4 @@ func TestKanikoExecuteCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "kanikoExecute", testCmd.Use, "command name incorrect")
-
 }

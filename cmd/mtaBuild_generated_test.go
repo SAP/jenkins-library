@@ -13,5 +13,4 @@ func TestMtaBuildCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "mtaBuild", testCmd.Use, "command name incorrect")
-
 }

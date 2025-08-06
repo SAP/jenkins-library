@@ -13,5 +13,4 @@ func TestGctsDeployCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "gctsDeploy", testCmd.Use, "command name incorrect")
-
 }

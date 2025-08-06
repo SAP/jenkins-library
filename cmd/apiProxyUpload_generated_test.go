@@ -13,5 +13,4 @@ func TestApiProxyUploadCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "apiProxyUpload", testCmd.Use, "command name incorrect")
-
 }

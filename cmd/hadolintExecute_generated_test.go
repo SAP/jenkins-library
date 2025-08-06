@@ -13,5 +13,4 @@ func TestHadolintExecuteCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "hadolintExecute", testCmd.Use, "command name incorrect")
-
 }

@@ -13,5 +13,4 @@ func TestGctsExecuteABAPUnitTestsCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "gctsExecuteABAPUnitTests", testCmd.Use, "command name incorrect")
-
 }

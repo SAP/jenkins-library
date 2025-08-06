@@ -13,5 +13,4 @@ func TestInfluxWriteDataCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "influxWriteData", testCmd.Use, "command name incorrect")
-
 }

@@ -13,5 +13,4 @@ func TestGctsCreateRepositoryCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "gctsCreateRepository", testCmd.Use, "command name incorrect")
-
 }

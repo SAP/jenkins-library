@@ -13,5 +13,4 @@ func TestCredentialdiggerScanCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "credentialdiggerScan", testCmd.Use, "command name incorrect")
-
 }

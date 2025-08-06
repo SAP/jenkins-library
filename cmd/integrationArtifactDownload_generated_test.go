@@ -13,5 +13,4 @@ func TestIntegrationArtifactDownloadCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "integrationArtifactDownload", testCmd.Use, "command name incorrect")
-
 }

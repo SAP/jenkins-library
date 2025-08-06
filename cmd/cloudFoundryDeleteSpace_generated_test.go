@@ -13,5 +13,4 @@ func TestCloudFoundryDeleteSpaceCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "cloudFoundryDeleteSpace", testCmd.Use, "command name incorrect")
-
 }
