@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	cfg "github.com/SAP/jenkins-library/config"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -17,82 +18,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
-
-// GeneralConfigOptions contains all global configuration options for piper binary
-type GeneralConfigOptions struct {
-	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
-	CorrelationID        string
-	CustomConfig         string
-	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig        []string // ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	IgnoreCustomDefaults bool
-	ParametersJSON       string
-	EnvRootPath          string
-	NoTelemetry          bool
-	StageName            string
-	StepConfigJSON       string
-	StepMetadata         string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName             string
-	Verbose              bool
-	LogFormat            string
-	VaultRoleID          string
-	VaultRoleSecretID    string
-	VaultToken           string
-	VaultServerURL       string
-	VaultNamespace       string
-	VaultPath            string
-	SystemTrustToken     string
-	HookConfig           HookConfiguration
-	MetaDataResolver     func() map[string]config.StepData
-	GCPJsonKeyFilePath   string
-	GCSFolderPath        string
-	GCSBucketId          string
-	GCSSubFolder         string
-}
-
-// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
-type HookConfiguration struct {
-	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
-	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
-	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
-	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
-	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
-}
-
-type GCPPubSubConfiguration struct {
-	Enabled          bool   `json:"enabled"`
-	ProjectNumber    string `json:"projectNumber,omitempty"`
-	IdentityPool     string `json:"identityPool,omitempty"`
-	IdentityProvider string `json:"identityProvider,omitempty"`
-	Topic            string `json:"topic,omitempty"`
-}
-
-// SentryConfiguration defines the configuration options for the Sentry logging system
-type SentryConfiguration struct {
-	Dsn string `json:"dsn,omitempty"`
-}
-
-// SplunkConfiguration defines the configuration options for the Splunk logging system
-type SplunkConfiguration struct {
-	Dsn               string `json:"dsn,omitempty"`
-	Token             string `json:"token,omitempty"`
-	Index             string `json:"index,omitempty"`
-	SendLogs          bool   `json:"sendLogs"`
-	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
-	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
-	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
-}
-
-// OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
-type OIDCConfiguration struct {
-	RoleID string `json:",roleID,omitempty"`
-}
-
-type SystemTrustConfiguration struct {
-	ServerURL           string `json:"baseURL,omitempty"`
-	TokenEndPoint       string `json:"tokenEndPoint,omitempty"`
-	TokenQueryParamName string `json:"tokenQueryParamName,omitempty"`
-}
 
 var rootCmd = &cobra.Command{
 	Use:   "piper",
@@ -104,7 +29,7 @@ It contains many steps which can be used within CI/CD systems as well as directl
 }
 
 // GeneralConfig contains global configuration flags for piper binary
-var GeneralConfig GeneralConfigOptions
+var GeneralConfig cfg.GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
@@ -248,7 +173,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.BuildURL(), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
-	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", AccessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", accessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
@@ -283,14 +208,13 @@ func ResolveAccessTokens(tokenList []string) map[string]string {
 	return tokenMap
 }
 
-// AccessTokensFromEnvJSON resolves access tokens when passed as JSON in an environment variable
-func AccessTokensFromEnvJSON(env string) []string {
+// accessTokensFromEnvJSON resolves access tokens when passed as JSON in an environment variable
+func accessTokensFromEnvJSON(env string) []string {
 	accessTokens := []string{}
 	if len(env) == 0 {
 		return accessTokens
 	}
-	err := json.Unmarshal([]byte(env), &accessTokens)
-	if err != nil {
+	if err := json.Unmarshal([]byte(env), &accessTokens); err != nil {
 		log.Entry().Infof("Token json '%v' has wrong format.", env)
 	}
 	return accessTokens
@@ -327,8 +251,7 @@ func initStageName(outputToLog bool) {
 	}
 
 	var params map[string]interface{}
-	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
-	if err != nil {
+	if err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params); err != nil {
 		if outputToLog {
 			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)
 		}
@@ -457,15 +380,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
+func retrieveHookConfig(source map[string]interface{}, target *cfg.HookConfiguration) {
 	if source != nil {
 		log.Entry().Debug("Retrieving hook configuration")
 		b, err := json.Marshal(source)
 		if err != nil {
 			log.Entry().Warningf("Failed to marshal source hook configuration: %v", err)
 		}
-		err = json.Unmarshal(b, target)
-		if err != nil {
+		if err = json.Unmarshal(b, target); err != nil {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
 		}
 	}
