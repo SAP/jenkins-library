@@ -23,9 +23,6 @@ spec:
       - name: dockerCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.
         type: jenkins
-    resources:
-      - name: deployDescriptor
-        type: stash
     params:
       - name: apiEndpoint
         type: string
