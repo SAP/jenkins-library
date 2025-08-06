@@ -280,9 +280,6 @@ func cloudFoundryDeployMetadata() config.StepData {
 					{Name: "cfCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.", Type: "jenkins", Aliases: []config.Alias{{Name: "cloudFoundry/credentialsId", Deprecated: true}}},
 					{Name: "dockerCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.", Type: "jenkins"},
 				},
-				Resources: []config.StepResources{
-					{Name: "deployDescriptor", Type: "stash"},
-				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiEndpoint",
