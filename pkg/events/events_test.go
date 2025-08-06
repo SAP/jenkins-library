@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
 func TestEventCreation(t *testing.T) {
@@ -36,7 +38,11 @@ func TestEventCreation(t *testing.T) {
 		event.AddToCloudEventData(additionalData)
 		// asserts
 		assert.NoError(t, err)
-		assert.Equal(t, string(event.cloudEvent.Data()), `{"additionalKey":"additionalValue","testKey":"testValue"}`)
+		assert.Equal(
+			t,
+			string(event.cloudEvent.Data()),
+			`{"additionalKey":"additionalValue","testKey":"testValue"}`,
+		)
 	})
 }
 
@@ -52,5 +58,40 @@ func TestGetUUID(t *testing.T) {
 	if uuid != uuid2 {
 		t.Fatalf("expected the same UUID but got different ones")
 	}
+}
 
+func TestSkipEscapeForHTML(t *testing.T) {
+	event := cloudevents.NewEvent()
+	event.SetSource("test/source")
+	event.SetType("test.type")
+	event.SetID("fixed-id-1234")
+
+	event.SetData(cloudevents.ApplicationJSON, map[string]string{
+		"message": "Hello & welcome",
+	})
+
+	eventWrapper := Event{
+		cloudEvent: event,
+	}
+	result, err := eventWrapper.ToBytesWithoutEscapeHTML()
+
+	got := string(result)
+
+	expected := `{
+	  "specversion": "1.0",
+	"type": "test.type",
+	"source": "test/source",
+	"id": "fixed-id-1234",
+	"datacontenttype": "application/json",
+	"data": {
+			"message": "Hello & welcome"
+		}
+	}
+	`
+	assert.NoError(t, err)
+	assert.JSONEq(
+		t,
+		expected,
+		got,
+	)
 }
