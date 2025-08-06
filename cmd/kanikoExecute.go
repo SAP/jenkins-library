@@ -18,6 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/moby/buildkit/util/purl"
 )
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
@@ -452,14 +453,12 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 	for _, file := range files {
 		name := piperutils.GetName(file)
 		version := piperutils.GetVersion(file)
-		log.Entry().Infof("name is %s", name)
-		log.Entry().Infof("version is %s", version)
 
-		// purl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
-		// if err != nil {
-		// 	return err
-		// }
-		// log.Entry().Infof("purl is %s", purl)
+		purl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
+		if err != nil {
+			return err
+		}
+		log.Entry().Infof("purl is %s", purl)
 		// imageNameTag := findImageNameTagInPurl(containerImageNameTags, purl)
 		// if imageNameTag != "" {
 		// 	return nil
