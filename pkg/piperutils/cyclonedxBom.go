@@ -89,7 +89,7 @@ func UpdatePurl(sbomPath string, newPurl string) error {
 
 	// Decode the SBOM
 	var bom cdx.BOM
-	decoder := cdx.NewBOMDecoder(file, cdx.BOMFileFormatJSON)
+	decoder := cdx.NewBOMDecoder(file, cdx.BOMFileFormatXML)
 	if err := decoder.Decode(&bom); err != nil {
 		return fmt.Errorf("failed to decode SBOM: %w", err)
 	}
