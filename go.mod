@@ -45,6 +45,7 @@ require (
 	github.com/magicsong/sonargo v0.0.1
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/moby/buildkit v0.13.1
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31
 	github.com/package-url/packageurl-go v0.1.1
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
@@ -80,6 +81,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.51.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.51.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
+	github.com/Microsoft/hcsshim v0.11.7 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/apex/log v1.9.0 // indirect
@@ -115,7 +117,6 @@ require (
 	github.com/imdario/mergo v1.0.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
-	github.com/moby/buildkit v0.13.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/spdystream v0.5.0 // indirect
