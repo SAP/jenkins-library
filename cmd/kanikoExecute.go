@@ -515,7 +515,7 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 
 		err = piperutils.UpdatePurl(file, constructedPurl)
 		if err != nil {
-			log.Entry().Warnf("unable to update purl in sbom file not creating build artifact metadata for :%s", file)
+			log.Entry().Warnf("unable to update purl in sbom file, hence not creating build artifact metadata for :%s due to err %v", file, err)
 			return nil
 
 		}
