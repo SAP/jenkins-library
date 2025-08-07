@@ -2,9 +2,11 @@ package piperutils
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 	"os"
 
+	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -75,4 +77,51 @@ func GetVersion(bomFilePath string) string {
 		return ""
 	}
 	return bom.Metadata.Component.Version
+} // UpdateOrInsertPurl updates or inserts the PURL into the parent component of an SBOM
+
+func UpdatePurl(sbomPath string, newPurl string) error {
+	// Open SBOM file
+	file, err := os.Open(sbomPath)
+	if err != nil {
+		return fmt.Errorf("failed to open SBOM file: %w", err)
+	}
+	defer file.Close()
+
+	// Decode the SBOM
+	var bom cdx.BOM
+	decoder := cdx.NewBOMDecoder(file, cdx.BOMFileFormatJSON)
+	if err := decoder.Decode(&bom); err != nil {
+		return fmt.Errorf("failed to decode SBOM: %w", err)
+	}
+
+	// Check and update Parent Component
+	if bom.Metadata != nil && bom.Metadata.Component != nil {
+		parent := bom.Metadata.Component
+
+		if parent.PackageURL == "" {
+			parent.PackageURL = newPurl
+		} else {
+			log.Entry().Debugf("purl already present in parent component hence not updating for: %s", sbomPath)
+		}
+
+	} else {
+		return fmt.Errorf("no parent component found in SBOM metadata")
+	}
+
+	// Reopen the file for writing (truncate)
+	outFile, err := os.Create(sbomPath)
+	if err != nil {
+		return fmt.Errorf("failed to open SBOM file for writing: %w", err)
+	}
+	defer outFile.Close()
+
+	// Encode back to SBOM format
+	encoder := cdx.NewBOMEncoder(outFile, cdx.BOMFileFormatXML)
+	encoder.SetPretty(true)
+	if err := encoder.Encode(&bom); err != nil {
+		return fmt.Errorf("failed to encode updated SBOM: %w", err)
+	}
+
+	log.Entry().Debugf("SBOM updated successfully for: %s", sbomPath)
+	return nil
 }

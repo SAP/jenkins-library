@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -9,6 +10,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -18,7 +20,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/moby/buildkit/util/purl"
+	purlParser "github.com/package-url/packageurl-go"
 )
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
@@ -450,13 +454,15 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 }
 
 func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
-	// buildCoordinates := []versioning.Coordinates{}
+	buildCoordinates := []versioning.Coordinates{}
+
 	// for docker the logic will be slighlty different since we need to co-relate the sbom generated to the actual built docker images
 	pattern := "bom*.xml"
 
 	files, err := filepath.Glob(pattern)
 	if err != nil {
-		return err
+		log.Entry().Warnf("no sbom files for build not creating build artifact metadata")
+		return nil
 	}
 
 	if len(files) == 0 {
@@ -465,33 +471,96 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 	}
 
 	for _, file := range files {
-		name := piperutils.GetName(file)
-		version := piperutils.GetVersion(file)
+		parentComponentName := piperutils.GetName(file)
+		parentComponentVersion := piperutils.GetVersion(file)
 
-		purl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
+		// syft sbom do not contain purl for the parent component
+		// this is problem since the way we tie back promoted artifact to build
+		// is only via the sbom parent componen , untill the time https://github.com/anchore/syft/issues/1408
+		// is fixed we are generating a purl and inserting it into the sbom
+		constructedPurl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", parentComponentName, parentComponentVersion), nil)
 		if err != nil {
-			return err
+			log.Entry().Warnf("unable to create purl from reference")
+			return nil
 		}
-		log.Entry().Infof("purl is %s", purl)
-		// imageNameTag := findImageNameTagInPurl(containerImageNameTags, purl)
-		// if imageNameTag != "" {
-		// 	return nil
-		// 	coordinates := versioning.Coordinates{
-		// 		PURL: purl,
-		// 		 b
-		// 	}
-		// }
 
-		// You can open or process the file here
+		// this purl contains the docker registry and we remove that from the final purl
+		// and recreate the purl without the registry, and we dont want to expose that
+		registry, name, version, err := parsePurl(constructedPurl)
+		if err != nil {
+			log.Entry().Warnf("unable to parse purl creating build artifact metadata")
+			return nil
+		}
+
+		constructedPurl, err = purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
+		if err != nil {
+			log.Entry().Warnf("unable to create purl from reference")
+			return nil
+		}
+
+		log.Entry().Debugf("purl is %s", constructedPurl)
+		imageNameTag := findImageNameTagInPurl(containerImageNameTags, fmt.Sprintf("%s:%s", name, version))
+		var coordinate versioning.Coordinates
+		if imageNameTag != "" {
+			coordinate.ArtifactID = name
+			coordinate.BuildPath = filepath.Dir(file)
+			coordinate.Version = version
+			coordinate.GroupID = ""
+			coordinate.PURL = constructedPurl
+			coordinate.URL = registry
+		} else {
+			log.Entry().Warnf("unable to find imageNameTag in purl, not creating build artifact metadata for :%s", file)
+			return nil
+		}
+
+		err = piperutils.UpdatePurl(file, constructedPurl)
+		if err != nil {
+			log.Entry().Warnf("unable to update purl in sbom file not creating build artifact metadata for :%s", file)
+			return nil
+
+		}
+		buildCoordinates = append(buildCoordinates, coordinate)
+	}
+
+	if len(buildCoordinates) > 0 {
+		var buildArtifacts build.BuildArtifacts
+		buildArtifacts.Coordinates = buildCoordinates
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.dockerBuildArtifacts = string(jsonResult)
 	}
 
 	return nil
 }
 
-func findImageNameTagInPurl(containerImageNameTags []string, purl string) string {
+func parsePurl(purlStr string) (registry, name, version string, err error) {
+	p, err := purlParser.FromString(purlStr)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	// Split namespace to extract registry
+	// E.g., namespace = "ghcr.io/my-org"
+	namespace := p.Namespace
+	if namespace == "" {
+		registry = "docker.io"
+	} else {
+		nsParts := strings.Split(namespace, "/")
+		if strings.Contains(nsParts[0], ".") {
+			registry = nsParts[0]
+		} else {
+			registry = "docker.io"
+		}
+	}
+
+	name = p.Name
+	version = p.Version
+	return
+}
+
+func findImageNameTagInPurl(containerImageNameTags []string, purlReference string) string {
 	for _, entry := range containerImageNameTags {
-		if strings.Contains(purl, entry) || strings.Contains(entry, purl) {
-			log.Entry().Infof("found image name tag %s in purl %s", entry, purl)
+		if entry == purlReference {
+			log.Entry().Debugf("found image name tag %s in purlReference %s", entry, purlReference)
 			return entry
 		}
 	}
