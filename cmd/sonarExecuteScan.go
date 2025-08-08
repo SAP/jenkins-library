@@ -324,7 +324,7 @@ func isInOptions(config sonarExecuteScanOptions, property string) bool {
 func addJavaBinaries() {
 	pomFiles, err := doublestarGlob(pomXMLPattern)
 	if err != nil {
-		log.Entry().Warnf("failed to glob for pom modules: %v", err)
+		log.Entry().Errorf("failed to glob for pom modules: %v", err)
 		return
 	}
 	var binaries []string

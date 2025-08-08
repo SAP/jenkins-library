@@ -513,15 +513,3 @@ func getSecretReferencePaths(reference *ResourceReference, config map[string]int
 	}
 	return retPaths
 }
-
-func toStringSlice(interfaceSlice []interface{}) []string {
-	retSlice := make([]string, 0, len(interfaceSlice))
-	for _, vRaw := range interfaceSlice {
-		if v, ok := vRaw.(string); ok {
-			retSlice = append(retSlice, v)
-			continue
-		}
-		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
-	}
-	return retSlice
-}
