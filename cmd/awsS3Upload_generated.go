@@ -56,6 +56,17 @@ In case a file is uploaded that is already contained in the S3 bucket, it will b
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.JSONCredentialsAWS)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {

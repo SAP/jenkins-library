@@ -65,9 +65,6 @@ func (service *TaskService) HasFinished() (bool, error) {
 	if result.Task.Status == taskStatusPending || result.Task.Status == taskStatusProcessing {
 		return false, nil
 	}
-	// for _, warning := range result.Task.Warnings {
-	// 	log.Entry().Warnf("Warnings during analysis: %s", warning)
-	// }
 	return true, nil
 }
 
