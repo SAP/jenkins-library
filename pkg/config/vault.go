@@ -177,9 +177,10 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
 			log.Entry().WithField("vaultPath", vaultPath).Debug("Vault secret resolved successfully")
-			if ref.Type == "vaultSecret" {
+			switch ref.Type {
+			case "vaultSecret":
 				config.Config[param.Name] = *secretValue
-			} else if ref.Type == "vaultSecretFile" {
+			case "vaultSecretFile":
 				filePath, err := createTemporarySecretFile(param.Name, *secretValue)
 				if err != nil {
 					log.Entry().WithError(err).Warnf("Couldn't create temporary secret file for '%s'", param.Name)
@@ -191,7 +192,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 		}
 	}
 	if secretValue == nil {
-		log.Entry().Warn("Failed to resolve vault secret from all configured paths")
+		log.Entry().Info("The secret could not be resolved from Vault. Please check if the secret is available via configured paths.")
 	}
 }
 
@@ -512,16 +513,4 @@ func getSecretReferencePaths(reference *ResourceReference, config map[string]int
 		retPaths = append(retPaths, fullPath)
 	}
 	return retPaths
-}
-
-func toStringSlice(interfaceSlice []interface{}) []string {
-	retSlice := make([]string, 0, len(interfaceSlice))
-	for _, vRaw := range interfaceSlice {
-		if v, ok := vRaw.(string); ok {
-			retSlice = append(retSlice, v)
-			continue
-		}
-		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
-	}
-	return retSlice
 }
