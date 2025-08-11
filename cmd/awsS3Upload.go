@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -87,9 +88,9 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bu
 			log.Entry().Infof("Current target path is: '%v'", currentFilePath)
 
 			// Open File
-			currentFile, e := os.Open(currentFilePath)
-			if e != nil {
-				return fmt.Errorf("failed to open file: '%v', error: %w", currentFilePath, e)
+			currentFile, err := os.Open(currentFilePath)
+			if err != nil {
+				return errors.Wrapf(err, "failed to open file: '%v'", currentFilePath)
 			}
 			defer currentFile.Close()
 
@@ -105,13 +106,13 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bu
 
 			// Upload File
 			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
-			_, e = PutFile(context.TODO(), client, inputObject)
-			if e != nil {
-				return fmt.Errorf("failed to upload file '%v', error: %w", currentFilePath, e)
+			_, err = PutFile(context.TODO(), client, inputObject)
+			if err != nil {
+				return errors.Wrapf(err, "failed to upload file '%v'", currentFilePath)
 			}
 
 			log.Entry().Infof("Upload of file '%v' was successful!", currentFilePath)
-			return e
+			return nil
 		}
 		return nil
 	})
