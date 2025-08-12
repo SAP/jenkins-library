@@ -239,7 +239,7 @@ spec:
           Maven deploy flags that will be used when publish is detected.
 
           `Build with optimized goals:`
-          Please note that the default deploy flags are set to skip the main, test and install phases. This is done to optimize the build time and avoid unnecessary steps when the artifacts are already built and installed in the local repository. This optimization is only applicable for users who use deployFlags by default and adding new flags will override the default values.
+          By default, the deploy process skips the main, test, and install Maven goals to reduce build time and avoid redundant executions. If you provide custom deployFlags, manually add the default flags to maintain build optimization unless you override them.
         scope:
           - STEPS
           - STAGES
