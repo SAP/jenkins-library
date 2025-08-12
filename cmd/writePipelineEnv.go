@@ -107,10 +107,10 @@ func handleEncryption(password string, data []byte) ([]byte, error) {
 
 func parseInput(data []byte) (piperenv.CPEMap, error) {
 	commonPipelineEnv := piperenv.CPEMap{}
-	
+
 	// Clean invalid UTF-8 sequences that can cause JSON parsing errors
 	cleanData := piperenv.CleanJSONData(data)
-	
+
 	decoder := json.NewDecoder(bytes.NewReader(cleanData))
 	decoder.UseNumber()
 	if err := decoder.Decode(&commonPipelineEnv); err != nil {
@@ -118,7 +118,6 @@ func parseInput(data []byte) (piperenv.CPEMap, error) {
 	}
 	return commonPipelineEnv, nil
 }
-
 
 func writeOutput(commonPipelineEnv piperenv.CPEMap) (int, error) {
 	rootPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
