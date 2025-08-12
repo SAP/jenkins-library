@@ -19,7 +19,7 @@ func TestCleanJSONDataWritePipeline(t *testing.T) {
 	result := piperenv.CleanJSONData(validData)
 	require.Equal(t, validData, result)
 
-	// Test emoji with valid UTF-8 (should be unchanged)  
+	// Test emoji with valid UTF-8 (should be unchanged)
 	emojiData := []byte(`{"git":{"commitMessage":"🚀 feat: add new feature"}}`)
 	result = piperenv.CleanJSONData(emojiData)
 	require.Equal(t, emojiData, result)
@@ -35,7 +35,7 @@ func TestCleanJSONDataWritePipeline(t *testing.T) {
 	err := json.Unmarshal(result, &parsed)
 	require.NoError(t, err)
 	require.Contains(t, parsed, "git")
-	
+
 	// The control character should be escaped as unicode
 	require.Contains(t, string(result), "\\u0016")
 }
@@ -45,12 +45,12 @@ func TestParseInputWithInvalidUTF8(t *testing.T) {
 
 	// Test parsing JSON with control character
 	invalidJSON := []byte("{\"git\":{\"commitMessage\":\"Test \x16 control char commit\"}}")
-	
+
 	// Should not fail due to control characters
 	cpeMap, err := parseInput(invalidJSON)
 	require.NoError(t, err)
 	require.NotNil(t, cpeMap)
-	
+
 	// Verify we can access the git section
 	if git, ok := cpeMap["git"]; ok {
 		require.NotNil(t, git)
@@ -69,11 +69,11 @@ func TestParseInputWithValidEmoji(t *testing.T) {
 
 	// Test parsing JSON with valid emoji
 	validJSON := []byte(`{"git":{"commitMessage":"🚀 feat: add new feature"}}`)
-	
+
 	cpeMap, err := parseInput(validJSON)
 	require.NoError(t, err)
 	require.NotNil(t, cpeMap)
-	
+
 	// Verify emoji is preserved
 	if git, ok := cpeMap["git"]; ok {
 		if gitMap, ok := git.(map[string]interface{}); ok {
