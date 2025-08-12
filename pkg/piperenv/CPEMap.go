@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -122,7 +123,11 @@ func readFileContent(fullPath string) (string, interface{}, bool, error) {
 	if strings.HasSuffix(fullPath, ".json") {
 		// value is json encoded
 		var value interface{}
-		decoder := json.NewDecoder(bytes.NewReader(fileContent))
+		
+		// Clean invalid UTF-8 sequences that can cause JSON parsing errors
+		cleanContent := CleanJSONData(fileContent)
+		
+		decoder := json.NewDecoder(bytes.NewReader(cleanContent))
 		decoder.UseNumber()
 		err = decoder.Decode(&value)
 		if err != nil {
@@ -134,4 +139,74 @@ func readFileContent(fullPath string) (string, interface{}, bool, error) {
 		toBeEmptied = true
 	}
 	return fileName, string(fileContent), toBeEmptied, nil
+}
+
+// CleanJSONData handles both invalid UTF-8 sequences and JSON control characters that can cause parsing errors
+func CleanJSONData(data []byte) []byte {
+	// First ensure valid UTF-8
+	if !utf8.Valid(data) {
+		data = []byte(strings.ToValidUTF8(string(data), "\uFFFD"))
+	}
+	
+	// Check if it's already valid JSON - if so, return as-is
+	if json.Valid(data) {
+		return data
+	}
+	
+	// If not valid JSON, try to escape control characters in string literals
+	s := string(data)
+	result := strings.Builder{}
+	inString := false
+	escaped := false
+	
+	for _, r := range s {
+		if !inString {
+			result.WriteRune(r)
+			if r == '"' {
+				inString = true
+			}
+			continue
+		}
+		
+		if escaped {
+			result.WriteRune(r)
+			escaped = false
+			continue
+		}
+		
+		if r == '\\' {
+			escaped = true
+			result.WriteRune(r)
+			continue
+		}
+		
+		if r == '"' {
+			inString = false
+			result.WriteRune(r)
+			continue
+		}
+		
+		// Handle control characters (0x00-0x1F) that are invalid in JSON strings
+		if r < 0x20 {
+			switch r {
+			case '\b':
+				result.WriteString("\\b")
+			case '\f':
+				result.WriteString("\\f")
+			case '\n':
+				result.WriteString("\\n")
+			case '\r':
+				result.WriteString("\\r")
+			case '\t':
+				result.WriteString("\\t")
+			default:
+				// Use unicode escape for other control characters
+				result.WriteString(fmt.Sprintf("\\u%04x", int(r)))
+			}
+		} else {
+			result.WriteRune(r)
+		}
+	}
+	
+	return []byte(result.String())
 }
