@@ -77,7 +77,7 @@ func GetVersion(bomFilePath string) string {
 		return ""
 	}
 	return bom.Metadata.Component.Version
-} // UpdateOrInsertPurl updates or inserts the PURL into the parent component of an SBOM
+}
 
 func UpdatePurl(sbomPath string, newPurl string) error {
 	// Open SBOM file
