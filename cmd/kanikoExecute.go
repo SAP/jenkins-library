@@ -460,12 +460,7 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 	pattern := "bom*.xml"
 
 	files, err := filepath.Glob(pattern)
-	if err != nil {
-		log.Entry().Warnf("no sbom files for build not creating build artifact metadata")
-		return nil
-	}
-
-	if len(files) == 0 {
+	if err != nil || len(files) == 0 {
 		log.Entry().Warnf("no sbom files for build not creating build artifact metadata")
 		return nil
 	}
