@@ -366,7 +366,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "This flag enables the use of the supported version 8 of the Detect script instead of default version 10")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "DEPRECATED: This flag enables the use of the supported version 8 of the Detect script instead of default version 10")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "This flag enables the use of the supported version 9 of the Detect script instead of default version 10")
 	cmd.Flags().BoolVar(&stepConfig.ContainerScan, "containerScan", false, "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan")
 
@@ -957,7 +957,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect8"}},
+						Aliases:     []config.Alias{{Name: "detect/useDetect8", Deprecated: true}},
 						Default:     false,
 					},
 					{
