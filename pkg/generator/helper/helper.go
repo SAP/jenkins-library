@@ -35,6 +35,7 @@ type stepInfo struct {
 	Outputs          config.StepOutputs
 	Resources        []config.StepResources
 	Secrets          []config.StepSecrets
+	StepErrors       []config.StepError
 }
 
 // StepGoTemplate ...
@@ -140,6 +141,16 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				return err
 			}
 
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
 
@@ -691,6 +702,7 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			Outputs:          stepData.Spec.Outputs,
 			Resources:        stepData.Spec.Inputs.Resources,
 			Secrets:          stepData.Spec.Inputs.Secrets,
+			StepErrors:       stepData.Metadata.Errors,
 		},
 		err
 }

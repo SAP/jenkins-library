@@ -3,6 +3,10 @@ metadata:
   aliases:
     - name: executeNpm
   description: Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
+  errors:
+    - pattern: "401 Unauthorized.*npm.*pnpm"
+      message: "PNPM authentication failed"
+      category: "authentication"
   longDescription: >
     ### Lock file detection:
 

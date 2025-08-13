@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -99,6 +100,15 @@ var LibraryRepository string
 var LibraryName string
 var logger *logrus.Entry
 var secrets []string
+var stepErrors []StepError
+var lastPatternMatch string
+
+// StepError defines a known error pattern that can be detected in step output
+type StepError struct {
+	Pattern  string `json:"pattern"`
+	Message  string `json:"message,omitempty"`
+	Category string `json:"category,omitempty"`
+}
 
 // Entry returns the logger entry or creates one if none is present.
 func Entry() *logrus.Entry {
@@ -169,6 +179,71 @@ func RegisterSecret(secret string) {
 			secrets = append(secrets, encoded)
 		}
 	}
+}
+
+// SetStepErrors sets the error patterns for the current step
+func SetStepErrors(errors []StepError) {
+	stepErrors = errors
+}
+
+// GetStepErrors returns the current step error patterns
+func GetStepErrors() []StepError {
+	return stepErrors
+}
+
+// setLastPatternMatch stores the most recent pattern match
+func setLastPatternMatch(enhancedMessage string) {
+	lastPatternMatch = enhancedMessage
+}
+
+// getLastPatternMatch returns the most recent pattern match
+func getLastPatternMatch() string {
+	return lastPatternMatch
+}
+
+// checkErrorPatterns checks if the message matches any known error patterns
+// Returns (matched bool, enhancedMessage string)
+func checkErrorPatterns(message string) (bool, string) {
+	errors := GetStepErrors()
+
+	if len(errors) == 0 {
+		return false, ""
+	}
+
+	// Normalize the message for better matching
+	normalizedMessage := strings.TrimSpace(message)
+
+	for _, stepError := range errors {
+		// First try regex matching
+		matched, err := regexp.MatchString(stepError.Pattern, normalizedMessage)
+		if err != nil {
+			// If regex is invalid, try robust substring matching
+			normalizedPattern := strings.TrimSpace(stepError.Pattern)
+			if strings.Contains(normalizedMessage, normalizedPattern) {
+				// Pattern matched - combine custom message with original message
+				enhancedMessage := message
+				if stepError.Message != "" {
+					enhancedMessage = stepError.Message + ": " + message
+				}
+
+				// Store this match for later retrieval
+				setLastPatternMatch(enhancedMessage)
+				return true, enhancedMessage
+			}
+		} else if matched {
+			// Pattern matched - combine custom message with original message
+			enhancedMessage := message
+			if stepError.Message != "" {
+				enhancedMessage = stepError.Message + ": " + message
+			}
+
+			// Store this match for later retrieval
+			setLastPatternMatch(enhancedMessage)
+			return true, enhancedMessage
+		}
+	}
+
+	return false, ""
 }
 
 // FIXME: The one from orchestrator/github_actions.go cannot be reused here because of circular dependency
