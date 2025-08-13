@@ -49,8 +49,11 @@ func (w *logrusWriter) alwaysFlush() {
 	w.buffer.Reset()
 
 	// Check for known error patterns first
-	if matched, errorMsg := checkErrorPatterns(message); matched {
-		w.logger.Error(errorMsg)
+	if matched, noticeMsg := checkErrorPatterns(message); matched {
+		w.logger.Error(message)
+		if noticeMsg != "" {
+			Notice(noticeMsg)
+		}
 		return
 	}
 

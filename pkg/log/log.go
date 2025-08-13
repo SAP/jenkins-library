@@ -170,6 +170,17 @@ func RegisterHook(hook logrus.Hook) {
 	logrus.AddHook(hook)
 }
 
+// Notice logs a notice message
+func Notice(args ...interface{}) {
+	if isGitHubActions() {
+		// Format as GitHub Actions notice
+		message := fmt.Sprint(args...)
+		Entry().Infof("::notice::%s\n", message)
+	} else {
+		Entry().Infof("!tip: %s", args...)
+	}
+}
+
 // RegisterSecret registers a value which should be masked in every log message
 func RegisterSecret(secret string) {
 	if len(secret) > 0 {
@@ -202,7 +213,7 @@ func getLastPatternMatch() string {
 }
 
 // checkErrorPatterns checks if the message matches any known error patterns
-// Returns (matched bool, enhancedMessage string)
+// Returns (matched bool, noticeMessage string)
 func checkErrorPatterns(message string) (bool, string) {
 	errors := GetStepErrors()
 
@@ -220,26 +231,28 @@ func checkErrorPatterns(message string) (bool, string) {
 			// If regex is invalid, try robust substring matching
 			normalizedPattern := strings.TrimSpace(stepError.Pattern)
 			if strings.Contains(normalizedMessage, normalizedPattern) {
-				// Pattern matched - combine custom message with original message
+				// Pattern matched - return notice message
+				noticeMessage := stepError.Message
+
+				// Store combined message for backward compatibility
 				enhancedMessage := message
 				if stepError.Message != "" {
 					enhancedMessage = stepError.Message + ": " + message
 				}
-
-				// Store this match for later retrieval
 				setLastPatternMatch(enhancedMessage)
-				return true, enhancedMessage
+				return true, noticeMessage
 			}
 		} else if matched {
-			// Pattern matched - combine custom message with original message
+			// Pattern matched - return notice message
+			noticeMessage := stepError.Message
+
+			// Store combined message for backward compatibility
 			enhancedMessage := message
 			if stepError.Message != "" {
 				enhancedMessage = stepError.Message + ": " + message
 			}
-
-			// Store this match for later retrieval
 			setLastPatternMatch(enhancedMessage)
-			return true, enhancedMessage
+			return true, noticeMessage
 		}
 	}
 
