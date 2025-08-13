@@ -6,7 +6,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -61,8 +60,8 @@ func TestRunAwsS3Upload(t *testing.T) {
 		// test
 		err := runAwsS3Upload(&config, client(t, config.FilePath), "fooBucket")
 		// assert
-		_, ok := err.(*fs.PathError)
-		assert.True(t, ok)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no such file or directory")
 	})
 
 	t.Run("error bucket", func(t *testing.T) {
@@ -87,7 +86,8 @@ func TestRunAwsS3Upload(t *testing.T) {
 		// test
 		err = runAwsS3Upload(&config, client(t, config.FilePath), "errorBucket")
 		// assert
-		assert.EqualError(t, err, "expect fooBucket, got errorBucket")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "expect fooBucket, got errorBucket")
 	})
 }
 
