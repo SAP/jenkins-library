@@ -151,6 +151,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				}
 			}
 			log.SetStepErrors(stepErrors)
+
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
 
@@ -285,6 +286,17 @@ func {{ .StepName }}Metadata() config.StepData {
 			Name:    {{ .StepName | quote }},
 			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: {{ $alias.Name | quote }}, Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
 			Description: {{ .Short | quote }},
+{{- if .StepErrors }}
+			Errors: []config.StepError{
+				{{- range $error := .StepErrors }}
+				{
+					Pattern:  {{ $error.Pattern | quote }},
+					Message:  {{ $error.Message | quote }},
+					Category: {{ $error.Category | quote }},
+				},
+				{{- end }}
+			},
+{{- end }}
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
