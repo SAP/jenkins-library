@@ -116,8 +116,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	}
 
 	if err = utils.UpdateSecretInStore(config, newSecretID); err != nil {
-		log.Entry().WithError(err).Warnf("Could not write secret back to secret store %s", config.SecretStore)
-		return err
+		return fmt.Errorf("could not write secret back to secret store %s: %w", config.SecretStore, err)
 	}
 
 	log.Entry().Infof("Secret has been successfully updated in secret store %s", config.SecretStore)
@@ -160,26 +159,22 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 
 		ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: GitHub client not created: %v", err)
-			return err
+			return fmt.Errorf("could not create GitHub client: %w", err)
 		}
 
 		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.Owner, config.Repository)
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: repository's public key not retrieved: %v", err)
-			return err
+			return fmt.Errorf("could not retrieve repository's public key: %w", err)
 		}
 
 		encryptedSecret, err := piperGithub.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: secret encryption failed: %v", err)
-			return err
+			return fmt.Errorf("could not encrypt secret ID: %w", err)
 		}
 
 		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.Owner, config.Repository, encryptedSecret)
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: submission to GitHub failed: %v", err)
-			return err
+			return fmt.Errorf("could not write secret ID back to GitHub Actions: submission to GitHub failed: %w", err)
 		}
 	default:
 		return fmt.Errorf("error: invalid secret store: %s", config.SecretStore)

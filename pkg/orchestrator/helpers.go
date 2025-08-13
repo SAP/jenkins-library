@@ -1,8 +1,9 @@
 package orchestrator
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // envVarsAreSet verifies if any envvar from the list has nona non-empty, non-false value
