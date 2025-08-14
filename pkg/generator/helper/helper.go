@@ -35,6 +35,7 @@ type stepInfo struct {
 	Outputs          config.StepOutputs
 	Resources        []config.StepResources
 	Secrets          []config.StepSecrets
+	StepErrors       []config.StepError
 }
 
 // StepGoTemplate ...
@@ -139,6 +140,17 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
@@ -274,6 +286,17 @@ func {{ .StepName }}Metadata() config.StepData {
 			Name:    {{ .StepName | quote }},
 			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: {{ $alias.Name | quote }}, Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
 			Description: {{ .Short | quote }},
+{{- if .StepErrors }}
+			Errors: []config.StepError{
+				{{- range $error := .StepErrors }}
+				{
+					Pattern:  {{ $error.Pattern | quote }},
+					Message:  {{ $error.Message | quote }},
+					Category: {{ $error.Category | quote }},
+				},
+				{{- end }}
+			},
+{{- end }}
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -691,6 +714,7 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			Outputs:          stepData.Spec.Outputs,
 			Resources:        stepData.Spec.Inputs.Resources,
 			Secrets:          stepData.Spec.Inputs.Secrets,
+			StepErrors:       stepData.Metadata.Errors,
 		},
 		err
 }

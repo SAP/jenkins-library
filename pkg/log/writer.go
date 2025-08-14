@@ -47,6 +47,16 @@ func (w *logrusWriter) Write(buffer []byte) (int, error) {
 func (w *logrusWriter) alwaysFlush() {
 	message := w.buffer.String()
 	w.buffer.Reset()
+
+	// Check for known error patterns first
+	if matched, noticeMsg := checkErrorPatterns(message); matched {
+		w.logger.Error(message)
+		if noticeMsg != "" {
+			Notice(noticeMsg)
+		}
+		return
+	}
+
 	// Align level with underlying tool (like maven or npm)
 	// This is to avoid confusion when maven or npm print errors or warnings which piper would print as "info"
 	if strings.Contains(message, "ERROR") || strings.Contains(message, "ERR!") {

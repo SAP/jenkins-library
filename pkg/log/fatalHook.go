@@ -29,7 +29,12 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 		details = logrus.Fields{}
 	}
 
-	details["message"] = entry.Message
+	// Check for recent pattern matches first, then fall back to entry message
+	if lastMatch := getLastPatternMatch(); lastMatch != "" {
+		details["message"] = lastMatch
+	} else {
+		details["message"] = entry.Message
+	}
 	details["error"] = fmt.Sprint(details["error"])
 	details["category"] = GetErrorCategory().String()
 	details["result"] = "failure"
@@ -43,8 +48,9 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 	filePath := filepath.Join(f.Path, fileName)
 	errDetails, _ := json.Marshal(&details)
-	// Logging information needed for error reporting -  do not modify.
-	Entry().Infof("fatal error: errorDetails%v", string(errDetails))
+
+	Entry().Infof("FATAL: %v", string(errDetails))
+
 	// Sets the fatal error details in the logging framework to be consumed in the stepTelemetryData
 	SetFatalErrorDetail(errDetails)
 	_, err := os.ReadFile(filePath)

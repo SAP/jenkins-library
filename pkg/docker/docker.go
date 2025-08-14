@@ -50,7 +50,7 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 
 	var targetConfig *configfile.ConfigFile
 	if exists, _ := utils.FileExists(targetPath); !exists {
-		log.Entry().Warnf("target dockerConfigJSON file %q does not exist, creating a new one", sourcePath)
+		log.Entry().Infof("target dockerConfigJSON file %q does not exist, creating a new one", sourcePath)
 		targetConfig = configfile.New(targetPath)
 	} else {
 		targetReader, err := utils.Open(targetPath)

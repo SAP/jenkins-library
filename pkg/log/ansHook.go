@@ -2,11 +2,12 @@ package log
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"os"
-	"strings"
 )
 
 // ANSHook is used to set the hook features for the logrus hook
@@ -122,7 +123,6 @@ func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event,
 
 	if len(customerEventTemplate) > 0 {
 		if err := event.MergeWithJSON([]byte(customerEventTemplate)); err != nil {
-			Entry().WithField("stepName", "ANS").Warnf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %v", customerEventTemplate, err)
 			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", customerEventTemplate)
 		}
 	}
