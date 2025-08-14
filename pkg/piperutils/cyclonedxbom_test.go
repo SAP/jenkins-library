@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func createTempFile(t *testing.T, content string) (string, func()) {
@@ -21,6 +23,8 @@ func createTempFile(t *testing.T, content string) (string, func()) {
 const validBom = `<bom>
 			<metadata>
 				<component>
+					<name>com.example/mycomponent</name>
+					<version>1.0.0</version>
 					<purl>pkg:maven/com.example/mycomponent@1.0.0</purl>
 				</component>
 				<properties>
@@ -143,6 +147,113 @@ func TestGetPurl(t *testing.T) {
 				filePath = "nonexistent.xml"
 			}
 
+			purl := GetPurl(filePath)
+			if purl != tt.expectedPurl {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedPurl, purl)
+			}
+		})
+	}
+}
+
+func TestGetBOMName(t *testing.T) {
+	tests := []struct {
+		name         string
+		filePath     string
+		bomFilename  string
+		xmlContent   string
+		expectedName string
+	}{
+		{
+			name:         "valid BOM file",
+			xmlContent:   validBom,
+			expectedName: "com.example/mycomponent",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			name := GetName(filePath)
+			if name != tt.expectedName {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedName, name)
+			}
+		})
+	}
+}
+
+func TestGetBOMVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		filePath        string
+		bomFilename     string
+		xmlContent      string
+		expectedVersion string
+	}{
+		{
+			name:            "valid BOM file",
+			xmlContent:      validBom,
+			expectedVersion: "1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			version := GetVersion(filePath)
+			if version != tt.expectedVersion {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedVersion, version)
+			}
+		})
+	}
+}
+
+func TestUpdateBOMPurl(t *testing.T) {
+	tests := []struct {
+		name         string
+		filePath     string
+		bomFilename  string
+		xmlContent   string
+		expectedPurl string
+	}{
+		{
+			name:         "valid BOM file",
+			xmlContent:   validBom,
+			expectedPurl: "pkg:maven/com.example/mycomponent@1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			err := UpdatePurl(filePath, "pkg:maven/com.example/mycomponent@1.0.0")
+			require.NoError(t, err)
 			purl := GetPurl(filePath)
 			if purl != tt.expectedPurl {
 				t.Errorf("Expected PURL: %v, got: %v", tt.expectedPurl, purl)
