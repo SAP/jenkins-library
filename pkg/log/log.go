@@ -175,9 +175,9 @@ func Notice(args ...interface{}) {
 	if isGitHubActions() {
 		// Format as GitHub Actions notice
 		message := fmt.Sprint(args...)
-		Entry().Infof("::notice::%s\n", message)
+		Entry().Infof("::notice::💡 %s\n", message)
 	} else {
-		Entry().Infof("!tip: %s", args...)
+		Entry().Infof("💡 %s", args...)
 	}
 }
 
