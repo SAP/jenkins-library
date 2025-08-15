@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"os"
 
 	"github.com/pkg/errors"
 
@@ -186,15 +186,22 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		if len(scope) > 0 && useScopedRegistry {
-			// if the package has a scope, we need to use the scoped registry by using npm login, e.g.: npm login --registry=http://reg.example.com --scope=@myco
-			log.Entry().Debugf("publishing package with scope %s using scoped registry", scope)
+		if len(scope) > 0 && useScopedRegistry && registry == getScopedRegistryFromNpmrc(npmrcPath, scope) {
+			// Use scope only if registry matches the scoped registry
 			err = execRunner.RunExecutable("npm", "login",
 				"--userconfig", ".piperNpmrc",
 				"--registry", registry,
 				fmt.Sprintf("--scope=%s", scope))
 			if err != nil {
 				return errors.Wrap(err, "failed logging into scoped registry")
+			}
+		} else {
+			// No scope for generic registry
+			err = execRunner.RunExecutable("npm", "login",
+				"--userconfig", ".piperNpmrc",
+				"--registry", registry)
+			if err != nil {
+				return errors.Wrap(err, "failed logging into registry")
 			}
 		}
 		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
@@ -285,4 +292,21 @@ func hasScopedRegistry(npmrcPath, scope string) bool {
 		}
 	}
 	return false
+}
+
+func getScopedRegistryFromNpmrc(npmrcPath, scope string) string {
+	file, err := os.Open(npmrcPath)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scopedRegistryLine := fmt.Sprintf("%s:registry=", scope)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, scopedRegistryLine) {
+			return strings.TrimPrefix(line, scopedRegistryLine)
+		}
+	}
+	return ""
 }
