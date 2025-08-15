@@ -3,6 +3,7 @@ package splunk
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -110,6 +111,18 @@ func readCommonPipelineEnvironment(filePath string) string {
 }
 
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
+	var errorMessage string
+
+	if telemetryData.CustomData.ErrorCode != "0" {
+		if fatalErrorDetail := log.GetFatalErrorDetail(); fatalErrorDetail != nil {
+			var errorDetail map[string]any
+			if err := json.Unmarshal(fatalErrorDetail, &errorDetail); err == nil {
+				if errorVal, exists := errorDetail["error"]; exists && errorVal != nil {
+					errorMessage = fmt.Sprintf("%v", errorVal)
+				}
+			}
+		}
+	}
 
 	monitoringData := MonitoringData{
 		PipelineUrlHash: telemetryData.PipelineURLHash,
@@ -123,6 +136,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		Duration:        telemetryData.CustomData.Duration,
 		ErrorCode:       telemetryData.CustomData.ErrorCode,
 		ErrorCategory:   telemetryData.CustomData.ErrorCategory,
+		ErrorMessage:    errorMessage,
 		CorrelationID:   s.correlationID,
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
