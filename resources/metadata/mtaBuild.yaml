@@ -272,4 +272,4 @@ spec:
           - filePattern: "**/jacoco.xml"
             type: jacoco-coverage
   containers:
-    - image: devxci/mbtci-java11-node14
+    - image: devxci/mbtci-java21-node22
