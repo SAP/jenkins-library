@@ -1,11 +1,13 @@
 package npm
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -63,6 +65,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	if err != nil {
 		return errors.Wrapf(err, "error reading package scope from %s", packageJSON)
 	}
+
+	npmrcPath := filepath.Join(filepath.Dir(packageJSON), ".npmrc")
+	useScopedRegistry := hasScopedRegistry(npmrcPath, scope)
 
 	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
 	if exists, err := exec.Utils.FileExists(npmignore.filepath); exists {
@@ -181,9 +186,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		}
 
-		if len(scope) > 0 {
+		if len(scope) > 0 && useScopedRegistry {
 			// if the package has a scope, we need to use the scoped registry by using npm login, e.g.: npm login --registry=http://reg.example.com --scope=@myco
-			log.Entry().Debugf("publishing package with scope %s", scope)
+			log.Entry().Debugf("publishing package with scope %s using scoped registry", scope)
 			err = execRunner.RunExecutable("npm", "login",
 				"--userconfig", ".piperNpmrc",
 				"--registry", registry,
@@ -192,7 +197,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 				return errors.Wrap(err, "failed logging into scoped registry")
 			}
 		}
-
 		err = execRunner.RunExecutable("npm", "publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry)
 		// if len(scope) > 0 {
 		// 	err = execRunner.RunExecutable("npm", "publish",
@@ -261,4 +265,24 @@ func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
 	json.Unmarshal(b, &pd)
 
 	return pd.Scope(), nil
+}
+
+// Checks if .npmrc contains a scoped registry for the given scope
+func hasScopedRegistry(npmrcPath, scope string) bool {
+	if len(scope) == 0 {
+		return false
+	}
+	file, err := os.Open(npmrcPath)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scopedRegistryLine := fmt.Sprintf("%s:registry=", scope)
+	for scanner.Scan() {
+		if strings.HasPrefix(scanner.Text(), scopedRegistryLine) {
+			return true
+		}
+	}
+	return false
 }
