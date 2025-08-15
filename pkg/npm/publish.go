@@ -188,7 +188,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		if len(scope) > 0 && useScopedRegistry && registry == getScopedRegistryFromNpmrc(npmrcPath, scope) {
 			// Use scope only if registry matches the scoped registry
-			log.Entry().Debug("found scope, scoped registry and they match")
+			log.Entry().Debugf("found scope %s, scoped registry %s and they match %s", scope, registry)
 			err = execRunner.RunExecutable("npm", "login",
 				"--userconfig", ".piperNpmrc",
 				"--registry", registry,
@@ -198,6 +198,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			}
 		} else {
 			// No scope for generic registry
+			log.Entry().Infof("found unscoped registry, %s", registry)
 			err = execRunner.RunExecutable("npm", "login",
 				"--userconfig", ".piperNpmrc",
 				"--registry", registry)
