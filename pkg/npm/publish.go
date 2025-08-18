@@ -132,7 +132,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			// printing registry and credentials that added
 			log.Entry().Debugf("Added: registry %s, user %s", registry, username)
 			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
-			npmrc.Set("always-auth", "true")err := npmrc.Load()
+			npmrc.Set("always-auth", "true")
+			err := npmrc.Load()
 			if err != nil {
 			    fmt.Printf("Failed to load npmrc file: %v\n", err)
 			} else {
