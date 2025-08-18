@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -79,18 +80,16 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bu
 	err := filepath.Walk(configOptions.FilePath, func(currentFilePath string, f os.FileInfo, err error) error {
 		// Handle Failure to prevent panic (e.g. in case of an invalid filepath)
 		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to access path: '%v'", currentFilePath)
-			return err
+			return fmt.Errorf("failed to access path: '%v', error: %w", currentFilePath, err)
 		}
 		// Skip directories, only upload files
 		if !f.IsDir() {
 			log.Entry().Infof("Current target path is: '%v'", currentFilePath)
 
 			// Open File
-			currentFile, e := os.Open(currentFilePath)
-			if e != nil {
-				log.Entry().WithError(e).Warnf("Could not open the file '%s'", currentFilePath)
-				return e
+			currentFile, err := os.Open(currentFilePath)
+			if err != nil {
+				return fmt.Errorf("failed to open file: '%v', error: %w", currentFilePath, err)
 			}
 			defer currentFile.Close()
 
@@ -106,14 +105,13 @@ func runAwsS3Upload(configOptions *awsS3UploadOptions, client S3PutObjectAPI, bu
 
 			// Upload File
 			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
-			_, e = PutFile(context.TODO(), client, inputObject)
-			if e != nil {
-				log.Entry().WithError(e).Warnf("There was an error during the upload of file '%v'", currentFilePath)
-				return e
+			_, err = PutFile(context.TODO(), client, inputObject)
+			if err != nil {
+				return fmt.Errorf("failed to upload file '%v', error: %w", currentFilePath, err)
 			}
 
 			log.Entry().Infof("Upload of file '%v' was successful!", currentFilePath)
-			return e
+			return nil
 		}
 		return nil
 	})
