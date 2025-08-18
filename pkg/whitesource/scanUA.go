@@ -226,7 +226,6 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 			if strings.Contains(err.Error(), "unable to copy content from url to file") || strings.Contains(err.Error(), "returned with response 404 Not Found") || strings.Contains(err.Error(), "returned with response 403 Forbidden") {
 				// retry the download once again
 				log.Entry().Warnf("[Retry] Previous download failed due to %v", err)
-				err = nil // reset error to nil
 				err = utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 			}
 		}
