@@ -115,7 +115,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			log.Entry().Debugf("creating new npmrc file at %s", npmrc.filepath)
 		}
 		// set registry
-		log.Entry().Debugf("adding registry %s", registry)
+		log.Entry().Debugf("adding registry 123 %s", registry)
 		npmrc.Set("registry", registry)
 
 		if len(scope) > 0 {
@@ -124,7 +124,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
-			log.Entry().Debug("adding registry credentials")
+			log.Entry().Debug("adding registry 123 credentials")
 			log.Entry().Debug("new line to check version")
 			// See https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
 			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
