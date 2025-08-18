@@ -51,6 +51,9 @@ func TestTmsExportIntegrationBinFailDescription(t *testing.T) {
 		"--customDescription={Bad description}")
 
 	assert.Error(t, err, "Did expect error")
+	// Temporarily log the actual output to see what we're getting
+	buffer, _ := container.getPiperOutput()
+	t.Logf("Actual output: %s", buffer.String())
 	container.assertHasOutput(t, "HTTP request failed with error")
 	container.assertHasOutput(t, "Failed to run tmsExport - failed to export file to node")
 }
