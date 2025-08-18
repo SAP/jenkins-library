@@ -117,7 +117,7 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 		"--customDescription={Bad description}")
 
 	assert.Error(t, err, "Did expect error")
-	container.assertHasOutput(t, "error tmsUpload - HTTP request failed with error")
+	container.assertHasOutput(t, "HTTP request failed with error")
 	container.assertHasOutput(t, "Failed to run tmsUpload step - failed to upload file to node")
 }
 
