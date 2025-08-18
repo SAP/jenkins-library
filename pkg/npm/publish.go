@@ -129,7 +129,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
 			// is no longer supported and will throw errors
 			// printing registry and credentials that added
-			log.Entry().Infof("Added: registry %s, user %s", registry, username)
+			log.Entry().Debugf("Added: registry %s, user %s", registry, username)
 			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
 			npmrc.Set("always-auth", "true")
 		}
