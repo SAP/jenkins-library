@@ -3,6 +3,25 @@ metadata:
   aliases:
     - name: executeNpm
   description: Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.
+  errors:
+    - pattern: "npm error code E401"
+      # message: "NPM authentication failed. Check your credentials or token."
+      category: "authentication"
+    - pattern: "npm error Incorrect or missing password"
+      message: "NPM authentication failed. Your password or token is incorrect."
+      category: "authentication"
+    - pattern: "npm error 404.*Not Found"
+      message: "NPM package not found. Check package name and registry."
+      category: "dependency"
+    - pattern: "npm error ENOTFOUND"
+      message: "NPM registry not reachable. Check network connection and registry URL."
+      category: "network"
+    - pattern: "npm error EACCES"
+      message: "NPM permission denied. Check file permissions or registry access rights."
+      category: "permission"
+    - pattern: "ERR_PNPM_FETCH_401"
+      message: "PNPM authentication failed. Check your credentials or token."
+      category: "authentication"
   longDescription: >
     ### Lock file detection:
 

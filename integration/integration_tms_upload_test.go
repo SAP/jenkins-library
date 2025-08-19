@@ -118,7 +118,8 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 
 	assert.Error(t, err, "Did expect error")
 	container.assertHasOutput(t, "error tmsUpload - HTTP request failed with error")
-	container.assertHasOutput(t, "Failed to run tmsUpload step - failed to upload file to node")
+	container.assertHasOutput(t, "Failed to run tmsUpload step")
+	container.assertHasOutput(t, "failed to upload file to node")
 }
 
 func TestTmsUploadIntegrationYaml(t *testing.T) {
