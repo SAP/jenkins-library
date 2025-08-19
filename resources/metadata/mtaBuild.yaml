@@ -3,9 +3,11 @@ metadata:
   description: Performs an mta build
   longDescription: |
     Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
-    ### build with depedencies from a private repository
-    1. For maven related settings refer [maven build dependencies](./mavenBuild.md#build-with-depedencies-from-a-private-repository)
-    2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-depedencies-from-a-private-repository)
+
+    ### build with dependencies from a private repository
+
+    1. For Maven related settings refer [Maven build dependencies](./mavenBuild.md#build-with-dependencies-from-a-private-repository)
+    2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-private-dependencies-from-a-repository)
 spec:
   inputs:
     params:
@@ -170,7 +172,7 @@ spec:
             param: custom/repositoryPassword
           - type: vaultSecretFile
             name: mtaDeploymentRepositoryPasswordFileVaultSecretName
-            default: mta-deployment-repository-passowrd
+            default: mta-deployment-repository-password
       - name: mtaDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which which mtar artifacts will be publised
@@ -270,4 +272,4 @@ spec:
           - filePattern: "**/jacoco.xml"
             type: jacoco-coverage
   containers:
-    - image: devxci/mbtci-java11-node14
+    - image: devxci/mbtci-java21-node22

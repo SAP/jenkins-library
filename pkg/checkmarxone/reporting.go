@@ -94,6 +94,13 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 		WithCounter: false,
 	}
 	detailRows := []reporting.OverviewRow{
+		{Description: "Critical issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["Issues"])},
+		{Description: "Critical not false positive issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["NotFalsePositive"])},
+		{Description: "Critical not exploitable issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["NotExploitable"])},
+		{Description: "Critical confirmed issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["Confirmed"])},
+		{Description: "Critical urgent issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["Urgent"])},
+		{Description: "Critical proposed not exploitable issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["ProposedNotExploitable"])},
+		{Description: "Critical to verify issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["ToVerify"])},
 		{Description: "High issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["Issues"])},
 		{Description: "High not false positive issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["NotFalsePositive"])},
 		{Description: "High not exploitable issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["NotExploitable"])},
@@ -152,6 +159,13 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 	}
 
 	findings := []Finding{}
+	// Critical
+	criticalFindings := Finding{}
+	criticalFindings.ClassificationName = "Critical"
+	criticalFindings.Total = (*data)["Critical"].(map[string]int)["Issues"]
+	criticalAudited := (*data)["Critical"].(map[string]int)["Issues"] - (*data)["Critical"].(map[string]int)["NotFalsePositive"]
+	criticalFindings.Audited = &criticalAudited
+	findings = append(findings, criticalFindings)
 	// High
 	highFindings := Finding{}
 	highFindings.ClassificationName = "High"

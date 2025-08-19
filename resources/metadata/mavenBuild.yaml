@@ -9,7 +9,8 @@ metadata:
     It will also prepare jacoco to record the code coverage and
     supports ci friendly versioning by flattening the pom before installing.
 
-    ### build with depedencies from a private repository
+    ### build with dependencies from a private repository
+
     if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the `<url>`
     tag with a valid private repo url).
     ```xml
@@ -157,7 +158,7 @@ spec:
             type: secret
           - type: vaultSecretFile
             name: altDeploymentRepositoryPasswordFileVaultSecretName
-            default: alt-deployment-repository-passowrd
+            default: alt-deployment-repository-password
       - name: altDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
@@ -234,6 +235,11 @@ spec:
       - name: deployFlags
         type: "[]string"
         description: maven deploy flags that will be used when publish is detected.
+        longDescription: |
+          Maven deploy flags that will be used when publish is detected.
+
+          `Build with optimized goals:`
+          By default, the deploy process skips the main, test, and install Maven goals to reduce build time and avoid redundant executions. If you provide custom deployFlags, manually add the default flags to maintain build optimization unless you override them.
         scope:
           - STEPS
           - STAGES
@@ -270,4 +276,4 @@ spec:
             type: jacoco-coverage
   containers:
     - name: mvn
-      image: maven:3.6-jdk-8
+      image: maven:3.8-jdk-8

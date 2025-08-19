@@ -327,9 +327,17 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: vulnerabilityThresholdCritical
+        type: int
+        description: The specific threshold for Critical severity findings
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 100
       - name: vulnerabilityThresholdHigh
         type: int
-        description: The specific threshold for high severity findings
+        description: The specific threshold for High severity findings
         scope:
           - PARAMETERS
           - STAGES
@@ -337,7 +345,7 @@ spec:
         default: 100
       - name: vulnerabilityThresholdMedium
         type: int
-        description: The specific threshold for medium severity findings
+        description: The specific threshold for Medium severity findings
         scope:
           - PARAMETERS
           - STAGES
@@ -345,7 +353,7 @@ spec:
         default: 100
       - name: vulnerabilityThresholdLow
         type: int
-        description: The specific threshold for low severity findings
+        description: The specific threshold for Low severity findings
         scope:
           - PARAMETERS
           - STAGES
@@ -353,7 +361,7 @@ spec:
         default: 10
       - name: vulnerabilityThresholdLowPerQuery
         type: bool
-        description: Flag to activate/deactivate the threshold of low severity findings per query
+        description: Flag to activate/deactivate the threshold of Low severity findings per query
         scope:
           - PARAMETERS
           - STAGES
@@ -361,7 +369,7 @@ spec:
         default: false
       - name: vulnerabilityThresholdLowPerQueryMax
         type: int
-        description: Upper threshold of low severity findings per query (in absolute number)
+        description: Upper threshold of Low severity findings per query (in absolute number)
         scope:
           - PARAMETERS
           - STAGES
@@ -427,6 +435,20 @@ spec:
                 type: bool
           - name: checkmarxOne_data
             fields:
+              - name: critical_issues
+                type: int
+              - name: critical_not_false_postive
+                type: int
+              - name: critical_not_exploitable
+                type: int
+              - name: critical_confirmed
+                type: int
+              - name: critical_urgent
+                type: int
+              - name: critical_proposed_not_exploitable
+                type: int
+              - name: critical_to_verify
+                type: int
               - name: high_issues
                 type: int
               - name: high_not_false_postive

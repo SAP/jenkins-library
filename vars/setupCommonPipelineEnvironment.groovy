@@ -271,7 +271,7 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
         }
     }
 
-    if (!gitBranch.contains("PR")) {
+    if (!gitBranch.startsWith("PR-")) {
         if (gitBranch.startsWith("refs/") ){
             script.commonPipelineEnvironment.setGitRef(gitBranch)
         } else {

@@ -9,23 +9,27 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-const (
-	npmBomFilename                 = "bom-npm.xml"
-	cycloneDxNpmPackageVersion     = "@cyclonedx/cyclonedx-npm@1.11.0"
-	cycloneDxBomPackageVersion     = "@cyclonedx/bom@^3.10.6"
-	cycloneDxNpmInstallationFolder = "./tmp" // This folder is also added to npmignore in publish.go.Any changes to this folder needs a change in publish.go publish()
-	cycloneDxSchemaVersion         = "1.4"
-)
+const tmpInstallFolder = "./tmp" // This folder is also added to npmignore in publish.go
 
 // Execute struct holds utils to enable mocking and common parameters
 type Execute struct {
-	Utils   Utils
-	Options ExecutorOptions
+	Utils     Utils
+	Options   ExecutorOptions
+	pnpmSetup pnpmSetupState
+}
+
+// pnpmSetupState holds the cached pnpm installation state
+type pnpmSetupState struct {
+	checked   bool
+	installed bool
+	command   string
+	rootDir   string
 }
 
 // Executor interface to enable mocking for testing
@@ -44,14 +48,26 @@ type Executor interface {
 type ExecutorOptions struct {
 	DefaultNpmRegistry string
 	ExecRunner         ExecRunner
+	PnpmVersion        string
 }
 
 // NewExecutor instantiates Execute struct and sets executeOptions
 func NewExecutor(executorOptions ExecutorOptions) Executor {
-	utils := utilsBundle{Files: &piperutils.Files{}, execRunner: executorOptions.ExecRunner}
+	utils := utilsBundle{
+		Files:          &piperutils.Files{},
+		execRunner:     executorOptions.ExecRunner,
+		downloadClient: &piperhttp.Client{},
+	}
+
+	// Capture the root directory at initialization time
+	rootDir, _ := utils.Getwd()
+
 	return &Execute{
 		Utils:   &utils,
 		Options: executorOptions,
+		pnpmSetup: pnpmSetupState{
+			rootDir: rootDir,
+		},
 	}
 }
 
@@ -69,11 +85,25 @@ type Utils interface {
 	piperutils.FileUtils
 
 	GetExecRunner() ExecRunner
+	GetFileUtils() piperutils.FileUtils
+	GetDownloadUtils() piperhttp.Downloader
 }
 
 type utilsBundle struct {
 	*piperutils.Files
-	execRunner ExecRunner
+	execRunner     ExecRunner
+	downloadClient piperhttp.Downloader
+}
+
+func (u *utilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.Files
+}
+
+func (u *utilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	if u.downloadClient == nil {
+		u.downloadClient = &piperhttp.Client{}
+	}
+	return u.downloadClient
 }
 
 // GetExecRunner returns an execRunner if it's not yet initialized
@@ -133,6 +163,7 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 
 	if len(packagesList) > 0 {
 		packageJSONFiles = packagesList
+		log.Entry().Infof("Using provided package-list: %s", strings.Join(packageJSONFiles, ", "))
 	} else {
 		packageJSONFiles, err = exec.FindPackageJSONFilesWithExcludes(excludeList)
 		if err != nil {
@@ -227,7 +258,8 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 
 	nodeModulesExclude := "**/node_modules/**"
 	genExclude := "**/gen/**"
-	excludeList = append(excludeList, nodeModulesExclude, genExclude)
+	tmpExclude := "**/tmp/**"
+	excludeList = append(excludeList, nodeModulesExclude, genExclude, tmpExclude)
 
 	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
 	if err != nil {
@@ -288,7 +320,7 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 	return nil
 }
 
-// install executes npm or yarn Install for package.json
+// install executes the appropriate package manager install command for package.json
 func (exec *Execute) install(packageJSON string) error {
 	execRunner := exec.Utils.GetExecRunner()
 
@@ -308,111 +340,25 @@ func (exec *Execute) install(packageJSON string) error {
 		return err
 	}
 
-	packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
+	pm, err := exec.detectPackageManager()
 	if err != nil {
 		return err
 	}
 
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
-	if packageLockExists {
-		err = execRunner.RunExecutable("npm", "ci")
-		if err != nil {
-			return err
-		}
-	} else if yarnLockExists {
-		err = execRunner.RunExecutable("yarn", "install", "--frozen-lockfile")
-		if err != nil {
-			return err
-		}
-	} else {
-		log.Entry().Warn("No package lock file found. " +
-			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
-			" Add this file to your version control. " +
-			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
-		if err != nil {
-			return err
-		}
+
+	if !strings.HasPrefix(pm.LockFile, "package-lock.json") {
+		log.Entry().Info("Using " + pm.Name + " package manager")
+	}
+
+	err = execRunner.RunExecutable(pm.InstallCommand, pm.InstallArgs...)
+	if err != nil {
+		return err
 	}
 
 	err = exec.Utils.Chdir(oldWorkingDirectory)
 	if err != nil {
 		return fmt.Errorf("failed to change back into original directory: %w", err)
 	}
-	return nil
-}
-
-// checkIfLockFilesExist checks if yarn/package lock fileUtils exist
-func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
-	packageLockExists, err := exec.Utils.FileExists("package-lock.json")
-	if err != nil {
-		return false, false, err
-	}
-
-	yarnLockExists, err := exec.Utils.FileExists("yarn.lock")
-	if err != nil {
-		return false, false, err
-	}
-	return packageLockExists, yarnLockExists, nil
-}
-
-// CreateBOM generates BOM file using CycloneDX from all package.json files
-func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
-	// Install cyclonedx-npm in a new folder (to avoid extraneous errors) and generate BOM
-	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", cycloneDxNpmInstallationFolder}
-	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
-
-	// Install cyclonedx/bom with --nosave and generate BOM.
-	cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
-	cycloneDxBomRunParams := []string{"cyclonedx-bom", "--output"}
-
-	// Attempt#1, generate BOM via cyclonedx-npm
-	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles, false)
-	if err != nil {
-
-		log.Entry().Infof("Failed to generate BOM CycloneDX BOM with cyclonedx-npm ,fallback to cyclonedx/bom")
-
-		// Attempt #2, generate BOM via cyclonedx/bom@^3.10.6
-		err = exec.createBOMWithParams(cycloneDxBomInstallParams, cycloneDxBomRunParams, packageJSONFiles, true)
-		if err != nil {
-			log.Entry().Infof("Failed to generate BOM CycloneDX BOM with fallback package cyclonedx/bom ")
-			return err
-		}
-	}
-	return nil
-}
-
-// Facilitates BOM generation with different packages
-func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageRunParams []string, packageJSONFiles []string, fallback bool) error {
-	execRunner := exec.Utils.GetExecRunner()
-
-	// Install package
-	err := execRunner.RunExecutable("npm", packageInstallParams...)
-	if err != nil {
-		return fmt.Errorf("failed to install CycloneDX BOM %w", err)
-	}
-
-	// Run package for all package JSON files
-	if len(packageJSONFiles) > 0 {
-		for _, packageJSONFile := range packageJSONFiles {
-			path := filepath.Dir(packageJSONFile)
-			executable := "npx"
-			params := append(packageRunParams, filepath.Join(path, npmBomFilename))
-
-			// Below code needed as to adjust according to needs of cyclonedx-npm and fallback cyclonedx/bom@^3.10.6
-			if !fallback {
-				params = append(params, packageJSONFile)
-				executable = cycloneDxNpmInstallationFolder + "/node_modules/.bin/cyclonedx-npm"
-			} else {
-				params = append(params, path)
-			}
-
-			err := execRunner.RunExecutable(executable, params...)
-			if err != nil {
-				return fmt.Errorf("failed to generate CycloneDX BOM :%w", err)
-			}
-		}
-	}
-
 	return nil
 }

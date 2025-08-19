@@ -20,6 +20,7 @@ type githubPublishReleaseOptions struct {
 	AddClosedIssues       bool     `json:"addClosedIssues,omitempty"`
 	AddDeltaToLastRelease bool     `json:"addDeltaToLastRelease,omitempty"`
 	APIURL                string   `json:"apiUrl,omitempty"`
+	GithubAPITimeout      int      `json:"githubApiTimeout,omitempty"`
 	AssetPath             string   `json:"assetPath,omitempty"`
 	AssetPathList         []string `json:"assetPathList,omitempty"`
 	Commitish             string   `json:"commitish,omitempty"`
@@ -79,6 +80,17 @@ The result looks like
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.Token)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -169,6 +181,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.Flags().BoolVar(&stepConfig.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
 	cmd.Flags().BoolVar(&stepConfig.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the release information that brings up all commits since the last release.")
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
+	cmd.Flags().IntVar(&stepConfig.GithubAPITimeout, "githubApiTimeout", 30, "Set HTTP timeout for GitHub API calls (in seconds)")
 	cmd.Flags().StringVar(&stepConfig.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringSliceVar(&stepConfig.AssetPathList, "assetPathList", []string{}, "List of paths to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringVar(&stepConfig.Commitish, "commitish", `master`, "Target git commitish for the release")
@@ -233,6 +246,15 @@ func githubPublishReleaseMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 						Default:     `https://api.github.com`,
+					},
+					{
+						Name:        "githubApiTimeout",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
 					},
 					{
 						Name:        "assetPath",
