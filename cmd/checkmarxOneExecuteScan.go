@@ -388,7 +388,7 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int) ([]checkmarxOne.Scan, error) {
-	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, count, []string{"Completed"})
+	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, c.config.Branch, count, []string{"Completed"})
 	if err != nil {
 		return []checkmarxOne.Scan{}, fmt.Errorf("Failed to get last %d Completed scans for project %v: %s", count, c.Project.ProjectID, err)
 	}
