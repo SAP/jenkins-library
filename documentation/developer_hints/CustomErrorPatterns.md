@@ -46,6 +46,7 @@ The system supports two matching modes:
 2. **Substring Matching** (fallback): If regex compilation fails, falls back to substring matching
 
 Examples:
+
 ```yaml
 # Regex pattern with wildcard
 - pattern: "npm error 404.*Not Found"
