@@ -68,7 +68,7 @@ spec:
           - STEPS
       - name: language
         type: string
-        description: "The programming language used to analyze."
+        description: "The programming language used to analyze. Use coma separation to specify multiple languages"
         scope:
           - PARAMETERS
           - STAGES
@@ -225,10 +225,10 @@ spec:
         type: string
         description: "A space-separated string of flags for the 'codeql database analyze' command."
         longDescription: |-
-            A space-separated string of flags for the 'codeql database analyze' command.
+          A space-separated string of flags for the 'codeql database analyze' command.
 
-            If both long and short forms of the same flag are provided, the long form takes precedence.
-            Example input: "--threads=1 --ram=2000"
+          If both long and short forms of the same flag are provided, the long form takes precedence.
+          Example input: "--threads=1 --ram=2000"
         scope:
           - STEPS
           - STAGES

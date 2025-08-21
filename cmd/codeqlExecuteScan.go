@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/shlex"
+	"github.com/pkg/errors"
+
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -15,8 +18,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/shlex"
-	"github.com/pkg/errors"
 )
 
 type codeqlExecuteScanUtils interface {
@@ -324,6 +325,9 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 		if len(language) > 0 {
 			cmd = append(cmd, "--language="+language)
 		} else {
+			if strings.Contains(config.Language, ",") { // coma separation used to specify multiple languages
+				cmd = append(cmd, "--db-cluster")
+			}
 			cmd = append(cmd, "--language="+config.Language)
 		}
 	}
