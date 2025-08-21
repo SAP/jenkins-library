@@ -579,12 +579,14 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 					case "Medium":
 						mediumSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
 					case "Low":
-						for _, lowFinding := range *finding.LowPerQuery {
-							if c.config.VulnerabilityThresholdLowPerQuery {
-								lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
-								lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
-							} else {
-								lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
+						if finding.LowPerQuery != nil {
+							for _, lowFinding := range *finding.LowPerQuery {
+								if c.config.VulnerabilityThresholdLowPerQuery {
+									lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
+									lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
+								} else {
+									lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
+								}
 							}
 						}
 					}
