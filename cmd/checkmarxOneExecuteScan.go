@@ -612,7 +612,7 @@ Severity | Number of open findings
 [Go to the scan results](%s)
 				`, scanIcon, strings.ToLower(scanReportOverview.ScanType), c.Project.Name, scanReportOverview.ScanID, scanReportOverview.Preset, criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, scanReportOverview.DeepLink)),
 				}
-				pullRequestNumber, err := strconv.Atoi(c.config.PullRequestName)
+				pullRequestNumber, err := strconv.Atoi(pullRequestId)
 				if err != nil {
 					return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
 				}
