@@ -557,6 +557,7 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 		scanReport := checkmarxOne.CreateCustomReport(detailedResults, insecureResults, neutralResults)
 
 		// Create scan summary comment in PR
+		log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, PullRequestName: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
 		if c.config.ScanSummaryInPullRequest && len(c.config.PullRequestName) > 0 && len(c.config.GithubToken) > 0 && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
 			ghIssues := c.utils.GetIssueService()
 			log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
