@@ -191,18 +191,18 @@ func (c *Client) MustRevokeToken() {
 
 	secret, err := c.GetSecret(lookupPath)
 	if err != nil {
-		log.Entry().Warnf("Could not lookup token at %s, not continuing to revoke: %v", lookupPath, err)
+		log.Entry().Infof("Could not lookup token at %s, not continuing to revoke: %v", lookupPath, err)
 		return
 	}
 
 	tokenID, ok := secret.Data["id"].(string)
 	if !ok {
-		log.Entry().Warnf("Could not lookup token.Data.id at %s, not continuing to revoke", lookupPath)
+		log.Entry().Infof("Could not lookup token.Data.id at %s, not continuing to revoke", lookupPath)
 		return
 	}
 
 	if !strings.HasPrefix(tokenID, serviceTokenPrefix) {
-		log.Entry().Warnf("Service token not identified at %s, not continuing to revoke", lookupPath)
+		log.Entry().Infof("Service token not identified at %s, not continuing to revoke", lookupPath)
 		return
 	}
 

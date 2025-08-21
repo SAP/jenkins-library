@@ -98,6 +98,18 @@ jobs:
           ${{ github.api_url }}/repos/${{ github.repository }}/releases/${{ steps.release_id.outputs.release_id }}
           -d '{"prerelease": false, "make_latest": true}'
 
+      # We need to download the shell script because reusable workflows execute
+      # within the context of the workflow that calls them
+      - name: Update/create dynamic tags
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SCRIPT_RAW_URL: https://raw.githubusercontent.com/SAP/project-piper-action/refs/heads/main/.github/scripts/update_dynamic_tags.sh
+        run: |
+          curl -s -L "$SCRIPT_RAW_URL" -o update-dynamic-tags.sh
+          chmod +x update-dynamic-tags.sh
+          ./update-dynamic-tags.sh "${{ env.PIPER_version }}"
+        continue-on-error: true
+
       # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
       - uses: actions/setup-java@v4
         with:
