@@ -564,8 +564,8 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 		} else {
 			isPullRequest := cicdOrch.IsPullRequest()
 			pullRequestId := cicdOrch.PullRequestConfig().Key
-			log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
-			if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" && len(c.config.GithubToken) > 0 && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
+			log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, c.config.Owner, c.config.Repository)
+			if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" /*&& len(c.config.GithubToken) > 0*/ && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
 				ghIssues := c.utils.GetIssueService()
 				log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
 				scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
