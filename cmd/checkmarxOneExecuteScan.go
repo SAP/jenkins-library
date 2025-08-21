@@ -547,58 +547,48 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]interface{}) error {
-	links := []piperutils.Path{{Target: (*detailedResults)["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
-	insecure := false
-	var insecureResults []string
-	var neutralResults []string
-
-	if c.config.VulnerabilityThresholdEnabled {
-		insecure, insecureResults, neutralResults = c.enforceThresholds(detailedResults)
-		scanReport := checkmarxOne.CreateCustomReport(detailedResults, insecureResults, neutralResults)
-
-		// Create scan summary comment in PR
-		cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to get orchestrator config provider: %s", err)
-		} else {
-			isPullRequest := cicdOrch.IsPullRequest()
-			pullRequestId := cicdOrch.PullRequestConfig().Key
-			log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, c.config.Owner, c.config.Repository)
-			if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" /*&& len(c.config.GithubToken) > 0*/ && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
-				ghIssues := c.utils.GetIssueService()
-				log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
-				scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
-				var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString string
-				for _, finding := range *scanReportOverview.Findings {
-					switch finding.ClassificationName {
-					case "Critical":
-						criticalSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
-					case "High":
-						highSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
-					case "Medium":
-						mediumSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
-					case "Low":
-						if finding.LowPerQuery != nil {
-							for _, lowFinding := range *finding.LowPerQuery {
-								if c.config.VulnerabilityThresholdLowPerQuery {
-									lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
-									lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
-								} else {
-									lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
-								}
+func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
+	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		log.Entry().WithError(err).Warnf("Failed to get orchestrator config provider: %s", err)
+	} else {
+		isPullRequest := cicdOrch.IsPullRequest()
+		pullRequestId := cicdOrch.PullRequestConfig().Key
+		log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, c.config.Owner, c.config.Repository)
+		if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" /*&& len(c.config.GithubToken) > 0*/ && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
+			ghIssues := c.utils.GetIssueService()
+			log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
+			scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
+			var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString string
+			for _, finding := range *scanReportOverview.Findings {
+				switch finding.ClassificationName {
+				case "Critical":
+					criticalSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				case "High":
+					highSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				case "Medium":
+					mediumSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				case "Low":
+					if finding.LowPerQuery != nil {
+						for _, lowFinding := range *finding.LowPerQuery {
+							if c.config.VulnerabilityThresholdLowPerQuery {
+								lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
+								lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
+							} else {
+								lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
 							}
 						}
 					}
 				}
-				var scanIcon string
-				if insecure {
-					scanIcon = ":x:"
-				} else {
-					scanIcon = ":white_check_mark:"
-				}
-				comment := &github.IssueComment{
-					Body: github.Ptr(fmt.Sprintf(`# %s Checkmarx %s scan completed 
+			}
+			var scanIcon string
+			if insecure {
+				scanIcon = ":x:"
+			} else {
+				scanIcon = ":white_check_mark:"
+			}
+			comment := &github.IssueComment{
+				Body: github.Ptr(fmt.Sprintf(`# %s Checkmarx %s scan completed 
 **Project**: %s
 **ScanId**: %s
 **Preset**: %s
@@ -610,19 +600,39 @@ Severity | Number of open findings
 :yellow_circle: Low | %s
 
 [Go to the scan results](%s)
-				`, scanIcon, strings.ToLower(scanReportOverview.ScanType), c.Project.Name, scanReportOverview.ScanID, scanReportOverview.Preset, criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, scanReportOverview.DeepLink)),
-				}
-				pullRequestNumber, err := strconv.Atoi(pullRequestId)
-				if err != nil {
-					return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
-				}
-				_, _, err = ghIssues.CreateComment(c.ctx, c.config.Owner, c.config.Repository, pullRequestNumber, comment)
-				if err != nil {
-					return fmt.Errorf("failed to create GitHub issue comment: %s", err)
-				}
-				log.Entry().Infof("Created GitHub issue comment for project %v", c.Project.Name)
-			} else {
-				log.Entry().Debug("Skipping GitHub issue comment creation, no pull request or GitHub configuration provided")
+			`, scanIcon, strings.ToLower(scanReportOverview.ScanType), c.Project.Name, scanReportOverview.ScanID, scanReportOverview.Preset, criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, scanReportOverview.DeepLink)),
+			}
+			pullRequestNumber, err := strconv.Atoi(pullRequestId)
+			if err != nil {
+				return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
+			}
+			_, _, err = ghIssues.CreateComment(c.ctx, c.config.Owner, c.config.Repository, pullRequestNumber, comment)
+			if err != nil {
+				return fmt.Errorf("failed to create GitHub issue comment: %s", err)
+			}
+			log.Entry().Infof("Created GitHub issue comment for project %v", c.Project.Name)
+		} else {
+			log.Entry().Debug("Skipping GitHub issue comment creation, no pull request or GitHub configuration provided")
+		}
+	}
+	return nil
+}
+
+func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]interface{}) error {
+	links := []piperutils.Path{{Target: (*detailedResults)["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
+	insecure := false
+	var insecureResults []string
+	var neutralResults []string
+
+	if c.config.VulnerabilityThresholdEnabled {
+		insecure, insecureResults, neutralResults = c.enforceThresholds(detailedResults)
+		scanReport := checkmarxOne.CreateCustomReport(detailedResults, insecureResults, neutralResults)
+
+		// Create scan summary comment in PR
+		if c.config.ScanSummaryInPullRequest {
+			err := c.PostScanSummaryInPullRequest(detailedResults, insecure)
+			if err != nil {
+				log.Entry().Errorf("failed to post scan summary in pull request: %s", err)
 			}
 		}
 
