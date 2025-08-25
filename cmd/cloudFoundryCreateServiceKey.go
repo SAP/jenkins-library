@@ -64,6 +64,9 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 	if !options.CfAsync {
 		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
 	}
+	} else {
+		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
+	}
 
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {

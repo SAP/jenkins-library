@@ -75,6 +75,8 @@ func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, 
 	}
 	if !config.CfAsync {
 		cfCreateServiceScript = append(cfCreateServiceScript, "--wait")
+	} else {
+		cfCreateServiceScript = append(cfCreateServiceScript, "--wait")
 	}
 	if config.ServiceManifest != "" && fileExists(config.ServiceManifest) {
 
