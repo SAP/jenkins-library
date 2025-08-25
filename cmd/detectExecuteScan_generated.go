@@ -382,6 +382,13 @@ func detectExecuteScanMetadata() config.StepData {
 			Name:        "detectExecuteScan",
 			Aliases:     []config.Alias{},
 			Description: "Executes BlackDuck Detect scan",
+			Errors: []config.StepError{
+				{
+					Pattern:  "FAILURE_POLICY_VIOLATION",
+					Message:  "BlackDuck Detect found policy violations. Review security policies and fix compliance issues.",
+					Category: "compliance",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
