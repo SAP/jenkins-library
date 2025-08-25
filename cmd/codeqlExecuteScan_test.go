@@ -11,9 +11,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type codeqlExecuteScanMockUtils struct {
@@ -459,6 +461,36 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			"database create codeqlDB --overwrite --working-dir ./ --language=javascript --ram=2000 --source-root=customSrcRoot/ -j=1" == strings.Join(cmd, " "))
 	})
 
+	t.Run("Multi-language adds --db-cluster", func(t *testing.T) {
+		config := &codeqlExecuteScanOptions{
+			Database:   "codeqlDB",
+			ModulePath: "./",
+			BuildTool:  "custom",
+			Language:   "javascript,python",
+		}
+		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		assert.NoError(t, err)
+		assert.NotEmpty(t, cmd)
+		assert.Equal(t, 10, len(cmd))
+		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --db-cluster --language=javascript,python",
+			strings.Join(cmd, " "))
+	})
+
+	t.Run("Multi-language with build command", func(t *testing.T) {
+		config := &codeqlExecuteScanOptions{
+			Database:     "codeqlDB",
+			ModulePath:   "./",
+			BuildTool:    "custom",
+			Language:     "go,python",
+			BuildCommand: "make build",
+		}
+		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		assert.NoError(t, err)
+		assert.NotEmpty(t, cmd)
+		assert.Equal(t, 11, len(cmd))
+		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --db-cluster --language=go,python --command=make build",
+			strings.Join(cmd, " "))
+	})
 }
 
 func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
@@ -469,7 +501,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		config := &codeqlExecuteScanOptions{
 			Database: "codeqlDB",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 5, len(cmd))
@@ -480,7 +512,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		config := &codeqlExecuteScanOptions{
 			Database: "codeqlDB",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "csv", "target/codeqlReport.csv")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "csv", "target/codeqlReport.csv", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 5, len(cmd))
@@ -492,7 +524,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 			Database:   "codeqlDB",
 			QuerySuite: "security.ql",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 6, len(cmd))
@@ -506,7 +538,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 			Threads:    "1",
 			Ram:        "2000",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, map[string]string{}, config, "sarif-latest", "target/codeqlReport.sarif", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -523,7 +555,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"--threads": "--threads=2",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -540,7 +572,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"-j": "-j=2",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
@@ -557,7 +589,7 @@ func TestPrepareCmdForDatabaseAnalyze(t *testing.T) {
 		customFlags := map[string]string{
 			"--no-download": "--no-download",
 		}
-		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif")
+		cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, "sarif-latest", "target/codeqlReport.sarif", config.Database)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 9, len(cmd))
@@ -580,7 +612,7 @@ func TestPrepareCmdForUploadResults(t *testing.T) {
 			Owner:       "owner",
 			AnalyzedRef: "refs/heads/branch",
 		}
-		cmd := prepareCmdForUploadResults(config, repoInfo, "token")
+		cmd := prepareCmdForUploadResults(repoInfo, "token", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif"))
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 8, len(cmd))
 	})
@@ -591,7 +623,7 @@ func TestPrepareCmdForUploadResults(t *testing.T) {
 			ServerUrl: "http://github.com",
 			Repo:      "repo",
 		}
-		cmd := prepareCmdForUploadResults(config, repoInfo, "token")
+		cmd := prepareCmdForUploadResults(repoInfo, "token", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif"))
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 6, len(cmd))
 	})
@@ -604,14 +636,14 @@ func TestPrepareCmdForUploadResults(t *testing.T) {
 			Owner:       "owner",
 			AnalyzedRef: "refs/heads/branch",
 		}
-		cmd := prepareCmdForUploadResults(config, repoInfo, "")
+		cmd := prepareCmdForUploadResults(repoInfo, "", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif"))
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 7, len(cmd))
 	})
 
 	t.Run("Empty configs and token", func(t *testing.T) {
 		repoInfo := &codeql.RepoInfo{}
-		cmd := prepareCmdForUploadResults(config, repoInfo, "")
+		cmd := prepareCmdForUploadResults(repoInfo, "", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif"))
 		assert.NotEmpty(t, cmd)
 		assert.Equal(t, 3, len(cmd))
 	})
@@ -856,5 +888,185 @@ func TestCheckForCompliance(t *testing.T) {
 			},
 		}
 		assert.NoError(t, checkForCompliance(scanResults, config, repoInfo))
+	})
+}
+
+func TestGetLanguageList(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Comma separated with spaces and empties", func(t *testing.T) {
+		cfg := &codeqlExecuteScanOptions{
+			Language:  "javascript, python, ,go ,",
+			BuildTool: "npm",
+		}
+		got := getLanguageList(cfg)
+		assert.Equal(t, []string{"javascript", "python", "go"}, got)
+	})
+
+	t.Run("Single explicit language", func(t *testing.T) {
+		cfg := &codeqlExecuteScanOptions{
+			Language: "python",
+		}
+		got := getLanguageList(cfg)
+		assert.Equal(t, []string{"python"}, got)
+	})
+
+	t.Run("Inferred from build tool", func(t *testing.T) {
+		cfg := &codeqlExecuteScanOptions{
+			BuildTool: "maven",
+		}
+		got := getLanguageList(cfg)
+		assert.Equal(t, []string{"java"}, got)
+	})
+
+	t.Run("None available returns nil", func(t *testing.T) {
+		cfg := &codeqlExecuteScanOptions{}
+		got := getLanguageList(cfg)
+		assert.Nil(t, got)
+	})
+}
+
+func TestCloneFlags(t *testing.T) {
+	src := map[string]string{"--threads": "--threads=2", "--foo": "bar"}
+	dst := cloneFlags(src)
+
+	assert.Equal(t, src, dst)
+
+	// check that changes in the dst map does not affect scr
+	dst["--threads"] = "--threads=4"
+	delete(dst, "--foo")
+
+	assert.Equal(t, "--threads=2", src["--threads"])
+	assert.Equal(t, "bar", src["--foo"])
+}
+
+func TestRunDatabaseAnalyze_SingleLanguage(t *testing.T) {
+	t.Parallel()
+	var calls []string
+	utils := codeqlExecuteScanMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{
+			Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+				calls = append(calls, call)
+				return nil
+			},
+		},
+		FilesMock:      &mock.FilesMock{},
+		HttpClientMock: &mock.HttpClientMock{},
+	}
+	cfg := &codeqlExecuteScanOptions{
+		Database:   "codeqlDB",
+		ModulePath: ".",
+		Language:   "javascript",
+	}
+	custom := map[string]string{}
+
+	reports, sarifs, err := runDatabaseAnalyze(cfg, custom, utils)
+	assert.NoError(t, err)
+
+	expectSarif := filepath.Join(".", "target", "codeqlReport.sarif")
+	expectCSV := filepath.Join(".", "target", "codeqlReport.csv")
+
+	assert.ElementsMatch(t,
+		[]piperutils.Path{{Target: expectSarif}, {Target: expectCSV}},
+		reports,
+	)
+	assert.Equal(t, []string{expectSarif}, sarifs)
+
+	joined := strings.Join(calls, "\n")
+	assert.Contains(t, joined, "database analyze --format=sarif-latest --output="+expectSarif+" codeqlDB")
+	assert.Contains(t, joined, "database analyze --format=csv --output="+expectCSV+" codeqlDB")
+}
+
+func TestRunDatabaseAnalyze_MultiLanguage(t *testing.T) {
+	t.Parallel()
+	var calls []string
+	utils := codeqlExecuteScanMockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{
+			Stub: func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+				calls = append(calls, call)
+				return nil
+			},
+		},
+		FilesMock:      &mock.FilesMock{},
+		HttpClientMock: &mock.HttpClientMock{},
+	}
+
+	cfg := &codeqlExecuteScanOptions{
+		Database:   "codeqlDB",
+		ModulePath: ".",
+		Language:   "javascript,python",
+	}
+	custom := map[string]string{}
+
+	reports, sarifs, err := runDatabaseAnalyze(cfg, custom, utils)
+	assert.NoError(t, err)
+
+	jsSarif := filepath.Join(".", "target", "javascript.sarif")
+	pySarif := filepath.Join(".", "target", "python.sarif")
+	jsCSV := filepath.Join(".", "target", "javascript.csv")
+	pyCSV := filepath.Join(".", "target", "python.csv")
+
+	// reports should include all 4 files
+	assert.ElementsMatch(t,
+		[]piperutils.Path{{Target: jsSarif}, {Target: jsCSV}, {Target: pySarif}, {Target: pyCSV}},
+		reports,
+	)
+	// sarifFiles should be both per-language sarif outputs
+	assert.ElementsMatch(t, []string{jsSarif, pySarif}, sarifs)
+
+	joined := strings.Join(calls, "\n")
+
+	assert.Contains(t, joined, "database analyze --format=sarif-latest --output="+jsSarif+" codeqlDB/javascript")
+	assert.Contains(t, joined, "database analyze --format=sarif-latest --output="+pySarif+" codeqlDB/python")
+
+	assert.Contains(t, joined, "--sarif-category=javascript")
+	assert.Contains(t, joined, "--sarif-category=python")
+
+	assert.Contains(t, joined, "database analyze --format=csv --output="+jsCSV+" codeqlDB/javascript")
+	assert.Contains(t, joined, "database analyze --format=csv --output="+pyCSV+" codeqlDB/python")
+}
+
+func TestRunCustomCommand(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Success: simple command with args", func(t *testing.T) {
+		var calls []string
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+					calls = append(calls, call)
+					return nil
+				},
+			},
+			FilesMock:      &mock.FilesMock{},
+			HttpClientMock: &mock.HttpClientMock{},
+		}
+
+		err := runCustomCommand(utils, `echo "hello world"`)
+		assert.NoError(t, err)
+		if assert.Len(t, calls, 1) {
+			assert.Equal(t, "echo hello world", calls[0])
+		}
+	})
+
+	t.Run("Parse error: invalid quoting", func(t *testing.T) {
+		utils := newCodeqlExecuteScanTestsUtils() // stub isn't invoked because split fails first
+		err := runCustomCommand(utils, `echo "unterminated`)
+		assert.Error(t, err)
+	})
+
+	t.Run("Exec error: command fails to run", func(t *testing.T) {
+		utils := codeqlExecuteScanMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{
+				Stub: func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+					return fmt.Errorf("boom")
+				},
+			},
+			FilesMock:      &mock.FilesMock{},
+			HttpClientMock: &mock.HttpClientMock{},
+		}
+
+		err := runCustomCommand(utils, `false --flag`)
+		assert.Error(t, err)
 	})
 }

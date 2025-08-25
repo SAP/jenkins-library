@@ -34,6 +34,11 @@ func AppendFlagIfNotSetByUser(cmd []string, flagToCheck []string, flagToAppend [
 	return cmd
 }
 
+// AppendCustomFlags appends custom flags from the flags map to the command slice.
+// The flags map should contain flags in their complete form (e.g., key: "--flag", value: "--flag=value").
+// Only non-empty flags (after trimming whitespace) are appended to avoid adding
+// empty or whitespace-only entries to the command.
+// Returns a new slice with the original command elements followed by the valid flags.
 func AppendCustomFlags(cmd []string, flags map[string]string) []string {
 	for _, flag := range flags {
 		if strings.TrimSpace(flag) != "" {
@@ -100,6 +105,10 @@ func removeDuplicateFlags(customFlags map[string]string, shortFlags map[string]s
 	}
 }
 
+// ParseCustomFlags parses flagsStr and returns a map where each flag is mapped to its complete form.
+// For flags with values (e.g., "--flag=value"), the key is the flag name and value is the complete flag.
+// For flags without values (e.g., "--flag"), both key and value are set to the flag name.
+// Duplicate flags (long/short variants) are removed based on longShortFlagsMap.
 func ParseCustomFlags(flagsStr string) map[string]string {
 	flagsMap := make(map[string]string)
 	parsedFlags := parseFlags(flagsStr)
