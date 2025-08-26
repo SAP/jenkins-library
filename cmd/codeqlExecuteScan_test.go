@@ -366,9 +366,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			BuildTool:    "maven",
 			BuildCommand: "mvn clean install",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.False(t, isMultiLang)
 		assert.Equal(t, 10, len(cmd))
 		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --language=java --command=mvn clean install",
 			strings.Join(cmd, " "))
@@ -381,9 +382,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			BuildTool:  "custom",
 			Language:   "javascript",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.False(t, isMultiLang)
 		assert.Equal(t, 9, len(cmd))
 		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --language=javascript",
 			strings.Join(cmd, " "))
@@ -395,7 +397,7 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			ModulePath: "./",
 			BuildTool:  "custom",
 		}
-		_, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		_, _, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
 
@@ -405,7 +407,7 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			ModulePath: "./",
 			BuildTool:  "test",
 		}
-		_, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		_, _, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.Error(t, err)
 	})
 
@@ -416,9 +418,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			BuildTool:  "test",
 			Language:   "javascript",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.False(t, isMultiLang)
 		assert.Equal(t, 9, len(cmd))
 		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --language=javascript",
 			strings.Join(cmd, " "))
@@ -433,9 +436,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 		customFlags := map[string]string{
 			"--source-root": "--source-root=customSrcRoot/",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(customFlags, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(customFlags, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.False(t, isMultiLang)
 		assert.Equal(t, 8, len(cmd))
 		assert.Equal(t, "database create codeqlDB --overwrite --working-dir ./ --language=javascript --source-root=customSrcRoot/",
 			strings.Join(cmd, " "))
@@ -453,9 +457,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			"--source-root": "--source-root=customSrcRoot/",
 			"-j":            "-j=1",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(customFlags, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(customFlags, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.False(t, isMultiLang)
 		assert.Equal(t, 10, len(cmd))
 		assert.True(t, "database create codeqlDB --overwrite --working-dir ./ --language=javascript --ram=2000 -j=1 --source-root=customSrcRoot/" == strings.Join(cmd, " ") ||
 			"database create codeqlDB --overwrite --working-dir ./ --language=javascript --ram=2000 --source-root=customSrcRoot/ -j=1" == strings.Join(cmd, " "))
@@ -468,9 +473,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			BuildTool:  "custom",
 			Language:   "javascript,python",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.True(t, isMultiLang)
 		assert.Equal(t, 10, len(cmd))
 		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --db-cluster --language=javascript,python",
 			strings.Join(cmd, " "))
@@ -484,9 +490,10 @@ func TestPrepareCmdForDatabaseCreate(t *testing.T) {
 			Language:     "go,python",
 			BuildCommand: "make build",
 		}
-		cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
+		isMultiLang, cmd, err := prepareCmdForDatabaseCreate(map[string]string{}, config, newCodeqlExecuteScanTestsUtils())
 		assert.NoError(t, err)
 		assert.NotEmpty(t, cmd)
+		assert.True(t, isMultiLang)
 		assert.Equal(t, 11, len(cmd))
 		assert.Equal(t, "database create codeqlDB --overwrite --source-root . --working-dir ./ --db-cluster --language=go,python --command=make build",
 			strings.Join(cmd, " "))
@@ -960,7 +967,7 @@ func TestRunDatabaseAnalyze_SingleLanguage(t *testing.T) {
 	}
 	custom := map[string]string{}
 
-	reports, sarifs, err := runDatabaseAnalyze(cfg, custom, utils)
+	reports, sarifs, err := runDatabaseAnalyze(cfg, custom, utils, false)
 	assert.NoError(t, err)
 
 	expectSarif := filepath.Join(".", "target", "codeqlReport.sarif")
@@ -998,7 +1005,7 @@ func TestRunDatabaseAnalyze_MultiLanguage(t *testing.T) {
 	}
 	custom := map[string]string{}
 
-	reports, sarifs, err := runDatabaseAnalyze(cfg, custom, utils)
+	reports, sarifs, err := runDatabaseAnalyze(cfg, custom, utils, true)
 	assert.NoError(t, err)
 
 	jsSarif := filepath.Join(".", "target", "javascript.sarif")
