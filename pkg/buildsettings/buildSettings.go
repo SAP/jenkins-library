@@ -2,8 +2,8 @@ package buildsettings
 
 import (
 	"encoding/json"
-	"reflect"
 	"os"
+	"reflect"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
