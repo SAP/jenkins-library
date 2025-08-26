@@ -60,10 +60,9 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 		cfCreateServiceKeyScript = []string{"create-service-key", options.CfServiceInstance, options.CfServiceKeyName, "-c", options.CfServiceKeyConfig}
 	}
 
-	// If a synchronous execution is requested, the "--wait" flag needs to be added
+	// Set --wait flag as default
 	if !options.CfAsync {
 		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
-	}
 	} else {
 		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
 	}
