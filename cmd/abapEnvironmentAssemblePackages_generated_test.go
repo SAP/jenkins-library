@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -16,5 +13,4 @@ func TestAbapEnvironmentAssemblePackagesCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "abapEnvironmentAssemblePackages", testCmd.Use, "command name incorrect")
-
 }

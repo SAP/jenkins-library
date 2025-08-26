@@ -1,5 +1,4 @@
 //go:build !release
-// +build !release
 
 /*
 ** The Test Data is partly re-used by the steps in cmd folder, thus we Export them but remove the file from release build
