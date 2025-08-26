@@ -49,11 +49,13 @@ type golangBuildOptions struct {
 	PrivateModulesGitToken       string   `json:"privateModulesGitToken,omitempty"`
 	ArtifactVersion              string   `json:"artifactVersion,omitempty"`
 	GolangciLintURL              string   `json:"golangciLintUrl,omitempty"`
+	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type golangBuildCommonPipelineEnvironment struct {
 	custom struct {
 		buildSettingsInfo string
+		goBuildArtifacts  string
 		artifacts         piperenv.Artifacts
 	}
 }
@@ -65,6 +67,7 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "goBuildArtifacts", value: p.custom.goBuildArtifacts},
 		{category: "custom", name: "artifacts", value: p.custom.artifacts},
 	}
 
@@ -286,6 +289,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
 	cmd.Flags().StringVar(&stepConfig.GolangciLintURL, "golangciLintUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 
 	cmd.MarkFlagRequired("targetArchitectures")
 }
@@ -590,6 +594,15 @@ func golangBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz`,
 					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -602,6 +615,7 @@ func golangBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/goBuildArtifacts"},
 							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
 						},
 					},
