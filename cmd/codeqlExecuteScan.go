@@ -446,7 +446,7 @@ func prepareCmdForUploadResults(repoInfo *codeql.RepoInfo, token string, sarifPa
 func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo *codeql.RepoInfo, sarifFiles []string, utils codeqlExecuteScanUtils, isMultiLang bool) error {
 	// fallback for single result
 	if !isMultiLang {
-		sarifFiles = []string{filepath.Join(config.ModulePath, "codeqlReport.sarif")}
+		sarifFiles = []string{filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 	}
 
 	for _, sarifPath := range sarifFiles {
