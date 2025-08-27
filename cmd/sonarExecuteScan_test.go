@@ -182,7 +182,7 @@ func TestRunSonar(t *testing.T) {
 		// test
 		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
 		assert.NoError(t, err)
-		// locad sonarscan report file
+		// load sonarscan report file
 		reportFile, err := os.ReadFile(filepath.Join(tmpFolder, "sonarscan.json"))
 		assert.NoError(t, err)
 		var reportData SonarUtils.ReportData
