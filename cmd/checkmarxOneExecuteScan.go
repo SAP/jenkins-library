@@ -198,19 +198,6 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 }
 
-func CreateGitHubPRComment(projectName, projectID string, scan *checkmarxOne.Scan, results map[string]interface{}, gitBranch, pullRequestName string, vulnerabilityThresholdEnabled bool, vulnerabilityThresholdResult string) *github.IssueComment {
-	comment := &github.IssueComment{
-		Body: github.Ptr(fmt.Sprintf(`# Checkmarx scan completed 
-Project: %s (%s)
-`, projectName, projectID)),
-		// TODO: add result counters and link to the scan results
-	}
-	if vulnerabilityThresholdEnabled {
-		comment.Body = github.Ptr(fmt.Sprintf("%s\n\n%s", *comment.Body, vulnerabilityThresholdResult))
-	}
-	return comment
-}
-
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
 
@@ -564,7 +551,6 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
 	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
-		//log.Entry().WithError(err).Warnf("Failed to get orchestrator config provider: %s", err)
 		return fmt.Errorf("Failed to get orchestrator config provider: %s", err)
 	}
 	isPullRequest := cicdOrch.IsPullRequest()
