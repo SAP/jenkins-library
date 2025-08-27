@@ -601,7 +601,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 	log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, owner, repository)
 	if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" /*&& len(c.config.GithubToken) > 0*/ && len(c.config.GithubAPIURL) > 0 && len(owner) > 0 && len(repository) > 0 {
 		ghIssues := c.utils.GetIssueService()
-		log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, c.config.Owner, c.config.Repository)
+		log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, owner, repository)
 		scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
 		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString string
 		for _, finding := range *scanReportOverview.Findings {
@@ -650,7 +650,7 @@ Severity | Number of open findings
 		if err != nil {
 			return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
 		}
-		_, _, err = ghIssues.CreateComment(c.ctx, c.config.Owner, c.config.Repository, pullRequestNumber, comment)
+		_, _, err = ghIssues.CreateComment(c.ctx, owner, repository, pullRequestNumber, comment)
 		if err != nil {
 			return fmt.Errorf("failed to create GitHub issue comment: %s", err)
 		}
