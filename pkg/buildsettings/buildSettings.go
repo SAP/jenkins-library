@@ -39,7 +39,6 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		log.Entry().Debugf("Overriding DockerImage from env PIPER_dockerImage: '%v'", envDockerImage)
 		dockerImage = envDockerImage
 	}
-	log.Entry().Infof("Final DockerImage value used: '%v'", dockerImage)
 
 	currentBuildSettingsInfo := BuildOptions{
 		CreateBOM:                   config.CreateBOM,
