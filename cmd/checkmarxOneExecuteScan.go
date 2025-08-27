@@ -596,6 +596,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 	} else {
 		owner = c.config.Owner
 		repository = c.config.Repository
+		log.Entry().Debug("Using Owner and Repository from configuration: " + owner + "/" + repository)
 	}
 	log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, owner, repository)
 	if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" /*&& len(c.config.GithubToken) > 0*/ && len(c.config.GithubAPIURL) > 0 && len(owner) > 0 && len(repository) > 0 {
