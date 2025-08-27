@@ -35,9 +35,8 @@ type BuildOptions struct {
 func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, error) {
 	// to have docker image from action inputs or env variable
 	dockerImage := config.DockerImage
-	log.Entry().Infof("Initial DockerImage from config: '%v'", dockerImage)
 	if envDockerImage := os.Getenv("PIPER_dockerImage"); envDockerImage != "" {
-		log.Entry().Infof("Overriding DockerImage from env PIPER_dockerImage: '%v'", envDockerImage)
+		log.Entry().Debugf("Overriding DockerImage from env PIPER_dockerImage: '%v'", envDockerImage)
 		dockerImage = envDockerImage
 	}
 	log.Entry().Infof("Final DockerImage value used: '%v'", dockerImage)
