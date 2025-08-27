@@ -195,7 +195,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, fmt.Errorf("failed running upload-results as githubToken was not specified")
 		}
 
-		err = uploadSarifResults(config, token, repoInfo, sarifFiles, utils, isMultiLang)
+		err = uploadSarifResults(config, token, repoInfo, sarifFiles, utils)
 		if err != nil {
 			log.Entry().WithError(err).Error("failed to upload sarif results")
 			return reports, err
@@ -443,9 +443,9 @@ func prepareCmdForUploadResults(repoInfo *codeql.RepoInfo, token string, sarifPa
 	return cmd
 }
 
-func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo *codeql.RepoInfo, sarifFiles []string, utils codeqlExecuteScanUtils, isMultiLang bool) error {
-	// fallback for single result
-	if !isMultiLang {
+func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo *codeql.RepoInfo, sarifFiles []string, utils codeqlExecuteScanUtils) error {
+	// fallback
+	if len(sarifFiles) == 0 {
 		sarifFiles = []string{filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 	}
 

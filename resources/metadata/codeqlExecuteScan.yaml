@@ -44,7 +44,7 @@ spec:
         description: Defines the build tool which is used for building the project.
         longDescription: |-
           Based on the build tool the step will try to auto build the project. The step will try to auto select
-          the language and the build command. You can override the language and the build command by specifiying it seperatly.
+          the language and the build command.
         mandatory: true
         scope:
           - GENERAL
@@ -68,7 +68,7 @@ spec:
           - STEPS
       - name: language
         type: string
-        description: "The programming language used to analyze. Use coma separation to specify multiple languages"
+        description: "The programming language used to analyze. Use coma separation and select custom build tool to analyze multiple languages"
         scope:
           - PARAMETERS
           - STAGES
