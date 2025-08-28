@@ -969,6 +969,7 @@ func TestRunGolangciLint(t *testing.T) {
 
 	tt := []struct {
 		name                string
+		version             string
 		shouldFailOnCommand map[string]error
 		fileWriteError      error
 		exitCode            int
@@ -977,7 +978,8 @@ func TestRunGolangciLint(t *testing.T) {
 		failOnLintingError  bool
 	}{
 		{
-			name:                "success",
+			name:                "success - v1",
+			version:             "v1.55.2",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
@@ -985,7 +987,26 @@ func TestRunGolangciLint(t *testing.T) {
 			expectedErr:         nil,
 		},
 		{
-			name:                "failure - failed to run golangci-lint",
+			name:                "success - v2",
+			version:             "v2.0.1",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{binaryPath, "run", "--output.checkstyle.path", lintSettings["reportOutputPath"]},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success - empty version fallback to v1",
+			version:             "",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - v1 failed to run golangci-lint",
+			version:             "v1.55.2",
 			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
 			fileWriteError:      nil,
 			exitCode:            0,
@@ -993,7 +1014,17 @@ func TestRunGolangciLint(t *testing.T) {
 			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
 		},
 		{
+			name:                "failure - v2 failed to run golangci-lint",
+			version:             "v2.0.1",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --output.checkstyle.path %s", binaryPath, lintSettings["reportOutputPath"]): fmt.Errorf("err")},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
+		},
+		{
 			name:                "failure - failed to write golangci-lint report",
+			version:             "v2.0.1",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
 			exitCode:            0,
@@ -1002,6 +1033,7 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 		{
 			name:                "failure - failed with ExitCode == 1",
+			version:             "v2.0.1",
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
 			expectedCommand:     []string{},
@@ -1010,6 +1042,7 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 		{
 			name:                "success - ignore failed with ExitCode == 1",
+			version:             "v1.55.2",
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
 			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
@@ -1026,7 +1059,7 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
+			err := runGolangciLint(utils, golangciLintDir, test.version, test.failOnLintingError, lintSettings)
 
 			if test.expectedErr == nil {
 				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
@@ -1045,13 +1078,15 @@ func TestRetrieveGolangciLint(t *testing.T) {
 	golangciLintDir := filepath.Join(goPath, "bin")
 
 	tt := []struct {
-		name        string
-		downloadErr error
-		untarErr    error
-		expectedErr error
+		name            string
+		downloadErr     error
+		untarErr        error
+		expectedErr     error
+		expectedVersion string
 	}{
 		{
-			name: "success",
+			name:            "success",
+			expectedVersion: "v1.50.1",
 		},
 		{
 			name:        "failure - failed to download golangci-lint",
@@ -1076,11 +1111,13 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			config := golangBuildOptions{
 				GolangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz",
 			}
-			err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL)
+			version, err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL)
 
 			if test.expectedErr != nil {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedVersion, version)
 				b, err := utils.ReadFile("golangci-lint.tar.gz")
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("content"), b)
@@ -1088,6 +1125,64 @@ func TestRetrieveGolangciLint(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("test content"), b)
 			}
+		})
+	}
+}
+
+func TestRetrieveGolangciLintVersionDetection(t *testing.T) {
+	t.Parallel()
+
+	goPath := os.Getenv("GOPATH")
+	golangciLintDir := filepath.Join(goPath, "bin")
+
+	tt := []struct {
+		name            string
+		golangciLintURL string
+		expectedVersion string
+	}{
+		{
+			name:            "success - v1.55.2 official GitHub release",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.55.2/golangci-lint-1.55.2-darwin-amd64.tar.gz",
+			expectedVersion: "v1.55.2",
+		},
+		{
+			name:            "success - v2.0.1 official GitHub release",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.0.1/golangci-lint-2.0.1-darwin-amd64.tar.gz",
+			expectedVersion: "v2.0.1",
+		},
+		{
+			name:            "success - v2.1.0 official GitHub release",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.1.0/golangci-lint-2.1.0-linux-amd64.tar.gz",
+			expectedVersion: "v2.1.0",
+		},
+		{
+			name:            "edge case - non-GitHub URL",
+			golangciLintURL: "https://example.com/golangci-lint.tar.gz",
+			expectedVersion: "",
+		},
+		{
+			name:            "edge case - GitHub but not releases URL",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/archive/main.tar.gz",
+			expectedVersion: "",
+		},
+		{
+			name:            "edge case - malformed GitHub releases URL",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/main/golangci-lint.tar.gz",
+			expectedVersion: "",
+		},
+	}
+
+	for _, test := range tt {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			utils := newGolangBuildTestsUtils()
+			utils.untarFileNames = []string{"golangci-lint"}
+
+			version, err := retrieveGolangciLint(utils, golangciLintDir, test.golangciLintURL)
+
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedVersion, version)
 		})
 	}
 }
