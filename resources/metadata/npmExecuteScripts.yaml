@@ -29,7 +29,7 @@ metadata:
       message: "Package integrity check failed. Clear npm cache and retry installation."
       category: "dependency"
     - pattern: "npm error code ENOENT.*package.json"
-      message: "Package.json file not found. Ensure package.json exists in the correct directory."
+      message: "Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct."
       category: "configuration"
   longDescription: >
     ### Lock file detection:

@@ -330,7 +330,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 				{
 					Pattern:  "npm error code ENOENT.*package.json",
-					Message:  "Package.json file not found. Ensure package.json exists in the correct directory.",
+					Message:  "Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct.",
 					Category: "configuration",
 				},
 			},

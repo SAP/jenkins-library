@@ -458,11 +458,6 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 			Description: "checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
 			Errors: []config.StepError{
 				{
-					Pattern:  "Checkmarx One scan failed with the following error.*Scan Failed",
-					Message:  "Checkmarx One scan failed during execution. Check scan configuration and project settings.",
-					Category: "scan",
-				},
-				{
 					Pattern:  "project .* not compliant",
 					Message:  "Project failed compliance checks. Review security findings and fix issues to meet compliance requirements.",
 					Category: "compliance",

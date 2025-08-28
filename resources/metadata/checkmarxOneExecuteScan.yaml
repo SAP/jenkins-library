@@ -2,9 +2,6 @@ metadata:
   name: checkmarxOneExecuteScan
   description: checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
   errors:
-    - pattern: "Checkmarx One scan failed with the following error.*Scan Failed"
-      message: "Checkmarx One scan failed during execution. Check scan configuration and project settings."
-      category: "scan"
     - pattern: "project .* not compliant"
       message: "Project failed compliance checks. Review security findings and fix issues to meet compliance requirements."
       category: "compliance"
