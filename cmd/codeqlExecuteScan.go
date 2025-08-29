@@ -260,7 +260,6 @@ func runDatabaseAnalyze(config *codeqlExecuteScanOptions, customFlags map[string
 	var reports []piperutils.Path
 	var sarifFiles []string
 
-	languages := getLanguageList(config)
 	if !isMultiLang {
 		sarifReport, sarifPath, err := executeAnalysis("sarif-latest", "codeqlReport.sarif", customFlags, config, utils, config.Database, "")
 		if err != nil {
@@ -279,6 +278,7 @@ func runDatabaseAnalyze(config *codeqlExecuteScanOptions, customFlags map[string
 		return reports, sarifFiles, nil
 	}
 
+	languages := getLanguageList(config)
 	for _, lang := range languages {
 		lang = strings.TrimSpace(lang)
 		if lang == "" {
