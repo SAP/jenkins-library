@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
       - name: unit-test
         id: unit-test
-        run: go test -tags=unit ./... -coverprofile cover.out
+        run: go test ./... -coverprofile cover.out
 
   format:
     runs-on: ubuntu-latest

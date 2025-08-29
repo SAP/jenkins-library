@@ -395,10 +395,7 @@ func {{ .StepName }}Metadata() config.StepData {
 `
 
 // StepTestGoTemplate ...
-const stepTestGoTemplate = `//go:build unit
-// +build unit
-
-package cmd
+const stepTestGoTemplate = `package cmd
 
 import (
 	"testing"
@@ -413,7 +410,6 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, {{ .StepName | quote }}, testCmd.Use, "command name incorrect")
-
 }
 `
 
