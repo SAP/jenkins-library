@@ -314,6 +314,18 @@ func sonarExecuteScanMetadata() config.StepData {
 			Name:        "sonarExecuteScan",
 			Aliases:     []config.Alias{},
 			Description: "Executes the Sonar scanner",
+			Errors: []config.StepError{
+				{
+					Pattern:  "QUALITY GATE STATUS: FAILED",
+					Message:  "SonarQube quality gate failed. Review code quality issues and fix them to meet quality standards.",
+					Category: "quality",
+				},
+				{
+					Pattern:  "Error during parsing of generic test execution report",
+					Message:  "Test execution report parsing failed. Verify test report format matches SonarQube expectations.",
+					Category: "configuration",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
