@@ -42,6 +42,17 @@ func Install(
 	return nil
 }
 
+func InstallProjectDependencies(
+	executeFn func(executable string, params ...string) error,
+	binary string,
+) error {
+	log.Entry().Debug("installing project dependencies")
+	if err := executeFn(binary, "-m", "pip", "install", "."); err != nil {
+		return err
+	}
+	return nil
+}
+
 func InstallRequirements(
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,
