@@ -729,6 +729,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
 		assert.Equal(t, 0, len(assessedAlerts))
+		assert.Equal(t, 0, influx.whitesource_data.fields.minor_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.major_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.vulnerabilities)
 	})
 
 	t.Run("error - some vulnerabilities", func(t *testing.T) {
@@ -744,6 +747,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		assert.Equal(t, 1, severeVulnerabilities)
 		assert.Equal(t, 2, len(alerts))
 		assert.Equal(t, 0, len(assessedAlerts))
+		assert.Equal(t, 1, influx.whitesource_data.fields.minor_vulnerabilities)
+		assert.Equal(t, 1, influx.whitesource_data.fields.major_vulnerabilities)
+		assert.Equal(t, 2, influx.whitesource_data.fields.vulnerabilities)
 	})
 
 	t.Run("success - assessed vulnerabilities", func(t *testing.T) {
@@ -759,6 +765,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
 		assert.Equal(t, 2, len(assessedAlerts))
+		assert.Equal(t, 0, influx.whitesource_data.fields.minor_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.major_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.vulnerabilities)
 	})
 
 	t.Run("error - WhiteSource failure", func(t *testing.T) {
