@@ -1,0 +1,167 @@
+metadata:
+  name: context defaults
+  description: These default descriptions will be used for the documentation generation of the pipeline steps.
+  longDescription: |-
+    These default descriptions will be used for the documentation generation of the pipeline steps for the context defaults.
+spec:
+  inputs:
+    params:
+    - name: containerCommand
+      description: 'Kubernetes only: Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (/usr/bin/tail -f /dev/null).'
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: containerName
+      description: Optional configuration in combination with containerMap to define the container where the commands should be executed in.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: containerShell
+      description: Allows to specify the shell to be executed for container with containerName.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerEnvVars
+      description: 'Environment variables to set in the container, e.g. [http_proxy: "proxy:8080"].'
+      type: map[string]string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerImage
+      description: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerName
+      description: 'Kubernetes only: Name of the container launching dockerImage. SideCar only: Name of the container in local network.'
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerOptions
+      description: Docker options to be set when starting the container.
+      type: '[]string'
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerPullImage
+      description: Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+      type: bool
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerVolumeBind
+      description: Volumes that should be mounted into the docker container.
+      type: map[string]string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: dockerWorkspace
+      description: 'Kubernetes only: Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.'
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarCommand
+      description: Allows to specify a start command for the sidecar container. This parameter is similar to `containerCommand`.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarEnvVars
+      description: A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`.
+      type: map[string]string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarImage
+      description: The name of the docker image of the sidecar container. If empty, no sidecar container is started. Similar to  `dockerImage`.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarName
+      description: Name of the sidecar container. Similar to `dockerName`.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarPullImage
+      description: Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+      type: bool
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarReadyCommand
+      description: Command executed inside the container which returns exit code 0 when the container is ready to be used.
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarOptions
+      description: Options to be set when starting the sidecar container. Similar to `dockerOptions`.
+      type: '[]string'
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarVolumeBind
+      description: Volumes that should be mounted into the sidecar container. Similar to `dockerVolumeBind`.
+      type: map[string]string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarWorkspace
+      type: string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: stashContent
+      description: Specific stashes that should be considered for the step execution.
+      type: '[]string'
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
