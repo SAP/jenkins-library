@@ -128,7 +128,8 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
-	scans, err := cx1sh.GetLastScans(10)
+	branch, isPR, baseBranch := cx1sh.GetScanBranch()
+	scans, err := cx1sh.GetLastScans(10, branch)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to get last 10 scans")
 	}
@@ -158,7 +159,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	if config.Incremental {
-		log.Entry().Warnf("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
+		log.Entry().Info("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
 	}
 
 	zipFile, err := cx1sh.ZipFiles()
@@ -173,11 +174,34 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
 	var scan *checkmarxOne.Scan
-	// user requested an incremental scan on a new (unscanned) branch, and the project has a Primary Branch set
-	if config.Incremental && len(scans) == 0 && cx1sh.Project.MainBranch != "" && cx1sh.Project.MainBranch != config.Branch {
-		scan, err = cx1sh.CreateBasedIncrementalScanRequest(cx1sh.Project.MainBranch, uploadLink)
+	// We search for a full scan in history:
+	fullScanExists := false
+	for _, histScan := range scans {
+		isIncr, _ := histScan.IsIncremental()
+		if isIncr == false {
+			fullScanExists = true
+			break
+		}
+	}
+	// user requested an incremental scan on a branch, and the project has a Primary Branch set, not in PR context and no full scan on the branch
+	if config.Incremental && !isPR && !fullScanExists && cx1sh.Project.MainBranch != "" && cx1sh.Project.MainBranch != branch {
+		scansMainBranch, err := cx1sh.GetLastScans(10, cx1sh.Project.MainBranch)
+		if err != nil {
+			return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
+		}
+		// We check if the main branch is eligible for an incremental scan
+		incrementalMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
+		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
+	} else if config.Incremental && isPR && len(baseBranch) > 0 { // running in a PR context, and we have a base branch for the incremental scan
+		// in a PR context we always want to do an incremental scan
+		// The scan will be based on the PR's target branch (baseBranch) if there is no full scan on the PR branch
+		if fullScanExists {
+			scan, err = cx1sh.CreateScanRequest(true, uploadLink, "")
+		} else {
+			scan, err = cx1sh.CreateScanRequest(true, uploadLink, baseBranch)
+		}
 	} else {
-		scan, err = cx1sh.CreateScanRequest(incremental, uploadLink)
+		scan, err = cx1sh.CreateScanRequest(incremental, uploadLink, "")
 	}
 
 	if err != nil {
@@ -395,8 +419,8 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int) ([]checkmarxOne.Scan, error) {
-	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, c.config.Branch, count, []string{"Completed"})
+func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int, branch string) ([]checkmarxOne.Scan, error) {
+	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, branch, count, []string{"Completed"})
 	if err != nil {
 		return []checkmarxOne.Scan{}, fmt.Errorf("Failed to get last %d Completed scans for project %v: %s", count, c.Project.ProjectID, err)
 	}
@@ -444,20 +468,7 @@ func (c *checkmarxOneExecuteScanHelper) UploadScanContent(zipFile *os.File) (str
 	return uploadUri, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string) (*checkmarxOne.Scan, error) {
-	sastConfig := checkmarxOne.ScanConfiguration{}
-	sastConfig.ScanType = "sast"
-
-	sastConfig.Values = make(map[string]string, 0)
-	sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
-	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
-	sastConfigString := fmt.Sprintf("incremental %v, preset %v", strconv.FormatBool(incremental), c.config.Preset)
-
-	if len(c.config.LanguageMode) > 0 {
-		sastConfig.Values["languageMode"] = c.config.LanguageMode
-		sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
-	}
-
+func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 	branch := c.config.Branch
 	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err == nil {
@@ -475,60 +486,34 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 		}
 	}
 	if len(c.config.PullRequestName) > 0 {
-		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
+		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, branch)
 	} else if cicdOrch.IsPullRequest() && cicdOrch.PullRequestConfig().Branch != "n/a" {
 		branch = fmt.Sprintf("PR%v-%v", cicdOrch.PullRequestConfig().Key, cicdOrch.PullRequestConfig().Branch)
 	}
 
-	sastConfigString = fmt.Sprintf("Cx1 Branch name %v, ", branch) + sastConfigString
-
-	log.Entry().Infof("Will run a scan with the following configuration: %v", sastConfigString)
-
-	configs := []checkmarxOne.ScanConfiguration{sastConfig}
-
-	// add scan's tags
-	tags := make(map[string]string, 0)
-	if len(c.config.ScanTags) > 0 {
-		err := json.Unmarshal([]byte(c.config.ScanTags), &tags)
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to parse the scan tags: %v", c.config.ScanTags)
-		}
-	}
-
-	// add more engines
-	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs, tags)
-
-	if err != nil {
-		return nil, fmt.Errorf("Failed to run scan on project %v: %s", c.Project.Name, err)
-	}
-
-	log.Entry().Debugf("Scanning project %v: %v ", c.Project.Name, scan.ScanID)
-
-	return &scan, nil
+	baseBranch := cicdOrch.PullRequestConfig().Base
+	isPR := cicdOrch.IsPullRequest()
+	return branch, isPR, baseBranch
 }
 
-func (c *checkmarxOneExecuteScanHelper) CreateBasedIncrementalScanRequest(baseBranch string, uploadLink string) (*checkmarxOne.Scan, error) {
+func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string, baseBranch string) (*checkmarxOne.Scan, error) {
 	sastConfig := checkmarxOne.ScanConfiguration{}
 	sastConfig.ScanType = "sast"
 
 	sastConfig.Values = make(map[string]string, 0)
-	sastConfig.Values["incremental"] = "true"
+	sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
 	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
-	sastConfig.Values["baseBranch"] = baseBranch
-	sastConfigString := fmt.Sprintf("incremental true based on branch %v, preset %v", baseBranch, c.config.Preset)
+	if incremental && len(baseBranch) > 0 {           // base the incremental scan on the specified base branch
+		sastConfig.Values["baseBranch"] = baseBranch
+	}
+	sastConfigString := fmt.Sprintf("incremental %v, preset %v", strconv.FormatBool(incremental), c.config.Preset)
 
 	if len(c.config.LanguageMode) > 0 {
 		sastConfig.Values["languageMode"] = c.config.LanguageMode
 		sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
 	}
 
-	branch := c.config.Branch
-	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
-		branch = c.config.GitBranch
-	}
-	if len(c.config.PullRequestName) > 0 {
-		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
-	}
+	branch, _, _ := c.GetScanBranch()
 
 	sastConfigString = fmt.Sprintf("Cx1 Branch name %v, ", branch) + sastConfigString
 
