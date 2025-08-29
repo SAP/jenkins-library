@@ -107,3 +107,59 @@ func TestCommonPipelineEnvDirNotPresent(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, cpe, 0)
 }
+
+func TestCleanJSONData(t *testing.T) {
+	t.Parallel()
+
+	// Test valid UTF-8 (should be unchanged)
+	validData := []byte(`{"commitMessage":"This is a valid commit message"}`)
+	result := CleanJSONData(validData)
+	require.Equal(t, validData, result)
+
+	// Test emoji with valid UTF-8 (should be unchanged)
+	emojiData := []byte(`{"commitMessage":"🚀 feat: add new feature"}`)
+	result = CleanJSONData(emojiData)
+	require.Equal(t, emojiData, result)
+
+	// Test data with JSON control character (like \x16)
+	invalidData := []byte("{\"commitMessage\":\"Test \x16 invalid char\"}")
+	result = CleanJSONData(invalidData)
+	require.NotEqual(t, invalidData, result)
+	require.True(t, json.Valid(result), "Result should be valid JSON")
+
+	// Verify we can parse the cleaned data as JSON
+	var parsed map[string]interface{}
+	err := json.Unmarshal(result, &parsed)
+	require.NoError(t, err)
+	require.Contains(t, parsed, "commitMessage")
+
+	// The control character should be escaped as unicode
+	require.Contains(t, string(result), "\\u0016")
+}
+
+func TestReadFileContentWithInvalidUTF8(t *testing.T) {
+	t.Parallel()
+
+	// Create a temporary JSON file with control characters
+	tmpDir := t.TempDir()
+	jsonFile := path.Join(tmpDir, "test.json")
+
+	// Write JSON with control character that causes parsing errors
+	invalidJSON := []byte("{\"commitMessage\":\"Test \x16 control char commit\"}")
+	err := os.WriteFile(jsonFile, invalidJSON, 0644)
+	require.NoError(t, err)
+
+	// Try to read the file - should not fail due to control characters
+	_, value, _, err := readFileContent(jsonFile)
+	require.NoError(t, err)
+	require.NotNil(t, value)
+
+	// Verify we can extract the commit message
+	if valueMap, ok := value.(map[string]interface{}); ok {
+		commitMsg, exists := valueMap["commitMessage"]
+		require.True(t, exists)
+		require.IsType(t, "", commitMsg)
+		// The control character should be properly handled in the message
+		require.NotEmpty(t, commitMsg)
+	}
+}
