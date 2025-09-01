@@ -471,7 +471,7 @@ func (c *checkmarxOneExecuteScanHelper) UploadScanContent(zipFile *os.File) (str
 func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 	branch := c.config.Branch
 	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err == nil {
+	if err != nil {
 		log.Entry().Warn("Could not identify orchestrator")
 	}
 	if len(branch) == 0 && len(c.config.GitBranch) > 0 && c.config.GitBranch != "n/a" {
