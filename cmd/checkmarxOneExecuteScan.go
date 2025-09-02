@@ -1070,6 +1070,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 func (c *checkmarxOneExecuteScanHelper) zipWorkspaceFiles(filterPattern string, utils checkmarxOneExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
+	log.Entry().Infof("Zipping files using filter: %v", filterPattern)
 	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
