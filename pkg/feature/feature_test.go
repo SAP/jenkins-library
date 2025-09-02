@@ -8,7 +8,7 @@ import (
 )
 
 func TestIsFeatureEnabled(t *testing.T) {
-	t.Run("Azure - BranchBuild", func(t *testing.T) {
+	t.Run("", func(t *testing.T) {
 		assert.False(t, IsFeatureEnabled("newFeature"))
 
 		// defer resetEnv(os.Environ())
