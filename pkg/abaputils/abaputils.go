@@ -379,6 +379,7 @@ type ClientMock struct {
 	NilResponse        bool
 	ErrorInsteadOfDump bool
 	ErrorList          []error
+	RequestedURLs      []string
 }
 
 // SetOptions sets clientOptions for a client mock
@@ -390,7 +391,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	if c.NilResponse {
 		return nil, c.Error
 	}
-
+	c.RequestedURLs = append(c.RequestedURLs, url)
 	var body []byte
 	var responseError error
 	if c.Body != "" {
