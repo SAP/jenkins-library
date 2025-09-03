@@ -140,6 +140,15 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: alternativePhaseName
+        description: overrides default phase name
+        type: string
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   outputs:
     resources:
       - name: commonPipelineEnvironment
