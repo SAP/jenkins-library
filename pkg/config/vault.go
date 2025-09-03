@@ -115,35 +115,34 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 		log.Entry().Debug("Vault not configured")
 		return nil, nil
 	}
-	log.Entry().Info("Logging into Vault")
-	log.Entry().Debugf("  with URL %s", address)
+	log.Entry().WithField("vaultURL", address).Info("Logging into Vault")
 	namespace := ""
 	// namespaces are only available in vault enterprise so using them should be optional
 	if config["vaultNamespace"] != nil {
 		namespace = config["vaultNamespace"].(string)
-		log.Entry().Debugf("  with namespace %s", namespace)
+		log.Entry().WithField("namespace", namespace).Debug("Vault namespace configured")
 	}
 	var client *vault.Client
 	var err error
 	clientConfig := &vault.ClientConfig{Config: &api.Config{Address: address}, Namespace: namespace}
 	if creds.VaultToken != "" {
-		log.Entry().Debugf("  with Token authentication")
+		log.Entry().Debug("Using Vault token authentication")
 		client, err = vault.NewClientWithToken(clientConfig, creds.VaultToken)
 	} else {
-		log.Entry().Debugf("  with AppRole authentication")
+		log.Entry().Debug("Using Vault AppRole authentication")
 		clientConfig.RoleID = creds.AppRoleID
 		clientConfig.SecretID = creds.AppRoleSecretID
 		client, err = vault.NewClient(clientConfig)
 	}
 	if err != nil {
-		log.Entry().Info("  failed")
+		log.Entry().WithError(err).Error("Vault authentication failed")
 		return nil, err
 	}
 
 	// Set global vault client for usage in steps
 	globalVaultClient = client
 
-	log.Entry().Info("  succeeded")
+	log.Entry().Info("Vault authentication succeeded")
 	return client, nil
 }
 
@@ -165,7 +164,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 		return
 	}
 
-	log.Entry().Infof("Resolving '%s'", param.Name)
+	log.Entry().WithField("parameter", param.Name).Debug("Resolving vault secret")
 
 	var secretValue *string
 	for _, vaultPath := range getSecretReferencePaths(ref, config.Config) {
@@ -177,10 +176,11 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
-			log.Entry().Infof("  succeeded with Vault path '%s'", vaultPath)
-			if ref.Type == "vaultSecret" {
+			log.Entry().WithField("vaultPath", vaultPath).Debug("Vault secret resolved successfully")
+			switch ref.Type {
+			case "vaultSecret":
 				config.Config[param.Name] = *secretValue
-			} else if ref.Type == "vaultSecretFile" {
+			case "vaultSecretFile":
 				filePath, err := createTemporarySecretFile(param.Name, *secretValue)
 				if err != nil {
 					log.Entry().WithError(err).Warnf("Couldn't create temporary secret file for '%s'", param.Name)
@@ -192,17 +192,17 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 		}
 	}
 	if secretValue == nil {
-		log.Entry().Warn("  failed")
+		log.Entry().WithField("parameter", param.Name).Info("Secret not found in Vault at configured paths.")
 	}
 }
 
 func resolveVaultTestCredentialsWrapper(config *StepConfig, client VaultClient) {
-	log.Entry().Infof("Resolving test credentials wrapper")
+	log.Entry().Debug("Resolving test credentials from Vault")
 	resolveVaultCredentialsWrapperBase(config, client, vaultTestCredentialPath, vaultTestCredentialKeys, vaultTestCredentialEnvPrefix, resolveVaultTestCredentials)
 }
 
 func resolveVaultCredentialsWrapper(config *StepConfig, client VaultClient) {
-	log.Entry().Infof("Resolving credentials wrapper")
+	log.Entry().Debug("Resolving credentials from Vault")
 	resolveVaultCredentialsWrapperBase(config, client, vaultCredentialPath, vaultCredentialKeys, vaultCredentialEnvPrefix, resolveVaultCredentials)
 }
 
@@ -220,17 +220,17 @@ func resolveVaultCredentialsWrapperBase(
 		vaultCredentialEnvPrefixCopy, prefixOk := config.Config[vaultCredEnvPrefix].([]interface{})
 
 		if !keysOk {
-			log.Entry().Debugf("  failed, unknown type of keys")
+			log.Entry().Debug("Vault credential resolution failed: unknown type of keys")
 			return
 		}
 
 		if len(vaultCredentialKeysCopy) != len(vaultCredentialPathCopy) {
-			log.Entry().Debugf("  failed, not same count of values and keys")
+			log.Entry().Debug("Vault credential resolution failed: mismatched count of values and keys")
 			return
 		}
 
 		if prefixOk && len(vaultCredentialEnvPrefixCopy) != len(vaultCredentialPathCopy) {
-			log.Entry().Debugf("  failed, not same count of values and environment prefixes")
+			log.Entry().Debug("Vault credential resolution failed: mismatched count of values and environment prefixes")
 			return
 		}
 
@@ -247,7 +247,7 @@ func resolveVaultCredentialsWrapperBase(
 		config.Config[vaultCredKeys] = vaultCredentialKeysCopy
 		config.Config[vaultCredEnvPrefix] = vaultCredentialEnvPrefixCopy
 	default:
-		log.Entry().Debugf("  failed, unknown type of path")
+		log.Entry().Debug("Vault credential resolution failed: unknown type of path")
 		return
 	}
 }
@@ -274,7 +274,7 @@ func resolveVaultTestCredentials(config *StepConfig, client VaultClient) {
 
 		secret, err := client.GetKvSecret(vaultPath)
 		if err != nil {
-			log.Entry().WithError(err).Debugf("Couldn't fetch secret at '%s'", vaultPath)
+			log.Entry().WithError(err).WithField("vaultPath", vaultPath).Debug("Failed to fetch secret from vault path")
 			continue
 		}
 		if secret == nil {
@@ -471,10 +471,10 @@ func createTemporarySecretFile(namePattern string, content string) (string, erro
 }
 
 func lookupPath(client VaultClient, path string, param *StepParameters) *string {
-	log.Entry().Debugf("  with Vault path '%s'", path)
+	log.Entry().Debug("Checking vault path for secret")
 	secret, err := client.GetKvSecret(path)
 	if err != nil {
-		log.Entry().WithError(err).Warnf("Couldn't fetch secret at '%s'", path)
+		log.Entry().WithError(err).WithField("vaultPath", path).Warn("Failed to fetch secret from vault")
 		return nil
 	}
 	if secret == nil {
@@ -513,16 +513,4 @@ func getSecretReferencePaths(reference *ResourceReference, config map[string]int
 		retPaths = append(retPaths, fullPath)
 	}
 	return retPaths
-}
-
-func toStringSlice(interfaceSlice []interface{}) []string {
-	retSlice := make([]string, 0, len(interfaceSlice))
-	for _, vRaw := range interfaceSlice {
-		if v, ok := vRaw.(string); ok {
-			retSlice = append(retSlice, v)
-			continue
-		}
-		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
-	}
-	return retSlice
 }

@@ -2,6 +2,7 @@ package buildsettings
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -32,6 +33,13 @@ type BuildOptions struct {
 }
 
 func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, error) {
+	// to have docker image from action inputs or env variable
+	dockerImage := config.DockerImage
+	if envDockerImage := os.Getenv("PIPER_dockerImage"); envDockerImage != "" {
+		log.Entry().Debugf("Overriding DockerImage from env PIPER_dockerImage: '%v'", envDockerImage)
+		dockerImage = envDockerImage
+	}
+
 	currentBuildSettingsInfo := BuildOptions{
 		CreateBOM:                   config.CreateBOM,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
@@ -39,7 +47,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		Profiles:                    config.Profiles,
 		Publish:                     config.Publish,
 		DefaultNpmRegistry:          config.DefaultNpmRegistry,
-		DockerImage:                 config.DockerImage,
+		DockerImage:                 dockerImage,
 	}
 	var jsonMap map[string][]interface{}
 	var jsonResult []byte

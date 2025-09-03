@@ -31,6 +31,7 @@ type checkmarxOneExecuteScanOptions struct {
 	GeneratePdfReport                    bool     `json:"generatePdfReport,omitempty"`
 	GithubAPIURL                         string   `json:"githubApiUrl,omitempty"`
 	GithubToken                          string   `json:"githubToken,omitempty"`
+	ScanSummaryInPullRequest             bool     `json:"scanSummaryInPullRequest,omitempty"`
 	Incremental                          bool     `json:"incremental,omitempty"`
 	Owner                                string   `json:"owner,omitempty"`
 	GitBranch                            string   `json:"gitBranch,omitempty"`
@@ -292,6 +293,17 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.ClientSecret)
 			log.RegisterSecret(stepConfig.APIKey)
@@ -392,6 +404,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().BoolVar(&stepConfig.ScanSummaryInPullRequest, "scanSummaryInPullRequest", false, "Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.GitBranch, "gitBranch", os.Getenv("PIPER_gitBranch"), "Set the GitHub repository branch.")
@@ -539,6 +552,15 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
+						Name:        "scanSummaryInPullRequest",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "incremental",

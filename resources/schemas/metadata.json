@@ -43,7 +43,10 @@
             "properties": {
                 "name": { "type": "string" },
                 "description": { "type": "string" },
-                "longDescription": { "type": "string" }
+                "longDescription": { "type": "string" },
+                "errors": {
+                    "$ref": "#definitions/com.sap.piper.metadata.errorList"
+                }
             },
             "required": ["name", "description", "longDescription"]
         },
@@ -123,6 +126,22 @@
             "items": {
                 "$ref": "https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json#/definitions/io.k8s.api.core.v1.Container"
             }
+        },
+        "com.sap.piper.metadata.errorList": {
+            "type": "array",
+            "items": {
+                "$ref": "#definitions/com.sap.piper.metadata.error"
+            }
+        },
+        "com.sap.piper.metadata.error": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "pattern": { "type": "string" },
+                "message": { "type": "string" },
+                "category": { "type": "string" }
+            },
+            "required": ["pattern", "category"]
         }
     }
 }
