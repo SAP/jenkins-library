@@ -40,7 +40,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "python:3.10",
+		Image: "python:3.11",
 		Cmd:   []string{"tail", "-f"},
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(pwd, "/piperbin"),
