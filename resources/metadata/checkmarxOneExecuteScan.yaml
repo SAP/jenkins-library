@@ -5,12 +5,9 @@ metadata:
     - pattern: "project .* not compliant"
       message: "Project failed compliance checks. Review security findings and fix issues to meet compliance requirements."
       category: "compliance"
-    - pattern: "failed to create Checkmarx One client.*No APIKey or client_id/client_secret provided"
+    - pattern: "No APIKey or client_id/client_secret provided"
       message: "Authentication failed. Verify APIKey or client credentials are properly configured in vault secrets."
       category: "authentication"
-    - pattern: "failed to create zip file"
-      message: "File preparation failed. Check workspace permissions and available disk space."
-      category: "configuration"
   longDescription: |-
     checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java or TypeScript, Swift, Golang, Ruby code,
     and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.

@@ -463,14 +463,9 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 					Category: "compliance",
 				},
 				{
-					Pattern:  "failed to create Checkmarx One client.*No APIKey or client_id/client_secret provided",
+					Pattern:  "No APIKey or client_id/client_secret provided",
 					Message:  "Authentication failed. Verify APIKey or client credentials are properly configured in vault secrets.",
 					Category: "authentication",
-				},
-				{
-					Pattern:  "failed to create zip file",
-					Message:  "File preparation failed. Check workspace permissions and available disk space.",
-					Category: "configuration",
 				},
 			},
 		},
