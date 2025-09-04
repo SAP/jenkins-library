@@ -105,6 +105,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+	pipInstallSetuptoolsFlags := append(pipInstallFlags, "setuptools")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallSetuptoolsFlags...); err != nil {
+		return err
+	}
+
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
 	flags = append(flags, "setup.py")
@@ -147,8 +152,7 @@ func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 
 func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
 	pipInstallOriginalFlags := pipInstallFlags
-	exists, _ := utils.FileExists(config.RequirementsFilePath)
-	if exists {
+	if exists, _ := utils.FileExists(config.RequirementsFilePath); exists {
 		pipInstallRequirementsFlags := append(pipInstallOriginalFlags, "--requirement", config.RequirementsFilePath)
 		if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallRequirementsFlags...); err != nil {
 			return err
