@@ -105,9 +105,16 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-	pipInstallSetuptoolsFlags := append(pipInstallFlags, "setuptools")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallSetuptoolsFlags...); err != nil {
-		return err
+	// pipInstallSetuptoolsFlags := append(pipInstallFlags, "setuptools")
+	// if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallSetuptoolsFlags...); err != nil {
+	// 	return err
+	// }
+
+	if exists, _ := utils.FileExists(config.RequirementsFilePath); exists {
+		pipInstallRequirementsFlags := append(pipInstallFlags, "--requirement", config.RequirementsFilePath)
+		if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallRequirementsFlags...); err != nil {
+			return err
+		}
 	}
 
 	var flags []string
