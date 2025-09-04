@@ -2,6 +2,7 @@ package npm
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -52,6 +53,13 @@ func (pm *PackageManager) InstallPnpm(execRunner ExecRunner, pnpmVersion string,
 	if err := execRunner.RunExecutable("npm", "install", pnpmPackage, "--prefix", prefixPath); err != nil {
 		return fmt.Errorf("failed to install pnpm locally: %w", err)
 	}
+
+	// Add the local pnpm bin directory to PATH so it's globally available
+	pnpmBinDir := filepath.Join(prefixPath, "node_modules", ".bin")
+	currentPath := os.Getenv("PATH")
+	newPath := pnpmBinDir + string(os.PathListSeparator) + currentPath
+	os.Setenv("PATH", newPath)
+
 	return nil
 }
 
