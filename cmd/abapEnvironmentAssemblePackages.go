@@ -86,7 +86,7 @@ func runAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, com aba
 		return nil, errConBuild
 	}
 
-	builds, err := executeBuilds(addonDescriptor, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond)
+	builds, err := executeBuilds(addonDescriptor, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond, config.AlternativePhaseName)
 	if err != nil {
 		return builds, errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
 	}
@@ -111,7 +111,7 @@ func runAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, com aba
 	return builds, nil
 }
 
-func executeBuilds(addonDescriptor *abaputils.AddonDescriptor, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollInterval time.Duration) ([]buildWithRepository, error) {
+func executeBuilds(addonDescriptor *abaputils.AddonDescriptor, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollInterval time.Duration, altenativePhaseName string) ([]buildWithRepository, error) {
 	var builds []buildWithRepository
 
 	for _, repo := range addonDescriptor.Repositories {
@@ -125,7 +125,7 @@ func executeBuilds(addonDescriptor *abaputils.AddonDescriptor, conn abapbuild.Co
 
 		if repo.Status == "P" {
 			buildRepo.repo.InBuildScope = true
-			err := buildRepo.start(addonDescriptor)
+			err := buildRepo.start(addonDescriptor, altenativePhaseName)
 			if err != nil {
 				buildRepo.build.RunState = abapbuild.Failed
 				buildRepo.repo.ErrorText = fmt.Sprint(err)
@@ -169,7 +169,7 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 	}
 }
 
-func (br *buildWithRepository) start(addonDescriptor *abaputils.AddonDescriptor) error {
+func (br *buildWithRepository) start(addonDescriptor *abaputils.AddonDescriptor, altenativePhaseName string) error {
 	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
 		return errors.New("Parameters missing. Please provide software component name, version, sp-level, packagetype and packagename")
 	}
@@ -234,8 +234,15 @@ func (br *buildWithRepository) start(addonDescriptor *abaputils.AddonDescriptor)
 			abapbuild.Value{ValueID: "ADDITIONAL_PIECELIST",
 				Value: br.repo.AdditionalPiecelist})
 	}
-	phase := "BUILD_" + br.repo.PackageType
-	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
+
+	var phase string
+	if altenativePhaseName != "" {
+		phase = altenativePhaseName
+	} else {
+		phase = "BUILD_" + br.repo.PackageType
+	}
+
+	log.Entry().Infof("Starting assembly of package %s as %s", br.repo.PackageName, phase)
 	return br.build.Start(phase, valuesInput)
 }
 
