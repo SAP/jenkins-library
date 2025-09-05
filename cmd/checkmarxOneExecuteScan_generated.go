@@ -459,12 +459,12 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 			Errors: []config.StepError{
 				{
 					Pattern:  "project .* not compliant",
-					Message:  "Project failed compliance checks. Review security findings and fix issues to meet compliance requirements.",
+					Message:  "Project failed compliance checks. Triage security findings in Checkmarx One and fix issues to meet compliance requirements.",
 					Category: "compliance",
 				},
 				{
 					Pattern:  "No APIKey or client_id/client_secret provided",
-					Message:  "Authentication failed. Verify APIKey or client credentials are properly configured in vault secrets.",
+					Message:  "Authentication failed. Verify APIKey or client credentials are properly configured.",
 					Category: "authentication",
 				},
 			},
