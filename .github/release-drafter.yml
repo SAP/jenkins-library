@@ -1,0 +1,98 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+categories:
+  - title: "🚨 Breaking Changes"
+    labels:
+      - "breaking"
+  - title: "🚀 Features"
+    labels:
+      - "enhancement"
+  - title: "🐛 Bug Fixes"
+    labels:
+      - "bug"
+  - title: "🧰 Maintenance"
+    labels:
+      - "maintenance"
+      - "ci"
+  - title: "📚 Documentation"
+    labels:
+      - "documentation"
+  - title: "⬆️ Dependencies"
+    labels:
+      - "dependencies"
+
+autolabeler:
+  - label: "documentation"
+    files:
+      - "*.md"
+      - "docs/**/*"
+    branch:
+      - '/docs{0,1}\/.+/'
+    title:
+      - "/docs/i"
+      - "/documentation/i"
+
+  - label: "bug"
+    branch:
+      - '/fix\/.+/'
+      - '/bugfix\/.+/'
+    title:
+      - "/fix/i"
+      - "/bug/i"
+      - "/issue/i"
+
+  - label: "enhancement"
+    branch:
+      - '/feature\/.+/'
+      - '/enhancement\/.+/'
+      - '/improve\/.+/'
+    title:
+      - "/feat/i"
+      - "/feature/i"
+      - "/enhance/i"
+      - "/add/i"
+
+  - label: "maintenance"
+    title:
+      - "/chore/i"
+
+  - label: "dependencies"
+    files:
+      - "package.json"
+      - "package-lock.json"
+      - "yarn.lock"
+      - "npm-shrinkwrap.json"
+    branch:
+      - '/deps\/.+/'
+    title:
+      - "/deps/i"
+      - "/dependencies/i"
+      - "/upgrade/i"
+
+  - label: "breaking"
+    title:
+      - "/!:/i"
+      - "/breaking/i"
+    body:
+      - "/BREAKING CHANGE:/i"
+
+version-resolver:
+  major:
+    labels:
+      - "major"
+      - "breaking"
+  minor:
+    labels:
+      - "minor"
+      - "enhancement"
+  patch:
+    labels:
+      - "patch"
+      - "bug"
+      - "dependencies"
+      - "documentation"
+  default: patch
+
+template: |
+  ## What's Changed
+  $CHANGES
