@@ -122,7 +122,7 @@ func TestPythonBuildExecute(t *testing.T) {
 			"python": "python",
 		}
 
-		err := buildExecute(&config, &utils, []string{}, virutalEnvironmentPathMap)
+		err := buildExecute(&config, &utils, virutalEnvironmentPathMap)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "python", utils.ExecMockRunner.Calls[0].Exec)
