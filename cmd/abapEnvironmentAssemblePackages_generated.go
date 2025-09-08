@@ -31,6 +31,7 @@ type abapEnvironmentAssemblePackagesOptions struct {
 	MaxRuntimeInMinutes         int      `json:"maxRuntimeInMinutes,omitempty"`
 	PollIntervalsInMilliseconds int      `json:"pollIntervalsInMilliseconds,omitempty"`
 	CertificateNames            []string `json:"certificateNames,omitempty"`
+	AlternativePhaseName        string   `json:"alternativePhaseName,omitempty"`
 }
 
 type abapEnvironmentAssemblePackagesCommonPipelineEnvironment struct {
@@ -213,6 +214,7 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
 	cmd.Flags().IntVar(&stepConfig.PollIntervalsInMilliseconds, "pollIntervalsInMilliseconds", 60000, "wait time in milliseconds till next status request in the backend system")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
+	cmd.Flags().StringVar(&stepConfig.AlternativePhaseName, "alternativePhaseName", os.Getenv("PIPER_alternativePhaseName"), "overrides default phase name")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -347,6 +349,15 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "alternativePhaseName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_alternativePhaseName"),
 					},
 				},
 			},
