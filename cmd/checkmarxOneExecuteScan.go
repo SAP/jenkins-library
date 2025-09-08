@@ -191,13 +191,16 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 		// We check if the main branch is eligible for an incremental scan
 		incrementalMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
+		log.Entry().Debugf("Main branch %v incremental scan eligibility: %t", cx1sh.Project.MainBranch, incrementalMainBranch)
 		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
 	} else if config.Incremental && isPR && len(baseBranch) > 0 { // running in a PR context, and we have a base branch for the incremental scan
 		// in a PR context we always want to do an incremental scan
 		// The scan will be based on the PR's target branch (baseBranch) if there is no full scan on the PR branch
 		if fullScanExists {
+			log.Entry().Debugf("A full scan exists on the PR branch %v, so the incremental scan will be based on it", branch)
 			scan, err = cx1sh.CreateScanRequest(true, uploadLink, "")
 		} else {
+			log.Entry().Debugf("There is no full scan on the PR branch %v, so the incremental scan will be based on branch %v", branch, baseBranch)
 			scan, err = cx1sh.CreateScanRequest(true, uploadLink, baseBranch)
 		}
 	} else {
