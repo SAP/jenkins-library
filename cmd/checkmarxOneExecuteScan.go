@@ -483,7 +483,6 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 		cicdBranch := cicdOrch.Branch()
 		if cicdBranch != "n/a" {
 			branch = cicdBranch
-			log.Entry().Infof("CxOne scan branch was automatically set to : %v", branch)
 		} else {
 			log.Entry().Info("Could not retrieve branch name from orchestrator")
 		}
@@ -496,6 +495,7 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 
 	baseBranch := cicdOrch.PullRequestConfig().Base
 	isPR := cicdOrch.IsPullRequest()
+	log.Entry().Infof("CxOne scan branch was automatically set to : %v", branch)
 	return branch, isPR, baseBranch
 }
 
