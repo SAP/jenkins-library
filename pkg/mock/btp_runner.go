@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
@@ -30,20 +31,20 @@ func (b *BtpExecutorMock) Run(cmdScript string) (err error) {
 	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout)
 }
 
-func (b *BtpExecutorMock) RunSync(cmdScript string, cmdCheck string, timeoutMin int, pollIntervalSec int, negativeCheck bool) error {
-	err := b.Run(cmdScript)
+func (b *BtpExecutorMock) RunSync(opts btputils.RunSyncOptions) error {
+	err := b.Run(opts.CmdScript)
 	if err != nil {
 		return fmt.Errorf("Initial command execution failed: %w", err)
 	}
 
-	fmt.Printf("Started polling. Timeout: %d minutes\n", timeoutMin)
+	fmt.Printf("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
 
 	fmt.Println("Checking command completion...")
 
 	// Simulate polling
-	err = b.Run(cmdCheck)
+	check := opts.CheckFunc()
 
-	if (negativeCheck && (err != nil)) || (!negativeCheck && (err == nil)) {
+	if check {
 		fmt.Println("Command execution completed successfully!")
 		return nil
 	}
@@ -58,6 +59,7 @@ func (e *BtpExecutorMock) handleCall(call string, stdoutReturn map[string]string
 		for pattern, output := range stdoutReturn {
 			if matchCommand(pattern, call) {
 				stdout.Write([]byte(output))
+				return nil
 			}
 		}
 	}

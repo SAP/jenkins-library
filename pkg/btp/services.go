@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -47,16 +48,26 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		WithAction("create").
 		WithTarget("services/binding").
 		WithName(options.BindingName).
+		WithServiceInstanceName(options.ServiceInstance).
 		WithSubAccount(options.Subaccount).
 		WithParameters(options.Parameters).Build()
 
-	btpVerifScript, _ := NewBTPCommandBuilder().
-		WithAction("get").
-		WithTarget("services/binding").
-		WithName(options.BindingName).
-		WithSubAccount(options.Subaccount).Build()
-
-	err = btp.Exec.RunSync(btpCreateBindingScript, btpVerifScript, options.Timeout, options.PollInterval, false)
+	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+		CmdScript:      btpCreateBindingScript,
+		TimeoutSeconds: options.Timeout,
+		PollInterval:   options.PollInterval,
+		CheckFunc: func() bool {
+			return CheckServiceBindingCreated(btp, GetServiceBindingOptions{
+				Url:         options.Url,
+				Subdomain:   options.Subdomain,
+				User:        options.User,
+				Password:    options.Password,
+				Tenant:      options.Tenant,
+				Subaccount:  options.Subaccount,
+				BindingName: options.BindingName,
+			})
+		},
+	})
 
 	if err != nil {
 		// error while getting service binding
@@ -175,18 +186,27 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		WithSubAccount(options.Subaccount).
 		WithName(options.BindingName).WithConfirm().Build()
 
-	btpCheckScript, _ := NewBTPCommandBuilder().
-		WithAction("get").
-		WithTarget("services/binding").
-		WithSubAccount(options.Subaccount).
-		WithName(options.BindingName).Build()
-
-	err = btp.Exec.RunSync(btpDeleteBindingScript, btpCheckScript, options.Timeout, options.PollInterval, true)
+	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+		CmdScript:      btpDeleteBindingScript,
+		TimeoutSeconds: options.Timeout,
+		PollInterval:   options.PollInterval,
+		CheckFunc: func() bool {
+			return CheckServiceBindingDeleted(btp, GetServiceBindingOptions{
+				Url:         options.Url,
+				Subdomain:   options.Subdomain,
+				User:        options.User,
+				Password:    options.Password,
+				Tenant:      options.Tenant,
+				Subaccount:  options.Subaccount,
+				BindingName: options.BindingName,
+			})
+		},
+	})
 
 	if err != nil {
 		// error while getting service binding
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("Checking if Service-Binding was deleted failed: %w", err)
+		return fmt.Errorf("Error occurred while deleting the Service-Binding: %w", err)
 	}
 
 	err = btp.Logout()
@@ -244,13 +264,22 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		WithPlanName(options.PlanName).WithOfferingName(options.OfferingName).
 		Build()
 
-	btpVerifScript, _ := NewBTPCommandBuilder().
-		WithAction("get").
-		WithTarget("services/instance").
-		WithName(options.InstanceName).
-		WithSubAccount(options.Subaccount).Build()
-
-	err = btp.Exec.RunSync(btpCreateInstanceScript, btpVerifScript, options.Timeout, options.PollInterval, false)
+	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+		CmdScript:      btpCreateInstanceScript,
+		TimeoutSeconds: options.Timeout,
+		PollInterval:   options.PollInterval,
+		CheckFunc: func() bool {
+			return CheckServiceInstanceCreated(btp, GetServiceInstanceOptions{
+				Url:          options.Url,
+				Subdomain:    options.Subdomain,
+				User:         options.User,
+				Password:     options.Password,
+				Tenant:       options.Tenant,
+				Subaccount:   options.Subaccount,
+				InstanceName: options.InstanceName,
+			})
+		},
+	})
 
 	if err != nil {
 		// error while getting service instance
@@ -368,13 +397,22 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		WithSubAccount(options.Subaccount).
 		WithConfirm().Build()
 
-	btpCheckScript, _ := NewBTPCommandBuilder().
-		WithAction("get").
-		WithTarget("services/instance").
-		WithName(options.InstanceName).
-		WithSubAccount(options.Subaccount).Build()
-
-	err = btp.Exec.RunSync(btpGetServiceScript, btpCheckScript, options.Timeout, options.PollInterval, true)
+	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+		CmdScript:      btpGetServiceScript,
+		TimeoutSeconds: options.Timeout,
+		PollInterval:   options.PollInterval,
+		CheckFunc: func() bool {
+			return CheckServiceInstanceDeleted(btp, GetServiceInstanceOptions{
+				Url:          options.Url,
+				Subdomain:    options.Subdomain,
+				User:         options.User,
+				Password:     options.Password,
+				Tenant:       options.Tenant,
+				Subaccount:   options.Subaccount,
+				InstanceName: options.InstanceName,
+			})
+		},
+	})
 
 	if err != nil {
 		// error while deleting service instance

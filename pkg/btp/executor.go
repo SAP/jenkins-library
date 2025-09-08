@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
@@ -37,12 +38,16 @@ func (e *Executor) Run(cmdScript string) (err error) {
 @param pollInterval : in seconds
 @param negativeCheck : set to false if you whant to check the negation of the response of `cmdCheck`
 */
-func (e *Executor) RunSync(cmdScript string, cmdCheck string, timeout int, pollInterval int, negativeCheck bool) (err error) {
-	err = e.Run(cmdScript)
+func (e *Executor) RunSync(opts btputils.RunSyncOptions) (err error) {
+	err = e.Run(opts.CmdScript)
+
+	if err != nil {
+		return fmt.Errorf("Failed to execute BTP CLI: %w", err)
+	}
 
 	// Poll to check completion
-	timeoutDuration := time.Duration(timeout) * time.Second
-	pollIntervall := time.Duration(pollInterval) * time.Second
+	timeoutDuration := time.Duration(opts.TimeoutSeconds) * time.Second
+	pollIntervall := time.Duration(opts.PollInterval) * time.Second
 	startTime := time.Now()
 
 	fmt.Println("Checking command completion...")
@@ -51,10 +56,9 @@ func (e *Executor) RunSync(cmdScript string, cmdCheck string, timeout int, pollI
 		// Wait before the next check
 		time.Sleep(pollIntervall)
 
-		parts := strings.Fields(cmdCheck)
-		err := e.Cmd.RunExecutable(parts[0], parts[1:]...)
+		check := opts.CheckFunc()
 
-		if (negativeCheck && (err != nil)) || (!negativeCheck && (err == nil)) {
+		if check {
 			fmt.Println("Command execution completed successfully!")
 			return nil
 		}
@@ -76,5 +80,5 @@ type btpRunner interface {
 type ExecRunner interface {
 	btpRunner
 	Run(cmdScript string) error
-	RunSync(cmdScript string, cmdCheck string, timeoutMin int, pollIntervalSec int, negativeCheck bool) error
+	RunSync(opts btputils.RunSyncOptions) error
 }

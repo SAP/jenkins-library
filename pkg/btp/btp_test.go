@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +46,14 @@ func TestRunSync_Success(t *testing.T) {
 	m.Stdout(new(bytes.Buffer))
 
 	// Test successful polling execution
-	err := m.RunSync("btp deploy", "btp check", 1, 30, false)
+	err := m.RunSync(btputils.RunSyncOptions{
+		CmdScript:      "btp deploy",
+		TimeoutSeconds: 1,
+		PollInterval:   30,
+		CheckFunc: func() bool {
+			return true // Simulate a successful check
+		},
+	})
 	assert.NoError(t, err)
 }
 
@@ -59,7 +67,14 @@ func TestRunSync_Erro_On_Check(t *testing.T) {
 	m.Stdout(new(bytes.Buffer))
 
 	timeoutMin := 1
-	err := m.RunSync("btp deploy", "btp check", timeoutMin, 20, false)
+	err := m.RunSync(btputils.RunSyncOptions{
+		CmdScript:      "btp deploy",
+		TimeoutSeconds: timeoutMin,
+		PollInterval:   20,
+		CheckFunc: func() bool {
+			return false
+		},
+	})
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Command did not complete within the timeout period")

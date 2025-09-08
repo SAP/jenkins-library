@@ -33,13 +33,8 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 {
   "id": "xxxx",
   "name": "%s",
-  "service_instance_id": "yyy",
-  "context": {
-    "subaccount_id": "%s",
-    "subdomain": "%s",
-  },
-  "created_by": "%s",
-}`, btpConfig.BindingName, btpConfig.Subaccount, btpConfig.Subdomain, btpConfig.User),
+  "ready": true
+}`, btpConfig.BindingName),
 			},
 		}
 
@@ -81,13 +76,8 @@ func TestBTPGetServiceBinding(t *testing.T) {
 {
   "id": "xxxx",
   "name": "%s",
-  "service_instance_id": "yyy",
-  "context": {
-    "subaccount_id": "%s",
-    "subdomain": "%s",
-  },
-  "created_by": "%s",
-}`, btpConfig.BindingName, btpConfig.Subaccount, btpConfig.Subdomain, btpConfig.User),
+  "ready": true
+}`, btpConfig.BindingName),
 			},
 		}
 
@@ -219,12 +209,8 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 {
 	"id": "xxx",
 	"name": "%s",
-	"context": {
-	"subdomain": "%s",
-	},
-	"subaccount_id": "%s",
-	"created_by": "%s"
-}`, btpConfig.InstanceName, btpConfig.Subdomain, btpConfig.Subaccount, btpConfig.User),
+	"ready": true
+}`, btpConfig.InstanceName),
 			},
 		}
 
@@ -266,12 +252,8 @@ func TestBTPGetServiceInstance(t *testing.T) {
 {
   "id": "xxx",
   "name": "%s",
-  "context": {
-    "subdomain": "%s",
-  },
-  "subaccount_id": "%s",
-  "created_by": "%s"
-}`, btpConfig.InstanceName, btpConfig.Subdomain, btpConfig.Subaccount, btpConfig.User),
+  "ready": true
+}`, btpConfig.InstanceName),
 			},
 		}
 
