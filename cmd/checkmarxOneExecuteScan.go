@@ -193,7 +193,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		incrementalMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
 		log.Entry().Debugf("Main branch %v incremental scan eligibility: %t", cx1sh.Project.MainBranch, incrementalMainBranch)
 		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
-	} else if config.Incremental && isPR && len(baseBranch) > 0 { // running in a PR context, and we have a base branch for the incremental scan
+	} else if config.Incremental && isPR && len(baseBranch) > 0 && baseBranch != "n/a" { // running in a PR context, and we have a base branch for the incremental scan
 		// in a PR context we always want to do an incremental scan
 		// The scan will be based on the PR's target branch (baseBranch) if there is no full scan on the PR branch
 		if fullScanExists {
@@ -500,6 +500,7 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 }
 
 func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string, baseBranch string) (*checkmarxOne.Scan, error) {
+	sastConfigString := ""
 	sastConfig := checkmarxOne.ScanConfiguration{}
 	sastConfig.ScanType = "sast"
 
@@ -508,8 +509,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
 	if incremental && len(baseBranch) > 0 {           // base the incremental scan on the specified base branch
 		sastConfig.Values["baseBranch"] = baseBranch
+		sastConfigString = fmt.Sprintf("baseBranch: %v", baseBranch)
 	}
-	sastConfigString := fmt.Sprintf("incremental %v, preset %v", strconv.FormatBool(incremental), c.config.Preset)
+	sastConfigString = fmt.Sprintf("%v, incremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.Preset)
 
 	if len(c.config.LanguageMode) > 0 {
 		sastConfig.Values["languageMode"] = c.config.LanguageMode
