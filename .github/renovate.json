@@ -104,6 +104,20 @@
             "depNameTemplate": "CycloneDX/{{{depName}}}",
             "extractVersionTemplate": "v(?<version>.*)",
             "autoReplaceStringTemplate": "\"github.com/{{{depName}}}/cmd/cyclonedx-gomod@v{{{newValue}}}\""
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "resources/metadata/pythonBuild.yaml"
+            ],
+            "matchStrings": [
+                "image: (?<depName>python):(?<currentValue>.*)"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "docker",
+            "extractVersionTemplate": "(?<version>.*)",
+            "autoReplaceStringTemplate": "image: {{depName}}:{{newValue}}"
         }
     ],
     "postUpdateOptions": [
