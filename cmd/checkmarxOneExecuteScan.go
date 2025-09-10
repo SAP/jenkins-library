@@ -509,9 +509,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
 	if incremental && len(baseBranch) > 0 {           // base the incremental scan on the specified base branch
 		sastConfig.Values["baseBranch"] = baseBranch
-		sastConfigString = fmt.Sprintf("baseBranch: %v", baseBranch)
+		sastConfigString = fmt.Sprintf("baseBranch: %v, ", baseBranch)
 	}
-	sastConfigString = fmt.Sprintf("%v, incremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.Preset)
+	sastConfigString = fmt.Sprintf("%vincremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.Preset)
 
 	if len(c.config.LanguageMode) > 0 {
 		sastConfig.Values["languageMode"] = c.config.LanguageMode
