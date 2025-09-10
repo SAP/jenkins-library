@@ -495,7 +495,7 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 
 	baseBranch := cicdOrch.PullRequestConfig().Base
 	isPR := cicdOrch.IsPullRequest()
-	log.Entry().Infof("CxOne scan branch was automatically set to : %v", branch)
+	log.Entry().Debugf("CxOne scan branch was automatically set to : %v", branch)
 	return branch, isPR, baseBranch
 }
 
