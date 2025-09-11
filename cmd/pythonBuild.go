@@ -65,7 +65,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	//TODO: use a defer func to cleanup the virtual environment
 
 	// FEATURE FLAG (com_sap_piper_featureFlag_pythonToml) to switch to new implementation of python build step
-	if feature.IsFeatureEnabled("pythonToml") {
+	if config.UseTomlFile || feature.IsFeatureEnabled("pythonToml") {
 		// check project descriptor
 		buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
 		if err != nil {
