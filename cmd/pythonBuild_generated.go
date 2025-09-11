@@ -29,6 +29,7 @@ type pythonBuildOptions struct {
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
 	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
 	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
+	UseTomlFile              bool     `json:"useTomlFile,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
@@ -214,6 +215,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
+	cmd.Flags().BoolVar(&stepConfig.UseTomlFile, "useTomlFile", false, "Determines if a pyproject.toml file should be used for dependency management.")
 
 }
 
@@ -337,6 +339,15 @@ func pythonBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `requirements.txt`,
+					},
+					{
+						Name:        "useTomlFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

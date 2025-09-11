@@ -108,6 +108,14 @@ spec:
           - STAGES
           - PARAMETERS
         default: requirements.txt
+      - name: useTomlFile
+        type: bool
+        default: false
+        description: Determines if a pyproject.toml file should be used for dependency management.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
