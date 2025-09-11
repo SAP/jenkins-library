@@ -619,7 +619,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 				if len(c.config.Repository) == 0 {
 					repository = pathParts[len(pathParts)-1]
 				}
-				log.Entry().Infof("Found repository %s and owner %s from orchestrator", c.config.Repository, c.config.Owner)
+				log.Entry().Debugf("Found repository %s and owner %s from orchestrator", repository, owner)
 			} else {
 				return fmt.Errorf("failed to extract owner and repository from URL %s", repoUrl)
 			}
@@ -1252,10 +1252,15 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	cxLowThreshold := c.config.VulnerabilityThresholdLow
 	cxLowThresholdPerQuery := c.config.VulnerabilityThresholdLowPerQuery
 	cxLowThresholdPerQueryMax := c.config.VulnerabilityThresholdLowPerQueryMax
-	criticalValue := (*results)["Critical"].(map[string]int)["NotFalsePositive"]
-	highValue := (*results)["High"].(map[string]int)["NotFalsePositive"]
-	mediumValue := (*results)["Medium"].(map[string]int)["NotFalsePositive"]
-	lowValue := (*results)["Low"].(map[string]int)["NotFalsePositive"]
+	// findings are audited if they are in state Confirmed, Urgent or NotExploitable
+	criticalValue := (*results)["Critical"].(map[string]int)["ToVerify"] + (*results)["Critical"].(map[string]int)["ProposedNotExploitable"]
+	confirmedCriticalValue := (*results)["Critical"].(map[string]int)["Confirmed"] + (*results)["Critical"].(map[string]int)["Urgent"]
+	highValue := (*results)["High"].(map[string]int)["ToVerify"] + (*results)["High"].(map[string]int)["ProposedNotExploitable"]
+	confirmedHighValue := (*results)["High"].(map[string]int)["Confirmed"] + (*results)["High"].(map[string]int)["Urgent"]
+	mediumValue := (*results)["Medium"].(map[string]int)["ToVerify"] + (*results)["Medium"].(map[string]int)["ProposedNotExploitable"]
+	confirmedMediumValue := (*results)["Medium"].(map[string]int)["Confirmed"] + (*results)["Medium"].(map[string]int)["Urgent"]
+	lowValue := (*results)["Low"].(map[string]int)["ToVerify"] + (*results)["Low"].(map[string]int)["ProposedNotExploitable"]
+	confirmedLowValue := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["Urgent"]
 	var unit string
 	criticalViolation := ""
 	highViolation := ""
@@ -1263,25 +1268,25 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	lowViolation := ""
 	if c.config.VulnerabilityThresholdUnit == "percentage" {
 		unit = "%"
-		criticalAudited := (*results)["Critical"].(map[string]int)["Issues"] - (*results)["Critical"].(map[string]int)["NotFalsePositive"]
+		criticalAudited := (*results)["Critical"].(map[string]int)["NotExploitable"] + (*results)["Critical"].(map[string]int)["Confirmed"] + (*results)["Critical"].(map[string]int)["Urgent"]
 		criticalOverall := (*results)["Critical"].(map[string]int)["Issues"]
 		if criticalOverall == 0 {
 			criticalAudited = 1
 			criticalOverall = 1
 		}
-		highAudited := (*results)["High"].(map[string]int)["Issues"] - (*results)["High"].(map[string]int)["NotFalsePositive"]
+		highAudited := (*results)["High"].(map[string]int)["NotExploitable"] + (*results)["High"].(map[string]int)["Confirmed"] + (*results)["High"].(map[string]int)["Urgent"]
 		highOverall := (*results)["High"].(map[string]int)["Issues"]
 		if highOverall == 0 {
 			highAudited = 1
 			highOverall = 1
 		}
-		mediumAudited := (*results)["Medium"].(map[string]int)["Issues"] - (*results)["Medium"].(map[string]int)["NotFalsePositive"]
+		mediumAudited := (*results)["Medium"].(map[string]int)["NotExploitable"] + (*results)["Medium"].(map[string]int)["Confirmed"] + (*results)["Medium"].(map[string]int)["Urgent"]
 		mediumOverall := (*results)["Medium"].(map[string]int)["Issues"]
 		if mediumOverall == 0 {
 			mediumAudited = 1
 			mediumOverall = 1
 		}
-		lowAudited := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["NotExploitable"]
+		lowAudited := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["NotExploitable"] + (*results)["Low"].(map[string]int)["Urgent"]
 		lowOverall := (*results)["Low"].(map[string]int)["Issues"]
 		if lowOverall == 0 {
 			lowAudited = 1
@@ -1310,7 +1315,7 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
 
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
-					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"] + resultsLowQuery["Urgent"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
 					lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowOverallPerQuery)*float64(cxLowThreshold)/100.0)), cxLowThresholdPerQueryMax)
 					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
@@ -1351,10 +1356,24 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 	}
 
-	criticalText := fmt.Sprintf("Critical %v%v %v", criticalValue, unit, criticalViolation)
-	highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
-	mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
-	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+	var confirmedCriticalString, confirmedHighString, confirmedMediumString, confirmedLowString string
+	if confirmedCriticalValue > 0 {
+		confirmedCriticalString = fmt.Sprintf(" (of which %v confirmed)", confirmedCriticalValue)
+	}
+	if confirmedHighValue > 0 {
+		confirmedHighString = fmt.Sprintf(" (of which %v confirmed)", confirmedHighValue)
+	}
+	if confirmedMediumValue > 0 {
+		confirmedMediumString = fmt.Sprintf(" (of which %v confirmed)", confirmedMediumValue)
+	}
+	if confirmedLowValue > 0 {
+		confirmedLowString = fmt.Sprintf(" (of which %v confirmed)", confirmedLowValue)
+	}
+	criticalText := fmt.Sprintf("Critical %v%v %v %v", criticalValue, unit, confirmedCriticalString, criticalViolation)
+	highText := fmt.Sprintf("High %v%v %v %v", highValue, unit, confirmedHighString, highViolation)
+	mediumText := fmt.Sprintf("Medium %v%v %v %v", mediumValue, unit, confirmedMediumString, mediumViolation)
+	lowText := fmt.Sprintf("Low %v%v %v %v", lowValue, unit, confirmedLowString, lowViolation)
+	log.Entry().Info("Result auditing status per severity:")
 	if len(criticalViolation) > 0 {
 		insecureResults = append(insecureResults, criticalText)
 		log.Entry().Error(criticalText)
