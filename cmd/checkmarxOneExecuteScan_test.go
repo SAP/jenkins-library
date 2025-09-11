@@ -70,11 +70,11 @@ func (sys *checkmarxOneSystemMock) GetScanWorkflow(scanID string) ([]checkmarxOn
 	return []checkmarxOne.WorkflowLog{}, nil
 }
 
-func (sys *checkmarxOneSystemMock) GetLastScans(projectID string, limit int) ([]checkmarxOne.Scan, error) {
+func (sys *checkmarxOneSystemMock) GetLastScans(projectID, branch string, limit int) ([]checkmarxOne.Scan, error) {
 	return []checkmarxOne.Scan{}, nil
 }
 
-func (sys *checkmarxOneSystemMock) GetLastScansByStatus(projectID string, limit int, status []string) ([]checkmarxOne.Scan, error) {
+func (sys *checkmarxOneSystemMock) GetLastScansByStatus(projectID, branch string, limit int, status []string) ([]checkmarxOne.Scan, error) {
 	return []checkmarxOne.Scan{}, nil
 }
 
