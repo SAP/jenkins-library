@@ -66,15 +66,15 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
-		// TOML file
+		// handle pyproject.toml file
 		if err := python.InstallProjectDependencies(utils.RunExecutable, python.Binary); err != nil {
-			return fmt.Errorf("Failed to install project dependencies: %w", err)
+			return fmt.Errorf("failed to install project dependencies: %w", err)
 		}
 		if err := python.Build(utils.RunExecutable, python.Binary, config.BuildFlags, config.SetupFlags); err != nil {
-			return fmt.Errorf("Failed to build python project: %w", err)
+			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	} else {
-		// legacy handling setup.py
+		// handle legacy setup.py file
 		if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
 			return fmt.Errorf("Python build failed with error: %w", err)
 		}
