@@ -6,7 +6,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/feature"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/python"
@@ -60,25 +59,24 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		defer exitHandler()
 	}
 
-	// FEATURE FLAG (com_sap_piper_featureFlag_pythonToml) to switch to new implementation of python build step
-	if feature.IsFeatureEnabled("pythonToml") {
-		// check project descriptor
-		buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
-		if err != nil {
-			return err
+	// check project descriptor
+	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
+	if err != nil {
+		return err
+	}
+
+	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		// TOML file
+		if err := python.InstallProjectDependencies(utils.RunExecutable, python.Binary); err != nil {
+			return fmt.Errorf("Failed to install project dependencies: %w", err)
 		}
-		// build package
-		if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
-			if err := python.InstallProjectDependencies(utils.RunExecutable, python.Binary); err != nil {
-				return fmt.Errorf("Failed to install project dependencies: %w", err)
-			}
-			if err := python.Build(utils.RunExecutable, python.Binary, config.BuildFlags, config.SetupFlags); err != nil {
-				return fmt.Errorf("Failed to build python project: %w", err)
-			}
+		if err := python.Build(utils.RunExecutable, python.Binary, config.BuildFlags, config.SetupFlags); err != nil {
+			return fmt.Errorf("Failed to build python project: %w", err)
 		}
 	} else {
+		// legacy handling setup.py
 		if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
-			return err
+			return fmt.Errorf("Python build failed with error: %w", err)
 		}
 	}
 
