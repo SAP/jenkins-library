@@ -66,6 +66,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		if err := python.UpgradePip(utils.RunExecutable, python.Binary); err != nil {
+			return fmt.Errorf("failed to upgrade pip: %w", err)
+		}
+		if err := python.InstallBuildModule(utils.RunExecutable, python.Binary); err != nil {
+			return fmt.Errorf("failed to install build module: %w", err)
+		}
 		// handle pyproject.toml file
 		if err := python.InstallProjectDependencies(utils.RunExecutable, python.Binary); err != nil {
 			return fmt.Errorf("failed to install project dependencies: %w", err)
