@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -60,6 +61,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	if err := createVirtualEnvironment(utils, config, virtualEnvPathMap); err != nil {
 		return err
 	}
+	workDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	utils.AppendEnv([]string{
+		fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirutalEnvironmentName)),
+	})
 	//TODO: use a defer func to cleanup the virtual environment
 
 	// check project descriptor
