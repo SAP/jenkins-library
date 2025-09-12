@@ -193,9 +193,11 @@ func runBOMCreationForPy(utils pythonBuildUtils, virutalEnvironmentPathMap map[s
 }
 
 func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, virutalEnvironmentPathMap map[string]string) error {
-	if err := python.Install(utils.RunExecutable, "twine", "", config.VirutalEnvironmentName, virutalEnvironmentPathMap); err != nil {
+	pipInstallFlags := append(python.PipInstallFlags, "twine")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
 	}
+	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
 
 	// TODO: use modules, python -m twine ... to avoid virutalEnvironmentPathMap
 	if err := utils.RunExecutable(
