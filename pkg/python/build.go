@@ -3,15 +3,15 @@ package python
 import "github.com/SAP/jenkins-library/pkg/log"
 
 func Build(
-	executeFn func(executable string, params ...string) error,
 	binary string,
+	executeFn func(executable string, params ...string) error,
 	binaryFlags []string,
 	moduleFlags []string,
 ) error {
 	// Set default value for binaryFlags if nil
-	if binaryFlags == nil {
-		binaryFlags = []string{}
-	}
+	// if binaryFlags == nil {
+	// 	binaryFlags = []string{}
+	// }
 
 	var flags []string
 	flags = append(flags, binaryFlags...)

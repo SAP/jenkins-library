@@ -79,7 +79,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		if err := python.InstallBuild(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to install build module: %w", err)
 		}
-		if err := python.Build(utils.RunExecutable, python.Binary, config.BuildFlags, config.SetupFlags); err != nil {
+		if err := python.Build(virtualEnvPathMap["python"], utils.RunExecutable, config.BuildFlags, config.SetupFlags); err != nil {
 			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	} else {
@@ -152,15 +152,15 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 	}
 	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
 	// venv will create symlinks to python3 inside the container
-	virutalEnvironmentPathMap["python"] = "python"
+	virutalEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
 	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
 
-	if err = utils.RunExecutable("which", "python"); err != nil {
-		return err
-	}
-	if err = utils.RunExecutable("which", "pip"); err != nil {
-		return err
-	}
+	// if err = utils.RunExecutable("which", "python"); err != nil {
+	// 	return err
+	// }
+	// if err = utils.RunExecutable("which", "pip"); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
