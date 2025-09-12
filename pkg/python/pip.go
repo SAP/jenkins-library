@@ -59,6 +59,14 @@ func InstallBuild(
 	return Install(binary, executeFn, "build", "")
 }
 
+func InstallWheel(
+	binary string,
+	executeFn func(executable string, params ...string) error,
+) error {
+	log.Entry().Debug("installing wheel")
+	return Install(binary, executeFn, "wheel", "")
+}
+
 func InstallPip(
 	binary string,
 	executeFn func(executable string, params ...string) error,

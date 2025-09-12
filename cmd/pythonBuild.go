@@ -85,6 +85,9 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		if err := python.InstallBuild(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to install build module: %w", err)
 		}
+		if err := python.InstallWheel(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
+			return fmt.Errorf("failed to install wheel module: %w", err)
+		}
 		if err := python.Build(virtualEnvPathMap["python"], utils.RunExecutable, config.BuildFlags, config.SetupFlags); err != nil {
 			return fmt.Errorf("failed to build python project: %w", err)
 		}
