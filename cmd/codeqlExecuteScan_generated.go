@@ -308,8 +308,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.DatabaseAnalyzeFlags, "databaseAnalyzeFlags", os.Getenv("PIPER_databaseAnalyzeFlags"), "A space-separated string of flags for the 'codeql database analyze' command.")
 	cmd.Flags().StringVar(&stepConfig.CustomCommand, "customCommand", os.Getenv("PIPER_customCommand"), "A custom user-defined command to run between codeql analysis and results upload.")
 	cmd.Flags().StringVar(&stepConfig.TransformQuerySuite, "transformQuerySuite", os.Getenv("PIPER_transformQuerySuite"), "A transform string that will be applied to the querySuite using the sed command.")
-	cmd.Flags().StringVar(&stepConfig.Paths, "paths", os.Getenv("PIPER_paths"), "List of file or directory patterns to include.\nEach entry must be on its own line, e.g.:\n  src/**\n  lib/**\n")
-	cmd.Flags().StringVar(&stepConfig.PathsIgnore, "pathsIgnore", os.Getenv("PIPER_pathsIgnore"), "List of file or directory patterns to ignore.\nEach entry must be on its own line, e.g.:\n  **/*.md\n  docs/**\n")
+	cmd.Flags().StringVar(&stepConfig.Paths, "paths", os.Getenv("PIPER_paths"), "List of file or directory patterns to include.\nEach entry must be on its own line, e.g.:\n  src/**\n  lib/**\nNote: This parameter is only applicable for interpreted languages.\n")
+	cmd.Flags().StringVar(&stepConfig.PathsIgnore, "pathsIgnore", os.Getenv("PIPER_pathsIgnore"), "List of file or directory patterns to ignore.\nEach entry must be on its own line, e.g.:\n  **/*.md\n  docs/**\nNote: This parameter is only applicable for interpreted languages.\n")
 
 	cmd.MarkFlagRequired("buildTool")
 }

@@ -254,6 +254,7 @@ spec:
           Each entry must be on its own line, e.g.:
             src/**
             lib/**
+          Note: This parameter is only applicable for interpreted languages.
         scope:
           - STEPS
           - STAGES
@@ -266,6 +267,7 @@ spec:
           Each entry must be on its own line, e.g.:
             **/*.md
             docs/**
+          Note: This parameter is only applicable for interpreted languages.
         scope:
           - STEPS
           - STAGES
