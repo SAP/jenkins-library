@@ -155,6 +155,13 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 	virutalEnvironmentPathMap["python"] = "python"
 	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
 
+	if err = utils.RunExecutable("which", "python"); err != nil {
+		return err
+	}
+	if err = utils.RunExecutable("which", "pip"); err != nil {
+		return err
+	}
+
 	return nil
 }
 
