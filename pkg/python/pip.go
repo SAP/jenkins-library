@@ -44,13 +44,23 @@ func Install(
 
 func InstallProjectDependencies(
 	executeFn func(executable string, params ...string) error,
-	binary string,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	if err := executeFn(binary, "-m", "pip", "install", "."); err != nil {
-		return err
-	}
-	return nil
+	return Install(executeFn, ".", "")
+}
+
+func InstallBuild(
+	executeFn func(executable string, params ...string) error,
+) error {
+	log.Entry().Debug("installing build")
+	return Install(executeFn, "build", "")
+}
+
+func InstallPip(
+	executeFn func(executable string, params ...string) error,
+) error {
+	log.Entry().Debug("updating pip")
+	return Install(executeFn, "pip", "")
 }
 
 func InstallRequirements(
