@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -12,38 +11,44 @@ const (
 )
 
 var (
-	PipInstallFlags = []string{"install", "--upgrade"}
+	PipInstallFlags = []string{"install", "--upgrade", "--root-user-action=ignore"}
 )
 
 func Install(
 	executeFn func(executable string, params ...string) error,
 	module string,
 	version string,
-	virtualEnvName string,
-	virutalEnvironmentPathMap map[string]string,
 ) error {
-	log.Entry().Debugf("installing  %s dependency", module)
-	flags := []string{"-m", "pip", "install", "--upgrade"}
-	if version == "" {
-		flags = append(flags, module)
-	} else {
-		flags = append(flags, fmt.Sprintf("%s==%s", module, version))
-	}
+	flags := append([]string{"-m", "pip"}, PipInstallFlags...)
 
-	if err := executeFn(virutalEnvironmentPathMap["pip"], flags...); err != nil {
-		return err
+	if len(version) > 0 {
+		module = fmt.Sprintf("%s==%s", module, version)
 	}
-	virutalEnvironmentPathMap[module] = filepath.Join(virtualEnvName, "bin", module)
+	flags = append(flags, module)
+
+	if err := executeFn(Binary, flags...); err != nil {
+		return fmt.Errorf("failed to install %s: %w", module, err)
+	}
 	return nil
 }
 
 func InstallProjectDependencies(
 	executeFn func(executable string, params ...string) error,
-	binary string,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	if err := executeFn(binary, "-m", "pip", "install", "."); err != nil {
-		return err
-	}
-	return nil
+	return Install(executeFn, ".", "")
+}
+
+func InstallBuild(
+	executeFn func(executable string, params ...string) error,
+) error {
+	log.Entry().Debug("installing build")
+	return Install(executeFn, "build", "")
+}
+
+func InstallPip(
+	executeFn func(executable string, params ...string) error,
+) error {
+	log.Entry().Debug("updating pip")
+	return Install(executeFn, "pip", "")
 }
