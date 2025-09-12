@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -66,6 +68,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		workDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		utils.AppendEnv([]string{
+			fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirtualEnvironmentName)),
+		})
 		// handle pyproject.toml file
 		if err := python.InstallPip(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to upgrade pip: %w", err)
