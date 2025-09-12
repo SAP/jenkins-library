@@ -12,6 +12,7 @@ var (
 )
 
 func Install(
+	binary string,
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,
 	module string,
@@ -43,24 +44,27 @@ func Install(
 }
 
 func InstallProjectDependencies(
+	binary string,
 	executeFn func(executable string, params ...string) error,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	return Install(executeFn, ".", "")
+	return Install(binary, executeFn, ".", "")
 }
 
 func InstallBuild(
+	binary string,
 	executeFn func(executable string, params ...string) error,
 ) error {
 	log.Entry().Debug("installing build")
-	return Install(executeFn, "build", "")
+	return Install(binary, executeFn, "build", "")
 }
 
 func InstallPip(
+	binary string,
 	executeFn func(executable string, params ...string) error,
 ) error {
 	log.Entry().Debug("updating pip")
-	return Install(executeFn, "pip", "")
+	return Install(binary, executeFn, "pip", "")
 }
 
 func InstallRequirements(

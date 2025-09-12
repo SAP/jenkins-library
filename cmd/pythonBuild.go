@@ -67,13 +67,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
 		// handle pyproject.toml file
-		if err := python.InstallPip(utils.RunExecutable); err != nil {
+		if err := python.InstallPip(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to upgrade pip: %w", err)
 		}
-		if err := python.InstallProjectDependencies(utils.RunExecutable); err != nil {
+		if err := python.InstallProjectDependencies(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to install project dependencies: %w", err)
 		}
-		if err := python.InstallBuild(utils.RunExecutable); err != nil {
+		if err := python.InstallBuild(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to install build module: %w", err)
 		}
 		if err := python.Build(utils.RunExecutable, python.Binary, config.BuildFlags, config.SetupFlags); err != nil {
@@ -82,7 +82,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	} else {
 		// handle legacy setup.py file
 		if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
-			return fmt.Errorf("Python build failed with error: %w", err)
+			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	}
 
