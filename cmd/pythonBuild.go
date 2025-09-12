@@ -54,10 +54,10 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-	virutalEnvironmentPathMap := make(map[string]string)
+	virtualEnvPathMap := make(map[string]string)
 
 	// create virtualEnv
-	if err := createVirtualEnvironment(utils, config, virutalEnvironmentPathMap); err != nil {
+	if err := createVirtualEnvironment(utils, config, virtualEnvPathMap); err != nil {
 		return err
 	}
 	//TODO: use a defer func to cleanup the virtual environment
@@ -70,13 +70,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
 		// handle pyproject.toml file
-		if err := python.InstallPip(utils.RunExecutable); err != nil {
+		if err := python.InstallPip(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to upgrade pip: %w", err)
 		}
-		if err := python.InstallProjectDependencies(utils.RunExecutable); err != nil {
+		if err := python.InstallProjectDependencies(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to install project dependencies: %w", err)
 		}
-		if err := python.InstallBuild(utils.RunExecutable); err != nil {
+		if err := python.InstallBuild(virtualEnvPathMap["pip"], utils.RunExecutable); err != nil {
 			return fmt.Errorf("failed to install build module: %w", err)
 		}
 		if err := python.Build(utils.RunExecutable, python.Binary, config.BuildFlags, config.SetupFlags); err != nil {
@@ -84,14 +84,14 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	} else {
 		// handle legacy setup.py file
-		if err := buildExecute(config, utils, virutalEnvironmentPathMap); err != nil {
+		if err := buildExecute(config, utils, virtualEnvPathMap); err != nil {
 			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	}
 
 	// generate BOM
 	if config.CreateBOM {
-		if err := runBOMCreationForPy(utils, virutalEnvironmentPathMap, config); err != nil {
+		if err := runBOMCreationForPy(utils, virtualEnvPathMap, config); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
@@ -116,7 +116,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	// publish package
 	if config.Publish {
-		if err := publishWithTwine(config, utils, virutalEnvironmentPathMap); err != nil {
+		if err := publishWithTwine(config, utils, virtualEnvPathMap); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
