@@ -393,7 +393,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			},
 			generalVerbose: true,
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug", "--dry-run", "--hide-secret"}},
+				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug", "--dry-run"}},
 				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "--wait", "--timeout", "524s", "--debug"}},
 			},
 		},
