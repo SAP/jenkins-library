@@ -106,6 +106,14 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: scanSummaryInPullRequest
+        description: Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: incremental
         type: bool
         description: Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`

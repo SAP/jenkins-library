@@ -304,8 +304,8 @@ type System interface {
 	GetScanSummary(scanID string) (ScanSummary, error)
 	GetResultsPredicates(SimilarityID int64, ProjectID string) ([]ResultsPredicates, error)
 	GetScanWorkflow(scanID string) ([]WorkflowLog, error)
-	GetLastScans(projectID string, limit int) ([]Scan, error)
-	GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error)
+	GetLastScans(projectID, branch string, limit int) ([]Scan, error)
+	GetLastScansByStatus(projectID, branch string, limit int, status []string) ([]Scan, error)
 
 	ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
 	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
@@ -1142,7 +1142,7 @@ func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 	return workflow, nil
 }
 
-func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, error) {
+func (sys *SystemInstance) GetLastScans(projectID, branch string, limit int) ([]Scan, error) {
 	var scanResponse struct {
 		TotalCount         uint64
 		FilteredTotalCount uint64
@@ -1163,6 +1163,7 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, er
 		"offset":     {fmt.Sprintf("%v", 0)},
 		"limit":      {fmt.Sprintf("%v", limit)},
 		"sort":       {sortStr},
+		"branches":   []string{branch},
 	}
 
 	header := http.Header{}
@@ -1177,7 +1178,7 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, er
 	return scanResponse.Scans, err
 }
 
-func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error) {
+func (sys *SystemInstance) GetLastScansByStatus(projectID, branch string, limit int, status []string) ([]Scan, error) {
 	var scanResponse struct {
 		TotalCount         uint64
 		FilteredTotalCount uint64
@@ -1199,6 +1200,7 @@ func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, sta
 		"limit":      {fmt.Sprintf("%d", limit)},
 		"sort":       {sortStr},
 		"statuses":   status,
+		"branches":   []string{branch},
 	}
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/?%v", body.Encode()), nil, nil, []int{})

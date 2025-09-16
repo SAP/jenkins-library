@@ -393,6 +393,35 @@ func TestCheckout0948(t *testing.T) {
 		assert.ErrorContains(t, errCheckoput, "Request to ABAP System not successful")
 		assert.Empty(t, api.getUUID(), "API does not contain correct UUID")
 	})
+
+	t.Run("Test Checkout encodes branch slashes", func(t *testing.T) {
+		client := &ClientMock{
+			BodyList:   []string{`{ "status":"R","UUID":"GUID" }`, `{}`},
+			StatusCode: 200,
+		}
+
+		apiManager := &SoftwareComponentApiManager{Client: client, PollIntervall: 1 * time.Microsecond}
+
+		repo := Repository{
+			Name:   "/DMO/REPO/",
+			Branch: "feature/a-b_c.d/path",
+		}
+
+		api, err := apiManager.GetAPI(conTest0948, repo)
+		assert.NoError(t, err)
+		assert.IsType(t, &SAP_COM_0948{}, api.(*SAP_COM_0948))
+
+		errCheckout := api.CheckoutBranch()
+		assert.NoError(t, errCheckout)
+		assert.Equal(t, "GUID", api.getUUID())
+
+		// Assert the actual requested URL has encoded slashes in the branch segment
+		if assert.NotEmpty(t, client.RequestedURLs, "mock did not capture any request URLs") {
+			got := client.RequestedURLs[len(client.RequestedURLs)-1]
+			assert.Contains(t, got, "/Branches/%2FDMO%2FREPO%2F/feature%2Fa-b_c.d%2Fpath/SAP__self.checkout_branch")
+			assert.NotContains(t, got, "%252F", "must not double-encode")
+		}
+	})
 }
 
 func TestGetRepo0948(t *testing.T) {
@@ -594,4 +623,66 @@ func TestGetLogArchive(t *testing.T) {
 		assert.NoError(t, errAction)
 		assert.NotEmpty(t, results)
 	})
+}
+
+func Test_PathEncoding_GitAllowed_Branches(t *testing.T) {
+	tests := []struct {
+		name    string
+		branch  string
+		wantSeg string // exact expected segment with leading slash
+	}{
+		//unchanged
+		{"plain", "main", "/main"},
+		{"hyphen", "feature-123", "/feature-123"},
+		{"underscore", "release_candidate_1", "/release_candidate_1"},
+		{"dot", "release-1.2.3", "/release-1.2.3"},
+		{"mix", "hotfix-1_2.3", "/hotfix-1_2.3"},
+
+		// slashes in branch names are valid in Git but must be escaped in URL segment
+		{"single slash", "release/sprint-72", "/release%2Fsprint-72"},
+		{"multiple slashes", "feature/a-b_c.d/path", "/feature%2Fa-b_c.d%2Fpath"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			api := &SAP_COM_0948{
+				repository: Repository{
+					Name:   "dummy", // irrelevant here
+					Branch: tc.branch,
+				},
+			}
+			got := api.getBranchNameForPath()
+			assert.Equal(t, tc.wantSeg, got)
+			assert.NotContains(t, got, "%252F", "must not double-encode slashes")
+		})
+	}
+}
+
+func Test_PathEncoding_GitAllowed_Repositories(t *testing.T) {
+	tests := []struct {
+		name    string
+		repo    string
+		wantSeg string
+	}{
+		{"simple", "repo", "/repo"},
+		{"hyphen", "repo-name", "/repo-name"},
+		{"underscore", "repo_name", "/repo_name"},
+		{"dot", "repo.name", "/repo.name"},
+		{"mix", "Repo.Name-1_2", "/Repo.Name-1_2"},
+		{"slashes", "/DMO/REPO/", "/%2FDMO%2FREPO%2F"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			api := &SAP_COM_0948{
+				repository: Repository{
+					Name:   tc.repo,
+					Branch: "main",
+				},
+			}
+			got := api.getRepoNameForPath()
+			assert.Equal(t, tc.wantSeg, got)
+			assert.NotContains(t, got, "%252F", "must not double-encode anything")
+		})
+	}
 }

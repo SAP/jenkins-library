@@ -21,6 +21,7 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -127,7 +128,8 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
-	scans, err := cx1sh.GetLastScans(10)
+	branch, isPR, baseBranch := cx1sh.GetScanBranch()
+	scans, err := cx1sh.GetLastScans(10, branch)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to get last 10 scans")
 	}
@@ -157,7 +159,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	if config.Incremental {
-		log.Entry().Warnf("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
+		log.Entry().Info("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
 	}
 
 	zipFile, err := cx1sh.ZipFiles()
@@ -171,7 +173,40 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
-	scan, err := cx1sh.CreateScanRequest(incremental, uploadLink)
+	var scan *checkmarxOne.Scan
+	// We search for a full scan in history:
+	fullScanExists := false
+	for _, histScan := range scans {
+		isIncr, _ := histScan.IsIncremental()
+		if isIncr == false {
+			fullScanExists = true
+			break
+		}
+	}
+	// user requested an incremental scan on a branch, and the project has a Primary Branch set, not in PR context and no full scan on the branch
+	if config.Incremental && !isPR && !fullScanExists && cx1sh.Project.MainBranch != "" && cx1sh.Project.MainBranch != branch {
+		scansMainBranch, err := cx1sh.GetLastScans(10, cx1sh.Project.MainBranch)
+		if err != nil {
+			return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
+		}
+		// We check if the main branch is eligible for an incremental scan
+		incrementalMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
+		log.Entry().Debugf("Main branch %v incremental scan eligibility: %t", cx1sh.Project.MainBranch, incrementalMainBranch)
+		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
+	} else if config.Incremental && isPR && len(baseBranch) > 0 && baseBranch != "n/a" { // running in a PR context, and we have a base branch for the incremental scan
+		// in a PR context we always want to do an incremental scan
+		// The scan will be based on the PR's target branch (baseBranch) if there is no full scan on the PR branch
+		if fullScanExists {
+			log.Entry().Debugf("A full scan exists on the PR branch %v, so the incremental scan will be based on it", branch)
+			scan, err = cx1sh.CreateScanRequest(true, uploadLink, "")
+		} else {
+			log.Entry().Debugf("There is no full scan on the PR branch %v, so the incremental scan will be based on branch %v", branch, baseBranch)
+			scan, err = cx1sh.CreateScanRequest(true, uploadLink, baseBranch)
+		}
+	} else {
+		scan, err = cx1sh.CreateScanRequest(incremental, uploadLink, "")
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to create scan: %s", err)
 	}
@@ -387,8 +422,8 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int) ([]checkmarxOne.Scan, error) {
-	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, count, []string{"Completed"})
+func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int, branch string) ([]checkmarxOne.Scan, error) {
+	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, branch, count, []string{"Completed"})
 	if err != nil {
 		return []checkmarxOne.Scan{}, fmt.Errorf("Failed to get last %d Completed scans for project %v: %s", count, c.Project.ProjectID, err)
 	}
@@ -436,27 +471,54 @@ func (c *checkmarxOneExecuteScanHelper) UploadScanContent(zipFile *os.File) (str
 	return uploadUri, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string) (*checkmarxOne.Scan, error) {
+func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
+	branch := c.config.Branch
+	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		log.Entry().Warn("Could not identify orchestrator")
+	}
+	if len(branch) == 0 && len(c.config.GitBranch) > 0 && c.config.GitBranch != "n/a" {
+		branch = c.config.GitBranch
+	} else if len(branch) == 0 && (len(c.config.GitBranch) == 0 || c.config.GitBranch == "n/a") { // use the branch from the orchestrator by default
+		cicdBranch := cicdOrch.Branch()
+		if cicdBranch != "n/a" {
+			branch = cicdBranch
+		} else {
+			log.Entry().Info("Could not retrieve branch name from orchestrator")
+		}
+	}
+	if len(c.config.PullRequestName) > 0 {
+		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, branch)
+	} else if cicdOrch.IsPullRequest() && cicdOrch.PullRequestConfig().Branch != "n/a" {
+		branch = fmt.Sprintf("PR%v-%v", cicdOrch.PullRequestConfig().Key, cicdOrch.PullRequestConfig().Branch)
+	}
+
+	baseBranch := cicdOrch.PullRequestConfig().Base
+	isPR := cicdOrch.IsPullRequest()
+	log.Entry().Debugf("CxOne scan branch was automatically set to : %v", branch)
+	return branch, isPR, baseBranch
+}
+
+func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string, baseBranch string) (*checkmarxOne.Scan, error) {
+	sastConfigString := ""
 	sastConfig := checkmarxOne.ScanConfiguration{}
 	sastConfig.ScanType = "sast"
 
 	sastConfig.Values = make(map[string]string, 0)
 	sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
 	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
-	sastConfigString := fmt.Sprintf("incremental %v, preset %v", strconv.FormatBool(incremental), c.config.Preset)
+	if incremental && len(baseBranch) > 0 {           // base the incremental scan on the specified base branch
+		sastConfig.Values["baseBranch"] = baseBranch
+		sastConfigString = fmt.Sprintf("baseBranch: %v, ", baseBranch)
+	}
+	sastConfigString = fmt.Sprintf("%vincremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.Preset)
 
 	if len(c.config.LanguageMode) > 0 {
 		sastConfig.Values["languageMode"] = c.config.LanguageMode
 		sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
 	}
 
-	branch := c.config.Branch
-	if len(branch) == 0 && len(c.config.GitBranch) > 0 {
-		branch = c.config.GitBranch
-	}
-	if len(c.config.PullRequestName) > 0 {
-		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
-	}
+	branch, _, _ := c.GetScanBranch()
 
 	sastConfigString = fmt.Sprintf("Cx1 Branch name %v, ", branch) + sastConfigString
 
@@ -533,10 +595,107 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 	return nil
 }
 
+func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
+	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get orchestrator config provider: %s", err)
+	}
+	isPullRequest := cicdOrch.IsPullRequest()
+	pullRequestId := cicdOrch.PullRequestConfig().Key
+	var owner, repository string
+	if len(c.config.Repository) == 0 || len(c.config.Owner) == 0 {
+		log.Entry().Debug("No repository or owner configured, trying to get it from orchestrator")
+		repoUrl := cicdOrch.RepoURL()
+		if repoUrl != "n/a" {
+			parsedURL, err := url.Parse(repoUrl)
+			if err != nil {
+				return fmt.Errorf("failed to parse repository URL %s: %s", repoUrl, err)
+			}
+			pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, ".git"), "/")
+			if len(pathParts) >= 2 {
+				if len(c.config.Owner) == 0 {
+					owner = pathParts[len(pathParts)-2]
+				}
+				if len(c.config.Repository) == 0 {
+					repository = pathParts[len(pathParts)-1]
+				}
+				log.Entry().Infof("Found repository %s and owner %s from orchestrator", c.config.Repository, c.config.Owner)
+			} else {
+				return fmt.Errorf("failed to extract owner and repository from URL %s", repoUrl)
+			}
+		} else {
+			log.Entry().Debug("Could not retrieve repository URL from orchestrator")
+		}
+	} else {
+		owner = c.config.Owner
+		repository = c.config.Repository
+		log.Entry().Debug("Using Owner and Repository from configuration: " + owner + "/" + repository)
+	}
+	log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, owner, repository)
+	if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" && len(c.config.GithubToken) > 0 && len(c.config.GithubAPIURL) > 0 && len(owner) > 0 && len(repository) > 0 {
+		ghIssues := c.utils.GetIssueService()
+		log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, owner, repository)
+		scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
+		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString string
+		for _, finding := range *scanReportOverview.Findings {
+			switch finding.ClassificationName {
+			case "Critical":
+				criticalSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+			case "High":
+				highSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+			case "Medium":
+				mediumSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+			case "Low":
+				if finding.LowPerQuery != nil {
+					for _, lowFinding := range *finding.LowPerQuery {
+						if c.config.VulnerabilityThresholdLowPerQuery {
+							lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
+							lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
+						} else {
+							lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
+						}
+					}
+				}
+			}
+		}
+		var scanIcon string
+		if insecure {
+			scanIcon = ":x:"
+		} else {
+			scanIcon = ":white_check_mark:"
+		}
+		comment := &github.IssueComment{
+			Body: github.Ptr(fmt.Sprintf(`# %s Checkmarx %s scan completed 
+**Project**: %s
+**ScanId**: %s
+**Preset**: %s
+Severity | Number of open findings
+--- | ---
+:bangbang: Critical | %s
+:red_circle: High | %s
+:orange_circle: Medium | %s
+:yellow_circle: Low | %s
+
+[Go to the scan results](%s)
+		`, scanIcon, strings.ToLower(scanReportOverview.ScanType), c.Project.Name, scanReportOverview.ScanID, scanReportOverview.Preset, criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, scanReportOverview.DeepLink)),
+		}
+		pullRequestNumber, err := strconv.Atoi(pullRequestId)
+		if err != nil {
+			return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
+		}
+		_, _, err = ghIssues.CreateComment(c.ctx, owner, repository, pullRequestNumber, comment)
+		if err != nil {
+			return fmt.Errorf("failed to create GitHub issue comment: %s", err)
+		}
+		log.Entry().Infof("Created GitHub issue comment for project %v", c.Project.Name)
+	} else {
+		log.Entry().Debug("Skipping GitHub issue comment creation, no pull request or GitHub configuration provided")
+	}
+	return nil
+}
+
 func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]interface{}) error {
-
 	links := []piperutils.Path{{Target: (*detailedResults)["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
-
 	insecure := false
 	var insecureResults []string
 	var neutralResults []string
@@ -544,6 +703,14 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 	if c.config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = c.enforceThresholds(detailedResults)
 		scanReport := checkmarxOne.CreateCustomReport(detailedResults, insecureResults, neutralResults)
+
+		// Create scan summary comment in PR
+		if c.config.ScanSummaryInPullRequest {
+			err := c.PostScanSummaryInPullRequest(detailedResults, insecure)
+			if err != nil {
+				log.Entry().Errorf("failed to post scan summary in pull request: %s", err)
+			}
+		}
 
 		if insecure && c.config.CreateResultIssue && len(c.config.GithubToken) > 0 && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
@@ -908,6 +1075,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 func (c *checkmarxOneExecuteScanHelper) zipWorkspaceFiles(filterPattern string, utils checkmarxOneExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
+	log.Entry().Infof("Zipping files using filter: %v", filterPattern)
 	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
@@ -1144,7 +1312,7 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
 					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
-					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+					lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowOverallPerQuery)*float64(cxLowThreshold)/100.0)), cxLowThresholdPerQueryMax)
 					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
 						insecure = true
 						msgSeperator := "|"
