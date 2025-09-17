@@ -53,8 +53,5 @@ func Build(
 	flags = append(flags, moduleFlags...)
 
 	log.Entry().Debug("building project")
-	if err := executeFn(pythonBinary, flags...); err != nil {
-		return err
-	}
-	return nil
+	return executeFn(pythonBinary, flags...)
 }
