@@ -42,36 +42,53 @@ func Install(
 	return nil
 }
 
+func InstallPip(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("updating pip")
+	return Install(executeFn, virtualEnv, "pip", "")
+}
+
 func InstallProjectDependencies(
 	executeFn func(executable string, params ...string) error,
-	pipBinary string,
+	virtualEnv string,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	return Install(executeFn, pipBinary, ".", "")
+	return Install(executeFn, virtualEnv, ".", "")
 }
 
 func InstallBuild(
 	executeFn func(executable string, params ...string) error,
-	pipBinary string,
+	virtualEnv string,
 ) error {
 	log.Entry().Debug("installing build")
-	return Install(executeFn, pipBinary, "build", "")
+	return Install(executeFn, virtualEnv, "build", "")
 }
 
 func InstallWheel(
 	executeFn func(executable string, params ...string) error,
-	pipBinary string,
+	virtualEnv string,
 ) error {
 	log.Entry().Debug("installing wheel")
-	return Install(executeFn, pipBinary, "wheel", "")
+	return Install(executeFn, virtualEnv, "wheel", "")
 }
 
-func InstallPip(
+func InstallTwine(
 	executeFn func(executable string, params ...string) error,
-	pipBinary string,
+	virtualEnv string,
 ) error {
-	log.Entry().Debug("updating pip")
-	return Install(executeFn, pipBinary, "pip", "")
+	log.Entry().Debug("installing twine")
+	return Install(executeFn, virtualEnv, "twine", "")
+}
+
+func InstallCycloneDX(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+	cycloneDXVersion string,
+) error {
+	log.Entry().Debug("installing cyclonedx-bom")
+	return Install(executeFn, virtualEnv, "cyclonedx-bom", cycloneDXVersion)
 }
 
 func InstallRequirements(
