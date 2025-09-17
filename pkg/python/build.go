@@ -42,11 +42,6 @@ func Build(
 	binaryFlags []string,
 	moduleFlags []string,
 ) error {
-	// Set default value for binaryFlags if nil
-	// if binaryFlags == nil {
-	// 	binaryFlags = []string{}
-	// }
-
 	var flags []string
 	flags = append(flags, binaryFlags...)
 	flags = append(flags, "-m", "build", "--no-isolation")
