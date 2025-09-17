@@ -18,13 +18,12 @@ func Install(
 	version string,
 ) error {
 	pipBinary := "pip"
-	flags := PipInstallFlags
-	// flags := append([]string{"-m", "pip"}, PipInstallFlags...)
-
 	if len(virtualEnv) > 0 {
 		pipBinary = filepath.Join(virtualEnv, "bin", pipBinary)
 	}
 
+	flags := PipInstallFlags
+	// flags := append([]string{"-m", "pip"}, PipInstallFlags...)
 	if len(version) > 0 {
 		module = fmt.Sprintf("%s==%s", module, version)
 	}
