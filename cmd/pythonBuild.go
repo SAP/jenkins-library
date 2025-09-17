@@ -129,8 +129,14 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	// publish package
 	if config.Publish {
-		if err := publishWithTwine(config, utils, virtualEnvPathMap); err != nil {
-			return fmt.Errorf("failed to publish: %w", err)
+		if err := python.Publish(
+			utils.RunExecutable,
+			config.VirutalEnvironmentName,
+			config.TargetRepositoryURL,
+			config.TargetRepositoryUser,
+			config.TargetRepositoryPassword,
+		); err != nil {
+			return fmt.Errorf("failed to publish python project: %w", err)
 		}
 	}
 
@@ -212,28 +218,6 @@ func runBOMCreationForPy(utils pythonBuildUtils, virutalEnvironmentPathMap map[s
 		"--output-file", PyBomFilename,
 		"--output-format", "XML",
 		"--spec-version", cycloneDxSchemaVersion,
-	); err != nil {
-		return err
-	}
-	return nil
-}
-
-func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, virutalEnvironmentPathMap map[string]string) error {
-	pipInstallFlags := append(python.PipInstallFlags, "twine")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
-		return err
-	}
-	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
-
-	// TODO: use modules, python -m twine ... to avoid virutalEnvironmentPathMap
-	if err := utils.RunExecutable(
-		virutalEnvironmentPathMap["twine"],
-		"upload",
-		"--username", config.TargetRepositoryUser,
-		"--password", config.TargetRepositoryPassword,
-		"--repository-url", config.TargetRepositoryURL,
-		"--disable-progress-bar",
-		"dist/*",
 	); err != nil {
 		return err
 	}
