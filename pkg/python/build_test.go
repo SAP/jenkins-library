@@ -44,7 +44,7 @@ func TestBuild(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := Build(mockRunner.RunExecutable, "python", nil, nil)
+	err := Build("python", mockRunner.RunExecutable, nil, nil)
 
 	// assert
 	assert.NoError(t, err)
