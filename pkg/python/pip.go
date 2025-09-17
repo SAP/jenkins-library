@@ -15,8 +15,8 @@ var (
 )
 
 func Install(
-	binary string,
 	executeFn func(executable string, params ...string) error,
+	binary string,
 	module string,
 	version string,
 ) error {
@@ -35,33 +35,33 @@ func Install(
 }
 
 func InstallProjectDependencies(
-	binary string,
 	executeFn func(executable string, params ...string) error,
+	binary string,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	return Install(binary, executeFn, ".", "")
+	return Install(executeFn, binary, ".", "")
 }
 
 func InstallBuild(
-	binary string,
 	executeFn func(executable string, params ...string) error,
+	binary string,
 ) error {
 	log.Entry().Debug("installing build")
-	return Install(binary, executeFn, "build", "")
+	return Install(executeFn, binary, "build", "")
 }
 
 func InstallWheel(
-	binary string,
 	executeFn func(executable string, params ...string) error,
+	binary string,
 ) error {
 	log.Entry().Debug("installing wheel")
-	return Install(binary, executeFn, "wheel", "")
+	return Install(executeFn, binary, "wheel", "")
 }
 
 func InstallPip(
-	binary string,
 	executeFn func(executable string, params ...string) error,
+	binary string,
 ) error {
 	log.Entry().Debug("updating pip")
-	return Install(binary, executeFn, "pip", "")
+	return Install(executeFn, binary, "pip", "")
 }
