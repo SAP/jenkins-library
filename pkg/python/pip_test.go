@@ -7,12 +7,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInstallPip(t *testing.T) {
+	// init
+	mockRunner := mock.ExecMockRunner{}
+
+	// test
+	err := InstallPip(mockRunner.RunExecutable, "")
+
+	// assert
+	assert.NoError(t, err)
+	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
+	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pip"}, mockRunner.Calls[0].Params)
+}
+
 func TestInstallProjectDependencies(t *testing.T) {
 	// init
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := InstallProjectDependencies(mockRunner.RunExecutable, "pip")
+	err := InstallProjectDependencies(mockRunner.RunExecutable, "")
 
 	// assert
 	assert.NoError(t, err)
@@ -25,11 +38,24 @@ func TestInstallBuild(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := InstallBuild(mockRunner.RunExecutable, "pip")
+	err := InstallBuild(mockRunner.RunExecutable, "")
 
 	// assert
 	assert.NoError(t, err)
 	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
+	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "build"}, mockRunner.Calls[0].Params)
+}
+
+func TestInstallBuildWithVirtualEnv(t *testing.T) {
+	// init
+	mockRunner := mock.ExecMockRunner{}
+
+	// test
+	err := InstallBuild(mockRunner.RunExecutable, ".venv")
+
+	// assert
+	assert.NoError(t, err)
+	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[0].Exec)
 	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "build"}, mockRunner.Calls[0].Params)
 }
 
@@ -38,7 +64,7 @@ func TestInstallWheel(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := InstallWheel(mockRunner.RunExecutable, "pip")
+	err := InstallWheel(mockRunner.RunExecutable, "")
 
 	// assert
 	assert.NoError(t, err)
@@ -46,15 +72,15 @@ func TestInstallWheel(t *testing.T) {
 	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, mockRunner.Calls[0].Params)
 }
 
-func TestInstallPip(t *testing.T) {
+func TestInstallCycloneDXWithVersion(t *testing.T) {
 	// init
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := InstallPip(mockRunner.RunExecutable, "pip")
+	err := InstallCycloneDX(mockRunner.RunExecutable, "", "1.0.0")
 
 	// assert
 	assert.NoError(t, err)
 	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
-	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pip"}, mockRunner.Calls[0].Params)
+	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==1.0.0"}, mockRunner.Calls[0].Params)
 }

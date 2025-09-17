@@ -78,16 +78,16 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
 		// handle pyproject.toml file
-		if err := python.InstallPip(utils.RunExecutable, virtualEnvPathMap["pip"]); err != nil {
+		if err := python.InstallPip(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
 			return fmt.Errorf("failed to upgrade pip: %w", err)
 		}
-		if err := python.InstallProjectDependencies(utils.RunExecutable, virtualEnvPathMap["pip"]); err != nil {
+		if err := python.InstallProjectDependencies(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
 			return fmt.Errorf("failed to install project dependencies: %w", err)
 		}
-		if err := python.InstallBuild(utils.RunExecutable, virtualEnvPathMap["pip"]); err != nil {
+		if err := python.InstallBuild(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
 			return fmt.Errorf("failed to install build module: %w", err)
 		}
-		if err := python.InstallWheel(utils.RunExecutable, virtualEnvPathMap["pip"]); err != nil {
+		if err := python.InstallWheel(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
 			return fmt.Errorf("failed to install wheel module: %w", err)
 		}
 		if err := python.Build(virtualEnvPathMap["python"], utils.RunExecutable, config.BuildFlags, config.SetupFlags); err != nil {
