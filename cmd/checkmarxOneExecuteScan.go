@@ -636,23 +636,60 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 		ghIssues := c.utils.GetIssueService()
 		log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, owner, repository)
 		scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
-		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString string
+		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, criticalComplianceCheckString, highComplianceCheckString, mediumComplianceCheckString, lowComplianceCheckString string
 		for _, finding := range *scanReportOverview.Findings {
 			switch finding.ClassificationName {
 			case "Critical":
-				criticalSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				// TODO: check if config threshold unit is percent or absolute number
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdCritical)/100.0)*float64(finding.Total))) {
+					criticalComplianceCheckString = ":x:"
+				} else {
+					criticalComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					criticalSeverityString = fmt.Sprintf("%s %d (%d confirmed)", criticalComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					criticalSeverityString = fmt.Sprintf("%s %d", criticalComplianceCheckString, finding.Total-*finding.Audited)
+				}
 			case "High":
-				highSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdHigh)/100.0)*float64(finding.Total))) {
+					highComplianceCheckString = ":x:"
+				} else {
+					highComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					highSeverityString = fmt.Sprintf("%s %d (%d confirmed)", highComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					highSeverityString = fmt.Sprintf("%s %d", highComplianceCheckString, finding.Total-*finding.Audited)
+				}
 			case "Medium":
-				mediumSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdMedium)/100.0)*float64(finding.Total))) {
+					mediumComplianceCheckString = ":x:"
+				} else {
+					mediumComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					mediumSeverityString = fmt.Sprintf("%s %d (%d confirmed)", mediumComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					mediumSeverityString = fmt.Sprintf("%s %d", mediumComplianceCheckString, finding.Total-*finding.Audited)
+				}
 			case "Low":
 				if finding.LowPerQuery != nil {
 					for _, lowFinding := range *finding.LowPerQuery {
 						if c.config.VulnerabilityThresholdLowPerQuery {
+							confirmedLowString := ""
+							if lowFinding.Confirmed > 0 {
+								confirmedLowString = fmt.Sprintf(", of which %d confirmed", lowFinding.Confirmed)
+							}
 							lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
-							lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
+							if lowFinding.Audited < lowAuditedRequiredPerQuery {
+								lowComplianceCheckString = ":x:"
+							} else {
+								lowComplianceCheckString = ":white_check_mark:"
+							}
+							lowSeverityString = fmt.Sprintf("%s%s %d %s (%d audited / %d required%s) <br>", lowSeverityString, lowComplianceCheckString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery, confirmedLowString)
 						} else {
-							lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
+							lowSeverityString = fmt.Sprintf("%s%s %d %s<br>", lowSeverityString, lowComplianceCheckString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
 						}
 					}
 				}
@@ -669,7 +706,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 **Project**: %s
 **ScanId**: %s
 **Preset**: %s
-Severity | Number of open findings
+Severity | Number of unaudited findings
 --- | ---
 :bangbang: Critical | %s
 :red_circle: High | %s
