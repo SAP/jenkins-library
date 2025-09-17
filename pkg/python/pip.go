@@ -25,10 +25,6 @@ func Install(
 
 	flags := PipInstallFlags
 	// flags := append([]string{"-m", "pip"}, PipInstallFlags...)
-
-	if len(extraArgs) > 0 {
-		flags = append(flags, extraArgs...)
-	}
 	if len(version) > 0 {
 		module = fmt.Sprintf("%s==%s", module, version)
 	}
