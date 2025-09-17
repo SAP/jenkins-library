@@ -6,10 +6,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-const (
-	Binary = "python"
-)
-
 var (
 	PipInstallFlags = []string{"install", "--upgrade", "--root-user-action=ignore"}
 )
