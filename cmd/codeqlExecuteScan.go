@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -136,10 +137,37 @@ func printCodeqlImageVersion() {
 	}
 }
 
+func prepareCodeQLConfigFile(config *codeqlExecuteScanOptions) error {
+	pathsToScan := codeql.ParsePaths(config.Paths)
+	pathsToIgnore := codeql.ParsePaths(config.PathsIgnore)
+
+	codeQLExecName := "codeql"
+	codeQLPath, err := codeql.Which(codeQLExecName)
+	if err != nil {
+		return fmt.Errorf("could not locate codeql executable %w", err)
+	}
+	location, fileName := path.Split(codeQLPath)
+	if fileName != codeQLExecName {
+		return fmt.Errorf("could not find codeql executable in path: %s", codeQLPath)
+	}
+	defaultConfigLocation := path.Join(location, "default-codeql-config.yml")
+	err = codeql.AppendCodeQLPaths(defaultConfigLocation, pathsToScan, pathsToIgnore)
+	if err != nil {
+		return fmt.Errorf("append paths and paths ignore to the default config: %w", err)
+	}
+	return nil
+}
+
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
 	printCodeqlImageVersion()
 
 	var reports []piperutils.Path
+
+	err := prepareCodeQLConfigFile(config)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to prepare codeql config file")
+		return reports, err
+	}
 
 	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
 	isMultiLang, err := runDatabaseCreate(config, dbCreateCustomFlags, utils)

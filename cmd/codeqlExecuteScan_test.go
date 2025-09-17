@@ -7,11 +7,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -1076,4 +1080,149 @@ func TestRunCustomCommand(t *testing.T) {
 		err := runCustomCommand(utils, `false --flag`)
 		assert.Error(t, err)
 	})
+}
+
+func Test_prepareCodeQLConfigFile(t *testing.T) {
+	t.Run("creates_or_updates_default_config_next_to_codeql_binary", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("requires POSIX exec bits for the fake binary")
+		}
+		dir := t.TempDir()
+
+		codeqlBin := filepath.Join(dir, "codeql")
+		writeExec(t, codeqlBin, "#!/bin/sh\necho CodeQL\n")
+
+		origPath := os.Getenv("PATH")
+		t.Cleanup(func() { _ = os.Setenv("PATH", origPath) })
+		require.NoError(t, os.Setenv("PATH", dir+string(os.PathListSeparator)+origPath))
+
+		opts := &codeqlExecuteScanOptions{
+			Paths:       " src \nlib/utils\n",
+			PathsIgnore: "vendor\n**/*.gen.go\n",
+		}
+
+		err := prepareCodeQLConfigFile(opts)
+		require.NoError(t, err)
+
+		qlPath, err := codeql.Which("codeql")
+		require.NoError(t, err)
+
+		loc, found := strings.CutSuffix(qlPath, "codeql")
+		require.True(t, found)
+
+		cfgPath := path.Join(loc, "default-codeql-config.yml")
+		b, err := os.ReadFile(cfgPath)
+		require.NoError(t, err)
+		out := normalizeNL(string(b))
+
+		// Assert it contains the expected lists (don’t depend on ordering)
+		assert.Contains(t, out, "paths:")
+		assert.Contains(t, out, "- src")
+		assert.Contains(t, out, "- lib/utils")
+
+		assert.Contains(t, out, "paths-ignore:")
+		assert.Contains(t, out, "- vendor")
+		// yaml.v3 single-quotes strings with '*' etc.
+		assert.Contains(t, out, "- '**/*.gen.go'")
+	})
+
+	t.Run("when_codeql_binary_missing_returns_error", func(t *testing.T) {
+		dir := t.TempDir()
+		origPath := os.Getenv("PATH")
+		t.Cleanup(func() { _ = os.Setenv("PATH", origPath) })
+
+		// PATH without codeql
+		require.NoError(t, os.Setenv("PATH", dir))
+
+		opts := &codeqlExecuteScanOptions{
+			Paths:       "a",
+			PathsIgnore: "b",
+		}
+		err := prepareCodeQLConfigFile(opts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "could not locate codeql executable")
+	})
+
+	t.Run("propagates_append_error_when_default_config_path_is_a_directory", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("requires POSIX exec bits and reliable directory perms")
+		}
+
+		dir := t.TempDir()
+
+		// Create fake codeql binary
+		codeqlBin := filepath.Join(dir, "codeql")
+		writeExec(t, codeqlBin, "#!/bin/sh\necho CodeQL\n")
+
+		defaultCfgDir := filepath.Join(dir, "default-codeql-config.yml")
+		require.NoError(t, os.Mkdir(defaultCfgDir, 0o755))
+
+		origPath := os.Getenv("PATH")
+		t.Cleanup(func() { _ = os.Setenv("PATH", origPath) })
+		require.NoError(t, os.Setenv("PATH", dir+string(os.PathListSeparator)+origPath))
+
+		opts := &codeqlExecuteScanOptions{
+			Paths:       "x",
+			PathsIgnore: "y",
+		}
+		err := prepareCodeQLConfigFile(opts)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "append paths and paths ignore to the default config")
+	})
+
+	t.Run("no_changes_when_both_paths_empty_but_still_needs_binary", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("requires POSIX exec bits for the fake binary")
+		}
+		dir := t.TempDir()
+
+		codeqlBin := filepath.Join(dir, "codeql")
+		writeExec(t, codeqlBin, "#!/bin/sh\necho CodeQL\n")
+		origPath := os.Getenv("PATH")
+		t.Cleanup(func() { _ = os.Setenv("PATH", origPath) })
+		require.NoError(t, os.Setenv("PATH", dir+string(os.PathListSeparator)+origPath))
+
+		cfgFile := filepath.Join(dir, "default-codeql-config.yml")
+		writeCodeQLFile(t, cfgFile, "")
+
+		opts := &codeqlExecuteScanOptions{
+			Paths:       "",
+			PathsIgnore: "",
+		}
+
+		before := readCodeQLFile(t, cfgFile)
+		time.Sleep(10 * time.Millisecond) // avoid flakiness on very fast FS
+
+		err := prepareCodeQLConfigFile(opts)
+		require.NoError(t, err)
+
+		after := readCodeQLFile(t, cfgFile)
+		assert.Equal(t, before, after, "file should remain unchanged when nothing to write")
+	})
+}
+
+func writeExec(t *testing.T, path, content string) {
+	t.Helper()
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o755))
+	require.NoError(t, os.Chmod(path, 0o755))
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	require.False(t, info.IsDir())
+	require.NotZero(t, info.Mode()&0o111, "should be executable")
+}
+
+func writeCodeQLFile(t *testing.T, path, content string) {
+	t.Helper()
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+}
+
+func readCodeQLFile(t *testing.T, path string) string {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+	return string(b)
+}
+
+func normalizeNL(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
 }
