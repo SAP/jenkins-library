@@ -16,7 +16,7 @@ var (
 
 func Install(
 	executeFn func(executable string, params ...string) error,
-	binary string,
+	pipBinary string,
 	module string,
 	version string,
 ) error {
@@ -28,7 +28,7 @@ func Install(
 	}
 	flags = append(flags, module)
 
-	if err := executeFn(binary, flags...); err != nil {
+	if err := executeFn(pipBinary, flags...); err != nil {
 		return fmt.Errorf("failed to install %s: %w", module, err)
 	}
 	return nil
@@ -36,32 +36,32 @@ func Install(
 
 func InstallProjectDependencies(
 	executeFn func(executable string, params ...string) error,
-	binary string,
+	pipBinary string,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	return Install(executeFn, binary, ".", "")
+	return Install(executeFn, pipBinary, ".", "")
 }
 
 func InstallBuild(
 	executeFn func(executable string, params ...string) error,
-	binary string,
+	pipBinary string,
 ) error {
 	log.Entry().Debug("installing build")
-	return Install(executeFn, binary, "build", "")
+	return Install(executeFn, pipBinary, "build", "")
 }
 
 func InstallWheel(
 	executeFn func(executable string, params ...string) error,
-	binary string,
+	pipBinary string,
 ) error {
 	log.Entry().Debug("installing wheel")
-	return Install(executeFn, binary, "wheel", "")
+	return Install(executeFn, pipBinary, "wheel", "")
 }
 
 func InstallPip(
 	executeFn func(executable string, params ...string) error,
-	binary string,
+	pipBinary string,
 ) error {
 	log.Entry().Debug("updating pip")
-	return Install(executeFn, binary, "pip", "")
+	return Install(executeFn, pipBinary, "pip", "")
 }
