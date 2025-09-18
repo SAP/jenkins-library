@@ -36,7 +36,7 @@ func (e *Executor) Run(cmdScript string) (err error) {
 /*
 @param timeout : in seconds
 @param pollInterval : in seconds
-@param negativeCheck : set to false if you whant to check the negation of the response of `cmdCheck`
+@param negativeCheck : set to false if you want to check the negation of the response of `cmdCheck`
 */
 func (e *Executor) RunSync(opts btputils.RunSyncOptions) (err error) {
 	err = e.Run(opts.CmdScript)

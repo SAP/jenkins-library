@@ -57,7 +57,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
-			return CheckServiceBindingCreated(btp, GetServiceBindingOptions{
+			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
 				Url:         options.Url,
 				Subdomain:   options.Subdomain,
 				User:        options.User,
@@ -191,7 +191,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
-			return CheckServiceBindingDeleted(btp, GetServiceBindingOptions{
+			return IsServiceBindingDeleted(btp, GetServiceBindingOptions{
 				Url:         options.Url,
 				Subdomain:   options.Subdomain,
 				User:        options.User,
@@ -269,7 +269,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
-			return CheckServiceInstanceCreated(btp, GetServiceInstanceOptions{
+			return IsServiceInstanceCreated(btp, GetServiceInstanceOptions{
 				Url:          options.Url,
 				Subdomain:    options.Subdomain,
 				User:         options.User,
@@ -402,7 +402,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
-			return CheckServiceInstanceDeleted(btp, GetServiceInstanceOptions{
+			return IsServiceInstanceDeleted(btp, GetServiceInstanceOptions{
 				Url:          options.Url,
 				Subdomain:    options.Subdomain,
 				User:         options.User,

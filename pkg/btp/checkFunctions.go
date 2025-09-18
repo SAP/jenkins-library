@@ -7,7 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/btputils"
 )
 
-func CheckServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) bool {
+func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) bool {
 	serviceInstanceJSON, err := btp.GetServiceInstance(options)
 
 	if err != nil {
@@ -31,7 +31,7 @@ func CheckServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOption
 	return data.Ready
 }
 
-func CheckServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) bool {
+func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) bool {
 	_, err := btp.GetServiceInstance(options)
 
 	if err == nil {
@@ -42,7 +42,7 @@ func CheckServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOption
 	return true
 }
 
-func CheckServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bool {
+func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bool {
 	serviceBindingJSON, err := btp.GetServiceBinding(options)
 
 	if err != nil {
@@ -66,7 +66,7 @@ func CheckServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions)
 	return data.Ready
 }
 
-func CheckServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) bool {
+func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) bool {
 	_, err := btp.GetServiceBinding(options)
 
 	if err == nil {
