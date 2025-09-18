@@ -20,6 +20,8 @@ type pythonBuildMockUtils struct {
 	*mock.FilesMock
 }
 
+const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
+
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	utils := pythonBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
@@ -39,17 +41,22 @@ func TestRunPythonBuild(t *testing.T) {
 			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		telemetryData := telemetry.CustomData{}
 
-		runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[1].Params)
 	})
 
 	t.Run("failure - build failure", func(t *testing.T) {
 		config := pythonBuildOptions{}
 		utils := newPythonBuildTestsUtils()
-		utils.AddFile("setup.py", []byte("from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"))
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.ShouldFailOnCommand = map[string]error{"python setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
