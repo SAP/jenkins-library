@@ -12,7 +12,6 @@ import (
 func TestBTPCreateServiceBinding(t *testing.T) {
 	t.Run("BTP CreateServiceBinding", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := CreateServiceBindingOptions{
 			Url:             "https://api.endpoint.com",
 			Subdomain:       "xxxxxxx",
@@ -59,7 +58,6 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 func TestBTPGetServiceBinding(t *testing.T) {
 	t.Run("BTP GetServiceBinding", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := GetServiceBindingOptions{
 			Url:         "https://api.endpoint.com",
 			Subdomain:   "xxxxxxx",
@@ -102,7 +100,6 @@ func TestBTPGetServiceBinding(t *testing.T) {
 func TestBTPDeleteServiceBinding(t *testing.T) {
 	t.Run("BTP DeleteServiceBinding not working", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := DeleteServiceBindingOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
@@ -143,7 +140,6 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 
 	t.Run("BTP DeleteServiceBinding working", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := DeleteServiceBindingOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
@@ -186,7 +182,6 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 func TestBTPCreateServiceInstance(t *testing.T) {
 	t.Run("BTP CreateServiceInstance", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := CreateServiceInstanceOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
@@ -235,7 +230,6 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 func TestBTPGetServiceInstance(t *testing.T) {
 	t.Run("BTP GetServiceInstance", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := GetServiceInstanceOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
@@ -278,7 +272,6 @@ func TestBTPGetServiceInstance(t *testing.T) {
 func TestBTPDeleteServiceInstance(t *testing.T) {
 	t.Run("BTP DeleteServiceInstance not working", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := DeleteServiceInstanceOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
@@ -319,7 +312,6 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 
 	t.Run("BTP DeleteServiceInstance working", func(t *testing.T) {
 		//given
-		const testURL = "testurl.com"
 		btpConfig := DeleteServiceInstanceOptions{
 			Url:          "https://api.endpoint.com",
 			Subdomain:    "xxxxxxx",
