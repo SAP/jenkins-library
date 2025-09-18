@@ -49,11 +49,12 @@ func TestRunPythonBuild(t *testing.T) {
 	t.Run("failure - build failure", func(t *testing.T) {
 		config := pythonBuildOptions{}
 		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte("from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"))
 		utils.ShouldFailOnCommand = map[string]error{"python setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.EqualError(t, err, "failed to build package: build failure")
+		assert.EqualError(t, err, "failed to build python project: build failure")
 	})
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
