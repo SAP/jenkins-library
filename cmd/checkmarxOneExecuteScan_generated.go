@@ -458,6 +458,18 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 			Name:        "checkmarxOneExecuteScan",
 			Aliases:     []config.Alias{},
 			Description: "checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
+			Errors: []config.StepError{
+				{
+					Pattern:  "project .* not compliant",
+					Message:  "Project failed compliance checks. Triage security findings in Checkmarx One and fix issues to meet compliance requirements.",
+					Category: "compliance",
+				},
+				{
+					Pattern:  "No APIKey or client_id/client_secret provided",
+					Message:  "Authentication failed. Verify APIKey or client credentials are properly configured.",
+					Category: "authentication",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

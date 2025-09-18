@@ -318,6 +318,21 @@ func npmExecuteScriptsMetadata() config.StepData {
 					Message:  "PNPM authentication failed. Check your credentials or token.",
 					Category: "authentication",
 				},
+				{
+					Pattern:  "npm error ERESOLVE",
+					Message:  "NPM dependency resolution failed. Review peer dependency conflicts.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error EINTEGRITY",
+					Message:  "Package integrity check failed. Clear npm cache and retry installation.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error code ENOENT.*package.json",
+					Message:  "Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct.",
+					Category: "configuration",
+				},
 			},
 		},
 		Spec: config.StepSpec{

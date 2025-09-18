@@ -1,6 +1,10 @@
 metadata:
   name: detectExecuteScan
   description: Executes BlackDuck Detect scan
+  errors:
+    - pattern: "FAILURE_POLICY_VIOLATION"
+      message: "BlackDuck Detect found policy violations. Review security policies and fix compliance issues."
+      category: "compliance"
   longDescription: |
     This step executes [BlackDuck Detect](https://documentation.blackduck.com/bundle/detect/page/introduction.html) scans.
     BlackDuck Detect command line utlity can be used to run various scans including BlackDuck scans. This step allows users to run BlackDuck scans by default.

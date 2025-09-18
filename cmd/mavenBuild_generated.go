@@ -315,6 +315,18 @@ func mavenBuildMetadata() config.StepData {
 			Name:        "mavenBuild",
 			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
 			Description: "This step will install the maven project into the local maven repository.",
+			Errors: []config.StepError{
+				{
+					Pattern:  "BUILD FAILURE",
+					Message:  "Maven build failed. Check build logs for compilation errors, test failures, or plugin execution issues.",
+					Category: "build",
+				},
+				{
+					Pattern:  "Failed to execute goal.*exec-maven-plugin.*exec",
+					Message:  "Maven exec plugin execution failed. Verify exec plugin configuration and command execution.",
+					Category: "plugin",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
