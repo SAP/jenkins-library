@@ -159,6 +159,12 @@ type ScanMetadata struct {
 	PresetName            string `json:"queryPreset"`
 }
 
+type ScanMetadataList struct {
+	TotalCount int
+	Scans      []ScanMetadata
+	Missing    []string
+}
+
 type ScanResultData struct {
 	QueryID      uint64
 	QueryName    string
@@ -300,6 +306,7 @@ type System interface {
 
 	GetScan(scanID string) (Scan, error)
 	GetScanMetadata(scanID string) (ScanMetadata, error)
+	GetScanMetadatas(scanIDs []string) ([]ScanMetadata, error)
 	GetScanResults(scanID string, limit uint64) ([]ScanResult, error)
 	GetScanSummary(scanID string) (ScanSummary, error)
 	GetResultsPredicates(SimilarityID int64, ProjectID string) ([]ResultsPredicates, error)
@@ -1114,6 +1121,25 @@ func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
 
 	json.Unmarshal(data, &scan)
 	return scan, nil
+}
+
+func (sys *SystemInstance) GetScanMetadatas(scanIDs []string) ([]ScanMetadata, error) {
+	params := url.Values{
+		"scan-ids": scanIDs,
+	}
+	var scanmetadatalistresp ScanMetadataList
+	var scans []ScanMetadata
+
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata?%v", params.Encode()), nil, http.Header{}, []int{})
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch metadata for scans %s, error was: %s", fmt.Sprintf("%v", strings.Join(scanIDs, ",")), err)
+		return scans, errors.Wrapf(err, "failed to fetch metadata for scans")
+	}
+
+	json.Unmarshal(data, &scanmetadatalistresp)
+	scans = scanmetadatalistresp.Scans
+	return scans, nil
+
 }
 
 func (sys *SystemInstance) GetScanMetadata(scanID string) (ScanMetadata, error) {
