@@ -145,8 +145,8 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 	}
 }
 
-// InitializeConfig prepares the config object, i.e. loading content, etc.
-func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool) error {
+// initializeConfig prepares the config object, i.e. loading content, etc.
+func (c *Config) initializeConfig(configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool) error {
 	if configuration != nil {
 		if err := c.ReadConfig(configuration); err != nil {
 			return errors.Wrap(err, "failed to parse custom pipeline configuration")
@@ -186,7 +186,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	var err error
 
 	if !c.initialized {
-		err = c.InitializeConfig(configuration, defaults, ignoreCustomDefaults)
+		err = c.initializeConfig(configuration, defaults, ignoreCustomDefaults)
 		if err != nil {
 			return StepConfig{}, err
 		}
