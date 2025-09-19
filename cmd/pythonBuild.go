@@ -89,9 +89,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
+	var flags []string
+	flags = append(flags, config.BuildFlags...)
+	flags = append(flags, config.SetupFlags...)
+	flags = append(flags, "-m", "build", "--sdist", "--wheel")
+
 	log.Entry().Info("starting building python project using pypa/build:")
-	// Use the venv python to run the build backend; this creates sdist and wheel in dist/
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["python"], "-m", "build", "--sdist", "--wheel", "."); err != nil {
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...); err != nil {
 		return err
 	}
 	return nil
@@ -99,22 +103,18 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 
 func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virtualEnvironmentPathMap map[string]string) error {
 	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
-	if err := utils.RunExecutable("python3.12", virtualEnvironmentFlags...); err != nil {
+	if err := utils.RunExecutable("python3", virtualEnvironmentFlags...); err != nil {
 		return err
 	}
-	// activating in a separate shell is not required for subsequent calls since we use explicit venv paths,
-	// but keep the call to mirror previous behavior
 	if err := utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate")); err != nil {
 		return err
 	}
 
 	pipPath := filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
 	virtualEnvironmentPathMap["pip"] = pipPath
-	// Use the venv's python binary so packages installed into the venv (like setuptools) are available
 	virtualEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
 	virtualEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
 
-	// Upgrade pip and install build/wheel/setuptools into the virtual environment
 	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "pip", "build", "wheel", "setuptools"); err != nil {
 		return err
 	}
