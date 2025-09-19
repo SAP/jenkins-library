@@ -105,15 +105,9 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-	var flags []string
-	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py")
-	flags = append(flags, config.SetupFlags...)
-	flags = append(flags, "sdist", "bdist_wheel")
-
-	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
-	if err != nil {
+	log.Entry().Info("starting building python project using pypa/build:")
+	// Use the venv python to run the build backend; this creates sdist and wheel in dist/
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["python"], "-m", "build", "--sdist", "--wheel", "."); err != nil {
 		return err
 	}
 	return nil
@@ -136,8 +130,8 @@ func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions
 	virtualEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
 	virtualEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
 
-	// Force-install setuptools into the virtual environment
-	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "setuptools"); err != nil {
+	// Upgrade pip and install build/wheel/setuptools into the virtual environment
+	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "pip", "build", "wheel", "setuptools"); err != nil {
 		return err
 	}
 
