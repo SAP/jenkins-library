@@ -121,18 +121,23 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 
 func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
 	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
-	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
-	if err != nil {
+	if err := utils.RunExecutable("python3", virtualEnvironmentFlags...); err != nil {
 		return err
 	}
-	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate"))
-	if err != nil {
+	if err := utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate")); err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+
+	pipPath := filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	virutalEnvironmentPathMap["pip"] = pipPath
 	// venv will create symlinks to python3 inside the container
 	virutalEnvironmentPathMap["python"] = "python"
 	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+
+	// Force-install setuptools into the virtual environment
+	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "setuptools"); err != nil {
+		return err
+	}
 
 	return nil
 }
