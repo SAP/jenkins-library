@@ -107,32 +107,33 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
 	var flags []string
 	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py")
 	flags = append(flags, config.SetupFlags...)
-	flags = append(flags, "sdist", "bdist_wheel")
+	flags = append(flags, "-m", "build", "--sdist", "--wheel")
 
-	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
-	if err != nil {
+	log.Entry().Info("starting building python project using pypa/build:")
+	if err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...); err != nil {
 		return err
 	}
 	return nil
 }
 
-func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
+func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virtualEnvironmentPathMap map[string]string) error {
 	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
-	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
-	if err != nil {
+	if err := utils.RunExecutable("python3", virtualEnvironmentFlags...); err != nil {
 		return err
 	}
-	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate"))
-	if err != nil {
+	if err := utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate")); err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
-	// venv will create symlinks to python3 inside the container
-	virutalEnvironmentPathMap["python"] = "python"
-	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+
+	pipPath := filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	virtualEnvironmentPathMap["pip"] = pipPath
+	virtualEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
+	virtualEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+
+	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "pip", "build", "wheel", "setuptools"); err != nil {
+		return err
+	}
 
 	return nil
 }
