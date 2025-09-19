@@ -88,6 +88,37 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
+func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
+	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
+	if err := utils.RunExecutable("python3", virtualEnvironmentFlags...); err != nil {
+		return err
+	}
+	if err := utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate")); err != nil {
+		return err
+	}
+
+	pipPath := filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	virutalEnvironmentPathMap["pip"] = pipPath
+	// venv will create symlinks to python3 inside the container
+	virutalEnvironmentPathMap["python"] = "python"
+	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+
+	// Force-install setuptools into the virtual environment
+	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "setuptools"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions) error {
+	err := utils.RemoveAll(config.VirutalEnvironmentName)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // TODO: extract to common place
 func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	log.Entry().Debugf("creating build settings information...")
