@@ -89,7 +89,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
-      - name: virutalEnvironmentName
+      - name: virtualEnvironmentName
         type: string
         description: name of the virtual environment that will be used for the build
         scope:
@@ -97,6 +97,9 @@ spec:
           - STAGES
           - PARAMETERS
         default: piperBuild-env
+        aliases:
+          - name: virutalEnvironmentName  # typo alias - to be removed in future releases
+            deprecated: true
       - name: requirementsFilePath
         type: string
         description: file path to the requirements.txt file needed for the sbom cycloneDx file creation.
