@@ -15,7 +15,7 @@ func TestCreateVirtualEnvironment(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := CreateVirtualEnvironment(mockRunner.RunExecutable, ".venv")
+	_, err := CreateVirtualEnvironment(mockRunner.RunExecutable, ".venv")
 
 	// assert
 	assert.NoError(t, err)

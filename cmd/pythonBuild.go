@@ -51,8 +51,11 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-	if err := python.CreateVirtualEnvironment(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
+	if exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirutalEnvironmentName); err != nil {
 		return err
+	} else {
+		log.DeferExitHandler(exitHandler)
+		defer exitHandler()
 	}
 
 	if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirutalEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
@@ -82,7 +85,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
-	return python.RemoveVirtualEnvironment(utils.RemoveAll, config.VirutalEnvironmentName)
+	return nil
 }
 
 // TODO: extract to common place
