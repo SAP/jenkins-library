@@ -27,6 +27,24 @@ func TestInstallRequirements(t *testing.T) {
 		"--requirement", "requirements.txt"}, mockRunner.Calls[0].Params)
 }
 
+func TestInstallWheel(t *testing.T) {
+	// init
+	mockRunner := mock.ExecMockRunner{}
+
+	// test
+	err := InstallWheel(mockRunner.RunExecutable, "")
+
+	// assert
+	assert.NoError(t, err)
+	assert.Len(t, mockRunner.Calls, 1)
+	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"wheel"}, mockRunner.Calls[0].Params)
+}
+
 func TestInstallTwine(t *testing.T) {
 	// init
 	mockRunner := mock.ExecMockRunner{}

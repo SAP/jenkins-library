@@ -51,6 +51,14 @@ func InstallRequirements(
 	return Install(executeFn, virtualEnv, "", "", []string{"--requirement", requirementsFile})
 }
 
+func InstallWheel(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing wheel")
+	return Install(executeFn, virtualEnv, "wheel", "", nil)
+}
+
 func InstallTwine(
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,

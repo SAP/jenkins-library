@@ -21,8 +21,14 @@ func TestBuildWithSetupPy(t *testing.T) {
 
 	// assert
 	assert.NoError(t, err)
-	assert.Len(t, mockRunner.Calls, 1)
-	assert.Equal(t, ".venv/bin/python", mockRunner.Calls[0].Exec)
+	assert.Len(t, mockRunner.Calls, 2)
+	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[0].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"wheel"}, mockRunner.Calls[0].Params)
+	assert.Equal(t, ".venv/bin/python", mockRunner.Calls[1].Exec)
 	assert.Equal(t, []string{
 		"--verbose",
 		"setup.py",
@@ -30,5 +36,5 @@ func TestBuildWithSetupPy(t *testing.T) {
 		"--tag-build=pr13",
 		"sdist",
 		"bdist_wheel",
-	}, mockRunner.Calls[0].Params)
+	}, mockRunner.Calls[1].Params)
 }
