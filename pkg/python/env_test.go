@@ -13,9 +13,10 @@ import (
 func TestCreateVirtualEnvironment(t *testing.T) {
 	// init
 	mockRunner := mock.ExecMockRunner{}
+	mockFiles := mock.FilesMock{}
 
 	// test
-	_, err := CreateVirtualEnvironment(mockRunner.RunExecutable, ".venv")
+	_, err := CreateVirtualEnvironment(mockRunner.RunExecutable, mockFiles.RemoveAll, ".venv")
 
 	// assert
 	assert.NoError(t, err)
