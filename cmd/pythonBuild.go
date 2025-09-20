@@ -51,19 +51,19 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-	if exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirutalEnvironmentName); err != nil {
+	if exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirtualEnvironmentName); err != nil {
 		return err
 	} else {
 		log.DeferExitHandler(exitHandler)
 		defer exitHandler()
 	}
 
-	if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirutalEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+	if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
 		return err
 	}
 
 	if config.CreateBOM {
-		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, config.VirutalEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
+		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
 			return fmt.Errorf("BOM creation failed: %w", err)
 		}
 	}
@@ -77,7 +77,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	if config.Publish {
 		if err := python.PublishPackage(
 			utils.RunExecutable,
-			config.VirutalEnvironmentName,
+			config.VirtualEnvironmentName,
 			config.TargetRepositoryURL,
 			config.TargetRepositoryUser,
 			config.TargetRepositoryPassword,
