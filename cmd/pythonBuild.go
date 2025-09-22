@@ -76,21 +76,21 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirtualEnvironmentName)),
 		})
 		// handle pyproject.toml file
-		if err := python.InstallPip(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
+		if err := python.InstallPip(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
 			return fmt.Errorf("failed to upgrade pip: %w", err)
 		}
-		if err := python.InstallProjectDependencies(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
+		if err := python.InstallProjectDependencies(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
 			return fmt.Errorf("failed to install project dependencies: %w", err)
 		}
 		// TODO: is this needed or can the dependency be maintained in TOML?
-		if err := python.InstallBuild(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
+		if err := python.InstallBuild(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
 			return fmt.Errorf("failed to install build module: %w", err)
 		}
 		// TODO: is this needed or can the dependency be maintained in TOML?
-		if err := python.InstallWheel(utils.RunExecutable, config.VirutalEnvironmentName); err != nil {
+		if err := python.InstallWheel(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
 			return fmt.Errorf("failed to install wheel module: %w", err)
 		}
-		if err := python.Build(utils.RunExecutable, config.VirutalEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+		if err := python.Build(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
 			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	} else {

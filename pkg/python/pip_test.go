@@ -37,7 +37,7 @@ func TestInstallProjectDependencies(t *testing.T) {
 		"install",
 		"--upgrade",
 		"--root-user-action=ignore",
-		"--requirement", "requirements.txt"}, mockRunner.Calls[0].Params)
+		"."}, mockRunner.Calls[0].Params)
 }
 
 func TestInstallRequirements(t *testing.T) {
@@ -67,7 +67,11 @@ func TestInstallBuild(t *testing.T) {
 	// assert
 	assert.NoError(t, err)
 	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
-	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "build"}, mockRunner.Calls[0].Params)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"build"}, mockRunner.Calls[0].Params)
 }
 
 func TestInstallBuildWithVirtualEnv(t *testing.T) {
@@ -80,7 +84,11 @@ func TestInstallBuildWithVirtualEnv(t *testing.T) {
 	// assert
 	assert.NoError(t, err)
 	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[0].Exec)
-	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "build"}, mockRunner.Calls[0].Params)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"build"}, mockRunner.Calls[0].Params)
 }
 
 func TestInstallWheel(t *testing.T) {
@@ -135,17 +143,4 @@ func TestInstallCycloneDXWithVersion(t *testing.T) {
 		"--upgrade",
 		"--root-user-action=ignore",
 		"cyclonedx-bom==1.0.0"}, mockRunner.Calls[0].Params)
-}
-
-func TestInstallCycloneDXWithVersion(t *testing.T) {
-	// init
-	mockRunner := mock.ExecMockRunner{}
-
-	// test
-	err := InstallCycloneDX(mockRunner.RunExecutable, "", "1.0.0")
-
-	// assert
-	assert.NoError(t, err)
-	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
-	assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==1.0.0"}, mockRunner.Calls[0].Params)
 }

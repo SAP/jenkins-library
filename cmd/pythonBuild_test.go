@@ -1,3 +1,6 @@
+//go:build unit
+// +build unit
+
 package cmd
 
 import (
@@ -87,9 +90,9 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "dummy/bin/pip", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, utils.ExecMockRunner.Calls[2].Params)
-		assert.Equal(t, "dummy/bin/python", utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "twine"}, utils.ExecMockRunner.Calls[4].Params)
@@ -116,44 +119,13 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "dummy/bin/pip", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, utils.ExecMockRunner.Calls[2].Params)
-		assert.Equal(t, "dummy/bin/python", utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "python"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[4].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[5].Exec)
 		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[5].Params)
-	})
-}
-
-func TestPythonBuildExecute(t *testing.T) {
-	t.Run("Test build with flags", func(t *testing.T) {
-		config := pythonBuildOptions{
-			BuildFlags:             []string{"--verbose"},
-			SetupFlags:             []string{"egg_info", "--tag-build=pr13"},
-			VirutalEnvironmentName: "venv",
-		}
-
-		utils := pythonBuildMockUtils{
-			ExecMockRunner: &mock.ExecMockRunner{},
-		}
-
-		virutalEnvironmentPathMap := map[string]string{
-			"python": "python",
-		}
-
-		err := buildExecute(&config, &utils, virutalEnvironmentPathMap)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "python", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{
-			"--verbose",
-			"setup.py",
-			"egg_info",
-			"--tag-build=pr13",
-			"sdist",
-			"bdist_wheel",
-		}, utils.ExecMockRunner.Calls[0].Params)
 	})
 }

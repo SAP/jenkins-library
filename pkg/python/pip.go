@@ -24,7 +24,10 @@ func Install(
 	}
 
 	flags := PipInstallFlags
-	// flags := append([]string{"-m", "pip"}, PipInstallFlags...)
+
+	if len(extraArgs) > 0 {
+		flags = append(flags, extraArgs...)
+	}
 	if len(version) > 0 {
 		module = fmt.Sprintf("%s==%s", module, version)
 	}
@@ -43,7 +46,7 @@ func InstallPip(
 	virtualEnv string,
 ) error {
 	log.Entry().Debug("updating pip")
-	return Install(executeFn, virtualEnv, "pip", "")
+	return Install(executeFn, virtualEnv, "pip", "", nil)
 }
 
 func InstallProjectDependencies(
@@ -51,40 +54,7 @@ func InstallProjectDependencies(
 	virtualEnv string,
 ) error {
 	log.Entry().Debug("installing project dependencies")
-	return Install(executeFn, virtualEnv, ".", "")
-}
-
-func InstallBuild(
-	executeFn func(executable string, params ...string) error,
-	virtualEnv string,
-) error {
-	log.Entry().Debug("installing build")
-	return Install(executeFn, virtualEnv, "build", "")
-}
-
-func InstallWheel(
-	executeFn func(executable string, params ...string) error,
-	virtualEnv string,
-) error {
-	log.Entry().Debug("installing wheel")
-	return Install(executeFn, virtualEnv, "wheel", "")
-}
-
-func InstallTwine(
-	executeFn func(executable string, params ...string) error,
-	virtualEnv string,
-) error {
-	log.Entry().Debug("installing twine")
-	return Install(executeFn, virtualEnv, "twine", "")
-}
-
-func InstallCycloneDX(
-	executeFn func(executable string, params ...string) error,
-	virtualEnv string,
-	cycloneDXVersion string,
-) error {
-	log.Entry().Debug("installing cyclonedx-bom")
-	return Install(executeFn, virtualEnv, "cyclonedx-bom", cycloneDXVersion)
+	return Install(executeFn, virtualEnv, ".", "", nil)
 }
 
 func InstallRequirements(
@@ -94,6 +64,14 @@ func InstallRequirements(
 ) error {
 	log.Entry().Debug("installing requirements")
 	return Install(executeFn, virtualEnv, "", "", []string{"--requirement", requirementsFile})
+}
+
+func InstallBuild(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing build")
+	return Install(executeFn, virtualEnv, "build", "", nil)
 }
 
 func InstallWheel(
