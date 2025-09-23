@@ -128,8 +128,13 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
+	fullScanCycle, err := strconv.Atoi(cx1sh.config.FullScanCycle)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", cx1sh.config.FullScanCycle)
+	}
 	branch, isPR, baseBranch := cx1sh.GetScanBranch()
-	scans, err := cx1sh.GetLastScans(10, branch)
+	scans, err := cx1sh.GetLastScans(fullScanCycle+1, branch)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to get last 10 scans")
 	}
@@ -153,7 +158,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
-	incremental, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
+	incremental, fullScanExists, contiguousIncrScansCurrentBranch, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
 	if err != nil {
 		return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
 	}
@@ -174,24 +179,22 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
 	var scan *checkmarxOne.Scan
-	// We search for a full scan in history:
-	fullScanExists := false
-	for _, histScan := range scans {
-		isIncr, _ := histScan.IsIncremental()
-		if isIncr == false {
-			fullScanExists = true
-			break
-		}
-	}
 	// user requested an incremental scan on a branch, and the project has a Primary Branch set, not in PR context and no full scan on the branch
 	if config.Incremental && !isPR && !fullScanExists && cx1sh.Project.MainBranch != "" && cx1sh.Project.MainBranch != branch {
-		scansMainBranch, err := cx1sh.GetLastScans(10, cx1sh.Project.MainBranch)
+		scansMainBranch, err := cx1sh.GetLastScans(fullScanCycle+1, cx1sh.Project.MainBranch)
+		if err != nil {
+			return fmt.Errorf("failed to get scans from primary branch %v: %s", cx1sh.Project.MainBranch, err)
+		}
+		// We check if the main branch is eligible for an incremental scan
+		incrementalMainBranch, _, contiguousIncrScansMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
 		if err != nil {
 			return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
 		}
-		// We check if the main branch is eligible for an incremental scan
-		incrementalMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
 		log.Entry().Debugf("Main branch %v incremental scan eligibility: %t", cx1sh.Project.MainBranch, incrementalMainBranch)
+		if contiguousIncrScansMainBranch+contiguousIncrScansCurrentBranch+1 >= fullScanCycle { // contiguous incremental scans on main branch and current branch must not exceed fullScanCycle
+			incrementalMainBranch = false
+		}
+		log.Entry().Debugf("Main branch + current branch incremental scan eligibility: %t", incrementalMainBranch)
 		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
 	} else if config.Incremental && isPR && len(baseBranch) > 0 && baseBranch != "n/a" { // running in a PR context, and we have a base branch for the incremental scan
 		// in a PR context we always want to do an incremental scan
@@ -430,23 +433,46 @@ func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int, branch string) (
 	return scans, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.Scan) (bool, error) {
+func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.Scan) (bool, bool, int, error) {
 	incremental := c.config.Incremental
+	fullScanExists := false
 	fullScanCycle, err := strconv.Atoi(c.config.FullScanCycle)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return false, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
+		return false, false, 0, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
 	}
 
-	coherentIncrementalScans := c.getNumCoherentIncrementalScans(scans)
+	if len(scans) == 0 {
+		return false, false, 0, nil // no scans exist, so we need to do a full scan
+	}
+
+	var scanIds []string
+	for _, scan := range scans {
+		scanIds = append(scanIds, scan.ScanID)
+	}
+
+	scanMetadatas, err := c.sys.GetScanMetadatas(scanIds)
+	if err != nil {
+		return false, false, 0, errors.Wrapf(err, "failed to fetch metadata for scans")
+	}
+
+	contiguousIncrementalScans := 0
+	for _, scanMetadata := range scanMetadatas {
+		if scanMetadata.IsIncremental {
+			contiguousIncrementalScans++
+		} else {
+			fullScanExists = true
+			break
+		}
+	}
 
 	if c.config.IsOptimizedAndScheduled {
 		incremental = false
-	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (coherentIncrementalScans+1) >= fullScanCycle {
+	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (contiguousIncrementalScans+1) >= fullScanCycle {
 		incremental = false
 	}
 
-	return incremental, nil
+	return incremental, fullScanExists, contiguousIncrementalScans, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
@@ -491,6 +517,11 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, branch)
 	} else if cicdOrch.IsPullRequest() && cicdOrch.PullRequestConfig().Branch != "n/a" {
 		branch = fmt.Sprintf("PR%v-%v", cicdOrch.PullRequestConfig().Key, cicdOrch.PullRequestConfig().Branch)
+	}
+
+	if branch == "" {
+		branch = ".unknown"
+		log.Entry().Info("No branch name found, using the cxone default '.unknown' as branch name")
 	}
 
 	baseBranch := cicdOrch.PullRequestConfig().Base
