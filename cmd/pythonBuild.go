@@ -120,25 +120,25 @@ func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstall
 }
 
 func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
-	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
+	virtualEnvironmentFlags := []string{"-m", "venv", config.VirtualEnvironmentName}
 	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
 	if err != nil {
 		return err
 	}
-	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate"))
+	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirtualEnvironmentName, "bin", "activate"))
 	if err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
+	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirtualEnvironmentName, "bin", "pip")
 	// venv will create symlinks to python3 inside the container
 	virutalEnvironmentPathMap["python"] = "python"
-	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
+	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirtualEnvironmentName, "bin", "deactivate")
 
 	return nil
 }
 
 func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions) error {
-	err := utils.RemoveAll(config.VirutalEnvironmentName)
+	err := utils.RemoveAll(config.VirtualEnvironmentName)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virut
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallCycloneDxFlags...); err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-py")
+	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirtualEnvironmentName, "bin", "cyclonedx-py")
 
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "env", "--output-file", PyBomFilename, "--output-format", "XML", "--spec-version", cycloneDxSchemaVersion); err != nil {
 		return err
@@ -175,7 +175,7 @@ func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, pipIns
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
 		return err
 	}
-	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
+	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirtualEnvironmentName, "bin", "twine")
 	if err := utils.RunExecutable(virutalEnvironmentPathMap["twine"], "upload", "--username", config.TargetRepositoryUser,
 		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL, "--disable-progress-bar",
 		"dist/*"); err != nil {
