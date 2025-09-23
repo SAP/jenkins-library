@@ -296,6 +296,10 @@ spec:
       - name: reports
         type: reports
         params:
+          - filePattern: "**/codecheck.json"
+            type: sonarqube
+          - filePattern: "**/hotspot.json"
+            type: sonarqube
           - filePattern: "**/sonarscan.json"
             type: sonarqube
           - filePattern: "**/sonarscan-result.json"

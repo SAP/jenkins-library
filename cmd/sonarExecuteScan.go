@@ -225,6 +225,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Target:    "sonarscan.json",
 			Mandatory: false,
 		},
+		{
+			Target:    "hotspot.json",
+			Mandatory: false,
+		},
+		{
+			Target:    "codecheck.json",
+			Mandatory: false,
+		},
 	}
 	// write links JSON
 	links := []piperutils.Path{
