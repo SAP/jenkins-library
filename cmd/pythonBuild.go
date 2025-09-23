@@ -68,6 +68,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		// handle pyproject.toml file
 		workDir, err := os.Getwd()
 		if err != nil {
 			return err
@@ -75,7 +76,6 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		utils.AppendEnv([]string{
 			fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirtualEnvironmentName)),
 		})
-		// handle pyproject.toml file
 		if err := python.InstallPip(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
 			return fmt.Errorf("failed to upgrade pip: %w", err)
 		}
@@ -128,7 +128,6 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 // TODO: extract to common place
 func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
-	// generate build settings information
 	log.Entry().Debugf("creating build settings information...")
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {

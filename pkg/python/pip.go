@@ -24,7 +24,6 @@ func Install(
 	}
 
 	flags := PipInstallFlags
-
 	if len(extraArgs) > 0 {
 		flags = append(flags, extraArgs...)
 	}
