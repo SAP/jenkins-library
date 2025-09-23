@@ -1,10 +1,6 @@
 metadata:
   name: golangBuild
   description: This step will execute a golang build.
-  errors:
-    - pattern: "[build failed]"
-      message: "Go build compilation failed. Check for syntax errors, missing dependencies, or import issues."
-      category: "build"
   longDescription: |
     This step will build a golang project.
     It will also execute golang-based tests using [gotestsum](https://github.com/gotestyourself/gotestsum) and with that allows for reporting test results and test coverage.

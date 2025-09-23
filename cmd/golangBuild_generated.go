@@ -297,13 +297,6 @@ func golangBuildMetadata() config.StepData {
 			Name:        "golangBuild",
 			Aliases:     []config.Alias{},
 			Description: "This step will execute a golang build.",
-			Errors: []config.StepError{
-				{
-					Pattern:  "[build failed]",
-					Message:  "Go build compilation failed. Check for syntax errors, missing dependencies, or import issues.",
-					Category: "build",
-				},
-			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

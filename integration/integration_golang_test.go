@@ -24,48 +24,8 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 	})
 	defer container.terminate(t)
 
-	// Debug: Show initial directory structure
-	t.Log("=== DEBUG: Initial project directory structure ===")
-	err := container.runScriptInsideContainer("find /project -type f -name '*.go' -o -name '*.yml' -o -name '*.yaml' | head -20")
-	if err != nil {
-		t.Logf("Failed to list project files: %v", err)
-	}
-
-	err = container.whenRunningPiperCommand("golangBuild")
+	err := container.whenRunningPiperCommand("golangBuild")
 	assert.NoError(t, err)
-
-	// Debug: Show complete piper output
-	t.Log("=== DEBUG: Complete piper command output ===")
-	buffer, outputErr := container.getPiperOutput()
-	if outputErr != nil {
-		t.Logf("Failed to get piper output: %v", outputErr)
-	} else {
-		t.Logf("Piper output:\n%s", buffer.String())
-	}
-
-	// Debug: Show final directory contents
-	t.Log("=== DEBUG: Final project directory contents ===")
-	err = container.runScriptInsideContainer("ls -la /project/")
-	if err != nil {
-		t.Logf("Failed to list final directory: %v", err)
-	}
-
-	// Debug: Show specific file contents
-	t.Log("=== DEBUG: Generated file details ===")
-	err = container.runScriptInsideContainer("if [ -f /project/TEST-go.xml ]; then echo 'TEST-go.xml size:'; wc -l /project/TEST-go.xml; echo 'First 10 lines:'; head -10 /project/TEST-go.xml; fi")
-	if err != nil {
-		t.Logf("Failed to show TEST-go.xml details: %v", err)
-	}
-
-	err = container.runScriptInsideContainer("if [ -f /project/bom-golang.xml ]; then echo 'bom-golang.xml size:'; wc -l /project/bom-golang.xml; echo 'First 10 lines:'; head -10 /project/bom-golang.xml; fi")
-	if err != nil {
-		t.Logf("Failed to show bom-golang.xml details: %v", err)
-	}
-
-	err = container.runScriptInsideContainer("if [ -f /project/golang-app-linux.amd64 ]; then echo 'Binary details:'; file /project/golang-app-linux.amd64; ls -lh /project/golang-app-linux.amd64; fi")
-	if err != nil {
-		t.Logf("Failed to show binary details: %v", err)
-	}
 
 	container.assertHasOutput(t,
 		"info  golangBuild - running command: go install gotest.tools/gotestsum@latest",
