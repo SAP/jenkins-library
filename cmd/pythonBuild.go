@@ -76,21 +76,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		utils.AppendEnv([]string{
 			fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirtualEnvironmentName)),
 		})
-		if err := python.InstallPip(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
-			return fmt.Errorf("failed to upgrade pip: %w", err)
-		}
-		if err := python.InstallProjectDependencies(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
-			return fmt.Errorf("failed to install project dependencies: %w", err)
-		}
-		// TODO: is this needed or can the dependency be maintained in TOML?
-		if err := python.InstallBuild(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
-			return fmt.Errorf("failed to install build module: %w", err)
-		}
-		// TODO: is this needed or can the dependency be maintained in TOML?
-		if err := python.InstallWheel(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
-			return fmt.Errorf("failed to install wheel module: %w", err)
-		}
-		if err := python.Build(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+		if err := python.BuildWithPyProjectToml(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
 			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	} else {
@@ -102,12 +88,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	if config.CreateBOM {
 		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
-			return fmt.Errorf("BOM creation failed: %w", err)
+			return fmt.Errorf("failed to create BOM: %w", err)
 		}
 	}
 
 	if info, err := createBuildSettingsInfo(config); err != nil {
-		return err
+		return fmt.Errorf("failed to create build settings info: %v", err)
 	} else {
 		commonPipelineEnvironment.custom.buildSettingsInfo = info
 	}

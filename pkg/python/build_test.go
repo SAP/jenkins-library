@@ -39,28 +39,58 @@ func TestBuildWithSetupPy(t *testing.T) {
 	}, mockRunner.Calls[1].Params)
 }
 
-func TestBuild(t *testing.T) {
+func TestBuildWithPyProjectToml(t *testing.T) {
 	// init
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := Build(mockRunner.RunExecutable, "", nil, nil)
+	err := BuildWithPyProjectToml(mockRunner.RunExecutable, "", nil, nil)
 
 	// assert
 	assert.NoError(t, err)
-	assert.Equal(t, "python", mockRunner.Calls[0].Exec)
-	assert.Equal(t, []string{"-m", "build", "--no-isolation"}, mockRunner.Calls[0].Params)
+	assert.Len(t, mockRunner.Calls, 5)
+	assert.Equal(t, "pip", mockRunner.Calls[0].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"pip"}, mockRunner.Calls[0].Params)
+	assert.Equal(t, "pip", mockRunner.Calls[1].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"."}, mockRunner.Calls[1].Params)
+	assert.Equal(t, "pip", mockRunner.Calls[2].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"build"}, mockRunner.Calls[2].Params)
+	assert.Equal(t, "pip", mockRunner.Calls[3].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"wheel"}, mockRunner.Calls[3].Params)
+	assert.Equal(t, "python", mockRunner.Calls[4].Exec)
+	assert.Equal(t, []string{
+		"-m", "build",
+		"--no-isolation"}, mockRunner.Calls[4].Params)
 }
 
-func TestBuildWithVirtualEnv(t *testing.T) {
+func TestBuildWithPyProjectTomlWithVirtualEnv(t *testing.T) {
 	// init
 	mockRunner := mock.ExecMockRunner{}
 
 	// test
-	err := Build(mockRunner.RunExecutable, ".venv", nil, nil)
+	err := BuildWithPyProjectToml(mockRunner.RunExecutable, ".venv", nil, nil)
 
 	// assert
 	assert.NoError(t, err)
-	assert.Equal(t, ".venv/bin/python", mockRunner.Calls[0].Exec)
-	assert.Equal(t, []string{"-m", "build", "--no-isolation"}, mockRunner.Calls[0].Params)
+	assert.Len(t, mockRunner.Calls, 5)
+	assert.Equal(t, ".venv/bin/python", mockRunner.Calls[4].Exec)
+	assert.Equal(t, []string{
+		"-m", "build",
+		"--no-isolation"}, mockRunner.Calls[4].Params)
 }

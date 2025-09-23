@@ -15,7 +15,7 @@ func BuildWithSetupPy(
 ) error {
 	// install dependency
 	if err := InstallWheel(executeFn, virtualEnv); err != nil {
-		return err
+		return fmt.Errorf("failed to install wheel module: %w", err)
 	}
 
 	pythonBinary := "python"
@@ -30,27 +30,38 @@ func BuildWithSetupPy(
 	flags = append(flags, "sdist", "bdist_wheel")
 
 	log.Entry().Debug("building project")
-	if err := executeFn(pythonBinary, flags...); err != nil {
-		return fmt.Errorf("failed to build package: %w", err)
-	}
-	return nil
+	return executeFn(pythonBinary, flags...)
 }
 
-func Build(
+func BuildWithPyProjectToml(
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,
-	binaryFlags []string,
-	moduleFlags []string,
+	pythonArgs []string,
+	moduleArgs []string,
 ) error {
+	// install dependencies
+	if err := InstallPip(executeFn, virtualEnv); err != nil {
+		return fmt.Errorf("failed to upgrade pip: %w", err)
+	}
+	if err := InstallProjectDependencies(executeFn, virtualEnv); err != nil {
+		return fmt.Errorf("failed to install project dependencies: %w", err)
+	}
+	if err := InstallBuild(executeFn, virtualEnv); err != nil {
+		return fmt.Errorf("failed to install build module: %w", err)
+	}
+	if err := InstallWheel(executeFn, virtualEnv); err != nil {
+		return fmt.Errorf("failed to install wheel module: %w", err)
+	}
+
 	pythonBinary := "python"
 	if len(virtualEnv) > 0 {
 		pythonBinary = filepath.Join(virtualEnv, "bin", pythonBinary)
 	}
 
 	var flags []string
-	flags = append(flags, binaryFlags...)
+	flags = append(flags, pythonArgs...)
 	flags = append(flags, "-m", "build", "--no-isolation")
-	flags = append(flags, moduleFlags...)
+	flags = append(flags, moduleArgs...)
 
 	log.Entry().Debug("building project")
 	return executeFn(pythonBinary, flags...)
