@@ -2,9 +2,8 @@ package python
 
 import (
 	"fmt"
-	"path/filepath"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+	"path/filepath"
 )
 
 func BuildWithSetupPy(
@@ -25,9 +24,20 @@ func BuildWithSetupPy(
 
 	var flags []string
 	flags = append(flags, pythonArgs...)
-	flags = append(flags, "setup.py")
 	flags = append(flags, setupArgs...)
 	flags = append(flags, "sdist", "bdist_wheel")
+
+	containsCustomBuild := false
+	for _, flag := range flags {
+		if flag == "pypa/build" || flag == "pypa/installer" {
+			containsCustomBuild = true
+			break
+		}
+	}
+
+	if !containsCustomBuild {
+		flags = append(flags, "setup.py")
+	}
 
 	log.Entry().Debug("building project")
 	if err := executeFn(pythonBinary, flags...); err != nil {

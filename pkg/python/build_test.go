@@ -31,10 +31,10 @@ func TestBuildWithSetupPy(t *testing.T) {
 	assert.Equal(t, ".venv/bin/python", mockRunner.Calls[1].Exec)
 	assert.Equal(t, []string{
 		"--verbose",
-		"setup.py",
 		"egg_info",
 		"--tag-build=pr13",
 		"sdist",
 		"bdist_wheel",
+		"setup.py",
 	}, mockRunner.Calls[1].Params)
 }
