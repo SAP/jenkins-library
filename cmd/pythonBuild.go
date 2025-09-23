@@ -88,48 +88,6 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
-func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-	var flags []string
-	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, config.SetupFlags...)
-	flags = append(flags, "-m", "build", "--sdist", "--wheel")
-
-	log.Entry().Info("starting building python project using pypa/build:")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...); err != nil {
-		return err
-	}
-	return nil
-}
-
-func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virtualEnvironmentPathMap map[string]string) error {
-	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
-	if err := utils.RunExecutable("python3", virtualEnvironmentFlags...); err != nil {
-		return err
-	}
-	if err := utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate")); err != nil {
-		return err
-	}
-
-	pipPath := filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
-	virtualEnvironmentPathMap["pip"] = pipPath
-	virtualEnvironmentPathMap["python"] = filepath.Join(config.VirutalEnvironmentName, "bin", "python")
-	virtualEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
-
-	if err := utils.RunExecutable(pipPath, "install", "--upgrade", "pip", "build", "wheel", "setuptools"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions) error {
-	err := utils.RemoveAll(config.VirutalEnvironmentName)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // TODO: extract to common place
 func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	log.Entry().Debugf("creating build settings information...")
