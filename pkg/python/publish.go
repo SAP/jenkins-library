@@ -1,8 +1,6 @@
 package python
 
-import (
-	"path/filepath"
-)
+import "fmt"
 
 func PublishPackage(
 	executeFn func(executable string, params ...string) error,
@@ -13,16 +11,11 @@ func PublishPackage(
 ) error {
 	// install dependency
 	if err := InstallTwine(executeFn, virtualEnv); err != nil {
-		return err
-	}
-	// handle virtual environment
-	twineBinary := "twine"
-	if len(virtualEnv) > 0 {
-		twineBinary = filepath.Join(virtualEnv, "bin", twineBinary)
+		return fmt.Errorf("failed to install twine module: %w", err)
 	}
 	// publish project
 	return executeFn(
-		twineBinary,
+		getBinary(virtualEnv, "twine"),
 		"upload",
 		"--username", username,
 		"--password", password,

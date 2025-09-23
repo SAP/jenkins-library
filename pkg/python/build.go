@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -18,11 +17,6 @@ func BuildWithSetupPy(
 		return fmt.Errorf("failed to install wheel module: %w", err)
 	}
 
-	pythonBinary := "python"
-	if len(virtualEnv) > 0 {
-		pythonBinary = filepath.Join(virtualEnv, "bin", pythonBinary)
-	}
-
 	var flags []string
 	flags = append(flags, pythonArgs...)
 	flags = append(flags, "setup.py")
@@ -30,7 +24,7 @@ func BuildWithSetupPy(
 	flags = append(flags, "sdist", "bdist_wheel")
 
 	log.Entry().Debug("building project")
-	return executeFn(pythonBinary, flags...)
+	return executeFn(getBinary(virtualEnv, "python"), flags...)
 }
 
 func BuildWithPyProjectToml(
@@ -53,16 +47,11 @@ func BuildWithPyProjectToml(
 		return fmt.Errorf("failed to install wheel module: %w", err)
 	}
 
-	pythonBinary := "python"
-	if len(virtualEnv) > 0 {
-		pythonBinary = filepath.Join(virtualEnv, "bin", pythonBinary)
-	}
-
 	var flags []string
 	flags = append(flags, pythonArgs...)
 	flags = append(flags, "-m", "build", "--no-isolation")
 	flags = append(flags, moduleArgs...)
 
 	log.Entry().Debug("building project")
-	return executeFn(pythonBinary, flags...)
+	return executeFn(getBinary(virtualEnv, "python"), flags...)
 }

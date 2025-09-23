@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -21,23 +20,18 @@ func CreateBOM(
 ) error {
 	if exists, _ := existsFn(requirementsFile); exists {
 		if err := InstallRequirements(executeFn, virtualEnv, requirementsFile); err != nil {
-			return err
+			return fmt.Errorf("failed to install requirements.txt: %w", err)
 		}
 	} else {
 		log.Entry().Warnf("unable to find requirements.txt file at %s , continuing SBOM generation without requirements.txt", requirementsFile)
 	}
 
 	if err := InstallCycloneDX(executeFn, virtualEnv, cycloneDxVersion); err != nil {
-		return err
-	}
-
-	cycloneDxBinary := "cyclonedx-py"
-	if len(virtualEnv) > 0 {
-		cycloneDxBinary = filepath.Join(virtualEnv, "bin", cycloneDxBinary)
+		return fmt.Errorf("failed to install cyclonedx module: %w", err)
 	}
 
 	log.Entry().Debug("creating BOM")
-	if err := executeFn(cycloneDxBinary,
+	if err := executeFn(getBinary(virtualEnv, "cyclonedx-py"),
 		"env",
 		"--output-file", BOMFilename,
 		"--output-format", "XML",
