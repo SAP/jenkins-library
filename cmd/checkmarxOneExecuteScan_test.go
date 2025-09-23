@@ -54,6 +54,10 @@ func (sys *checkmarxOneSystemMock) GetScanMetadata(scanID string) (checkmarxOne.
 	return checkmarxOne.ScanMetadata{}, nil
 }
 
+func (sys *checkmarxOneSystemMock) GetScanMetadatas(scanID []string) ([]checkmarxOne.ScanMetadata, error) {
+	return []checkmarxOne.ScanMetadata{}, nil
+}
+
 func (sys *checkmarxOneSystemMock) GetScanResults(scanID string, limit uint64) ([]checkmarxOne.ScanResult, error) {
 	return []checkmarxOne.ScanResult{}, nil
 }

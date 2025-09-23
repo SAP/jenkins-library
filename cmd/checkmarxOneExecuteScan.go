@@ -128,8 +128,13 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
+	fullScanCycle, err := strconv.Atoi(cx1sh.config.FullScanCycle)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", cx1sh.config.FullScanCycle)
+	}
 	branch, isPR, baseBranch := cx1sh.GetScanBranch()
-	scans, err := cx1sh.GetLastScans(10, branch)
+	scans, err := cx1sh.GetLastScans(fullScanCycle+1, branch)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to get last 10 scans")
 	}
@@ -153,7 +158,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
-	incremental, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
+	incremental, fullScanExists, contiguousIncrScansCurrentBranch, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
 	if err != nil {
 		return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
 	}
@@ -174,24 +179,22 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
 	var scan *checkmarxOne.Scan
-	// We search for a full scan in history:
-	fullScanExists := false
-	for _, histScan := range scans {
-		isIncr, _ := histScan.IsIncremental()
-		if isIncr == false {
-			fullScanExists = true
-			break
-		}
-	}
 	// user requested an incremental scan on a branch, and the project has a Primary Branch set, not in PR context and no full scan on the branch
 	if config.Incremental && !isPR && !fullScanExists && cx1sh.Project.MainBranch != "" && cx1sh.Project.MainBranch != branch {
-		scansMainBranch, err := cx1sh.GetLastScans(10, cx1sh.Project.MainBranch)
+		scansMainBranch, err := cx1sh.GetLastScans(fullScanCycle+1, cx1sh.Project.MainBranch)
+		if err != nil {
+			return fmt.Errorf("failed to get scans from primary branch %v: %s", cx1sh.Project.MainBranch, err)
+		}
+		// We check if the main branch is eligible for an incremental scan
+		incrementalMainBranch, _, contiguousIncrScansMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
 		if err != nil {
 			return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
 		}
-		// We check if the main branch is eligible for an incremental scan
-		incrementalMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
 		log.Entry().Debugf("Main branch %v incremental scan eligibility: %t", cx1sh.Project.MainBranch, incrementalMainBranch)
+		if contiguousIncrScansMainBranch+contiguousIncrScansCurrentBranch+1 >= fullScanCycle { // contiguous incremental scans on main branch and current branch must not exceed fullScanCycle
+			incrementalMainBranch = false
+		}
+		log.Entry().Debugf("Main branch + current branch incremental scan eligibility: %t", incrementalMainBranch)
 		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
 	} else if config.Incremental && isPR && len(baseBranch) > 0 && baseBranch != "n/a" { // running in a PR context, and we have a base branch for the incremental scan
 		// in a PR context we always want to do an incremental scan
@@ -430,23 +433,46 @@ func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int, branch string) (
 	return scans, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.Scan) (bool, error) {
+func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.Scan) (bool, bool, int, error) {
 	incremental := c.config.Incremental
+	fullScanExists := false
 	fullScanCycle, err := strconv.Atoi(c.config.FullScanCycle)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return false, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
+		return false, false, 0, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
 	}
 
-	coherentIncrementalScans := c.getNumCoherentIncrementalScans(scans)
+	if len(scans) == 0 {
+		return false, false, 0, nil // no scans exist, so we need to do a full scan
+	}
+
+	var scanIds []string
+	for _, scan := range scans {
+		scanIds = append(scanIds, scan.ScanID)
+	}
+
+	scanMetadatas, err := c.sys.GetScanMetadatas(scanIds)
+	if err != nil {
+		return false, false, 0, errors.Wrapf(err, "failed to fetch metadata for scans")
+	}
+
+	contiguousIncrementalScans := 0
+	for _, scanMetadata := range scanMetadatas {
+		if scanMetadata.IsIncremental {
+			contiguousIncrementalScans++
+		} else {
+			fullScanExists = true
+			break
+		}
+	}
 
 	if c.config.IsOptimizedAndScheduled {
 		incremental = false
-	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (coherentIncrementalScans+1) >= fullScanCycle {
+	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (contiguousIncrementalScans+1) >= fullScanCycle {
 		incremental = false
 	}
 
-	return incremental, nil
+	return incremental, fullScanExists, contiguousIncrementalScans, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
@@ -491,6 +517,11 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, branch)
 	} else if cicdOrch.IsPullRequest() && cicdOrch.PullRequestConfig().Branch != "n/a" {
 		branch = fmt.Sprintf("PR%v-%v", cicdOrch.PullRequestConfig().Key, cicdOrch.PullRequestConfig().Branch)
+	}
+
+	if branch == "" {
+		branch = ".unknown"
+		log.Entry().Info("No branch name found, using the cxone default '.unknown' as branch name")
 	}
 
 	baseBranch := cicdOrch.PullRequestConfig().Base
@@ -619,7 +650,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 				if len(c.config.Repository) == 0 {
 					repository = pathParts[len(pathParts)-1]
 				}
-				log.Entry().Infof("Found repository %s and owner %s from orchestrator", c.config.Repository, c.config.Owner)
+				log.Entry().Debugf("Found repository %s and owner %s from orchestrator", repository, owner)
 			} else {
 				return fmt.Errorf("failed to extract owner and repository from URL %s", repoUrl)
 			}
@@ -636,23 +667,60 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 		ghIssues := c.utils.GetIssueService()
 		log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, owner, repository)
 		scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
-		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString string
+		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, criticalComplianceCheckString, highComplianceCheckString, mediumComplianceCheckString, lowComplianceCheckString string
 		for _, finding := range *scanReportOverview.Findings {
 			switch finding.ClassificationName {
 			case "Critical":
-				criticalSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				// TODO: check if config threshold unit is percent or absolute number
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdCritical)/100.0)*float64(finding.Total))) {
+					criticalComplianceCheckString = ":x:"
+				} else {
+					criticalComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					criticalSeverityString = fmt.Sprintf("%s %d (%d confirmed)", criticalComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					criticalSeverityString = fmt.Sprintf("%s %d", criticalComplianceCheckString, finding.Total-*finding.Audited)
+				}
 			case "High":
-				highSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdHigh)/100.0)*float64(finding.Total))) {
+					highComplianceCheckString = ":x:"
+				} else {
+					highComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					highSeverityString = fmt.Sprintf("%s %d (%d confirmed)", highComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					highSeverityString = fmt.Sprintf("%s %d", highComplianceCheckString, finding.Total-*finding.Audited)
+				}
 			case "Medium":
-				mediumSeverityString = fmt.Sprintf("%d", finding.Total-*finding.Audited)
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdMedium)/100.0)*float64(finding.Total))) {
+					mediumComplianceCheckString = ":x:"
+				} else {
+					mediumComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					mediumSeverityString = fmt.Sprintf("%s %d (%d confirmed)", mediumComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					mediumSeverityString = fmt.Sprintf("%s %d", mediumComplianceCheckString, finding.Total-*finding.Audited)
+				}
 			case "Low":
 				if finding.LowPerQuery != nil {
 					for _, lowFinding := range *finding.LowPerQuery {
 						if c.config.VulnerabilityThresholdLowPerQuery {
+							confirmedLowString := ""
+							if lowFinding.Confirmed > 0 {
+								confirmedLowString = fmt.Sprintf(", of which %d confirmed", lowFinding.Confirmed)
+							}
 							lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
-							lowSeverityString = fmt.Sprintf("%s%d %s (%d audits / %d required) <br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery)
+							if lowFinding.Audited < lowAuditedRequiredPerQuery {
+								lowComplianceCheckString = ":x:"
+							} else {
+								lowComplianceCheckString = ":white_check_mark:"
+							}
+							lowSeverityString = fmt.Sprintf("%s%s %d %s (%d audited / %d required%s) <br>", lowSeverityString, lowComplianceCheckString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery, confirmedLowString)
 						} else {
-							lowSeverityString = fmt.Sprintf("%s%d %s<br>", lowSeverityString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
+							lowSeverityString = fmt.Sprintf("%s%s %d %s<br>", lowSeverityString, lowComplianceCheckString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
 						}
 					}
 				}
@@ -669,7 +737,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 **Project**: %s
 **ScanId**: %s
 **Preset**: %s
-Severity | Number of open findings
+Severity | Number of unaudited findings
 --- | ---
 :bangbang: Critical | %s
 :red_circle: High | %s
@@ -1252,10 +1320,15 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	cxLowThreshold := c.config.VulnerabilityThresholdLow
 	cxLowThresholdPerQuery := c.config.VulnerabilityThresholdLowPerQuery
 	cxLowThresholdPerQueryMax := c.config.VulnerabilityThresholdLowPerQueryMax
-	criticalValue := (*results)["Critical"].(map[string]int)["NotFalsePositive"]
-	highValue := (*results)["High"].(map[string]int)["NotFalsePositive"]
-	mediumValue := (*results)["Medium"].(map[string]int)["NotFalsePositive"]
-	lowValue := (*results)["Low"].(map[string]int)["NotFalsePositive"]
+	// findings are audited if they are in state Confirmed, Urgent or NotExploitable
+	criticalValue := (*results)["Critical"].(map[string]int)["ToVerify"] + (*results)["Critical"].(map[string]int)["ProposedNotExploitable"]
+	confirmedCriticalValue := (*results)["Critical"].(map[string]int)["Confirmed"] + (*results)["Critical"].(map[string]int)["Urgent"]
+	highValue := (*results)["High"].(map[string]int)["ToVerify"] + (*results)["High"].(map[string]int)["ProposedNotExploitable"]
+	confirmedHighValue := (*results)["High"].(map[string]int)["Confirmed"] + (*results)["High"].(map[string]int)["Urgent"]
+	mediumValue := (*results)["Medium"].(map[string]int)["ToVerify"] + (*results)["Medium"].(map[string]int)["ProposedNotExploitable"]
+	confirmedMediumValue := (*results)["Medium"].(map[string]int)["Confirmed"] + (*results)["Medium"].(map[string]int)["Urgent"]
+	lowValue := (*results)["Low"].(map[string]int)["ToVerify"] + (*results)["Low"].(map[string]int)["ProposedNotExploitable"]
+	confirmedLowValue := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["Urgent"]
 	var unit string
 	criticalViolation := ""
 	highViolation := ""
@@ -1263,25 +1336,25 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	lowViolation := ""
 	if c.config.VulnerabilityThresholdUnit == "percentage" {
 		unit = "%"
-		criticalAudited := (*results)["Critical"].(map[string]int)["Issues"] - (*results)["Critical"].(map[string]int)["NotFalsePositive"]
+		criticalAudited := (*results)["Critical"].(map[string]int)["NotExploitable"] + (*results)["Critical"].(map[string]int)["Confirmed"] + (*results)["Critical"].(map[string]int)["Urgent"]
 		criticalOverall := (*results)["Critical"].(map[string]int)["Issues"]
 		if criticalOverall == 0 {
 			criticalAudited = 1
 			criticalOverall = 1
 		}
-		highAudited := (*results)["High"].(map[string]int)["Issues"] - (*results)["High"].(map[string]int)["NotFalsePositive"]
+		highAudited := (*results)["High"].(map[string]int)["NotExploitable"] + (*results)["High"].(map[string]int)["Confirmed"] + (*results)["High"].(map[string]int)["Urgent"]
 		highOverall := (*results)["High"].(map[string]int)["Issues"]
 		if highOverall == 0 {
 			highAudited = 1
 			highOverall = 1
 		}
-		mediumAudited := (*results)["Medium"].(map[string]int)["Issues"] - (*results)["Medium"].(map[string]int)["NotFalsePositive"]
+		mediumAudited := (*results)["Medium"].(map[string]int)["NotExploitable"] + (*results)["Medium"].(map[string]int)["Confirmed"] + (*results)["Medium"].(map[string]int)["Urgent"]
 		mediumOverall := (*results)["Medium"].(map[string]int)["Issues"]
 		if mediumOverall == 0 {
 			mediumAudited = 1
 			mediumOverall = 1
 		}
-		lowAudited := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["NotExploitable"]
+		lowAudited := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["NotExploitable"] + (*results)["Low"].(map[string]int)["Urgent"]
 		lowOverall := (*results)["Low"].(map[string]int)["Issues"]
 		if lowOverall == 0 {
 			lowAudited = 1
@@ -1310,7 +1383,7 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
 
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
-					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"] + resultsLowQuery["Urgent"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
 					lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowOverallPerQuery)*float64(cxLowThreshold)/100.0)), cxLowThresholdPerQueryMax)
 					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
@@ -1351,10 +1424,24 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 	}
 
-	criticalText := fmt.Sprintf("Critical %v%v %v", criticalValue, unit, criticalViolation)
-	highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
-	mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
-	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+	var confirmedCriticalString, confirmedHighString, confirmedMediumString, confirmedLowString string
+	if confirmedCriticalValue > 0 {
+		confirmedCriticalString = fmt.Sprintf(" (of which %v confirmed)", confirmedCriticalValue)
+	}
+	if confirmedHighValue > 0 {
+		confirmedHighString = fmt.Sprintf(" (of which %v confirmed)", confirmedHighValue)
+	}
+	if confirmedMediumValue > 0 {
+		confirmedMediumString = fmt.Sprintf(" (of which %v confirmed)", confirmedMediumValue)
+	}
+	if confirmedLowValue > 0 {
+		confirmedLowString = fmt.Sprintf(" (of which %v confirmed)", confirmedLowValue)
+	}
+	criticalText := fmt.Sprintf("Critical %v%v %v %v", criticalValue, unit, confirmedCriticalString, criticalViolation)
+	highText := fmt.Sprintf("High %v%v %v %v", highValue, unit, confirmedHighString, highViolation)
+	mediumText := fmt.Sprintf("Medium %v%v %v %v", mediumValue, unit, confirmedMediumString, mediumViolation)
+	lowText := fmt.Sprintf("Low %v%v %v %v", lowValue, unit, confirmedLowString, lowViolation)
+	log.Entry().Info("Result auditing status per severity:")
 	if len(criticalViolation) > 0 {
 		insecureResults = append(insecureResults, criticalText)
 		log.Entry().Error(criticalText)

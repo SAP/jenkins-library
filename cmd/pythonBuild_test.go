@@ -36,7 +36,7 @@ func TestRunPythonBuild(t *testing.T) {
 	cpe := pythonBuildCommonPipelineEnvironment{}
 	t.Run("success - build", func(t *testing.T) {
 		config := pythonBuildOptions{
-			VirutalEnvironmentName: "dummy",
+			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
@@ -62,14 +62,14 @@ func TestRunPythonBuild(t *testing.T) {
 			TargetRepositoryURL:      "https://my.target.repository.local",
 			TargetRepositoryUser:     "user",
 			TargetRepositoryPassword: "password",
-			VirutalEnvironmentName:   "dummy",
+			VirtualEnvironmentName:   "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
 
 		runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"-m", "venv", config.VirutalEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "python", utils.ExecMockRunner.Calls[2].Exec)
@@ -86,7 +86,7 @@ func TestRunPythonBuild(t *testing.T) {
 		config := pythonBuildOptions{
 			CreateBOM:              true,
 			Publish:                false,
-			VirutalEnvironmentName: "dummy",
+			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
 		telemetryData := telemetry.CustomData{}
@@ -94,7 +94,7 @@ func TestRunPythonBuild(t *testing.T) {
 		runPythonBuild(&config, &telemetryData, utils, &cpe)
 		// assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"-m", "venv", config.VirutalEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "python", utils.ExecMockRunner.Calls[2].Exec)
@@ -111,7 +111,7 @@ func TestPythonBuildExecute(t *testing.T) {
 		config := pythonBuildOptions{
 			BuildFlags:             []string{"--verbose"},
 			SetupFlags:             []string{"egg_info", "--tag-build=pr13"},
-			VirutalEnvironmentName: "venv",
+			VirtualEnvironmentName: "venv",
 		}
 
 		utils := pythonBuildMockUtils{
