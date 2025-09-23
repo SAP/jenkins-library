@@ -64,7 +64,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	// check project descriptor
 	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to determine build descriptor file: %w", err)
 	}
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
