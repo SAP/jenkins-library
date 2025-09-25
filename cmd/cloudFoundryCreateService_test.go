@@ -64,7 +64,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "-t", "testTag, testTag2"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "-t", "testTag, testTag2", "--wait"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
@@ -86,7 +86,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "-b", "testBroker"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "-b", "testBroker", "--wait"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
@@ -108,7 +108,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		if assert.NoError(t, error) {
 			assert.Equal(t, []mock.ExecCall{{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "-c", "testConfig.json"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service", "testService", "testPlan", "testName", "-c", "testConfig.json", "--wait"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
