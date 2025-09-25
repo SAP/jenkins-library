@@ -539,6 +539,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: insecureSkipTLSVerify
+        type: bool
+        description: "This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
