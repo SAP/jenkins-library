@@ -247,6 +247,31 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: paths
+        type: string
+        description: |
+          List of file or directory patterns to include.
+          Each entry must be on its own line, e.g.:
+            src/**
+            lib/**
+          Note: This parameter is only applicable for interpreted languages.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: pathsIgnore
+        type: string
+        pathsIgnore:
+        description: |
+          List of file or directory patterns to ignore.
+          Each entry must be on its own line, e.g.:
+            **/*.md
+            docs/**
+          Note: This parameter is only applicable for interpreted languages.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - image: ""
   outputs:
