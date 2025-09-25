@@ -48,7 +48,9 @@ func (p *Pip) init() error {
 func (p *Pip) GetVersion() (string, error) {
 	buildDescriptorFilePath := p.path
 	var err error
-	if strings.Contains(p.path, "setup.py") {
+	if strings.Contains(p.path, "pyproject.toml") {
+
+	} else if strings.Contains(p.path, "setup.py") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, p.fileExists)
 		if err != nil {
 			initErr := p.init()
@@ -75,7 +77,9 @@ func (p *Pip) GetVersion() (string, error) {
 func (p *Pip) SetVersion(v string) error {
 	buildDescriptorFilePath := p.path
 	var err error
-	if strings.Contains(p.path, "setup.py") {
+	if strings.Contains(p.path, "pyproject.toml") {
+
+	} else if strings.Contains(p.path, "setup.py") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, p.fileExists)
 		if err != nil {
 			initErr := p.init()
