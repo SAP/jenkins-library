@@ -261,7 +261,8 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	hotSpotData, err := getHotSpotSecurityCheckResults(config, &taskReport, serverUrl, apiClient)
 	if err != nil {
-		return err
+		// Let Piper continue work even Hotspot report fails due to restricted access to requested resources.
+		log.Entry().Warnf("failed to retrieve sonar hotspot data: %v", err)
 	}
 
 	err = getCombinedReport(&codeCheckData, &hotSpotData)

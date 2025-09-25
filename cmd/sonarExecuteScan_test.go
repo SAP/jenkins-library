@@ -510,3 +510,60 @@ func TestSonarLoadCertificates(t *testing.T) {
 		assert.Empty(t, sonar.environment)
 	})
 }
+
+func TestHotspotReportNotAvailable(t *testing.T) {
+	mockRunner := mock.ExecMockRunner{}
+	mockDownloadClient := mockDownloader{shouldFail: false}
+	apiClient := &piperHttp.Client{}
+	apiClient.SetOptions(piperHttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+	// mock SonarQube API calls
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	// add response handler
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointCeTask+"", httpmock.NewStringResponder(http.StatusOK, `{ "task": { "componentId": "AXERR2JBbm9IiM5TEST", "status": "SUCCESS" }}`))
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, `{ "total": 0 }`))
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointHotSpotsSearch+"", httpmock.NewStringResponder(http.StatusNotFound, `{}`)) // Can't access hotsport report
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointMeasuresComponent+"", httpmock.NewStringResponder(http.StatusOK, measuresComponentResponse))
+
+	t.Run("default", func(t *testing.T) {
+		// init
+		tmpFolder := t.TempDir()
+		createTaskReportFile(t, tmpFolder)
+
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		options := sonarExecuteScanOptions{
+			CustomTLSCertificateLinks: []string{},
+			Token:                     "secret-ABC",
+			ServerURL:                 sonarServerURL,
+			Organization:              "SAP",
+			Version:                   "1.2.3",
+			VersioningModel:           "major",
+			PullRequestProvider:       "GitHub",
+		}
+		fileUtilsExists = mockFileUtilsExists(true)
+		os.Setenv("SONAR_SCANNER_OPTS", "-Xmx42m")
+		defer os.Setenv("SONAR_SCANNER_OPTS", "")
+		// test
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.NoError(t, err)
+		// load sonarscan report file
+		reportFile, err := os.ReadFile(filepath.Join(tmpFolder, "sonarscan.json"))
+		assert.NoError(t, err)
+		var reportData SonarUtils.ReportCombinedData
+		err = json.Unmarshal(reportFile, &reportData)
+		assert.NoError(t, err)
+		// assert
+		assert.Equal(t, string(reportFile), `{"numberOfIssues":{"blocker":0,"critical":0,"major":0,"minor":0,"info":0},"errors":[]}`) // If no access to hotspot API then ommit property in report.
+		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1")
+		assert.Contains(t, sonar.options, "-Dsonar.organization=SAP")
+		assert.Contains(t, sonar.environment, "SONAR_HOST_URL="+sonarServerURL)
+		assert.Contains(t, sonar.environment, "SONAR_TOKEN=secret-ABC")
+		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Xmx42m -Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts")+" -Djavax.net.ssl.trustStorePassword=changeit")
+	})
+
+}

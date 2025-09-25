@@ -38,7 +38,7 @@ type ReportHotSpotData struct {
 type ReportCombinedData struct {
 	NumberOfIssues   *Issues           `json:"numberOfIssues"`
 	Errors           []Severity        `json:"errors"`
-	SecurityHotspots []SecurityHotspot `json:"securityHotspots"`
+	SecurityHotspots []SecurityHotspot `json:"securityHotspots,omitempty"`
 }
 
 // HotSpot Security Issues
