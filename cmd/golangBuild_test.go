@@ -205,10 +205,11 @@ go 1.17`
 
 	t.Run("success - simple publish", func(t *testing.T) {
 		config := golangBuildOptions{
-			TargetArchitectures: []string{"linux,amd64"},
-			Publish:             true,
-			TargetRepositoryURL: "https://my.target.repository.local/",
-			ArtifactVersion:     "1.0.0",
+			TargetArchitectures:          []string{"linux,amd64"},
+			Publish:                      true,
+			TargetRepositoryURL:          "https://my.target.repository.local/",
+			ArtifactVersion:              "1.0.0",
+			CreateBuildArtifactsMetadata: false,
 		}
 
 		utils := newGolangBuildTestsUtils()
@@ -223,14 +224,16 @@ go 1.17`
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
 		config := golangBuildOptions{
-			TargetArchitectures:      []string{"linux,amd64"},
-			Output:                   "testBin",
-			Publish:                  true,
-			TargetRepositoryURL:      "https://my.target.repository.local",
-			TargetRepositoryUser:     "user",
-			TargetRepositoryPassword: "password",
-			ArtifactVersion:          "1.0.0",
+			TargetArchitectures:          []string{"linux,amd64"},
+			Output:                       "testBin",
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: false,
+			TargetRepositoryURL:          "https://my.target.repository.local",
+			TargetRepositoryUser:         "user",
+			TargetRepositoryPassword:     "password",
+			ArtifactVersion:              "1.0.0",
 		}
+
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
@@ -248,13 +251,14 @@ go 1.17`
 
 	t.Run("success - publishes binaries (when TargetRepositoryURL ends with slash)", func(t *testing.T) {
 		config := golangBuildOptions{
-			TargetArchitectures:      []string{"linux,amd64"},
-			Output:                   "testBin",
-			Publish:                  true,
-			TargetRepositoryURL:      "https://my.target.repository.local/",
-			TargetRepositoryUser:     "user",
-			TargetRepositoryPassword: "password",
-			ArtifactVersion:          "1.0.0",
+			TargetArchitectures:          []string{"linux,amd64"},
+			Output:                       "testBin",
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: false,
+			TargetRepositoryURL:          "https://my.target.repository.local/",
+			TargetRepositoryUser:         "user",
+			TargetRepositoryPassword:     "password",
+			ArtifactVersion:              "1.0.0",
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 200
@@ -1036,6 +1040,38 @@ func TestRunGolangciLint(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGoCreateBuildArtifactMetadata(t *testing.T) {
+	config := golangBuildOptions{
+		TargetArchitectures:      []string{"linux,amd64"},
+		Output:                   "testBin",
+		Publish:                  true,
+		TargetRepositoryURL:      "https://my.target.repository.local",
+		TargetRepositoryUser:     "user",
+		TargetRepositoryPassword: "password",
+	}
+	utils := newGolangBuildTestsUtils()
+	versionFile, err := os.Create("VERSION")
+
+	assert.Equal(t, err, nil)
+	// Ensure file is closed and deleted after function finishes
+	defer versionFile.Close()
+	defer os.Remove("VERSION") // Delete the file when the function exits
+
+	// Write something to the file
+	_, err = versionFile.WriteString("1.0.0")
+
+	// Create a new file
+	binaryFile, err := os.Create("testBin")
+	assert.Equal(t, err, nil)
+
+	defer binaryFile.Close()
+	defer os.Remove("testBin") // Delete the file when the function exits
+
+	err, version := createGoBuildArtifactsMetadata("testBin", config.TargetRepositoryURL, "1.0.0", utils)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, version.ArtifactID, "testBin")
 }
 
 func TestRetrieveGolangciLint(t *testing.T) {
