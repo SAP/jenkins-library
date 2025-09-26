@@ -332,3 +332,213 @@ const responseIssueSearchBug = `{
   ],
   "facets": []
 }`
+
+func TestHotSpotService(t *testing.T) {
+	testURL := "https://example.org"
+	t.Run("success", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointHotSpotsSearch+"", httpmock.NewStringResponder(http.StatusOK, responseHotSpotSearchMedium))
+		// create service instance
+		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		// Severities
+		var hotspots []SecurityHotspot
+		// test
+		err := serviceUnderTest.GetHotSpotSecurityIssues(&hotspots)
+		// assert
+		assert.Equal(t, []SecurityHotspot{{Priority: "MEDIUM", Hotspots: 1}}, hotspots)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("error", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointHotSpotsSearch+"", httpmock.NewStringResponder(http.StatusNotFound, responseHotSpotSearchError))
+		// create service instance
+		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		// Severities
+		var hotspots []SecurityHotspot
+		// test
+		err := serviceUnderTest.GetHotSpotSecurityIssues(&hotspots)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("multiple severities", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointHotSpotsSearch+"", httpmock.NewStringResponder(http.StatusOK, responseHotSpotSearchMultiple))
+		// create service instance
+		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		// Severities
+		// Severities
+		var hotspots []SecurityHotspot
+		// test
+		err := serviceUnderTest.GetHotSpotSecurityIssues(&hotspots)
+		// assert
+		assert.Equal(t, []SecurityHotspot{
+			{Priority: "MEDIUM", Hotspots: 2},
+			{Priority: "LOW", Hotspots: 1},
+		}, hotspots)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+}
+
+const responseHotSpotSearchMedium = `{
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 1
+  },
+  "hotspots": [
+    {
+      "key": "d1502ebc-941a-4262-8081-04914834d75a",
+      "component": "java-camera-viewer:build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "project": "java-camera-viewer",
+      "securityCategory": "weak-cryptography",
+      "vulnerabilityProbability": "MEDIUM",
+      "status": "TO_REVIEW",
+      "line": 658,
+      "message": "Make sure that using this pseudorandom number generator is safe here.",
+      "author": "",
+      "creationDate": "2025-03-31T18:16:09+0000",
+      "updateDate": "2025-04-23T11:02:47+0000",
+      "textRange": {
+        "startLine": 658,
+        "endLine": 658,
+        "startOffset": 16799,
+        "endOffset": 16812
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2245",
+      "messageFormattings": []
+    }
+  ],
+  "components": [
+    {
+      "key": "java-camera-viewer:build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "qualifier": "FIL",
+      "name": "configuration-cache-report.html",
+      "longName": "build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "path": "build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html"
+    },
+    {
+      "key": "java-camera-viewer",
+      "qualifier": "TRK",
+      "name": "java-camera-viewer",
+      "longName": "java-camera-viewer"
+    }
+  ]
+}`
+
+const responseHotSpotSearchError = `{
+  "errors":[
+    {
+      "msg":"Project java-camera-viewer1 not found"
+    }
+  ]
+}`
+
+const responseHotSpotSearchMultiple = `{
+  "paging": {
+    "pageIndex": 1,
+    "pageSize": 100,
+    "total": 1
+  },
+  "hotspots": [
+    {
+      "key": "d1502ebc-941a-4262-8081-04914834d75a",
+      "component": "java-camera-viewer:build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "project": "java-camera-viewer",
+      "securityCategory": "weak-cryptography",
+      "vulnerabilityProbability": "MEDIUM",
+      "status": "TO_REVIEW",
+      "line": 658,
+      "message": "Make sure that using this pseudorandom number generator is safe here.",
+      "author": "",
+      "creationDate": "2025-03-31T18:16:09+0000",
+      "updateDate": "2025-04-23T11:02:47+0000",
+      "textRange": {
+        "startLine": 658,
+        "endLine": 658,
+        "startOffset": 16799,
+        "endOffset": 16812
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2245",
+      "messageFormattings": []
+    },
+    {
+      "key": "d1502ebc-941a-4262-8081-04914834d75b",
+      "component": "java-camera-viewer:build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "project": "java-camera-viewer",
+      "securityCategory": "weak-cryptography",
+      "vulnerabilityProbability": "MEDIUM",
+      "status": "TO_REVIEW",
+      "line": 658,
+      "message": "Make sure that using this pseudorandom number generator is safe here.",
+      "author": "",
+      "creationDate": "2025-03-31T18:16:09+0000",
+      "updateDate": "2025-04-23T11:02:47+0000",
+      "textRange": {
+        "startLine": 658,
+        "endLine": 658,
+        "startOffset": 16799,
+        "endOffset": 16812
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2245",
+      "messageFormattings": []
+    },
+    {
+      "key": "d1502ebc-941a-4262-8081-04914834d75c",
+      "component": "java-camera-viewer:build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "project": "java-camera-viewer",
+      "securityCategory": "weak-cryptography",
+      "vulnerabilityProbability": "LOW",
+      "status": "TO_REVIEW",
+      "line": 658,
+      "message": "Make sure that using this pseudorandom number generator is safe here.",
+      "author": "",
+      "creationDate": "2025-03-31T18:16:09+0000",
+      "updateDate": "2025-04-23T11:02:47+0000",
+      "textRange": {
+        "startLine": 658,
+        "endLine": 658,
+        "startOffset": 16799,
+        "endOffset": 16812
+      },
+      "flows": [],
+      "ruleKey": "javascript:S2245",
+      "messageFormattings": []
+    }
+  ],
+  "components": [
+    {
+      "key": "java-camera-viewer:build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "qualifier": "FIL",
+      "name": "configuration-cache-report.html",
+      "longName": "build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html",
+      "path": "build/reports/configuration-cache/cbcm7qev21o4weakgfsv12gen/9cfjq3uac12x26p527bjxudhn/configuration-cache-report.html"
+    },
+    {
+      "key": "java-camera-viewer",
+      "qualifier": "TRK",
+      "name": "java-camera-viewer",
+      "longName": "java-camera-viewer"
+    }
+  ]
+}`
