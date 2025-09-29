@@ -56,6 +56,7 @@ type kubernetesDeployOptions struct {
 	VerificationScript         string                 `json:"verificationScript,omitempty"`
 	TeardownScript             string                 `json:"teardownScript,omitempty"`
 	InsecureSkipTLSVerify      bool                   `json:"insecureSkipTLSVerify,omitempty"`
+	CACertificate              string                 `json:"CACertificate,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -251,6 +252,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
 	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
 	cmd.Flags().BoolVar(&stepConfig.InsecureSkipTLSVerify, "insecureSkipTLSVerify", false, "This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates.")
+	cmd.Flags().StringVar(&stepConfig.CACertificate, "CACertificate", os.Getenv("PIPER_CACertificate"), "Path to the Kubernetes CA certificate file. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.\n")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -734,6 +736,15 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "CACertificate",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_CACertificate"),
 					},
 				},
 			},
