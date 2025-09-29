@@ -84,7 +84,7 @@ func (g *githubActionsConfigProvider) BuildStatus() string {
 	}
 
 	for _, j := range g.jobs {
-		log.Entry().Debugf("Job %s: status: %s", j.Name, j.Conclusion) // TODO: REMOVE
+		log.Entry().Debugf("Job %s: conclusion: %s", j.Name, j.Conclusion) // TODO: REMOVE
 		switch j.Conclusion {
 		case "failure":
 			return BuildStatusFailure
@@ -307,9 +307,10 @@ func convertJobs(jobs []*github.WorkflowJob) []job {
 	result := make([]job, 0, len(jobs))
 	for _, j := range jobs {
 		result = append(result, job{
-			ID:      j.GetID(),
-			Name:    j.GetName(),
-			HtmlURL: j.GetHTMLURL(),
+			ID:         j.GetID(),
+			Name:       j.GetName(),
+			HtmlURL:    j.GetHTMLURL(),
+			Conclusion: j.GetConclusion(),
 		})
 	}
 	return result
