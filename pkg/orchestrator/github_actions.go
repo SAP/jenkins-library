@@ -84,7 +84,6 @@ func (g *githubActionsConfigProvider) BuildStatus() string {
 	}
 
 	for _, j := range g.jobs {
-		log.Entry().Debugf("Job %s: conclusion: %s", j.Name, j.Conclusion) // TODO: REMOVE
 		switch j.Conclusion {
 		case "failure":
 			return BuildStatusFailure
