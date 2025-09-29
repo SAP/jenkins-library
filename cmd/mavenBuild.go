@@ -42,7 +42,14 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 }
 
 func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
-	flags := []string{"-update-snapshots", "--batch-mode"}
+	flags := []string{"--batch-mode"}
+	// decision for BOM generation
+	if shouldUpdateSnapshots(utils, config) {
+		flags = append(flags, "-update-snapshots")
+	} else {
+		flags = append(flags, "--offline")
+	}
+
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
 	}
@@ -90,7 +97,15 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 }
 
 func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
-	flags := []string{"-update-snapshots", "--batch-mode"}
+
+	flags := []string{"--batch-mode"}
+	// Intelligent decision on snapshot updates
+	if shouldUpdateSnapshots(utils, config) {
+		flags = append(flags, "-update-snapshots")
+	} else {
+		// Can safely run offline when no SNAPSHOTs and cache exists
+		flags = append(flags, "--offline")
+	}
 
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
@@ -192,7 +207,14 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
-			deployFlags := []string{}
+			deployFlags := []string{"--batch-mode"}
+
+			if shouldUpdateSnapshots(utils, config) {
+				deployFlags = append(deployFlags, "-update-snapshots")
+			} else {
+				deployFlags = append(deployFlags, "--offline")
+			}
+
 			if len(config.DeployFlags) > 0 {
 				deployFlags = append(deployFlags, config.DeployFlags...)
 			}
@@ -371,4 +393,41 @@ func getTempDirForCertFile() string {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
 	return tmpFolder
+}
+
+func shouldUpdateSnapshots(utils maven.Utils, config *mavenBuildOptions) bool {
+	// Allow force update via environment variable
+	if os.Getenv("PIPER_MAVEN_FORCE_UPDATE") == "true" {
+		log.Entry().Info("Force update requested via environment variable")
+		return true
+	}
+	cacheRestored := os.Getenv("PIPER_CACHE_RESTORED") == "true"
+	dependenciesChanged := os.Getenv("PIPER_DEPENDENCIES_CHANGED") == "true"
+
+	log.Entry().Debugf("Cache state - restored: %v, dependencies changed: %v", cacheRestored, dependenciesChanged)
+
+	if !cacheRestored {
+		log.Entry().Info("Cache not restored, will update snapshots")
+		return true
+	}
+
+	if dependenciesChanged {
+		log.Entry().Info("Dependencies changed, will update snapshots")
+		return true
+	}
+
+	// Check if project actually uses SNAPSHOT dependencies
+	pomContent, err := utils.FileRead(config.PomPath)
+	if err != nil {
+		log.Entry().Warnf("Could not read pom.xml to check for SNAPSHOTs: %v", err)
+		return true // safe default
+	}
+
+	if strings.Contains(string(pomContent), "-SNAPSHOT</version>") {
+		log.Entry().Info("SNAPSHOT dependencies detected, will check for updates")
+		return true
+	}
+
+	log.Entry().Info("No SNAPSHOT dependencies found, running in offline mode")
+	return false
 }
