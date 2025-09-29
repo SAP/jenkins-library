@@ -95,16 +95,17 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	_, err := maven.Execute(&mavenOptions, utils)
 	return err
 }
-
 func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
-
 	flags := []string{"--batch-mode"}
+
 	// Intelligent decision on snapshot updates
-	if shouldUpdateSnapshots(utils, config) {
-		flags = append(flags, "-update-snapshots")
-	} else {
-		// Can safely run offline when no SNAPSHOTs and cache exists
+	useOfflineMode := !shouldUpdateSnapshots(utils, config)
+
+	if useOfflineMode {
 		flags = append(flags, "--offline")
+		log.Entry().Info("Running in offline mode with cached dependencies")
+	} else {
+		flags = append(flags, "-update-snapshots")
 	}
 
 	if len(config.Profiles) > 0 {
@@ -124,8 +125,9 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
-	if config.CreateBOM {
-		// Append the makeAggregateBOM goal to the rest of the goals
+	// DON'T add BOM goal to main build if we're in offline mode
+	if config.CreateBOM && !useOfflineMode {
+		// Only add BOM to main build if we're online
 		goals = append(goals, mvnCycloneDXPackage+":makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
@@ -166,8 +168,54 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
 	}
 
+	// If CreateBOM is true AND we ran in offline mode, run BOM generation separately in online mode
+	if config.CreateBOM && useOfflineMode {
+		log.Entry().Info("Running BOM generation separately in online mode")
+
+		// Run just the BOM goals in online mode
+		bomFlags := []string{"--batch-mode"} // No --offline flag
+
+		if len(config.Profiles) > 0 {
+			bomFlags = append(bomFlags, "--activate-profiles", strings.Join(config.Profiles, ","))
+		}
+
+		if exists {
+			bomFlags = append(bomFlags, "-pl", "!integration-tests")
+		}
+
+		bomGoals := []string{mvnCycloneDXPackage + ":makeAggregateBom"}
+		bomDefines := []string{
+			"-DschemaVersion=1.4",
+			"-DincludeBomSerialNumber=true",
+			"-DincludeCompileScope=true",
+			"-DincludeProvidedScope=true",
+			"-DincludeRuntimeScope=true",
+			"-DincludeSystemScope=true",
+			"-DincludeTestScope=false",
+			"-DincludeLicenseText=false",
+			"-DoutputFormat=xml",
+			"-DoutputName=" + mvnBomFilename,
+		}
+
+		bomMavenOptions := maven.ExecuteOptions{
+			Flags:                       bomFlags,
+			Goals:                       bomGoals,
+			Defines:                     bomDefines,
+			PomPath:                     config.PomPath,
+			ProjectSettingsFile:         config.ProjectSettingsFile,
+			GlobalSettingsFile:          config.GlobalSettingsFile,
+			M2Path:                      config.M2Path,
+			LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		}
+
+		_, err := maven.Execute(&bomMavenOptions, utils)
+		if err != nil {
+			return errors.Wrap(err, "failed to execute BOM generation")
+		}
+	}
+
 	if config.CreateBOM {
-		// Separate run for makeBOM goal
+		// Separate run for makeBOM goal (simple BOM)
 		if err := runMakeBOMGoal(config, utils); err != nil {
 			return errors.Wrap(err, "failed to execute makeBOM goal")
 		}
@@ -396,11 +444,6 @@ func getTempDirForCertFile() string {
 }
 
 func shouldUpdateSnapshots(utils maven.Utils, config *mavenBuildOptions) bool {
-	// Allow force update via environment variable
-	if os.Getenv("PIPER_MAVEN_FORCE_UPDATE") == "true" {
-		log.Entry().Info("Force update requested via environment variable")
-		return true
-	}
 	cacheRestored := os.Getenv("PIPER_CACHE_RESTORED") == "true"
 	dependenciesChanged := os.Getenv("PIPER_DEPENDENCIES_CHANGED") == "true"
 
@@ -428,6 +471,6 @@ func shouldUpdateSnapshots(utils maven.Utils, config *mavenBuildOptions) bool {
 		return true
 	}
 
-	log.Entry().Info("No SNAPSHOT dependencies found, running in offline mode")
+	log.Entry().Info("No SNAPSHOT dependencies found, skipping update checks")
 	return false
 }
