@@ -36,10 +36,10 @@ type run struct {
 
 // used to unmarshal list jobs of the current workflow run into []job
 type job struct {
-	ID         int64  `json:"id"`
-	Name       string `json:"name"`
-	HtmlURL    string `json:"html_url"`
-	Conclusion string `json:"conclusion"`
+	ID      int64  `json:"id"`
+	Name    string `json:"name"`
+	HtmlURL string `json:"html_url"`
+	Status  string `json:"status"`
 }
 
 type fullLog struct {
@@ -84,8 +84,8 @@ func (g *githubActionsConfigProvider) BuildStatus() string {
 	}
 
 	for _, j := range g.jobs {
-		log.Entry().Debugf("Job %s: conclusion: %s, url: %s", j.Name, j.Conclusion, j.HtmlURL) // TODO: REMOVE
-		switch j.Conclusion {
+		log.Entry().Debugf("Job %s: status: %s", j.Name, j.Status) // TODO: REMOVE
+		switch j.Status {
 		case "failure":
 			return BuildStatusFailure
 		case "cancelled":

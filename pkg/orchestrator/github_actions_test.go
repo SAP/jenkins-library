@@ -17,20 +17,19 @@ import (
 
 func TestGitHubActionsConfigProvider_GetBuildStatus(t *testing.T) {
 	tests := []struct {
-		name    string
-		runData run
-		want    string
+		name string
+		jobs []job
+		want string
 	}{
-		{"BuildStatusSuccess", run{fetched: true, Status: "success"}, BuildStatusSuccess},
-		{"BuildStatusAborted", run{fetched: true, Status: "cancelled"}, BuildStatusAborted},
-		{"BuildStatusInProgress", run{fetched: true, Status: "in_progress"}, BuildStatusInProgress},
-		{"BuildStatusFailure", run{fetched: true, Status: "qwertyu"}, BuildStatusFailure},
-		{"BuildStatusFailure", run{fetched: true, Status: ""}, BuildStatusFailure},
+		{"BuildStatusSuccess", []job{{Status: "success"}, {Status: "success"}, {Status: "success"}}, BuildStatusSuccess},
+		{"BuildStatusAborted", []job{{Status: "success"}, {Status: "success"}, {Status: "cancelled"}}, BuildStatusAborted},
+		{"BuildStatusFailure", []job{{Status: "success"}, {Status: "failure"}, {Status: "cancelled"}}, BuildStatusFailure},
+		{"BuildStatusSuccess", []job{{Status: "success"}, {Status: "cancelled"}, {Status: "failure"}}, BuildStatusAborted}
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &githubActionsConfigProvider{
-				runData: tt.runData,
+				jobs: tt.jobs,
 			}
 			assert.Equalf(t, tt.want, g.BuildStatus(), "BuildStatus()")
 		})
