@@ -317,7 +317,6 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.EqualError(t, err, "failed to process deployment values: image information not given - please either set image or containerImageName and containerImageTag")
 	})
 
-	//todo
 	t.Run("test helm - insecureSkipTLSVerify is false", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:      "https://my.registry:55555",
@@ -336,7 +335,6 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			KubeContext:               "testCluster",
 			Namespace:                 "deploymentNamespace",
 			DockerConfigJSON:          ".pipeline/docker/config.json",
-			InsecureSkipTLSVerify:     false,
 		}
 
 		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
@@ -1736,6 +1734,40 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=false",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--server=%v", opts.APIServer),
+			fmt.Sprintf("--token=%v", opts.KubeToken),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - insecureSkipTLSVerify is false with custom CA", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "path/to/test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			Image:                   "path/to/Image:latest",
+			KubeToken:               "testToken",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			CACertificate:           "path/to/ca.crt",
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
+		mockUtils.ShouldFailOnCommand = map[string]error{}
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--certificate-authority=%v", opts.CACertificate),
+			"--insecure-skip-tls-verify=false",
 			fmt.Sprintf("--server=%v", opts.APIServer),
 			fmt.Sprintf("--token=%v", opts.KubeToken),
 			"apply",

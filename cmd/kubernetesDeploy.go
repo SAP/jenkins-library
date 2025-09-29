@@ -263,9 +263,15 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	}
 
 	kubeParams := []string{
-		"--insecure-skip-tls-verify=" + strconv.FormatBool(config.InsecureSkipTLSVerify),
 		fmt.Sprintf("--namespace=%v", config.Namespace),
 	}
+
+	// Add CA certificate if provided
+	if len(config.CACertificate) > 0 && !config.InsecureSkipTLSVerify {
+		kubeParams = append(kubeParams, fmt.Sprintf("--certificate-authority=%v", config.CACertificate))
+	}
+
+	kubeParams = append(kubeParams, "--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify))
 
 	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")
