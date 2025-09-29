@@ -253,13 +253,10 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
+			// Deploy always requires online mode to upload artifacts
 			deployFlags := []string{"--batch-mode"}
 
-			if shouldUpdateSnapshots(utils, config) {
-				deployFlags = append(deployFlags, "-update-snapshots")
-			} else {
-				deployFlags = append(deployFlags, "--offline")
-			}
+			log.Entry().Info("Deploy phase requires online mode")
 
 			if len(config.DeployFlags) > 0 {
 				deployFlags = append(deployFlags, config.DeployFlags...)
