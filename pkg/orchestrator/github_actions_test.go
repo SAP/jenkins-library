@@ -21,10 +21,10 @@ func TestGitHubActionsConfigProvider_GetBuildStatus(t *testing.T) {
 		jobs []job
 		want string
 	}{
-		{"BuildStatusSuccess", []job{{Status: "success"}, {Status: "success"}, {Status: "success"}}, BuildStatusSuccess},
-		{"BuildStatusAborted", []job{{Status: "success"}, {Status: "success"}, {Status: "cancelled"}}, BuildStatusAborted},
-		{"BuildStatusFailure", []job{{Status: "success"}, {Status: "failure"}, {Status: "cancelled"}}, BuildStatusFailure},
-		{"BuildStatusSuccess", []job{{Status: "success"}, {Status: "cancelled"}, {Status: "failure"}}, BuildStatusAborted}
+		{"BuildStatusSuccess", []job{{Conclusion: "success"}, {Conclusion: "success"}, {Conclusion: "success"}}, BuildStatusSuccess},
+		{"BuildStatusAborted", []job{{Conclusion: "success"}, {Conclusion: "success"}, {Conclusion: "cancelled"}}, BuildStatusAborted},
+		{"BuildStatusFailure", []job{{Conclusion: "success"}, {Conclusion: "failure"}, {Conclusion: "cancelled"}}, BuildStatusFailure},
+		{"BuildStatusSuccess", []job{{Conclusion: "success"}, {Conclusion: "cancelled"}, {Conclusion: "failure"}}, BuildStatusAborted},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
