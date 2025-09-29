@@ -40,15 +40,10 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-
 func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
+	// CycloneDX always requires online mode - never use offline
 	flags := []string{"--batch-mode"}
-	// decision for BOM generation
-	if shouldUpdateSnapshots(utils, config) {
-		flags = append(flags, "-update-snapshots")
-	} else {
-		flags = append(flags, "--offline")
-	}
+	// Note: No offline/update-snapshots logic here since CycloneDX requires online mode
 
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
@@ -81,6 +76,8 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
+	log.Entry().Info("Running makeBOM goal in online mode (CycloneDX requirement)")
+
 	mavenOptions := maven.ExecuteOptions{
 		Flags:                       flags,
 		Goals:                       goals,
@@ -95,6 +92,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	_, err := maven.Execute(&mavenOptions, utils)
 	return err
 }
+
 func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
 	flags := []string{"--batch-mode"}
 
