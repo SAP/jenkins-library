@@ -123,6 +123,12 @@ func (bundle *mtaBuildUtilsBundle) InstallAllDependencies(defaultNpmRegistry str
 func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
 	log.Entry().Infof(`projectSettingsFile: "%s" `, projectSettingsFile)
 	log.Entry().Infof(`globalSettingsFile: "%s" `, globalSettingsFile)
+	settingsContent, err := os.ReadFile(projectSettingsFile)
+	if err != nil {
+	    log.Entry().Warnf("Could not read settings.xml file: %v", err)
+	} else {
+	    log.Entry().Infof(`projectSettingsFile: "%s"\nsettings.xml contents:\n%s`, projectSettingsFile, string(settingsContent))
+	}
 	return maven.DownloadAndCopySettingsFiles(globalSettingsFile, projectSettingsFile, bundle)
 }
 
