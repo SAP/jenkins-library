@@ -1,4 +1,4 @@
-package mock
+package btp
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
@@ -31,7 +30,7 @@ func (b *BtpExecutorMock) Run(cmdScript string) (err error) {
 	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout)
 }
 
-func (b *BtpExecutorMock) RunSync(opts btputils.RunSyncOptions) error {
+func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 	err := b.Run(opts.CmdScript)
 	if err != nil {
 		return fmt.Errorf("Initial command execution failed: %w", err)

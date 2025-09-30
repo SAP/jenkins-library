@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-func loginMockCleanup(m *mock.BtpExecutorMock) {
+func loginMockCleanup(m *BtpExecutorMock) {
 	m.ShouldFailOnCommand = map[string]error{}
 	m.StdoutReturn = map[string]string{}
-	m.Calls = []mock.BtpExecCall{}
+	m.Calls = []BtpExecCall{}
 }
 
 func TestBTPLogin(t *testing.T) {
 
-	m := &mock.BtpExecutorMock{
+	m := &BtpExecutorMock{
 		StdoutReturn: map[string]string{},
 	}
 
@@ -72,7 +71,7 @@ func TestBTPLogin(t *testing.T) {
 
 func TestBTPLogout(t *testing.T) {
 
-	m := &mock.BtpExecutorMock{}
+	m := &BtpExecutorMock{}
 
 	t.Run("BTP Logout", func(t *testing.T) {
 		btp := BTPUtils{Exec: m}

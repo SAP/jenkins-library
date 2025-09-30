@@ -5,13 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/btputils"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRun(t *testing.T) {
-	m := &mock.BtpExecutorMock{
+	m := &BtpExecutorMock{
 		StdoutReturn: map[string]string{
 			"btp login": "Login successful",
 		},
@@ -34,7 +32,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunSync_Success(t *testing.T) {
-	m := &mock.BtpExecutorMock{
+	m := &BtpExecutorMock{
 		StdoutReturn: map[string]string{
 			"btp check": `dummy
 							dummy
@@ -46,7 +44,7 @@ func TestRunSync_Success(t *testing.T) {
 	m.Stdout(new(bytes.Buffer))
 
 	// Test successful polling execution
-	err := m.RunSync(btputils.RunSyncOptions{
+	err := m.RunSync(RunSyncOptions{
 		CmdScript:      "btp deploy",
 		TimeoutSeconds: 1,
 		PollInterval:   30,
@@ -58,7 +56,7 @@ func TestRunSync_Success(t *testing.T) {
 }
 
 func TestRunSync_Erro_On_Check(t *testing.T) {
-	m := &mock.BtpExecutorMock{
+	m := &BtpExecutorMock{
 		ShouldFailOnCommand: map[string]error{
 			"btp check": errors.New("Bad Request"),
 		},
@@ -67,7 +65,7 @@ func TestRunSync_Erro_On_Check(t *testing.T) {
 	m.Stdout(new(bytes.Buffer))
 
 	timeoutMin := 1
-	err := m.RunSync(btputils.RunSyncOptions{
+	err := m.RunSync(RunSyncOptions{
 		CmdScript:      "btp deploy",
 		TimeoutSeconds: timeoutMin,
 		PollInterval:   20,

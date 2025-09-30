@@ -6,7 +6,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +23,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 		//given
 		data := map[string]interface{}{"ready": true}
 		jsonData, _ := json.Marshal(data)
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":              "Authentication successful",
 				"btp get services/instance": string(jsonData),
@@ -41,7 +40,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 		//given
 		data := map[string]interface{}{"ready": false}
 		jsonData, _ := json.Marshal(data)
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":              "Authentication successful",
 				"btp get services/instance": string(jsonData),
@@ -56,7 +55,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 
 	t.Run("GetServiceInstance error", func(t *testing.T) {
 		//given
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
 				"btp get services/instance": errors.New("not found"),
 			},
@@ -69,7 +68,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 
 	t.Run("unmarshal error", func(t *testing.T) {
 		//given
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":              "Authentication successful",
 				"btp get services/instance": "not-json",
@@ -86,7 +85,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 		//given
 		data := map[string]interface{}{"ready": true}
 		jsonData, _ := json.Marshal(data)
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":              "Authentication successful",
 				"btp get services/instance": string(jsonData),
@@ -114,7 +113,7 @@ func TestIsServiceInstanceDeleted(t *testing.T) {
 	}
 
 	t.Run("instance still exists", func(t *testing.T) {
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":              "Authentication successful",
 				"btp get services/instance": "{}",
@@ -128,7 +127,7 @@ func TestIsServiceInstanceDeleted(t *testing.T) {
 
 	t.Run("instance not found", func(t *testing.T) {
 		//given
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
 				"btp get services/instance": errors.New("not found"),
 			},
@@ -155,7 +154,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 		//given
 		data := map[string]interface{}{"ready": true}
 		jsonData, _ := json.Marshal(data)
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":             "Authentication successful",
 				"btp get services/binding": string(jsonData),
@@ -172,7 +171,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 		//given
 		data := map[string]interface{}{"ready": false}
 		jsonData, _ := json.Marshal(data)
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":             "Authentication successful",
 				"btp get services/binding": string(jsonData),
@@ -187,7 +186,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 
 	t.Run("GetServiceBinding error", func(t *testing.T) {
 		//given
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
 				"btp get services/binding": errors.New("not found"),
 			},
@@ -200,7 +199,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 
 	t.Run("unmarshal error", func(t *testing.T) {
 		//given
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":             "Authentication successful",
 				"btp get services/binding": "not-json",
@@ -216,7 +215,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 	t.Run("logout error", func(t *testing.T) {
 		data := map[string]interface{}{"ready": true}
 		jsonData, _ := json.Marshal(data)
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":             "Authentication successful",
 				"btp get services/binding": string(jsonData),
@@ -244,7 +243,7 @@ func TestIsServiceBindingDeleted(t *testing.T) {
 	}
 
 	t.Run("binding still exists", func(t *testing.T) {
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*":             "Authentication successful",
 				"btp get services/binding": "{}",
@@ -257,7 +256,7 @@ func TestIsServiceBindingDeleted(t *testing.T) {
 	})
 
 	t.Run("binding not found", func(t *testing.T) {
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
 				"btp get services/binding": errors.New("not found"),
 			},

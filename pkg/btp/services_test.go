@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 			PollInterval:    600,
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/binding": fmt.Sprintf(`
@@ -67,7 +66,7 @@ func TestBTPGetServiceBinding(t *testing.T) {
 			Password:    "test_password",
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/binding": fmt.Sprintf(`
@@ -111,7 +110,7 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 			PollInterval: 600,
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 			},
@@ -151,7 +150,7 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 			PollInterval: 600,
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 			},
@@ -197,7 +196,7 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 			PollInterval: 600,
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/instance": fmt.Sprintf(`
@@ -239,7 +238,7 @@ func TestBTPGetServiceInstance(t *testing.T) {
 			Password:     "test_password",
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/instance": fmt.Sprintf(`
@@ -283,7 +282,7 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 			PollInterval: 600,
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 			},
@@ -323,7 +322,7 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 			PollInterval: 600,
 		}
 
-		m := &mock.BtpExecutorMock{
+		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 			},

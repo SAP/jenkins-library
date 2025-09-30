@@ -3,8 +3,6 @@ package btp
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/SAP/jenkins-library/pkg/btputils"
 )
 
 func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) bool {
@@ -15,7 +13,7 @@ func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) 
 		return false
 	}
 
-	data := btputils.ServiceInstanceData{}
+	data := ServiceInstanceData{}
 
 	err = json.Unmarshal([]byte(serviceInstanceJSON), &data)
 
@@ -50,7 +48,7 @@ func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bo
 		return false
 	}
 
-	data := btputils.ServiceBindingData{}
+	data := ServiceBindingData{}
 
 	err = json.Unmarshal([]byte(serviceBindingJSON), &data)
 

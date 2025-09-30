@@ -1,4 +1,4 @@
-package btputils
+package btp
 
 import "time"
 

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
@@ -38,7 +37,7 @@ func (e *Executor) Run(cmdScript string) (err error) {
 @param pollInterval : in seconds
 @param negativeCheck : set to false if you want to check the negation of the response of `cmdCheck`
 */
-func (e *Executor) RunSync(opts btputils.RunSyncOptions) (err error) {
+func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 	err = e.Run(opts.CmdScript)
 
 	if err != nil {
@@ -80,5 +79,5 @@ type btpRunner interface {
 type ExecRunner interface {
 	btpRunner
 	Run(cmdScript string) error
-	RunSync(opts btputils.RunSyncOptions) error
+	RunSync(opts RunSyncOptions) error
 }

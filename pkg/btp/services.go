@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/btputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -52,7 +51,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		WithSubAccount(options.Subaccount).
 		WithParameters(options.Parameters).Build()
 
-	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpCreateBindingScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
@@ -186,7 +185,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		WithSubAccount(options.Subaccount).
 		WithName(options.BindingName).WithConfirm().Build()
 
-	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpDeleteBindingScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
@@ -264,7 +263,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		WithPlanName(options.PlanName).WithOfferingName(options.OfferingName).
 		Build()
 
-	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpCreateInstanceScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
@@ -397,7 +396,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		WithSubAccount(options.Subaccount).
 		WithConfirm().Build()
 
-	err = btp.Exec.RunSync(btputils.RunSyncOptions{
+	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpGetServiceScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
