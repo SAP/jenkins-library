@@ -125,9 +125,9 @@ func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFi
 	log.Entry().Infof(`globalSettingsFile: "%s" `, globalSettingsFile)
 	settingsContent, err := os.ReadFile(projectSettingsFile)
 	if err != nil {
-	    log.Entry().Warnf("Could not read settings.xml file: %v", err)
+		log.Entry().Warnf("Could not read settings.xml file: %v", err)
 	} else {
-	    log.Entry().Infof(`projectSettingsFile: "%s"\nsettings.xml contents:\n%s`, projectSettingsFile, string(settingsContent))
+		log.Entry().Infof(`projectSettingsFile: "%s"\nsettings.xml contents:\n%s`, projectSettingsFile, string(settingsContent))
 	}
 	return maven.DownloadAndCopySettingsFiles(globalSettingsFile, projectSettingsFile, bundle)
 }
@@ -232,6 +232,14 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 
 	for _, env := range os.Environ() {
 		log.Entry().Infof("ENV: %s", env)
+	}
+
+	if err := utils.RunExecutable("mvn", "help:effective-settings", "-X"); err != nil {
+		return err
+	}
+
+	if err := utils.RunExecutable("mvn", "dependency:get", "-Dartifact=commons-validator:commons-validator:1.9.0.redhat-00001", "-X"); err != nil {
+		return err
 	}
 
 	log.Entry().Infof(`Executing mta build call: "%s"`, strings.Join(call, " "))
