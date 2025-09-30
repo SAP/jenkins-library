@@ -121,6 +121,7 @@ func (bundle *mtaBuildUtilsBundle) InstallAllDependencies(defaultNpmRegistry str
 }
 
 func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
+	log.Entry().Infof(`projectSettingsFile: "%s" `, projectSettingsFile)
 	return maven.DownloadAndCopySettingsFiles(globalSettingsFile, projectSettingsFile, bundle)
 }
 
