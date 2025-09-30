@@ -1372,10 +1372,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}
 
 		kubeYaml := `kind: Deployment
-	metadata:
-	spec:
-	  spec:
-	    image: <image-name>`
+		metadata:
+		spec:
+		 spec:
+		   image: <image-name>`
 
 		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
 
@@ -1383,8 +1383,9 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		mockUtils.AddFile(opts.AppTemplate, []byte(kubeYaml))
 
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic regSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster`: dockerConfigJSON,
+			`kubectl create secret generic regSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json --namespace=deploymentNamespace`: dockerConfigJSON,
 		}
+
 		var stdout bytes.Buffer
 		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
 
@@ -1400,8 +1401,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--insecure-skip-tls-verify=true",
 			"--dry-run=client",
 			"--output=json",
-			"--insecure-skip-tls-verify=true",
 			"--namespace=deploymentNamespace",
+			"--insecure-skip-tls-verify=true",
 			"--context=testCluster",
 		},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
@@ -1434,8 +1435,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
-			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--server=%v", opts.APIServer),
 			fmt.Sprintf("--token=%v", opts.KubeToken),
 			"apply",
@@ -1645,8 +1646,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong replace command")
 		assert.Equal(t, []string{
-			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--context=%v", opts.KubeContext),
 			"replace",
 			"--filename",
@@ -1693,8 +1694,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong replace command")
 		assert.Equal(t, []string{
-			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--context=%v", opts.KubeContext),
 			"replace",
 			"--filename",
@@ -1732,8 +1733,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
 		assert.Equal(t, []string{
-			"--insecure-skip-tls-verify=false",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"--insecure-skip-tls-verify=false",
 			fmt.Sprintf("--server=%v", opts.APIServer),
 			fmt.Sprintf("--token=%v", opts.KubeToken),
 			"apply",

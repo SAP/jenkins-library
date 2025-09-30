@@ -267,7 +267,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	}
 
 	// Add CA certificate if provided
-	if len(config.CACertificate) > 0 {
+	if len(config.CACertificate) > 0 && !config.InsecureSkipTLSVerify {
 		kubeParams = append(kubeParams, fmt.Sprintf("--certificate-authority=%v", config.CACertificate))
 	}
 
