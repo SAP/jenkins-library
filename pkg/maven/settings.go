@@ -59,7 +59,9 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 // or the default locations where maven expects them.
 func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) error {
 	if len(projectSettingsFile) > 0 {
+		log.Entry().Infof("Project settings file provided via configuration: %s", projectSettingsFile)
 		destination, err := getProjectSettingsFileDest()
+		log.Entry().Infof("Destination: %s", destination)
 		if err != nil {
 			return err
 		}
@@ -232,6 +234,8 @@ func addServerTagtoProjectSettingsXML(projectSettingsFile string, altDeploymentR
 }
 
 func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownloadUtils) error {
+	log.Entry().Infof("Downloading maven project settings file to %s", dest)
+	log.Entry().Infof("Downloading maven project settings file from %s", src)
 	if len(src) == 0 {
 		return fmt.Errorf("Settings file source location not provided")
 	}
@@ -240,6 +244,7 @@ func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownload
 		return fmt.Errorf("Settings file destination location not provided")
 	}
 
+	log.Entry().Infof("Copying file \"%s\" to \"%s\"", src, dest)
 	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
 	if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
@@ -253,6 +258,7 @@ func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownload
 	// for sake os symmetry it would be better to use a file protocol prefix here (file:)
 	parent := filepath.Dir(dest)
 	parentFolderExists, err := utils.FileExists(parent)
+	log.Entry().Infof("Checking if parent folder exists: %s", parentFolderExists)
 	if err != nil {
 		return err
 	}
