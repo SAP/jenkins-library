@@ -230,6 +230,10 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
+	for _, env := range os.Environ() {
+		log.Entry().Infof("ENV: %s", env)
+	}
+
 	log.Entry().Infof(`Executing mta build call: "%s"`, strings.Join(call, " "))
 
 	if err := utils.RunExecutable(call[0], call[1:]...); err != nil {
