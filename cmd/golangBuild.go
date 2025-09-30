@@ -393,6 +393,7 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 
 		coverageOutput := bytes.Buffer{}
 		utils.Stdout(&coverageOutput)
+		defer utils.Stdout(log.Writer())
 		options := []string{}
 		if config.ExcludeGeneratedFromCoverage {
 			options = append(options, "-ignore-gen-files")
@@ -572,7 +573,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 		// Reset routing command output to logging framework
 		utils.Stdout(log.Writer())
 		utils.Stderr(log.Writer())
-	}
+	}()
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
 	if err != nil {
 		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
