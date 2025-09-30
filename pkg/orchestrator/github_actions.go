@@ -76,7 +76,10 @@ func (g *githubActionsConfigProvider) OrchestratorType() string {
 	return "GitHubActions"
 }
 
-// BuildStatus returns current run status
+// BuildStatus returns current run status by looking at all jobs of the current workflow run
+// if any job has conclusion "failure" the whole run is considered failed
+// if any job has conclusion "cancelled" the whole run is considered aborted
+// otherwise the run is considered successful
 func (g *githubActionsConfigProvider) BuildStatus() string {
 	if err := g.fetchJobs(); err != nil {
 		log.Entry().Debugf("fetching jobs: %s", err)
