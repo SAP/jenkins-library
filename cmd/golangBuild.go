@@ -568,6 +568,11 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	outBuffer := bytes.NewBufferString("")
 	utils.Stdout(outBuffer)
 	utils.Stderr(outBuffer)
+	defer func() {
+		// Reset routing command output to logging framework
+		utils.Stdout(log.Writer())
+		utils.Stderr(log.Writer())
+	}
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
 	if err != nil {
 		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
