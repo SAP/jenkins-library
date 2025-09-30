@@ -29,6 +29,8 @@ type SettingsDownloadUtils interface {
 // DownloadAndGetMavenParameters downloads the global or project settings file if the strings contain URLs.
 // It then constructs the arguments that need to be passed to maven in order to point to use these settings files.
 func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) ([]string, error) {
+	log.Entry().Infof("Downloading maven project global settings file: %s", globalSettingsFile)
+	log.Entry().Infof("Downloading maven project settings file: %s", projectSettingsFile)
 	mavenArgs := []string{}
 	if len(globalSettingsFile) > 0 {
 		globalSettingsFileName, err := getSettingsFilePath(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, false)
@@ -37,7 +39,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		}
 		mavenArgs = append(mavenArgs, "--global-settings", globalSettingsFileName)
 	} else {
-
+		log.Entry().Infof("Global settings file not provided via configuration.")
 		log.Entry().Debugf("Global settings file not provided via configuration.")
 	}
 
@@ -48,9 +50,10 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 		}
 		mavenArgs = append(mavenArgs, "--settings", projectSettingsFileName)
 	} else {
-
+		log.Entry().Infof("Project settings file not provided via configuration.")
 		log.Entry().Debugf("Project settings file not provided via configuration.")
 	}
+	log.Entry().Infof("Maven Parameters: %s", mavenArgs)
 	return mavenArgs, nil
 }
 
