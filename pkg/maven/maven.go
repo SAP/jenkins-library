@@ -316,6 +316,7 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 	var parameters []string
 
 	parameters, err := DownloadAndGetMavenParameters(options.GlobalSettingsFile, options.ProjectSettingsFile, utils)
+	log.Entry().Infof("Maven Parameters: %s", parameters)
 	if err != nil {
 		return nil, err
 	}
