@@ -402,7 +402,6 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 			log.SetErrorCategory(log.ErrorTest)
 			return fmt.Errorf("failed to convert coverage data to cobertura format: %w", err)
 		}
-		utils.Stdout(log.Writer())
 
 		err = utils.FileWrite("cobertura-coverage.xml", coverageOutput.Bytes(), 0o666)
 		if err != nil {
@@ -438,6 +437,7 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError
 
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
+	defer utils.Stdout(log.Writer())
 	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
 	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
