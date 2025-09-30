@@ -29,7 +29,8 @@ func TestGitHubActionsConfigProvider_GetBuildStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &githubActionsConfigProvider{
-				jobs: tt.jobs,
+				jobsFetched: true,
+				jobs:        tt.jobs,
 			}
 			assert.Equalf(t, tt.want, g.BuildStatus(), "BuildStatus()")
 		})
@@ -112,7 +113,6 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	wantRunData := run{
 		fetched:   true,
-		Status:    "completed",
 		StartedAt: startedAt,
 	}
 
@@ -284,7 +284,6 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	p.runData = run{
 		fetched:   true,
-		Status:    "",
 		StartedAt: startedAt,
 	}
 
