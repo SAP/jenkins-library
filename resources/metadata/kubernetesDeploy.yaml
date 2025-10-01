@@ -541,7 +541,7 @@ spec:
           - STEPS
       - name: insecureSkipTLSVerify
         type: bool
-        description: "This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates."
+        description: This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)
         scope:
           - PARAMETERS
           - STAGES
@@ -549,7 +549,8 @@ spec:
         default: false
       - name: CACertificate
         type: string
-        description: |
+        description: Path to the Kubernetes CA certificate file.
+        longDescription: |
           Path to the Kubernetes CA certificate file. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
         scope:
           - PARAMETERS
