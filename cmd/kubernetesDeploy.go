@@ -272,6 +272,9 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	}
 
 	kubeParams = append(kubeParams, "--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify))
+	if !config.InsecureSkipTLSVerify {
+		log.Entry().Warn("Skipping TLS verification check. Please note that this action is NOT recommended.")
+	}
 
 	if len(config.KubeConfig) > 0 {
 		log.Entry().Info("Using KUBECONFIG environment for authentication.")

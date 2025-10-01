@@ -1777,6 +1777,73 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
 	})
 
+	t.Run("test kubectl - insecureSkipTLSVerify is false without custom CA", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "path/to/test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			Image:                   "path/to/Image:latest",
+			KubeToken:               "testToken",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			InsecureSkipTLSVerify:   false,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
+		mockUtils.ShouldFailOnCommand = map[string]error{}
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"--insecure-skip-tls-verify=false",
+			fmt.Sprintf("--server=%v", opts.APIServer),
+			fmt.Sprintf("--token=%v", opts.KubeToken),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - insecureSkipTLSVerify is true with custom CA", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:               "https://my.api.server",
+			AppTemplate:             "path/to/test.yaml",
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "regSecret",
+			DeployTool:              "kubectl",
+			Image:                   "path/to/Image:latest",
+			KubeToken:               "testToken",
+			Namespace:               "deploymentNamespace",
+			DeployCommand:           "apply",
+			InsecureSkipTLSVerify:   true,
+			CACertificate:           "path/to/ca.crt",
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.AddFile(opts.AppTemplate, []byte("testYaml"))
+		mockUtils.ShouldFailOnCommand = map[string]error{}
+
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec, "Wrong apply command")
+		assert.Equal(t, []string{
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--server=%v", opts.APIServer),
+			fmt.Sprintf("--token=%v", opts.KubeToken),
+			"apply",
+			"--filename",
+			opts.AppTemplate,
+		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
+	})
+
 }
 
 func TestSplitRegistryURL(t *testing.T) {
