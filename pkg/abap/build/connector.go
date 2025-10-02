@@ -78,25 +78,23 @@ func (conn *Connector) GetToken(appendum string) error {
 	log.Entry().Debug("response headers:")
 	for key, value := range response.Header {
 		log.Entry().Debug(key)
-		if strings.HasPrefix(key, "SAP_SESSIONID_") {
-			log.RegisterSecret(value[0])
-			log.Entry().Debug("... registered")
-		}
 		if key == "Set-Cookie" {
 			log.Entry().Debug(">> cookies:")
 			for _, cookie := range value {
 				log.Entry().Debug(cookie)
+				if strings.HasPrefix(cookie, "SAP_SESSIONID_") {
+					//  SAP_SESSIONID_W7Q_001=YiWizhmMljBNOkKxokG-flmT9wWfehHwifb6Fj5zqUI%3d; path=/; secure; HttpOnly
+					id := cookie[strings.Index(cookie, "="):strings.Index(cookie, "; ")]
+					log.Entry().Debug("... id")
+					log.Entry().Debug(id)
+					log.RegisterSecret(id)
+					log.Entry().Debug("... registered")
+					log.Entry().Debug("... id")
+					log.Entry().Debug(id)
+				}
+
 			}
 			log.Entry().Debug("<< cookies:")
-		}
-	}
-
-	log.Entry().Debug("conn headers:")
-	for key, value := range conn.Header {
-		log.Entry().Debug(key)
-		if strings.HasPrefix(key, "SAP_SESSIONID_") {
-			log.RegisterSecret(value[0])
-			log.Entry().Debug("... registered")
 		}
 	}
 
