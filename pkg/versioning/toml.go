@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -25,13 +23,14 @@ func (p *Toml) init() error {
 	return p.Pip.init()
 }
 
+// GetName returns the name from the build descriptor
 func (p *Toml) GetName() (string, error) {
 	if !strings.Contains(p.Pip.path, TomlBuildDescriptor) {
 		return "", fmt.Errorf("file '%v' is not a %s", p.Pip.path, TomlBuildDescriptor)
 	}
 
 	if err := p.init(); err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", p.Pip.path)
+		return "", fmt.Errorf("failed to read file '%v': %w", p.Pip.path, err)
 	}
 	if !hasMatch(p.Pip.buildDescriptorContent, TomlNameRegex) {
 		return "", fmt.Errorf("no name information found in file '%v'", p.Pip.path)
@@ -43,13 +42,14 @@ func (p *Toml) GetName() (string, error) {
 	return values[1], nil
 }
 
+// GetVersion returns the current version from the build descriptor
 func (p *Toml) GetVersion() (string, error) {
 	if !strings.Contains(p.Pip.path, TomlBuildDescriptor) {
 		return "", fmt.Errorf("file '%v' is not a %s", p.Pip.path, TomlBuildDescriptor)
 	}
 
 	if err := p.init(); err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", p.Pip.path)
+		return "", fmt.Errorf("failed to read file '%v': %w", p.Pip.path, err)
 	}
 	if !hasMatch(p.Pip.buildDescriptorContent, TomlVersionRegex) {
 		return "", fmt.Errorf("no version information found in file '%v'", p.Pip.path)
@@ -61,30 +61,38 @@ func (p *Toml) GetVersion() (string, error) {
 	return values[1], nil
 }
 
+// SetVersion updates the version in the build descriptor
 func (p *Toml) SetVersion(new string) error {
-	current, err := p.GetVersion()
-	if err != nil {
+	if current, err := p.GetVersion(); err != nil {
+		// replace with single quotes
+		p.Pip.buildDescriptorContent = strings.ReplaceAll(
+			p.Pip.buildDescriptorContent,
+			fmt.Sprintf("version = '%v'", current),
+			fmt.Sprintf("version = '%v'", new))
+		// replace with double quotes as well
+		p.Pip.buildDescriptorContent = strings.ReplaceAll(
+			p.Pip.buildDescriptorContent,
+			fmt.Sprintf("version = \"%v\"", current),
+			fmt.Sprintf("version = \"%v\"", new))
+		p.Pip.writeFile(p.Pip.path, []byte(p.Pip.buildDescriptorContent), 0600)
+		return nil
+	} else {
 		return err
 	}
-
-	p.Pip.buildDescriptorContent = strings.ReplaceAll(p.Pip.buildDescriptorContent, fmt.Sprintf("version = '%v'", current), fmt.Sprintf("version = '%v'", new))
-	p.Pip.buildDescriptorContent = strings.ReplaceAll(p.Pip.buildDescriptorContent, fmt.Sprintf("version = \"%v\"", current), fmt.Sprintf("version = \"%v\"", new))
-	p.Pip.writeFile(p.Pip.path, []byte(p.Pip.buildDescriptorContent), 0600)
-	return nil
 }
 
-// GetCoordinates returns the pip build descriptor coordinates
+// GetCoordinates returns the build descriptor coordinates
 func (p *Toml) GetCoordinates() (Coordinates, error) {
 	result := Coordinates{}
-
+	// get name
 	if name, err := p.GetName(); err != nil {
 		result.ArtifactID = ""
 	} else {
 		result.ArtifactID = name
 	}
-
+	// get version
 	if version, err := p.GetVersion(); err != nil {
-		return result, errors.Wrap(err, "failed to retrieve coordinates")
+		return result, fmt.Errorf("failed to retrieve coordinates: %w", err)
 	} else {
 		result.Version = version
 	}
