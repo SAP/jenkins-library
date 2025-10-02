@@ -75,9 +75,21 @@ func (conn *Connector) GetToken(appendum string) error {
 	conn.Header["X-CSRF-Token"] = []string{token}
 	log.RegisterSecret(token)
 
+	log.Entry().Debug("response headers:")
 	for key, value := range response.Header {
+		log.Entry().Debug(key)
 		if strings.HasPrefix(key, "SAP_SESSIONID_") {
 			log.RegisterSecret(value[0])
+			log.Entry().Debug("... registered")
+		}
+	}
+
+	log.Entry().Debug("conn headers:")
+	for key, value := range conn.Header {
+		log.Entry().Debug(key)
+		if strings.HasPrefix(key, "SAP_SESSIONID_") {
+			log.RegisterSecret(value[0])
+			log.Entry().Debug("... registered")
 		}
 	}
 
