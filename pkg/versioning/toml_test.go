@@ -18,6 +18,9 @@ const (
 name = "simple-python"
 version = "1.2.3"
 `
+	missingVersionToml = `[project]
+name = "simple-python"
+`
 	largeSampleToml = `[project]
 name = "sampleproject"
 version = "4.0.0"
@@ -80,6 +83,7 @@ package-data = { "sample" = ["*.dat"] }
 )
 
 func TestTomlSetVersion(t *testing.T) {
+	t.Parallel()
 	t.Run("success case - large pyproject.toml", func(t *testing.T) {
 		fileUtils := piperMock.FilesMock{}
 		fileUtils.AddFile("pyproject.toml", []byte(largeSampleToml))
@@ -115,7 +119,7 @@ func TestTomlGetCoordinates(t *testing.T) {
 		fileUtils := piperMock.FilesMock{}
 		fileUtils.AddFile(filename, []byte(sampleToml))
 
-		pip := Toml{
+		toml := Toml{
 			Pip: Pip{
 				path:       filename,
 				fileExists: fileUtils.FileExists,
@@ -124,7 +128,7 @@ func TestTomlGetCoordinates(t *testing.T) {
 			},
 		}
 
-		coordinates, err := pip.GetCoordinates()
+		coordinates, err := toml.GetCoordinates()
 		assert.NoError(t, err)
 		assert.Equal(t, "simple-python", coordinates.ArtifactID)
 		assert.Equal(t, "1.2.3", coordinates.Version)
@@ -134,7 +138,7 @@ func TestTomlGetCoordinates(t *testing.T) {
 		fileUtils := piperMock.FilesMock{}
 		fileUtils.AddFile(filename, []byte(invalidToml))
 
-		pip := Toml{
+		toml := Toml{
 			Pip: Pip{
 				path:       filename,
 				fileExists: fileUtils.FileExists,
@@ -143,9 +147,28 @@ func TestTomlGetCoordinates(t *testing.T) {
 			},
 		}
 
-		coordinates, err := pip.GetCoordinates()
-		assert.ErrorContains(t, err, fmt.Sprintf("no version information found in file '%s'", filename))
+		coordinates, err := toml.GetCoordinates()
+		assert.ErrorContains(t, err, fmt.Sprintf("no name information found in file '%s'", filename))
 		assert.Equal(t, "", coordinates.ArtifactID)
+		assert.Equal(t, "", coordinates.Version)
+	})
+	t.Run("fail - invalid pyproject.toml", func(t *testing.T) {
+		filename := TomlBuildDescriptor
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile(filename, []byte(missingVersionToml))
+
+		toml := Toml{
+			Pip: Pip{
+				path:       filename,
+				fileExists: fileUtils.FileExists,
+				readFile:   fileUtils.FileRead,
+				writeFile:  fileUtils.FileWrite,
+			},
+		}
+
+		coordinates, err := toml.GetCoordinates()
+		assert.ErrorContains(t, err, fmt.Sprintf("no version information found in file '%s'", filename))
+		assert.Equal(t, "simple-python", coordinates.ArtifactID)
 		assert.Equal(t, "", coordinates.Version)
 	})
 	t.Run("fail - empty pyproject.toml", func(t *testing.T) {
@@ -163,7 +186,7 @@ func TestTomlGetCoordinates(t *testing.T) {
 		}
 
 		coordinates, err := toml.GetCoordinates()
-		assert.ErrorContains(t, err, fmt.Sprintf("no version information found in file '%s'", filename))
+		assert.ErrorContains(t, err, fmt.Sprintf("no name information found in file '%s'", filename))
 		assert.Equal(t, "", coordinates.ArtifactID)
 		assert.Equal(t, "", coordinates.Version)
 	})
