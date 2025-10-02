@@ -4,14 +4,17 @@
 package versioning
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
+	piperMock "github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const (
-	sampleToml = `[project]
+	invalidToml = `[project]`
+	sampleToml  = `[project]
 name = "simple-python"
 version = "1.2.3"
 `
@@ -76,27 +79,9 @@ package-data = { "sample" = ["*.dat"] }
 `
 )
 
-func TestPipTomlGetCoordinates(t *testing.T) {
-	// t.Run("success case - pyproject.toml", func(t *testing.T) {
-	// 	fileUtils := mock.FilesMock{}
-	// 	fileUtils.AddFile("pyproject.toml", []byte(sampleToml))
-
-	// 	pip := Toml{
-	// 		Pip: Pip{
-	// 			path:       "pyproject.toml",
-	// 			fileExists: fileUtils.FileExists,
-	// 			readFile:   fileUtils.FileRead,
-	// 			writeFile:  fileUtils.FileWrite,
-	// 		},
-	// 	}
-
-	// 	coordinates, err := pip.GetCoordinates()
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, "simple-python", coordinates.ArtifactID)
-	// 	assert.Equal(t, "1.2.3", coordinates.Version)
-	// })
+func TestTomlSetVersion(t *testing.T) {
 	t.Run("success case - large pyproject.toml", func(t *testing.T) {
-		fileUtils := mock.FilesMock{}
+		fileUtils := piperMock.FilesMock{}
 		fileUtils.AddFile("pyproject.toml", []byte(largeSampleToml))
 
 		toml := Toml{
@@ -123,41 +108,100 @@ func TestPipTomlGetCoordinates(t *testing.T) {
 	})
 }
 
-// func TestPipTomlSetVersion(t *testing.T) {
-	// t.Run("success case - pyproject.toml", func(t *testing.T) {
-	// 	fileUtils := mock.FilesMock{}
-	// 	fileUtils.AddFile("pyproject.toml", []byte(sampleToml))
+func TestTomlGetCoordinates(t *testing.T) {
+	t.Parallel()
+	t.Run("success case - pyproject.toml", func(t *testing.T) {
+		filename := TomlBuildDescriptor
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile(filename, []byte(sampleToml))
 
-	// 	pip := Toml{
-	// 		Pip: Pip{
-	// 			path:       "pyproject.toml",
-	// 			fileExists: fileUtils.FileExists,
-	// 			readFile:   fileUtils.FileRead,
-	// 			writeFile:  fileUtils.FileWrite,
-	// 		},
-	// 	}
+		pip := Toml{
+			Pip: Pip{
+				path:       filename,
+				fileExists: fileUtils.FileExists,
+				readFile:   fileUtils.FileRead,
+				writeFile:  fileUtils.FileWrite,
+			},
+		}
 
-	// 	coordinates, err := pip.GetCoordinates()
-	// 	assert.NoError(t, err)
-	// 	assert.Equal(t, "simple-python", coordinates.ArtifactID)
-	// 	assert.Equal(t, "1.2.3", coordinates.Version)
-// 	// })
-// 	t.Run("success case - large pyproject.toml", func(t *testing.T) {
-// 		fileUtils := mock.FilesMock{}
-// 		fileUtils.AddFile("pyproject.toml", []byte(largeSampleToml))
+		coordinates, err := pip.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "simple-python", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+	t.Run("fail - invalid pyproject.toml", func(t *testing.T) {
+		filename := TomlBuildDescriptor
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile(filename, []byte(invalidToml))
 
-// 		pip := Pip{
-// 			path:       "pyproject.toml",
-// 			fileExists: fileUtils.FileExists,
-// 			readFile:   fileUtils.FileRead,
-// 			writeFile:  fileUtils.FileWrite,
-// 		}
+		pip := Toml{
+			Pip: Pip{
+				path:       filename,
+				fileExists: fileUtils.FileExists,
+				readFile:   fileUtils.FileRead,
+				writeFile:  fileUtils.FileWrite,
+			},
+		}
 
-// 		err := pip.SetVersion("5.0.0")
-// 		assert.NoError(t, err)
-// 		// assert.Equal(t, "sampleproject", coordinates.ArtifactID)
-// 		// assert.Equal(t, "5.0.0", coordinates.Version)
+		coordinates, err := pip.GetCoordinates()
+		assert.ErrorContains(t, err, fmt.Sprintf("no version information found in file '%s'", filename))
+		assert.Equal(t, "", coordinates.ArtifactID)
+		assert.Equal(t, "", coordinates.Version)
+	})
+	t.Run("fail - empty pyproject.toml", func(t *testing.T) {
+		filename := TomlBuildDescriptor
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile(filename, []byte(""))
 
-// 		assert.True(t, fileUtils.HasWrittenFile("pyproject.toml"))
-// 	})
-// }
+		toml := Toml{
+			Pip: Pip{
+				path:       filename,
+				fileExists: fileUtils.FileExists,
+				readFile:   fileUtils.FileRead,
+				writeFile:  fileUtils.FileWrite,
+			},
+		}
+
+		coordinates, err := toml.GetCoordinates()
+		assert.ErrorContains(t, err, fmt.Sprintf("no version information found in file '%s'", filename))
+		assert.Equal(t, "", coordinates.ArtifactID)
+		assert.Equal(t, "", coordinates.Version)
+	})
+	t.Run("fail - no pyproject.toml", func(t *testing.T) {
+		filename := mock.Anything
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile(filename, []byte(""))
+
+		toml := Toml{
+			Pip: Pip{
+				path:       filename,
+				fileExists: fileUtils.FileExists,
+				readFile:   fileUtils.FileRead,
+				writeFile:  fileUtils.FileWrite,
+			},
+		}
+
+		coordinates, err := toml.GetCoordinates()
+		assert.ErrorContains(t, err, fmt.Sprintf("file '%s' is not a pyproject.toml", filename))
+		assert.Equal(t, "", coordinates.ArtifactID)
+		assert.Equal(t, "", coordinates.Version)
+	})
+	t.Run("fail - missing pyproject.toml", func(t *testing.T) {
+		filename := TomlBuildDescriptor
+		fileUtils := piperMock.FilesMock{}
+
+		toml := Toml{
+			Pip: Pip{
+				path:       filename,
+				fileExists: fileUtils.FileExists,
+				readFile:   fileUtils.FileRead,
+				writeFile:  fileUtils.FileWrite,
+			},
+		}
+
+		coordinates, err := toml.GetCoordinates()
+		assert.ErrorContains(t, err, fmt.Sprintf("failed to read file '%s'", filename))
+		assert.Equal(t, "", coordinates.ArtifactID)
+		assert.Equal(t, "", coordinates.Version)
+	})
+}
