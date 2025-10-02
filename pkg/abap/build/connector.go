@@ -82,6 +82,13 @@ func (conn *Connector) GetToken(appendum string) error {
 			log.RegisterSecret(value[0])
 			log.Entry().Debug("... registered")
 		}
+		if key == "Set-Cookie" {
+			log.Entry().Debug(">> cookies:")
+			for _, cookie := range value {
+				log.Entry().Debug(cookie)
+			}
+			log.Entry().Debug("<< cookies:")
+		}
 	}
 
 	log.Entry().Debug("conn headers:")
