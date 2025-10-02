@@ -75,26 +75,14 @@ func (conn *Connector) GetToken(appendum string) error {
 	conn.Header["X-CSRF-Token"] = []string{token}
 	log.RegisterSecret(token)
 
-	log.Entry().Debug("response headers:")
-	for key, value := range response.Header {
-		log.Entry().Debug(key)
-		if key == "Set-Cookie" {
-			log.Entry().Debug(">> cookies:")
-			for _, cookie := range value {
-				log.Entry().Debug(cookie)
-				if strings.HasPrefix(cookie, "SAP_SESSIONID_") {
-					//  SAP_SESSIONID_W7Q_001=YiWizhmMljBNOkKxokG-flmT9wWfehHwifb6Fj5zqUI%3d; path=/; secure; HttpOnly
-					id := cookie[strings.Index(cookie, "="):strings.Index(cookie, "; ")]
-					log.Entry().Debug("... id")
-					log.Entry().Debug(id)
-					log.RegisterSecret(id)
-					log.Entry().Debug("... registered")
-					log.Entry().Debug("... id")
-					log.Entry().Debug(id)
-				}
-
-			}
-			log.Entry().Debug("<< cookies:")
+	for _, cookie := range response.Header.Values("Set-Cookie") {
+		log.Entry().Debug(cookie)
+		if strings.HasPrefix(cookie, "SAP_SESSIONID_") {
+			//  SAP_SESSIONID_SID_000=YiWizhmMljBNOkKxJkG-flmT9wWfetHwifb6Fj5zqUI%3d; path=/; secure; HttpOnly
+			id := cookie[strings.Index(cookie, "=")+1 : strings.Index(cookie, "; ")]
+			log.Entry().Debug("... id")
+			log.Entry().Debug(id)
+			log.RegisterSecret(id)
 		}
 	}
 
