@@ -11,6 +11,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -72,6 +73,16 @@ func (conn *Connector) GetToken(appendum string) error {
 	defer response.Body.Close()
 	token := response.Header.Get("X-CSRF-Token")
 	conn.Header["X-CSRF-Token"] = []string{token}
+	log.RegisterSecret(token)
+
+	for _, cookie := range response.Header.Values("Set-Cookie") {
+		if strings.HasPrefix(cookie, "SAP_SESSIONID_") {
+			//  SAP_SESSIONID_SID_123=YiWizhmMljBNOkKxJkG-flmT9wWfetHwifb6Fj5zqUI%3d; path=/; secure; HttpOnly
+			id := cookie[strings.Index(cookie, "=")+1 : strings.Index(cookie, "; ")]
+			log.RegisterSecret(id)
+		}
+	}
+
 	return nil
 }
 
