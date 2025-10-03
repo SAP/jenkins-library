@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -39,6 +40,7 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 	}
 	return &http.Response{StatusCode: c.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
 }
+
 func (c *kanikoMockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	if len(c.errorMessage) > 0 {
 		return fmt.Errorf("%s", c.errorMessage)
@@ -47,7 +49,6 @@ func (c *kanikoMockClient) DownloadFile(url, filename string, header http.Header
 }
 
 func TestRunKanikoExecute(t *testing.T) {
-
 	// required due to config resolution during build settings retrieval
 	// ToDo: proper mocking
 	openFileBak := configOptions.OpenFile
@@ -862,4 +863,33 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "multipleImages: empty contextSubPath")
 	})
+}
+
+func TestKanikoBuildArtifactMetadata(t *testing.T) {
+	validBom := `<bom>
+			<metadata>
+				<component>
+					<name>376101288081-20250807-153404266-296.staging.repositories.cloud.sap/dummyImage</name>
+					<version>1.0.0</version>
+				</component>
+				<properties>
+					<property name="name1" value="value1" />
+					<property name="name2" value="value2" />
+				</properties>
+			</metadata>
+		</bom>`
+	bomFile, err := os.Create("bom-docker-0.xml")
+	// Ensure file is closed and deleted after function finishes
+	defer bomFile.Close()
+	defer os.Remove("bom-docker-0.xml") // Delete the file when the function exits
+
+	// Write something to the file
+	_, err = bomFile.WriteString(validBom)
+
+	imageNameTags := []string{"dummyImage:1.0.0"}
+	cpe := kanikoExecuteCommonPipelineEnvironment{}
+
+	err = createDockerBuildArtifactMetadata(imageNameTags, &cpe)
+
+	assert.NoError(t, err)
 }
