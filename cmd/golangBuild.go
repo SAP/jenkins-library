@@ -345,7 +345,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 func runGolangTests(config *golangBuildOptions, utils golangBuildUtils) (bool, error) {
 	// execute gotestsum in order to have more output options
-	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "-tags=unit", "./..."}
+	testOptions := []string{"--junitfile", golangUnitTestOutput, "--jsonfile", unitJsonReport, "--", fmt.Sprintf("-coverprofile=%v", coverageFile), "./..."}
 	testOptions = append(testOptions, config.TestOptions...)
 	if err := utils.RunExecutable("gotestsum", testOptions...); err != nil {
 		exists, fileErr := utils.FileExists(golangUnitTestOutput)
