@@ -1,6 +1,13 @@
 metadata:
   name: mtaBuild
   description: Performs an mta build
+  errors:
+    - pattern: "cannot find symbol"
+      message: "Java compilation failed due to missing symbol. Check imports and dependencies."
+      category: "compilation"
+    - pattern: "has been compiled by a more recent version of the Java Runtime.*class file version"
+      message: "Java version incompatibility. Update Java runtime or use compatible dependency versions."
+      category: "version"
   longDescription: |
     Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
 
@@ -272,4 +279,4 @@ spec:
           - filePattern: "**/jacoco.xml"
             type: jacoco-coverage
   containers:
-    - image: devxci/mbtci-java11-node14
+    - image: devxci/mbtci-java21-node22

@@ -161,6 +161,17 @@ func MtaBuildCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.MtaDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -283,6 +294,18 @@ func mtaBuildMetadata() config.StepData {
 			Name:        "mtaBuild",
 			Aliases:     []config.Alias{},
 			Description: "Performs an mta build",
+			Errors: []config.StepError{
+				{
+					Pattern:  "cannot find symbol",
+					Message:  "Java compilation failed due to missing symbol. Check imports and dependencies.",
+					Category: "compilation",
+				},
+				{
+					Pattern:  "has been compiled by a more recent version of the Java Runtime.*class file version",
+					Message:  "Java version incompatibility. Update Java runtime or use compatible dependency versions.",
+					Category: "version",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -543,7 +566,7 @@ func mtaBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci-java11-node14"},
+				{Image: "devxci/mbtci-java21-node22"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

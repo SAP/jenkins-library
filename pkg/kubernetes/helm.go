@@ -265,11 +265,8 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
-	}
 
-	if h.verbose {
-		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run", "--hide-secret")
+		helmParamsDryRun := append(helmParams, "--dry-run", "--hide-secret")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
 			log.Entry().WithError(err).Error("Helm install --dry-run --hide-secret call failed")
 		}
@@ -284,8 +281,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 // RunHelmUninstall is used to uninstall a chart
 func (h *HelmExecute) RunHelmUninstall() error {
-	err := h.runHelmInit()
-	if err != nil {
+	if err := h.runHelmInit(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
@@ -305,13 +301,10 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
-	}
 
-	if h.verbose {
-		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run", "--hide-secret")
+		helmParamsDryRun := append(helmParams, "--dry-run")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm uninstall --dry-run --hide-secret call failed")
+			log.Entry().WithError(err).Error("Helm uninstall --dry-run call failed")
 		}
 	}
 
@@ -401,9 +394,7 @@ func (h *HelmExecute) RunHelmDependency() error {
 		"dependency",
 	}
 
-	helmParams = append(helmParams, h.config.Dependency)
-
-	helmParams = append(helmParams, h.config.ChartPath)
+	helmParams = append(helmParams, h.config.Dependency, h.config.ChartPath)
 
 	if len(h.config.AdditionalParameters) > 0 {
 		helmParams = append(helmParams, h.config.AdditionalParameters...)

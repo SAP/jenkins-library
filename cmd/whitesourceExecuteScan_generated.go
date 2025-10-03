@@ -248,6 +248,17 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
@@ -418,6 +429,23 @@ func whitesourceExecuteScanMetadata() config.StepData {
 			Name:        "whitesourceExecuteScan",
 			Aliases:     []config.Alias{},
 			Description: "Execute a Mend (formerly known as WhiteSource) scan",
+			Errors: []config.StepError{
+				{
+					Pattern:  "Open Source Software Security vulnerabilities with CVSS score greater or equal to .* detected in project",
+					Message:  "Security vulnerabilities with high CVSS scores detected. Review and address the identified vulnerabilities to meet security requirements.",
+					Category: "security",
+				},
+				{
+					Pattern:  "policy violation\\(s\\) found",
+					Message:  "Policy violations detected in the scan. Review the violations and update dependencies or policies to resolve compliance issues.",
+					Category: "compliance",
+				},
+				{
+					Pattern:  "running command 'java' failed",
+					Message:  "Java command execution failed during WhiteSource scan. Verify Java installation, memory settings, and agent configuration.",
+					Category: "execution",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

@@ -40,7 +40,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "python:3.9",
+		Image: "python:3.10",
 		Cmd:   []string{"tail", "-f"},
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(pwd, "/piperbin"),
@@ -64,8 +64,8 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	}
 	output := string(content)
 
-	assert.Contains(t, output, "info  pythonBuild - running command: python setup.py sdist bdist_wheel")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade cyclonedx-bom")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/python setup.py sdist bdist_wheel")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore cyclonedx-bom==")
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 

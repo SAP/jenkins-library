@@ -48,6 +48,8 @@ type codeqlExecuteScanOptions struct {
 	DatabaseAnalyzeFlags        string `json:"databaseAnalyzeFlags,omitempty"`
 	CustomCommand               string `json:"customCommand,omitempty"`
 	TransformQuerySuite         string `json:"transformQuerySuite,omitempty"`
+	Paths                       string `json:"paths,omitempty"`
+	PathsIgnore                 string `json:"pathsIgnore,omitempty"`
 }
 
 type codeqlExecuteScanInflux struct {
@@ -181,6 +183,17 @@ and Java plus Maven.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.GithubToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -273,7 +286,7 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token in plain text. NEVER set this parameter in a file commited to a source code repository. This parameter is intended to be used from the command line or set securely via the environment variable listed below. In most pipeline use-cases, you should instead either store the token in Vault (where it can be automatically retrieved by the step from one of the paths listed below) or store it as a Jenkins secret and configure the secret's id via the `githubTokenCredentialsId` parameter.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", `maven`, "Defines the build tool which is used for building the project.")
 	cmd.Flags().StringVar(&stepConfig.BuildCommand, "buildCommand", os.Getenv("PIPER_buildCommand"), "Command to build the project")
-	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze.")
+	cmd.Flags().StringVar(&stepConfig.Language, "language", os.Getenv("PIPER_language"), "The programming language used to analyze. Use coma separation and select custom build tool to analyze multiple languages")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
 	cmd.Flags().StringVar(&stepConfig.Database, "database", `codeqlDB`, "Path to the CodeQL database to create. This directory will be created, and must not already exist.")
 	cmd.Flags().StringVar(&stepConfig.QuerySuite, "querySuite", os.Getenv("PIPER_querySuite"), "The name of a CodeQL query suite. If omitted, the default query suite for the language of the database being analyzed will be used.")
@@ -295,6 +308,8 @@ func addCodeqlExecuteScanFlags(cmd *cobra.Command, stepConfig *codeqlExecuteScan
 	cmd.Flags().StringVar(&stepConfig.DatabaseAnalyzeFlags, "databaseAnalyzeFlags", os.Getenv("PIPER_databaseAnalyzeFlags"), "A space-separated string of flags for the 'codeql database analyze' command.")
 	cmd.Flags().StringVar(&stepConfig.CustomCommand, "customCommand", os.Getenv("PIPER_customCommand"), "A custom user-defined command to run between codeql analysis and results upload.")
 	cmd.Flags().StringVar(&stepConfig.TransformQuerySuite, "transformQuerySuite", os.Getenv("PIPER_transformQuerySuite"), "A transform string that will be applied to the querySuite using the sed command.")
+	cmd.Flags().StringVar(&stepConfig.Paths, "paths", os.Getenv("PIPER_paths"), "List of file or directory patterns to include.\nEach entry must be on its own line, e.g.:\n  src/**\n  lib/**\nNote: This parameter is only applicable for interpreted languages.\n")
+	cmd.Flags().StringVar(&stepConfig.PathsIgnore, "pathsIgnore", os.Getenv("PIPER_pathsIgnore"), "List of file or directory patterns to ignore.\nEach entry must be on its own line, e.g.:\n  **/*.md\n  docs/**\nNote: This parameter is only applicable for interpreted languages.\n")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -568,6 +583,24 @@ func codeqlExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_transformQuerySuite"),
+					},
+					{
+						Name:        "paths",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_paths"),
+					},
+					{
+						Name:        "pathsIgnore",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pathsIgnore"),
 					},
 				},
 			},

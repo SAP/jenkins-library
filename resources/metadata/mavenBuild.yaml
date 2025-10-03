@@ -4,6 +4,13 @@ metadata:
     - name: mavenExecute
       deprecated: false
   description: This step will install the maven project into the local maven repository.
+  errors:
+    - pattern: "BUILD FAILURE"
+      message: "Maven build failed. Check build logs for compilation errors, test failures, or plugin execution issues."
+      category: "build"
+    - pattern: "Failed to execute goal.*exec-maven-plugin.*exec"
+      message: "Maven exec plugin execution failed. Verify exec plugin configuration and command execution."
+      category: "plugin"
   longDescription: |
     This step will install the maven project into the local maven repository.
     It will also prepare jacoco to record the code coverage and
@@ -235,6 +242,11 @@ spec:
       - name: deployFlags
         type: "[]string"
         description: maven deploy flags that will be used when publish is detected.
+        longDescription: |
+          Maven deploy flags that will be used when publish is detected.
+
+          `Build with optimized goals:`
+          By default, the deploy process skips the main, test, and install Maven goals to reduce build time and avoid redundant executions. If you provide custom deployFlags, manually add the default flags to maintain build optimization unless you override them.
         scope:
           - STEPS
           - STAGES

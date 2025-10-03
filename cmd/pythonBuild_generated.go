@@ -27,7 +27,7 @@ type pythonBuildOptions struct {
 	TargetRepositoryUser     string   `json:"targetRepositoryUser,omitempty"`
 	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
-	VirutalEnvironmentName   string   `json:"virutalEnvironmentName,omitempty"`
+	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
 	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
 }
 
@@ -104,6 +104,17 @@ and are exposed are environment variables that must be present in the environmen
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 
@@ -201,7 +212,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
-	cmd.Flags().StringVar(&stepConfig.VirutalEnvironmentName, "virutalEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
+	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
 
 }
@@ -310,12 +321,12 @@ func pythonBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 					{
-						Name:        "virutalEnvironmentName",
+						Name:        "virtualEnvironmentName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "virutalEnvironmentName", Deprecated: true}},
 						Default:     `piperBuild-env`,
 					},
 					{
@@ -330,7 +341,7 @@ func pythonBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3.9"},
+				{Name: "python", Image: "python:3.10"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

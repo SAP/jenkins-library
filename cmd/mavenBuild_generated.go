@@ -186,6 +186,17 @@ general:
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.AltDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -304,6 +315,18 @@ func mavenBuildMetadata() config.StepData {
 			Name:        "mavenBuild",
 			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
 			Description: "This step will install the maven project into the local maven repository.",
+			Errors: []config.StepError{
+				{
+					Pattern:  "BUILD FAILURE",
+					Message:  "Maven build failed. Check build logs for compilation errors, test failures, or plugin execution issues.",
+					Category: "build",
+				},
+				{
+					Pattern:  "Failed to execute goal.*exec-maven-plugin.*exec",
+					Message:  "Maven exec plugin execution failed. Verify exec plugin configuration and command execution.",
+					Category: "plugin",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

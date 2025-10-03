@@ -135,7 +135,10 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 Only the install command uses the detected package manager (npm, yarn, or pnpm). All other commands (e.g., ` + "`" + `run` + "`" + `, ` + "`" + `pack` + "`" + `, ` + "`" + `publish` + "`" + `) are executed via the ` + "`" + `npm` + "`" + ` CLI, regardless of which lock file is detected.<br/>
 Rationale: In the Piper environment, using the npm CLI for non-install commands provides sufficient functionality without requiring additional CLI dependencies. Supporting yarn or pnpm for these commands was deemed unnecessary due to lack of added benefit.<br/>
 If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found. One can use ` + "`" + `buildDescriptorList` + "`" + ` or ` + "`" + `buildDescriptorExcludeList` + "`" + ` (more details below) to override the default behaviour.<br/>
-### pnpm multi-module support: pnpm multi-module projects are supported when each package has its own ` + "`" + `pnpm-lock.yaml` + "`" + ` file. Workspace-based pnpm projects are not yet supported.
+### pnpm multi-module support:
+pnpm multi-module projects are supported when each package has its own ` + "`" + `pnpm-lock.yaml` + "`" + ` file. Workspace-based pnpm projects are not yet supported.
+### pnpm and running tests.
+When pnpm is installed, it is placed in ` + "`" + `./tmp/node_modules/.bin/pnpm` + "`" + `, and some dependency files under ` + "`" + `./tmp/` + "`" + ` may include test files. If your test runner uses a broad glob pattern (such as ` + "`" + `**/*.test.js` + "`" + `), it might unintentionally pick up test files from ` + "`" + `./tmp/**` + "`" + `. To avoid this, exclude ` + "`" + `./tmp/**` + "`" + ` from your test execution patterns. For best results, use more specific glob patterns for running tests, such as ` + "`" + `src/**/*.test.js` + "`" + `, to ensure only your intended test files are executed.
 ### Build with private dependencies from a repository
 If your build has scoped/unscoped dependencies from a private repository you can include a ` + "`" + `.npmrc` + "`" + ` into the source code repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` value(s) with a valid private repo url) :<br/>
 ` + "`" + `` + "`" + `` + "`" + ` @privateScope:registry=https://private.repository.com/ //private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER} //private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64} //private.repository.com/:always-auth=true registry=https://registry.npmjs.org ` + "`" + `` + "`" + `` + "`" + `
@@ -159,6 +162,17 @@ If your build has scoped/unscoped dependencies from a private repository you can
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.RepositoryPassword)
 			log.RegisterSecret(stepConfig.RepositoryUsername)
 
@@ -276,6 +290,53 @@ func npmExecuteScriptsMetadata() config.StepData {
 			Name:        "npmExecuteScripts",
 			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
 			Description: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
+			Errors: []config.StepError{
+				{
+					Pattern:  "npm error code E401",
+					Message:  "",
+					Category: "authentication",
+				},
+				{
+					Pattern:  "npm error Incorrect or missing password",
+					Message:  "NPM authentication failed. Your password or token is incorrect.",
+					Category: "authentication",
+				},
+				{
+					Pattern:  "npm error 404.*Not Found",
+					Message:  "NPM package not found. Check package name and registry.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error ENOTFOUND",
+					Message:  "NPM registry not reachable. Check network connection and registry URL.",
+					Category: "network",
+				},
+				{
+					Pattern:  "npm error EACCES",
+					Message:  "NPM permission denied. Check file permissions or registry access rights.",
+					Category: "permission",
+				},
+				{
+					Pattern:  "ERR_PNPM_FETCH_401",
+					Message:  "PNPM authentication failed. Check your credentials or token.",
+					Category: "authentication",
+				},
+				{
+					Pattern:  "npm error ERESOLVE",
+					Message:  "NPM dependency resolution failed. Review peer dependency conflicts.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error EINTEGRITY",
+					Message:  "Package integrity check failed. Clear npm cache and retry installation.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error code ENOENT.*package.json",
+					Message:  "Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct.",
+					Category: "configuration",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

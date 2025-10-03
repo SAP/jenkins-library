@@ -8,8 +8,9 @@ import (
 	"net/http/cookiejar"
 	"reflect"
 	"regexp"
-	"strings"
 	"time"
+
+	"net/url" // add
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -435,12 +436,15 @@ func (api *SAP_COM_0948) setSleepTimeConfig(timeUnit time.Duration, maxSleepTime
 	api.retryMaxSleepTime = maxSleepTime
 }
 
+// git does not allow forward slashes as per convention but
+// software components have slashes like /DMO/REPO/ and so we url encode
 func (api *SAP_COM_0948) getRepoNameForPath() string {
-	return "/" + strings.ReplaceAll(api.repository.Name, "/", "%2F")
+	return "/" + url.PathEscape(api.repository.Name)
 }
 
+// forward slashes are allowed in git branch names
 func (api *SAP_COM_0948) getBranchNameForPath() string {
-	return "/" + api.repository.Branch
+	return "/" + url.PathEscape(api.repository.Branch)
 }
 
 func (api *SAP_COM_0948) getLogProtocolQuery(page int) string {

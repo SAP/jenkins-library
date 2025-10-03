@@ -56,6 +56,17 @@ func ShellExecuteCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.GithubToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -156,6 +167,38 @@ func shellExecuteMetadata() config.StepData {
 			Name:        "shellExecute",
 			Aliases:     []config.Alias{},
 			Description: "Step executes defined script",
+			Errors: []config.StepError{
+				{
+					Pattern:  "No such file or directory",
+					Message:  "Required file not found. Check file paths and existence.",
+					Category: "file",
+				},
+				{
+					Pattern:  "Permission denied",
+					Message:  "Insufficient permissions. Check file/directory permissions and user access.",
+					Category: "permission",
+				},
+				{
+					Pattern:  "exit status 1",
+					Message:  "Script execution failed with general error. Check script logic and dependencies.",
+					Category: "execution",
+				},
+				{
+					Pattern:  "exit status 2",
+					Message:  "Script execution failed with invalid usage. Check command syntax and arguments.",
+					Category: "execution",
+				},
+				{
+					Pattern:  "exit status 126",
+					Message:  "Script not executable. Check file permissions and execute bit.",
+					Category: "permission",
+				},
+				{
+					Pattern:  "exit status 127",
+					Message:  "Command not found. Check if required commands/tools are installed and in PATH.",
+					Category: "environment",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
