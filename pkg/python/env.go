@@ -7,6 +7,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+func getBinary(virtualEnv string, binary string) string {
+	if len(virtualEnv) > 0 {
+		return filepath.Join(virtualEnv, "bin", binary)
+	}
+	return binary
+}
+
 func CreateVirtualEnvironment(
 	executeFn func(executable string, params ...string) error,
 	removeFn func(executable string) error,
