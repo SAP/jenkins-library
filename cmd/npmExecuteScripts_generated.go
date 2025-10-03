@@ -128,7 +128,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 		Long: `### Lock file detection:
 
   - If ` + "`" + `package-lock.json` + "`" + ` is found → runs ` + "`" + `npm ci` + "`" + `
-  - If ` + "`" + `yarn.lock.json` + "`" + ` is found → runs ` + "`" + `yarn install --frozen-lockfile` + "`" + `
+  - If ` + "`" + `yarn.lock` + "`" + ` is found → runs ` + "`" + `yarn install --frozen-lockfile` + "`" + `
   - If ` + "`" + `pnpm-lock.yaml` + "`" + ` is found → runs ` + "`" + `pnpm install --frozen-lockfile` + "`" + `
   - If no lock file is found → defaults to ` + "`" + `npm install` + "`" + ` and continues execution
 
