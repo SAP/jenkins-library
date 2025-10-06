@@ -231,6 +231,10 @@ func Execute() {
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
 
+	// this command is only for coexistence and compatibility while migrating steps to the new architecture
+	// Should never be used in productive pipelines!
+	rootCmd.AddCommand(ExportStepConfigCommand())
+
 	addRootFlags(rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -347,7 +351,7 @@ func initStageName(outputToLog bool) {
 }
 
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
-func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
+func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error), outputResult ...interface{}) error {
 	log.SetFormatter(GeneralConfig.LogFormat)
 
 	initStageName(true)
@@ -434,10 +438,24 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		}
 	}
 
-	stepConfig.Config = checkTypes(stepConfig.Config, options)
-	confJSON, _ := json.Marshal(stepConfig.Config)
-	_ = json.Unmarshal(confJSON, &options)
+	if len(outputResult) == 1 {
+		// This branch is only used by the exportStepConfig command.
+		// No other step should use this!
+		// This is required temporarily for compatibility during migration to the new architecture.
 
+		// The main reason for this separate branch is that checkTypes() below expects
+		// a struct in &options and will panic otherwise. We cannot pass a struct here
+		// because the required fields are not known at compile time, since exportStepConfig
+		// can be called for any step.
+
+		// And yeah, this workaround is ugly, I know.
+		reflect.ValueOf(outputResult[0]).Elem().Set(reflect.ValueOf(stepConfig.Config)) // copy stepConfig.Config into outputResult[0]
+	} else {
+		// For all other steps, check and convert types, then unmarshal config into options (as before)
+		stepConfig.Config = checkTypes(stepConfig.Config, options)
+		confJSON, _ := json.Marshal(stepConfig.Config)
+		_ = json.Unmarshal(confJSON, &options)
+	}
 	config.MarkFlagsWithValue(cmd, stepConfig)
 
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
