@@ -347,9 +347,6 @@ func contrastExecuteScanMetadata() config.StepData {
 					},
 				},
 			},
-			Containers: []config.Container{
-				{},
-			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
