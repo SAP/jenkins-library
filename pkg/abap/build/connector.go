@@ -75,13 +75,10 @@ func (conn *Connector) GetToken(appendum string) error {
 	conn.Header["X-CSRF-Token"] = []string{token}
 	log.RegisterSecret(token)
 
-	log.Entry().Debug("Coookies . . .")
 	for _, cookie := range response.Header.Values("Set-Cookie") {
-		log.Entry().Debug(cookie)
 		if strings.HasPrefix(cookie, "SAP_SESSIONID_") || strings.HasPrefix(cookie, "sap-XSRF_") {
 			nameValuePair, _, _ := strings.Cut(cookie, "; ")
 			_, cookieValue, _ := strings.Cut(nameValuePair, "=")
-			log.Entry().Debug(cookieValue)
 			log.RegisterSecret(cookieValue)
 		}
 	}
