@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"regexp"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -85,6 +88,32 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
+
+	// After build, rename all dist/* files with underscores to dashes in the base name
+	distDir := "dist"
+	files, err := ioutil.ReadDir(distDir)
+	if err == nil {
+		underscoreName := regexp.MustCompile(`_`)
+		for _, f := range files {
+			oldName := f.Name()
+			// Only rename if the base name contains an underscore and is a typical Python artifact
+			if strings.Contains(oldName, "_") && (strings.HasSuffix(oldName, ".tar.gz") || strings.HasSuffix(oldName, ".whl")) {
+				newName := underscoreName.ReplaceAllStringFunc(oldName, func(s string) string {
+					return "-"
+				})
+				oldPath := filepath.Join(distDir, oldName)
+				newPath := filepath.Join(distDir, newName)
+				if err := os.Rename(oldPath, newPath); err != nil {
+					log.Entry().Warnf("Failed to rename artifact %s to %s: %v", oldName, newName, err)
+				} else {
+					log.Entry().Infof("Renamed artifact %s to %s", oldName, newName)
+				}
+			}
+		}
+	} else {
+		log.Entry().Warnf("Could not read dist directory for artifact renaming: %v", err)
+	}
+
 	return nil
 }
 
@@ -103,8 +132,3 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 		DockerImage:       dockerImage,
 	}
 	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&pythonConfig, stepName)
-	if err != nil {
-		log.Entry().Warnf("failed to create build settings info: %v", err)
-	}
-	return buildSettingsInfo, nil
-}
