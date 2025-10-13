@@ -132,3 +132,8 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 		DockerImage:       dockerImage,
 	}
 	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&pythonConfig, stepName)
+	if err != nil {
+		return "", err
+	}
+	return buildSettingsInfo, nil
+}
