@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"os"
@@ -93,7 +93,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	// After build, rename all dist/* files with underscores to dashes in the base name
 	distDir := "dist"
-	files, err := ioutil.ReadDir(distDir)
+	files, err := os.ReadDir(distDir)
 	if err == nil {
 		underscoreName := regexp.MustCompile(`_`)
 		for _, f := range files {
