@@ -1,0 +1,22 @@
+general:
+  buildTool: 'npm'
+  verbose: true
+  collectTelemetryData: false
+steps:
+  checkmarxOneExecuteScan: # notice that the step name changed
+    #Defaults from Piper :
+    serverUrl: 'https://checkmarx.tools.sap'
+    iamUrl: 'https://checkmarx.tools.sap'
+    tenant: sap
+    generatePdfReport: true
+    vulnerabilityThresholdLowPerQuery: true
+    # Custom params :
+    #projectName: 'test_piper_dev_ah_new_id'
+    projectId: 'ec82fc56-ddf5-494d-b64f-2aa59c8387d0'
+    branch: 'main_test' # optional
+    #applicationName: 'TEST_PIPER_AH' # the target application in CxONE
+    applicationId: '99b4dd25-190f-41d8-91ce-4369e38a8255'
+    preset: 'SAP_Corp_JavaScript_Client' # preset name, not preset ID
+    projectTags: '{"localDev":"true", "test":""}'
+    #filterPattern: "!**/.pipeline/**, **/*.js, **/*.html"
+
