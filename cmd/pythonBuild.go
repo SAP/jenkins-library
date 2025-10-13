@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"regexp"
 	"strings"
+	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
