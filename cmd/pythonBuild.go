@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
+	"fmt"
 	"regexp"
 	"strings"
-	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
