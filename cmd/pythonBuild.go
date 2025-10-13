@@ -98,7 +98,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		for _, f := range files {
 			oldName := f.Name()
 			// Only rename if the base name contains an underscore and is a typical Python artifact
-			if strings.Contains(oldName, "_") && (strings.HasSuffix(oldName, ".tar.gz") || strings.HasSuffix(oldName, ".whl")) {
+			if strings.Contains(oldName, "_") && (strings.HasSuffix(oldName, ".tar.gz")) {
 				newName := underscoreName.ReplaceAllStringFunc(oldName, func(s string) string {
 					return "-"
 				})
