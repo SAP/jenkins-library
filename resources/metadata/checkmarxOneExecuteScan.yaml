@@ -310,6 +310,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: applicationId
+        type: string
+        description: The ID of the Checkmarx One application to which the newly created projects will be assigned. This parameter will take precedence over applicationName if both are provided.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectId
+        type: string
+        description: The ID of the checkmarxOne project to scan into. This parameter will take precedence over projectName if both are provided.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: clientId
         type: string
         description: The username to authenticate

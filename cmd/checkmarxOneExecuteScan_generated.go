@@ -52,6 +52,8 @@ type checkmarxOneExecuteScanOptions struct {
 	SourceEncoding                       string   `json:"sourceEncoding,omitempty"`
 	GroupName                            string   `json:"groupName,omitempty"`
 	ApplicationName                      string   `json:"applicationName,omitempty"`
+	ApplicationID                        string   `json:"applicationId,omitempty"`
+	ProjectID                            string   `json:"projectId,omitempty"`
 	ClientID                             string   `json:"clientId,omitempty"`
 	VerifyOnly                           bool     `json:"verifyOnly,omitempty"`
 	VulnerabilityThresholdEnabled        bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
@@ -425,6 +427,8 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]")
 	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to which the newly created projects will be assigned")
+	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "The ID of the Checkmarx One application to which the newly created projects will be assigned. This parameter will take precedence over applicationName if both are provided.")
+	cmd.Flags().StringVar(&stepConfig.ProjectID, "projectId", os.Getenv("PIPER_projectId"), "The ID of the checkmarxOne project to scan into. This parameter will take precedence over projectName if both are provided.")
 	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", os.Getenv("PIPER_clientId"), "The username to authenticate")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
@@ -792,6 +796,24 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_applicationName"),
+					},
+					{
+						Name:        "applicationId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationId"),
+					},
+					{
+						Name:        "projectId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_projectId"),
 					},
 					{
 						Name: "clientId",
