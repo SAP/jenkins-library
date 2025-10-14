@@ -61,11 +61,7 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 	}
 
 	// Set --wait flag as default
-	if !options.CfAsync {
-		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
-	} else {
-		cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
-	}
+	cfCreateServiceKeyScript = append(cfCreateServiceKeyScript, cfCliSynchronousRequestFlag)
 
 	err := c.RunExecutable("cf", cfCreateServiceKeyScript...)
 	if err != nil {
