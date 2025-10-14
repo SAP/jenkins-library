@@ -37,6 +37,7 @@ type Finding struct {
 	ClassificationName string         `json:"classificationName"`
 	Total              int            `json:"total,omitempty"`
 	Audited            *int           `json:"audited,omitempty"`
+	Confirmed          int            `json:"confirmed,omitempty"`
 	LowPerQuery        *[]LowPerQuery `json:"categories,omitempty"`
 }
 
@@ -44,6 +45,7 @@ type LowPerQuery struct {
 	QueryName string `json:"name"`
 	Audited   int    `json:"audited"`
 	Total     int    `json:"total"`
+	Confirmed int    `json:"confirmed"`
 }
 
 func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
@@ -163,22 +165,25 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 	criticalFindings := Finding{}
 	criticalFindings.ClassificationName = "Critical"
 	criticalFindings.Total = (*data)["Critical"].(map[string]int)["Issues"]
-	criticalAudited := (*data)["Critical"].(map[string]int)["Issues"] - (*data)["Critical"].(map[string]int)["NotFalsePositive"]
+	criticalAudited := (*data)["Critical"].(map[string]int)["NotExploitable"] + (*data)["Critical"].(map[string]int)["Urgent"] + (*data)["Critical"].(map[string]int)["Confirmed"]
 	criticalFindings.Audited = &criticalAudited
+	criticalFindings.Confirmed = (*data)["Critical"].(map[string]int)["Confirmed"] + (*data)["Critical"].(map[string]int)["Urgent"]
 	findings = append(findings, criticalFindings)
 	// High
 	highFindings := Finding{}
 	highFindings.ClassificationName = "High"
 	highFindings.Total = (*data)["High"].(map[string]int)["Issues"]
-	highAudited := (*data)["High"].(map[string]int)["Issues"] - (*data)["High"].(map[string]int)["NotFalsePositive"]
+	highAudited := (*data)["High"].(map[string]int)["NotExploitable"] + (*data)["High"].(map[string]int)["Urgent"] + (*data)["High"].(map[string]int)["Confirmed"]
 	highFindings.Audited = &highAudited
+	highFindings.Confirmed = (*data)["High"].(map[string]int)["Confirmed"] + (*data)["High"].(map[string]int)["Urgent"]
 	findings = append(findings, highFindings)
 	// Medium
 	mediumFindings := Finding{}
 	mediumFindings.ClassificationName = "Medium"
 	mediumFindings.Total = (*data)["Medium"].(map[string]int)["Issues"]
-	mediumAudited := (*data)["Medium"].(map[string]int)["Issues"] - (*data)["Medium"].(map[string]int)["NotFalsePositive"]
+	mediumAudited := (*data)["Medium"].(map[string]int)["NotExploitable"] + (*data)["Medium"].(map[string]int)["Urgent"] + (*data)["Medium"].(map[string]int)["Confirmed"]
 	mediumFindings.Audited = &mediumAudited
+	mediumFindings.Confirmed = (*data)["Medium"].(map[string]int)["Confirmed"] + (*data)["Medium"].(map[string]int)["Urgent"]
 	findings = append(findings, mediumFindings)
 	// Low
 	lowFindings := Finding{}
@@ -187,11 +192,12 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		lowPerQueryList := []LowPerQuery{}
 		lowPerQueryMap := (*data)["LowPerQuery"].(map[string]map[string]int)
 		for queryName, resultsLowQuery := range lowPerQueryMap {
-			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"] + resultsLowQuery["Urgent"]
 			total := resultsLowQuery["Issues"]
 			lowPerQuery := LowPerQuery{}
 			lowPerQuery.QueryName = queryName
 			lowPerQuery.Audited = audited
+			lowPerQuery.Confirmed = resultsLowQuery["Confirmed"] + resultsLowQuery["Urgent"]
 			lowPerQuery.Total = total
 			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
 		}
@@ -199,7 +205,8 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		findings = append(findings, lowFindings)
 	} else {
 		lowFindings.Total = (*data)["Low"].(map[string]int)["Issues"]
-		lowAudited := (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["NotExploitable"]
+		lowAudited := (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["NotExploitable"] + (*data)["Low"].(map[string]int)["Urgent"]
+		lowFindings.Confirmed = (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["Urgent"]
 		lowFindings.Audited = &lowAudited
 		findings = append(findings, lowFindings)
 	}

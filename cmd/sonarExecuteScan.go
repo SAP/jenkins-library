@@ -98,12 +98,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
 		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
 
-		apiClient.SetOptions(piperhttp.ClientOptions{TransportProxy: transportProxy, TransportSkipVerification: true})
 		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
-
-	} else {
-		//TODO: implement certificate handling
-		apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 	}
 
 	sonar = sonarSettings{
@@ -252,7 +247,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
-	var categories []SonarUtils.Severity
+	var categories = make([]SonarUtils.Severity, 0)
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues(&categories)
 	if err != nil {
 		return err

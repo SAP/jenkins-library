@@ -135,7 +135,10 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 Only the install command uses the detected package manager (npm, yarn, or pnpm). All other commands (e.g., ` + "`" + `run` + "`" + `, ` + "`" + `pack` + "`" + `, ` + "`" + `publish` + "`" + `) are executed via the ` + "`" + `npm` + "`" + ` CLI, regardless of which lock file is detected.<br/>
 Rationale: In the Piper environment, using the npm CLI for non-install commands provides sufficient functionality without requiring additional CLI dependencies. Supporting yarn or pnpm for these commands was deemed unnecessary due to lack of added benefit.<br/>
 If your project contains multiple package.json files (i.e., multi module projects), install command will be run in every directory where the package.json file is found. One can use ` + "`" + `buildDescriptorList` + "`" + ` or ` + "`" + `buildDescriptorExcludeList` + "`" + ` (more details below) to override the default behaviour.<br/>
-### pnpm multi-module support: pnpm multi-module projects are supported when each package has its own ` + "`" + `pnpm-lock.yaml` + "`" + ` file. Workspace-based pnpm projects are not yet supported.
+### pnpm multi-module support:
+pnpm multi-module projects are supported when each package has its own ` + "`" + `pnpm-lock.yaml` + "`" + ` file. Workspace-based pnpm projects are not yet supported.
+### pnpm and running tests.
+When pnpm is installed, it is placed in ` + "`" + `./tmp/node_modules/.bin/pnpm` + "`" + `, and some dependency files under ` + "`" + `./tmp/` + "`" + ` may include test files. If your test runner uses a broad glob pattern (such as ` + "`" + `**/*.test.js` + "`" + `), it might unintentionally pick up test files from ` + "`" + `./tmp/**` + "`" + `. To avoid this, exclude ` + "`" + `./tmp/**` + "`" + ` from your test execution patterns. For best results, use more specific glob patterns for running tests, such as ` + "`" + `src/**/*.test.js` + "`" + `, to ensure only your intended test files are executed.
 ### Build with private dependencies from a repository
 If your build has scoped/unscoped dependencies from a private repository you can include a ` + "`" + `.npmrc` + "`" + ` into the source code repository as below (replace the ` + "`" + `@privateScope:registry` + "`" + ` value(s) with a valid private repo url) :<br/>
 ` + "`" + `` + "`" + `` + "`" + ` @privateScope:registry=https://private.repository.com/ //private.repository.com/:username=${PIPER_VAULTCREDENTIAL_USER} //private.repository.com/:_password=${PIPER_VAULTCREDENTIAL_PASSWORD_BASE64} //private.repository.com/:always-auth=true registry=https://registry.npmjs.org ` + "`" + `` + "`" + `` + "`" + `
@@ -317,6 +320,21 @@ func npmExecuteScriptsMetadata() config.StepData {
 					Pattern:  "ERR_PNPM_FETCH_401",
 					Message:  "PNPM authentication failed. Check your credentials or token.",
 					Category: "authentication",
+				},
+				{
+					Pattern:  "npm error ERESOLVE",
+					Message:  "NPM dependency resolution failed. Review peer dependency conflicts.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error EINTEGRITY",
+					Message:  "Package integrity check failed. Clear npm cache and retry installation.",
+					Category: "dependency",
+				},
+				{
+					Pattern:  "npm error code ENOENT.*package.json",
+					Message:  "Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct.",
+					Category: "configuration",
 				},
 			},
 		},

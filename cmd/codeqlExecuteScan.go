@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/google/shlex"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -15,8 +19,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/shlex"
-	"github.com/pkg/errors"
 )
 
 type codeqlExecuteScanUtils interface {
@@ -135,13 +137,40 @@ func printCodeqlImageVersion() {
 	}
 }
 
+func prepareCodeQLConfigFile(config *codeqlExecuteScanOptions) error {
+	pathsToScan := codeql.ParsePaths(config.Paths)
+	pathsToIgnore := codeql.ParsePaths(config.PathsIgnore)
+
+	codeQLExecName := "codeql"
+	codeQLPath, err := codeql.Which(codeQLExecName)
+	if err != nil {
+		return fmt.Errorf("could not locate codeql executable %w", err)
+	}
+	location, fileName := path.Split(codeQLPath)
+	if fileName != codeQLExecName {
+		return fmt.Errorf("could not find codeql executable in path: %s", codeQLPath)
+	}
+	defaultConfigLocation := path.Join(location, "default-codeql-config.yml")
+	err = codeql.AppendCodeQLPaths(defaultConfigLocation, pathsToScan, pathsToIgnore)
+	if err != nil {
+		return fmt.Errorf("append paths and paths ignore to the default config: %w", err)
+	}
+	return nil
+}
+
 func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
 	printCodeqlImageVersion()
 
 	var reports []piperutils.Path
 
+	err := prepareCodeQLConfigFile(config)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to prepare codeql config file")
+		return reports, err
+	}
+
 	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
-	err := runDatabaseCreate(config, dbCreateCustomFlags, utils)
+	isMultiLang, err := runDatabaseCreate(config, dbCreateCustomFlags, utils)
 	if err != nil {
 		log.Entry().WithError(err).Error("failed to create codeql database")
 		return reports, err
@@ -154,7 +183,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	}
 
 	dbAnalyzeCustomFlags := codeql.ParseCustomFlags(config.DatabaseAnalyzeFlags)
-	scanReports, err := runDatabaseAnalyze(config, dbAnalyzeCustomFlags, utils)
+	scanReports, sarifFiles, err := runDatabaseAnalyze(config, dbAnalyzeCustomFlags, utils, isMultiLang)
 	if err != nil {
 		log.Entry().WithError(err).Error("failed to analyze codeql database")
 		return reports, err
@@ -194,7 +223,7 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 			return reports, fmt.Errorf("failed running upload-results as githubToken was not specified")
 		}
 
-		err = uploadSarifResults(config, token, repoInfo, utils)
+		err = uploadSarifResults(config, token, repoInfo, sarifFiles, utils)
 		if err != nil {
 			log.Entry().WithError(err).Error("failed to upload sarif results")
 			return reports, err
@@ -242,33 +271,77 @@ func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telem
 	return reports, nil
 }
 
-func runDatabaseCreate(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) error {
-	cmd, err := prepareCmdForDatabaseCreate(customFlags, config, utils)
+func runDatabaseCreate(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) (bool, error) {
+	isMultiLang, cmd, err := prepareCmdForDatabaseCreate(customFlags, config, utils)
 	if err != nil {
 		log.Entry().Error("failed to prepare command for codeql database create")
-		return err
+		return isMultiLang, err
 	}
 	if err = execute(utils, cmd, GeneralConfig.Verbose); err != nil {
 		log.Entry().Error("failed running command codeql database create")
-		return err
+		return isMultiLang, err
 	}
-	return nil
+	return isMultiLang, nil
 }
 
-func runDatabaseAnalyze(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
-	sarifReport, err := executeAnalysis("sarif-latest", "codeqlReport.sarif", customFlags, config, utils)
-	if err != nil {
-		return nil, err
+func runDatabaseAnalyze(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils, isMultiLang bool) ([]piperutils.Path, []string, error) {
+	var reports []piperutils.Path
+	var sarifFiles []string
+
+	if !isMultiLang {
+		sarifReport, sarifPath, err := executeAnalysis("sarif-latest", "codeqlReport.sarif", customFlags, config, utils, config.Database, "")
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, sarifReport...)
+		if sarifPath != "" {
+			sarifFiles = append(sarifFiles, sarifPath)
+		}
+
+		csvReport, _, err := executeAnalysis("csv", "codeqlReport.csv", customFlags, config, utils, config.Database, "")
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, csvReport...)
+		return reports, sarifFiles, nil
 	}
-	csvReport, err := executeAnalysis("csv", "codeqlReport.csv", customFlags, config, utils)
-	if err != nil {
-		return nil, err
+
+	languages := getLanguageList(config)
+	for _, lang := range languages {
+		lang = strings.TrimSpace(lang)
+		if lang == "" {
+			continue
+		}
+		dbPath := filepath.Join(config.Database, lang)
+
+		sarifOut := fmt.Sprintf("%s.sarif", lang)
+		localFlags := cloneFlags(customFlags)
+		if !codeql.IsFlagSetByUser(localFlags, []string{"--sarif-category"}) {
+			localFlags["--sarif-category"] = fmt.Sprintf("--sarif-category=%s", lang)
+		}
+
+		sarifReport, sarifPath, err := executeAnalysis("sarif-latest", sarifOut, localFlags, config, utils, dbPath, lang)
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, sarifReport...)
+		if sarifPath != "" {
+			sarifFiles = append(sarifFiles, sarifPath)
+		}
+
+		csvOut := fmt.Sprintf("%s.csv", lang)
+		csvReport, _, err := executeAnalysis("csv", csvOut, customFlags, config, utils, dbPath, lang)
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, csvReport...)
 	}
-	return append(sarifReport, csvReport...), nil
+
+	return reports, sarifFiles, nil
 }
 
-func runGithubUploadResults(config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
-	cmd := prepareCmdForUploadResults(config, repoInfo, token)
+func runGithubUploadResults(repoInfo *codeql.RepoInfo, token string, sarifPath string, utils codeqlExecuteScanUtils) (string, error) {
+	cmd := prepareCmdForUploadResults(repoInfo, token, sarifPath)
 
 	var bufferOut, bufferErr bytes.Buffer
 	utils.Stdout(&bufferOut)
@@ -289,41 +362,59 @@ func runGithubUploadResults(config *codeqlExecuteScanOptions, repoInfo *codeql.R
 	return url, nil
 }
 
-func executeAnalysis(format, reportName string, customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) ([]piperutils.Path, error) {
+func executeAnalysis(format, reportPath string, customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils, databasePath string, langForLog string) ([]piperutils.Path, string, error) {
 	moduleTargetPath := filepath.Join(config.ModulePath, "target")
-	report := filepath.Join(moduleTargetPath, reportName)
-	cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, format, report)
+	report := filepath.Join(moduleTargetPath, reportPath)
+	cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, format, report, databasePath)
 	if err != nil {
-		log.Entry().Errorf("failed to prepare command for codeql database analyze (format=%s)", format)
-		return nil, err
+		if langForLog == "" {
+			log.Entry().Errorf("failed to prepare command for codeql database analyze (format=%s)", format)
+		} else {
+			log.Entry().Errorf("failed to prepare command for codeql database analyze (format=%s, lang=%s)", format, langForLog)
+		}
+		return nil, "", err
 	}
 	if err = execute(utils, cmd, GeneralConfig.Verbose); err != nil {
-		log.Entry().Errorf("failed running command codeql database analyze for %s generation", format)
-		return nil, err
+		if langForLog == "" {
+			log.Entry().Errorf("failed running command codeql database analyze for %s generation", format)
+		} else {
+			log.Entry().Errorf("failed running command codeql database analyze for %s generation (lang=%s)", format, langForLog)
+		}
+		return nil, "", err
 	}
 	return []piperutils.Path{
-		{Target: report},
-	}, nil
+			{Target: report},
+		}, func() string {
+			if strings.HasPrefix(format, "sarif") {
+				return report
+			}
+			return ""
+		}(), nil
 }
 
-func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) ([]string, error) {
+func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) (bool, []string, error) {
 	cmd := []string{"database", "create", config.Database}
 	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--overwrite", "--no-overwrite"}, []string{"--overwrite"}, customFlags)
 	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--source-root", "-s"}, []string{"--source-root", "."}, customFlags)
 	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--working-dir"}, []string{"--working-dir", config.ModulePath}, customFlags)
 
+	isMultiLang := false
 	if !codeql.IsFlagSetByUser(customFlags, []string{"--language", "-l"}) {
 		language := getLangFromBuildTool(config.BuildTool)
 		if len(language) == 0 && len(config.Language) == 0 {
 			if config.BuildTool == "custom" {
-				return nil, fmt.Errorf("as the buildTool is custom. please specify the language parameter")
+				return false, nil, fmt.Errorf("as the buildTool is custom. please specify the language parameter")
 			} else {
-				return nil, fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
+				return false, nil, fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
 			}
 		}
 		if len(language) > 0 {
 			cmd = append(cmd, "--language="+language)
 		} else {
+			if strings.Contains(config.Language, ",") { // coma separation used to specify multiple languages
+				isMultiLang = true
+				cmd = append(cmd, "--db-cluster")
+			}
 			cmd = append(cmd, "--language="+config.Language)
 		}
 	}
@@ -341,19 +432,19 @@ func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlEx
 	}
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
 
-	return cmd, nil
+	return isMultiLang, cmd, nil
 }
 
-func prepareCmdForDatabaseAnalyze(utils codeqlExecuteScanUtils, customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportName string) ([]string, error) {
-	cmd := []string{"database", "analyze", "--format=" + format, "--output=" + reportName, config.Database}
+func prepareCmdForDatabaseAnalyze(utils codeqlExecuteScanUtils, customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportPath, databasePath string) ([]string, error) {
+	cmd := []string{"database", "analyze", "--format=" + format, "--output=" + reportPath, databasePath}
 	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
 	cmd = codeql.AppendCustomFlags(cmd, customFlags)
 	cmd = appendCodeqlQuerySuite(utils, cmd, config.QuerySuite, config.TransformQuerySuite)
 	return cmd, nil
 }
 
-func prepareCmdForUploadResults(config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo, token string) []string {
-	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
+func prepareCmdForUploadResults(repoInfo *codeql.RepoInfo, token string, sarifPath string) []string {
+	cmd := []string{"github", "upload-results", "--sarif=" + sarifPath}
 
 	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
 	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
@@ -380,16 +471,22 @@ func prepareCmdForUploadResults(config *codeqlExecuteScanOptions, repoInfo *code
 	return cmd
 }
 
-func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo *codeql.RepoInfo, utils codeqlExecuteScanUtils) error {
-	sarifUrl, err := runGithubUploadResults(config, repoInfo, token, utils)
-	if err != nil {
-		return err
+func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo *codeql.RepoInfo, sarifFiles []string, utils codeqlExecuteScanUtils) error {
+	// fallback
+	if len(sarifFiles) == 0 {
+		sarifFiles = []string{filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
 	}
 
-	codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
-	err = codeql.WaitSarifUploaded(config.SarifCheckMaxRetries, config.SarifCheckRetryInterval, &codeqlSarifUploader)
-	if err != nil {
-		return errors.Wrap(err, "failed to upload sarif")
+	for _, sarifPath := range sarifFiles {
+		sarifUrl, err := runGithubUploadResults(repoInfo, token, sarifPath, utils)
+		if err != nil {
+			return err
+		}
+
+		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
+		if err := codeql.WaitSarifUploaded(config.SarifCheckMaxRetries, config.SarifCheckRetryInterval, &codeqlSarifUploader); err != nil {
+			return errors.Wrapf(err, "failed to upload sarif %s", sarifPath)
+		}
 	}
 	return nil
 }
@@ -498,4 +595,36 @@ func updateCmdFlag(config *codeqlExecuteScanOptions, customFlags map[string]stri
 	buildCmd += getMavenSettings(buildCmd, config, utils)
 	customFlags["--command"] = buildCmd
 	delete(customFlags, "-c")
+}
+
+func getLanguageList(config *codeqlExecuteScanOptions) []string {
+	// prefer explicit config.Language if present; otherwise derive from build tool
+	if strings.Contains(config.Language, ",") {
+		parts := strings.Split(config.Language, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				out = append(out, p)
+			}
+		}
+		return out
+	}
+	if config.Language != "" {
+		return []string{strings.TrimSpace(config.Language)}
+	}
+	// fall back to inferred language (single)
+	inferred := getLangFromBuildTool(config.BuildTool)
+	if inferred != "" {
+		return []string{inferred}
+	}
+	return nil
+}
+
+func cloneFlags(src map[string]string) map[string]string {
+	dst := make(map[string]string, len(src))
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
 }
