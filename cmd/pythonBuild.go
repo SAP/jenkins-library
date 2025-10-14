@@ -91,6 +91,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	// After build, rename all dist/* files with underscores to dashes in the base name
+	// This was introduced to fix setuptools  renaming from "-" to "_"
 	distDir := "dist"
 	files, err := os.ReadDir(distDir)
 	if err == nil {
