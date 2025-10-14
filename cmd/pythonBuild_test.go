@@ -5,6 +5,8 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -33,6 +35,14 @@ func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 }
 
 func TestRunPythonBuild(t *testing.T) {
+	// Initialize GeneralConfig and configOptions to avoid nil pointer panic
+	GeneralConfig = GeneralConfigOptions{}
+	configOptions = ConfigCommandOptions{
+		OpenFile: func(s string, t map[string]string) (io.ReadCloser, error) {
+			return nil, fmt.Errorf("not implemented for test")
+		},
+	}
+
 	cpe := pythonBuildCommonPipelineEnvironment{}
 	t.Run("success - build", func(t *testing.T) {
 		config := pythonBuildOptions{
@@ -108,4 +118,89 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[5].Exec)
 		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[5].Params)
 	})
+}
+
+func Test_renameArtifactsInDist(t *testing.T) {
+	// Define test cases
+	tests := []struct {
+		testName         string
+		inputFilename    string
+		expectedFilename string
+		shouldRename     bool // Whether renaming is expected
+	}{
+		{
+			testName:         "Rename file with underscore in the name",
+			inputFilename:    "test_artifact_1.0.0.tar.gz",
+			expectedFilename: "test-artifact-1.0.0.tar.gz",
+			shouldRename:     true,
+		},
+		{
+			testName:         "Rename file with multiple underscores",
+			inputFilename:    "another_test_artifact_1_0_0.tar.gz",
+			expectedFilename: "another-test-artifact-1-0-0.tar.gz",
+			shouldRename:     true,
+		},
+		{
+			testName:         "Do not rename file without underscore",
+			inputFilename:    "test-artifact-1.0.0.tar.gz",
+			expectedFilename: "test-artifact-1.0.0.tar.gz",
+			shouldRename:     false,
+		},
+		{
+			testName:         "Ignore non-Python artifact file (ZIP)",
+			inputFilename:    "random_file_1.0.0.zip",
+			expectedFilename: "random_file_1.0.0.zip",
+			shouldRename:     false,
+		},
+	}
+
+	// Create a temporary directory for testing
+	distTempDir := t.TempDir()
+
+	// Create test files in the temporary directory
+	for _, tt := range tests {
+		filePath := filepath.Join(distTempDir, tt.inputFilename)
+		if err := os.WriteFile(filePath, []byte("sample"), 0644); err != nil {
+			t.Fatalf("Failed to create test file %s: %v", tt.inputFilename, err)
+		}
+	}
+
+	// Run the function under test
+	renameArtifactsInDist(distTempDir)
+
+	// Validate the results
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			oldPath := filepath.Join(distTempDir, tt.inputFilename)
+			newPath := filepath.Join(distTempDir, tt.expectedFilename)
+
+			if tt.inputFilename == tt.expectedFilename {
+				// Special case: No renaming expected
+				if _, err := os.Stat(oldPath); os.IsNotExist(err) {
+					t.Errorf("Expected file %s to remain, but it does not exist", oldPath)
+				}
+				return
+			}
+
+			// General case: Renaming logic
+			_, oldExistsErr := os.Stat(oldPath)
+			_, newExistsErr := os.Stat(newPath)
+
+			if tt.shouldRename {
+				if oldExistsErr == nil {
+					t.Errorf("Expected old file %s to be renamed, but it still exists", oldPath)
+				}
+				if os.IsNotExist(newExistsErr) {
+					t.Errorf("Expected new file %s to exist, but it does not", newPath)
+				}
+			} else {
+				if os.IsNotExist(oldExistsErr) {
+					t.Errorf("Expected file %s to remain, but it does not exist", oldPath)
+				}
+				if newExistsErr == nil {
+					t.Errorf("Expected file %s not to be renamed, but it was renamed to %s", tt.inputFilename, tt.expectedFilename)
+				}
+			}
+		})
+	}
 }
