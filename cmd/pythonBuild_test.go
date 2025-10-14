@@ -122,13 +122,13 @@ func Test_renameArtifactsInDistM(t *testing.T) {
 		{
 			testName:         "Rename file with underscore in the name",
 			inputFilename:    "test_artifact_1.0.0.tar.gz",
-			expectedFilename: "test-artifact-1.0.0.tar.gz",
+			expectedFilename: "test_artifact-1.0.0.tar.gz",
 			shouldRename:     true,
 		},
 		{
 			testName:         "Rename file with multiple underscores",
 			inputFilename:    "another_test_artifact_1_0_0.tar.gz",
-			expectedFilename: "another-test-artifact-1-0-0.tar.gz",
+			expectedFilename: "another_test_artifact-1-0-0.tar.gz",
 			shouldRename:     true,
 		},
 		{
