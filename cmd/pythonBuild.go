@@ -98,41 +98,41 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 func renameArtifactsInDist(distDir string) {
-    files, err := os.ReadDir(distDir)
-    if err != nil {
-        log.Entry().Warnf("Could not read dist directory for artifact renaming: %v", err)
-        return
-    }
+	files, err := os.ReadDir(distDir)
+	if err != nil {
+		log.Entry().Warnf("Could not read dist directory for artifact renaming: %v", err)
+		return
+	}
 
-    for _, f := range files {
-        oldName := f.Name()
-        // Only process .tar.gz artifacts with at least one underscore
-        if !strings.Contains(oldName, "_") || !strings.HasSuffix(oldName, ".tar.gz") {
-            continue
-        }
+	for _, f := range files {
+		oldName := f.Name()
+		// Only process .tar.gz artifacts with at least one underscore
+		if !strings.Contains(oldName, "_") || !strings.HasSuffix(oldName, ".tar.gz") {
+			continue
+		}
 
-        // Remove .tar.gz extension for processing
-        base := strings.TrimSuffix(oldName, ".tar.gz")
-        lastUnderscore := strings.LastIndex(base, "_")
-        if lastUnderscore == -1 {
-            continue
-        }
-        namePart := base[:lastUnderscore]
-        versionPart := base[lastUnderscore+1:]
-        // Replace underscores with dashes only in the version part
-        newVersionPart := strings.ReplaceAll(versionPart, "_", "-")
-        newName := namePart + "_" + newVersionPart + ".tar.gz"
-        if newName == oldName {
-            continue
-        }
-        oldPath := filepath.Join(distDir, oldName)
-        newPath := filepath.Join(distDir, newName)
-        if err := os.Rename(oldPath, newPath); err != nil {
-            log.Entry().Warnf("Failed to rename artifact %s to %s: %v", oldName, newName, err)
-        } else {
-            log.Entry().Infof("Renamed artifact %s to %s", oldName, newName)
-        }
-    }
+		// Remove .tar.gz extension for processing
+		base := strings.TrimSuffix(oldName, ".tar.gz")
+		lastUnderscore := strings.LastIndex(base, "_")
+		if lastUnderscore == -1 {
+			continue
+		}
+		namePart := base[:lastUnderscore]
+		versionPart := base[lastUnderscore+1:]
+		// Replace underscores with dashes only in the version part
+		newVersionPart := strings.ReplaceAll(versionPart, "_", "-")
+		newName := namePart + "_" + newVersionPart + ".tar.gz"
+		if newName == oldName {
+			continue
+		}
+		oldPath := filepath.Join(distDir, oldName)
+		newPath := filepath.Join(distDir, newName)
+		if err := os.Rename(oldPath, newPath); err != nil {
+			log.Entry().Warnf("Failed to rename artifact %s to %s: %v", oldName, newName, err)
+		} else {
+			log.Entry().Infof("Renamed artifact %s to %s", oldName, newName)
+		}
+	}
 }
 
 // TODO: extract to common place
