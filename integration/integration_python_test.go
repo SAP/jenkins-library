@@ -20,6 +20,7 @@ import (
 
 func TestPythonIntegrationBuildProject(t *testing.T) {
 	// t.Parallel()
+	t.Skip("Skipping test due to setuptools issue of artifact name change, should be enabled once the issue is fixed.")
 	ctx := context.Background()
 	pwd, err := os.Getwd()
 	assert.NoError(t, err, "Getting current working directory failed.")
