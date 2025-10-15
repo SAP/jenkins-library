@@ -114,6 +114,40 @@ When running in GitHub Actions environment, error patterns leverage GitHub Actio
 
 This provides better integration with GitHub Actions workflow logs and UI.
 
+## Complete List of Error Patterns by Step
+
+This section documents all error patterns currently configured in the pipeline steps.
+
+| Step | Pattern | Message | Category |
+|------|---------|---------|----------|
+| checkmarxOneExecuteScan | `project .* not compliant` | Project failed compliance checks. Triage security findings in Checkmarx One and fix issues to meet compliance requirements. | compliance |
+| checkmarxOneExecuteScan | `No APIKey or client_id/client_secret provided` | Authentication failed. Verify APIKey or client credentials are properly configured. | authentication |
+| detectExecuteScan | `FAILURE_POLICY_VIOLATION` | BlackDuck Detect found policy violations. Review security policies and fix compliance issues. | compliance |
+| mavenBuild | `BUILD FAILURE` | Maven build failed. Check build logs for compilation errors, test failures, or plugin execution issues. | build |
+| mavenBuild | `Failed to execute goal.*exec-maven-plugin.*exec` | Maven exec plugin execution failed. Verify exec plugin configuration and command execution. | plugin |
+| mtaBuild | `cannot find symbol` | Java compilation failed due to missing symbol. Check imports and dependencies. | compilation |
+| mtaBuild | `has been compiled by a more recent version of the Java Runtime.*class file version` | Java version incompatibility. Update Java runtime or use compatible dependency versions. | version |
+| npmExecuteScripts | `npm error code E401` | *(no custom message - uses default)* | authentication |
+| npmExecuteScripts | `npm error Incorrect or missing password` | NPM authentication failed. Your password or token is incorrect. | authentication |
+| npmExecuteScripts | `npm error 404.*Not Found` | NPM package not found. Check package name and registry. | dependency |
+| npmExecuteScripts | `npm error ENOTFOUND` | NPM registry not reachable. Check network connection and registry URL. | network |
+| npmExecuteScripts | `npm error EACCES` | NPM permission denied. Check file permissions or registry access rights. | permission |
+| npmExecuteScripts | `ERR_PNPM_FETCH_401` | PNPM authentication failed. Check your credentials or token. | authentication |
+| npmExecuteScripts | `npm error ERESOLVE` | NPM dependency resolution failed. Review peer dependency conflicts. | dependency |
+| npmExecuteScripts | `npm error EINTEGRITY` | Package integrity check failed. Clear npm cache and retry installation. | dependency |
+| npmExecuteScripts | `npm error code ENOENT.*package.json` | Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct. | configuration |
+| shellExecute | `No such file or directory` | Required file not found. Check file paths and existence. | file |
+| shellExecute | `Permission denied` | Insufficient permissions. Check file/directory permissions and user access. | permission |
+| shellExecute | `exit status 1` | Script execution failed with general error. Check script logic and dependencies. | execution |
+| shellExecute | `exit status 2` | Script execution failed with invalid usage. Check command syntax and arguments. | execution |
+| shellExecute | `exit status 126` | Script not executable. Check file permissions and execute bit. | permission |
+| shellExecute | `exit status 127` | Command not found. Check if required commands/tools are installed and in PATH. | environment |
+| sonarExecuteScan | `QUALITY GATE STATUS: FAILED` | SonarQube quality gate failed. Review code quality issues and fix them to meet quality standards. | quality |
+| sonarExecuteScan | `Error during parsing of generic test execution report` | Test execution report parsing failed. Verify test report format matches SonarQube expectations. | configuration |
+| whitesourceExecuteScan | `Open Source Software Security vulnerabilities with CVSS score greater or equal to .* detected in project` | Security vulnerabilities with high CVSS scores detected. Review and address the identified vulnerabilities to meet security requirements. | security |
+| whitesourceExecuteScan | `policy violation\(s\) found` | Policy violations detected in the scan. Review the violations and update dependencies or policies to resolve compliance issues. | compliance |
+| whitesourceExecuteScan | `running command 'java' failed` | Java command execution failed during WhiteSource scan. Verify Java installation, memory settings, and agent configuration. | execution |
+
 ## Best Practices
 
 1. **Use Specific Patterns**: Make patterns as specific as possible to avoid false matches
