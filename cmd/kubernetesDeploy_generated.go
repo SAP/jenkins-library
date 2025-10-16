@@ -740,7 +740,7 @@ func kubernetesDeployMetadata() config.StepData {
 					{
 						Name:        "CACertificate",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

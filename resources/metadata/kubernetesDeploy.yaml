@@ -554,6 +554,8 @@ spec:
           Path to the Kubernetes CA certificate file. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
