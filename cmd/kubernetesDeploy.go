@@ -266,12 +266,12 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		fmt.Sprintf("--namespace=%v", config.Namespace),
 	}
 
-	log.Entry().Debugf("Running kubectl with CACertificate: %v", config.CACertificate)
-	log.Entry().Debugf("Running kubectl with InsecureSkipTLSVerify: %v", config.InsecureSkipTLSVerify)
+	log.Entry().Info("Running kubectl with InsecureSkipTLSVerify: %v", config.InsecureSkipTLSVerify)
 
 	// Add CA certificate if provided
 	if len(config.CACertificate) > 0 && !config.InsecureSkipTLSVerify {
 		kubeParams = append(kubeParams, fmt.Sprintf("--certificate-authority=%v", config.CACertificate))
+		log.Entry().Info("Running kubectl with CACertificate: %v", config.CACertificate)
 	}
 
 	kubeParams = append(kubeParams, "--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify))
