@@ -557,7 +557,7 @@ spec:
           - STAGES
           - STEPS
         resourceRef:
-          - type: vaultSecret
+          - type: vaultSecretFile
             param: CACertificate
             name: CACertificateVaultSecretName
   containers:
