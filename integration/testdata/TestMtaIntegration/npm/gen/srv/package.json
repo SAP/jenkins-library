@@ -1,0 +1,6 @@
+{
+    "name": "test-mta-js-srv",
+    "version": "1.0.0",
+    "description": "Test MTA module",
+    "main": "index.js"
+}

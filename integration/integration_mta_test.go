@@ -10,10 +10,12 @@ import (
 	"testing"
 )
 
+const defaultDockerImage = "devxci/mbtci-java21-node22"
+
 func TestMTAIntegrationMavenProject(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java21-node22",
+		Image:   defaultDockerImage,
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven"},
 	})
@@ -35,7 +37,7 @@ func TestMTAIntegrationMavenProject(t *testing.T) {
 func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java21-node22",
+		Image:   defaultDockerImage,
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
 	})
@@ -56,7 +58,7 @@ func TestMTAIntegrationMavenSpringProject(t *testing.T) {
 func TestMTAIntegrationNPMProject(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java21-node22",
+		Image:   defaultDockerImage,
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
@@ -73,7 +75,7 @@ func TestMTAIntegrationNPMProject(t *testing.T) {
 func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci-java21-node22",
+		Image:   defaultDockerImage,
 		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
 	})
@@ -85,4 +87,29 @@ func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 	}
 
 	container.assertHasOutput(t, "added 2 packages, and audited 3 packages in")
+}
+
+func TestMTAIntegrationNPMProjectWithBOMValidation(t *testing.T) {
+	// t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   defaultDockerImage,
+		User:    "root",
+		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
+	})
+	defer container.terminate(t)
+
+	err := container.whenRunningPiperCommand("mtaBuild", "--createBOM")
+	if err != nil {
+		t.Fatalf("Piper command failed %s", err)
+	}
+
+	// Assert that the SBOM file is created
+	container.assertHasFiles(t, "/project/sbom-gen/bom-mta.xml")
+
+	// Assert that SBOM validation is executed and logs appear
+	container.assertHasOutput(t,
+		"Validating generated SBOM",
+		"SBOM validation passed",
+		"SBOM PURL:",
+	)
 }

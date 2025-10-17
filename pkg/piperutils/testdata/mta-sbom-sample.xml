@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1" serialNumber="urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79">
+  <metadata>
+    <timestamp>2025-10-16T10:30:00Z</timestamp>
+    <tools>
+      <tool>
+        <vendor>SAP</vendor>
+        <name>Cloud MTA Build Tool</name>
+        <version>1.2.0</version>
+      </tool>
+    </tools>
+    <component type="application" bom-ref="pkg:maven/com.sap.mta/test-mta@1.0.0">
+      <name>test-mta</name>
+      <version>1.0.0</version>
+      <purl>pkg:maven/com.sap.mta/test-mta@1.0.0</purl>
+      <description>Sample MTA application for testing</description>
+    </component>
+    <properties>
+      <property name="mta:platform">CF</property>
+      <property name="mta:schema-version">3.1</property>
+    </properties>
+  </metadata>
+  <components>
+    <component type="library" bom-ref="pkg:npm/express@4.18.2">
+      <name>express</name>
+      <version>4.18.2</version>
+      <purl>pkg:npm/express@4.18.2</purl>
+      <licenses>
+        <license>
+          <id>MIT</id>
+        </license>
+      </licenses>
+    </component>
+    <component type="library" bom-ref="pkg:npm/jest@26.0.1">
+      <name>jest</name>
+      <version>26.0.1</version>
+      <purl>pkg:npm/jest@26.0.1</purl>
+      <licenses>
+        <license>
+          <id>MIT</id>
+        </license>
+      </licenses>
+    </component>
+    <component type="library" bom-ref="pkg:maven/org.springframework.boot/spring-boot-starter@2.7.0">
+      <name>spring-boot-starter</name>
+      <version>2.7.0</version>
+      <purl>pkg:maven/org.springframework.boot/spring-boot-starter@2.7.0</purl>
+      <group>org.springframework.boot</group>
+      <licenses>
+        <license>
+          <id>Apache-2.0</id>
+        </license>
+      </licenses>
+    </component>
+  </components>
+  <dependencies>
+    <dependency ref="pkg:maven/com.sap.mta/test-mta@1.0.0">
+      <dependency ref="pkg:npm/express@4.18.2"/>
+      <dependency ref="pkg:npm/jest@26.0.1"/>
+      <dependency ref="pkg:maven/org.springframework.boot/spring-boot-starter@2.7.0"/>
+    </dependency>
+  </dependencies>
+</bom>
