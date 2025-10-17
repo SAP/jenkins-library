@@ -558,6 +558,7 @@ spec:
           - STEPS
         resourceRef:
           - name: CACertificateVaultSecretName
+            type: secret
             param: custom/CACertificatePath
   containers:
     - image: dtzar/helm-kubectl:3

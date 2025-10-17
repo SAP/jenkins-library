@@ -743,6 +743,7 @@ func kubernetesDeployMetadata() config.StepData {
 							{
 								Name:  "CACertificateVaultSecretName",
 								Param: "custom/CACertificatePath",
+								Type:  "secret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
