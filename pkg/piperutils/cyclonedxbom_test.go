@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func createTempFile(t *testing.T, content string) (string, func()) {
@@ -19,24 +21,19 @@ func createTempFile(t *testing.T, content string) (string, func()) {
 }
 
 const validBom = `<bom>
-			<metadata>
-				<component>
-					<purl>pkg:maven/com.example/mycomponent@1.0.0</purl>
-				</component>
-				<properties>
-					<property name="name1" value="value1" />
-					<property name="name2" value="value2" />
-				</properties>
-			</metadata>
-		</bom>`
+					<metadata>
+						<component>
+							<purl>pkg:maven/com.example/mycomponent@1.0.0</purl>
+						</component>
+					</metadata>
+				</bom>`
 
 func TestGetBom(t *testing.T) {
 	tests := []struct {
 		name          string
 		xmlContent    string
 		expectedBom   Bom
-		expectError   bool
-		expectedError string
+		errorContains string
 	}{
 		{
 			name:       "valid file",
@@ -46,27 +43,20 @@ func TestGetBom(t *testing.T) {
 					Component: BomComponent{
 						Purl: "pkg:maven/com.example/mycomponent@1.0.0",
 					},
-					Properties: []BomProperty{
-						{Name: "name1", Value: "value1"},
-						{Name: "name2", Value: "value2"},
-					},
 				},
 			},
-			expectError: false,
 		},
 		{
 			name:          "file not found",
 			xmlContent:    "",
 			expectedBom:   Bom{},
-			expectError:   true,
-			expectedError: "no such file or directory",
+			errorContains: "no such file or directory",
 		},
 		{
 			name:          "invalid XML file",
 			xmlContent:    "<bom><metadata><component><purl>invalid xml</metadata></bom>",
 			expectedBom:   Bom{},
-			expectError:   true,
-			expectedError: "XML syntax error",
+			errorContains: "XML syntax error",
 		},
 	}
 
@@ -83,18 +73,13 @@ func TestGetBom(t *testing.T) {
 			}
 
 			bom, err := GetBom(fileName)
-			if (err != nil) != tt.expectError {
-				t.Errorf("Expected error: %v, got: %v", tt.expectError, err)
-			}
 
-			if err != nil && !tt.expectError {
-				if !tt.expectError && !containsSubstring(err.Error(), tt.expectedError) {
-					t.Errorf("Expected error message: %v, got: %v", tt.expectedError, err.Error())
-				}
-			}
-
-			if !tt.expectError && !bomEquals(bom, tt.expectedBom) {
-				t.Errorf("Expected BOM: %+v, got: %+v", tt.expectedBom, bom)
+			if tt.errorContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedBom.Metadata.Component.Purl, bom.Metadata.Component.Purl)
 			}
 		})
 	}
@@ -102,13 +87,9 @@ func TestGetBom(t *testing.T) {
 
 func TestGetPurl(t *testing.T) {
 	tests := []struct {
-		name          string
-		filePath      string
-		bomFilename   string
-		xmlContent    string
-		expectedPurl  string
-		expectError   bool
-		expectedError string
+		name         string
+		xmlContent   string
+		expectedPurl string
 	}{
 		{
 			name:         "valid BOM file",
@@ -116,18 +97,14 @@ func TestGetPurl(t *testing.T) {
 			expectedPurl: "pkg:maven/com.example/mycomponent@1.0.0",
 		},
 		{
-			name:          "BOM file not found",
-			xmlContent:    "",
-			expectedPurl:  "",
-			expectError:   true,
-			expectedError: "no such file or directory",
+			name:         "BOM file not found",
+			xmlContent:   "",
+			expectedPurl: "",
 		},
 		{
-			name:          "invalid BOM file",
-			xmlContent:    "<bom><metadata><component><purl>invalid xml</metadata></bom>",
-			expectedPurl:  "",
-			expectError:   true,
-			expectedError: "XML syntax error",
+			name:         "invalid BOM file",
+			xmlContent:   "<bom><metadata><component><purl>invalid xml</metadata></bom>",
+			expectedPurl: "",
 		},
 	}
 
@@ -144,32 +121,214 @@ func TestGetPurl(t *testing.T) {
 			}
 
 			purl := GetPurl(filePath)
-			if purl != tt.expectedPurl {
-				t.Errorf("Expected PURL: %v, got: %v", tt.expectedPurl, purl)
+			assert.Equal(t, tt.expectedPurl, purl)
+		})
+	}
+}
+
+func TestValidateCycloneDX14(t *testing.T) {
+	tests := []struct {
+		name          string
+		bomContent    string
+		errorContains string
+	}{
+		{
+			name: "valid CycloneDX 1.4 BOM with PURL",
+			bomContent: `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="application">
+			<name>test-app</name>
+			<version>1.0.0</version>
+			<purl>pkg:maven/com.example/myapp@1.0.0</purl>
+		</component>
+	</metadata>
+</bom>`,
+		},
+		{
+			name: "BOM missing PURL",
+			bomContent: `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="application">
+			<name>test-app</name>
+			<version>1.0.0</version>
+			<purl></purl>
+		</component>
+	</metadata>
+</bom>`,
+			errorContains: "purl is mandatory",
+		},
+		{
+			name: "BOM with invalid PURL format",
+			bomContent: `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="application">
+			<name>test-app</name>
+			<version>1.0.0</version>
+			<purl>invalid-purl</purl>
+		</component>
+	</metadata>
+</bom>`,
+			errorContains: "must start with 'pkg:'",
+		},
+		{
+			name: "BOM missing component name",
+			bomContent: `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="application">
+			<purl>pkg:maven/com.example/myapp@1.0.0</purl>
+		</component>
+	</metadata>
+</bom>`,
+			errorContains: "name is required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fileName, cleanup := createTempFile(t, tt.bomContent)
+			defer cleanup()
+
+			err := ValidateCycloneDX14(fileName)
+
+			if tt.errorContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
 }
 
-func bomEquals(a, b Bom) bool {
-	// compare a and b manually since reflect.DeepEqual can be problematic with slices and nil values
-	return a.Metadata.Component.Purl == b.Metadata.Component.Purl &&
-		len(a.Metadata.Properties) == len(b.Metadata.Properties) &&
-		propertiesMatch(a.Metadata.Properties, b.Metadata.Properties)
+func TestValidatePurl(t *testing.T) {
+	tests := []struct {
+		name          string
+		purl          string
+		errorContains string
+	}{
+		{
+			name:        "valid Maven PURL",
+			purl:        "pkg:maven/com.example/myapp@1.0.0",
+		},
+		{
+			name:        "valid NPM PURL",
+			purl:        "pkg:npm/express@4.18.2",
+		},
+		{
+			name:        "valid PyPI PURL",
+			purl:        "pkg:pypi/django@3.2.0",
+		},
+		{
+			name:          "empty PURL",
+			purl:          "",
+			errorContains: "mandatory but was empty",
+		},
+		{
+			name:          "invalid PURL - no pkg prefix",
+			purl:          "maven/com.example/myapp@1.0.0",
+			errorContains: "must start with 'pkg:'",
+		},
+		{
+			name:          "invalid PURL - incomplete",
+			purl:          "pkg:",
+			errorContains: "invalid format",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidatePurl(tt.purl)
+
+			if tt.errorContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
-func propertiesMatch(a, b []BomProperty) bool {
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
+func TestGetBomVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		bomContent      string
+		expectedVersion string
+	}{
+		{
+			name: "CycloneDX 1.4",
+			bomContent: `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component>
+			<name>test</name>
+			<purl>pkg:maven/com.example/test@1.0.0</purl>
+		</component>
+	</metadata>
+</bom>`,
+			expectedVersion: "1.4",
+		},
+		{
+			name: "CycloneDX 1.5",
+			bomContent: `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1">
+	<metadata>
+		<component>
+			<name>test</name>
+			<purl>pkg:maven/com.example/test@1.0.0</purl>
+		</component>
+	</metadata>
+</bom>`,
+			expectedVersion: "1.5",
+		},
 	}
-	return true
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fileName, cleanup := createTempFile(t, tt.bomContent)
+			defer cleanup()
+
+			version, err := GetBomVersion(fileName)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedVersion, version)
+		})
+	}
 }
 
-func containsSubstring(str, substr string) bool {
-	if len(substr) == 0 {
-		return true
+func TestParseMTASampleBOM(t *testing.T) {
+	// Test parsing the actual MTA sample BOM
+	bomPath := "testdata/mta-sbom-sample.xml"
+
+	// Check if file exists first
+	if _, err := os.Stat(bomPath); os.IsNotExist(err) {
+		t.Skipf("Sample BOM file not found: %s", bomPath)
 	}
-	return len(str) >= len(substr) && str[:len(substr)] == substr
+
+	bom, err := GetBom(bomPath)
+	assert.NoError(t, err, "Failed to parse MTA sample BOM")
+
+	// Verify structure
+	assert.Equal(t, "http://cyclonedx.org/schema/bom/1.4", bom.Xmlns, "Expected CycloneDX 1.4 xmlns")
+	assert.Equal(t, "test-mta", bom.Metadata.Component.Name, "Expected component name to be 'test-mta'")
+	assert.NotEmpty(t, bom.Metadata.Component.Purl, "Expected PURL to be present in metadata component")
+	assert.NotEmpty(t, bom.Components, "Expected at least one component in components list")
+
+	// Verify all components have PURLs
+	for i, component := range bom.Components {
+		assert.NotEmpty(t, component.Purl, "Component[%d] (%s) missing PURL", i, component.Name)
+	}
+
+	// Validate the BOM
+	err = ValidateCycloneDX14(bomPath)
+	assert.NoError(t, err, "MTA sample BOM validation failed")
+
+	// Verify version detection
+	version, err := GetBomVersion(bomPath)
+	assert.NoError(t, err, "Failed to get BOM version")
+	assert.Equal(t, "1.4", version, "Expected version 1.4")
 }
