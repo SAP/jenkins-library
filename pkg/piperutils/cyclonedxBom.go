@@ -15,9 +15,9 @@ import (
 
 // Bom represents the root BOM element
 type Bom struct {
-	Xmlns        string       `xml:"xmlns,attr"`
-	Metadata     Metadata     `xml:"metadata"`
-	Components   []Component  `xml:"components>component,omitempty"`
+	Xmlns      string      `xml:"xmlns,attr"`
+	Metadata   Metadata    `xml:"metadata"`
+	Components []Component `xml:"components>component,omitempty"`
 }
 
 // Metadata provides additional information about the BOM

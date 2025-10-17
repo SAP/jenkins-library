@@ -211,16 +211,16 @@ func TestValidatePurl(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name:        "valid Maven PURL",
-			purl:        "pkg:maven/com.example/myapp@1.0.0",
+			name: "valid Maven PURL",
+			purl: "pkg:maven/com.example/myapp@1.0.0",
 		},
 		{
-			name:        "valid NPM PURL",
-			purl:        "pkg:npm/express@4.18.2",
+			name: "valid NPM PURL",
+			purl: "pkg:npm/express@4.18.2",
 		},
 		{
-			name:        "valid PyPI PURL",
-			purl:        "pkg:pypi/django@3.2.0",
+			name: "valid PyPI PURL",
+			purl: "pkg:pypi/django@3.2.0",
 		},
 		{
 			name:          "empty PURL",
