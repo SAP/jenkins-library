@@ -557,9 +557,9 @@ spec:
           - STAGES
           - STEPS
         resourceRef:
-          - name: CACertificateVaultSecretName
-            type: secret
-            param: custom/CACertificatePath
+          - type: vaultSecret
+            param: CACertificate
+            name: CACertificateVaultSecretName
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
