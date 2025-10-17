@@ -558,7 +558,6 @@ spec:
           - STEPS
         resourceRef:
           - type: vaultSecretFile
-            param: CACertificate
             name: CACertificateVaultSecretName
   containers:
     - image: dtzar/helm-kubectl:3

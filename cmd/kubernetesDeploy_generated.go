@@ -741,9 +741,8 @@ func kubernetesDeployMetadata() config.StepData {
 						Name: "CACertificate",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "CACertificateVaultSecretName",
-								Param: "CACertificate",
-								Type:  "vaultSecretFile",
+								Name: "CACertificateVaultSecretName",
+								Type: "vaultSecretFile",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
