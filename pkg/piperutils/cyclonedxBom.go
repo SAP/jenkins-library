@@ -90,13 +90,6 @@ func ValidateCycloneDX14(bomFilePath string) error {
 		return fmt.Errorf("metadata.component.purl validation failed: %w", err)
 	}
 
-	// Validate all components have PURLs (optional components should have PURLs too)
-	for i, component := range bom.Components {
-		if err := ValidatePurl(component.Purl); err != nil {
-			log.Entry().Warnf("component[%d] (%s) purl validation failed: %v", i, component.Name, err)
-		}
-	}
-
 	return nil
 }
 

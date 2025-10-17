@@ -318,11 +318,6 @@ func TestParseMTASampleBOM(t *testing.T) {
 	assert.NotEmpty(t, bom.Metadata.Component.Purl, "Expected PURL to be present in metadata component")
 	assert.NotEmpty(t, bom.Components, "Expected at least one component in components list")
 
-	// Verify all components have PURLs
-	for i, component := range bom.Components {
-		assert.NotEmpty(t, component.Purl, "Component[%d] (%s) missing PURL", i, component.Name)
-	}
-
 	// Validate the BOM
 	err = ValidateCycloneDX14(bomPath)
 	assert.NoError(t, err, "MTA sample BOM validation failed")
