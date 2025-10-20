@@ -23,7 +23,7 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
-		Mounts:  map[string]string{mavenCache: "/root/.m2"},
+		Mounts:  map[string]string{mavenCache: "/tmp/.m2"},
 		Setup:   []string{},
 	})
 	defer container.terminate(t)
@@ -36,7 +36,7 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 	container.assertHasOutput(t, "BUILD SUCCESS")
 	container.assertHasFiles(t,
 		"/project/application/target/cloud-sdk-spring-archetype-application.jar",
-		"/root/.m2/repository",
+		"/tmp/.m2/repository",
 	)
 
 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
@@ -65,7 +65,7 @@ func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-tomee-archetype"},
-		Mounts:  map[string]string{mavenCache: "/root/.m2"},
+		Mounts:  map[string]string{mavenCache: "/tmp/.m2"},
 		Setup:   []string{},
 	})
 	defer container.terminate(t)
@@ -79,7 +79,7 @@ func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
 	container.assertHasFiles(t,
 		"/project/application/target/cloud-sdk-tomee-archetype-application-classes.jar",
 		"/project/application/target/cloud-sdk-tomee-archetype-application.war",
-		"/root/.m2/repository",
+		"/tmp/.m2/repository",
 	)
 
 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
