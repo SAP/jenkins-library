@@ -11,17 +11,24 @@ import (
 )
 
 func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
+
+	// Create a shared Maven cache directory to avoid re-downloading dependencies
+	mavenCache, err := createTmpDir(t)
+	if err != nil {
+		t.Fatalf("Failed to create Maven cache directory: %s", err)
+	}
+
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
-		Mounts:  map[string]string{},
+		Mounts:  map[string]string{mavenCache: "/root/.m2"},
 		Setup:   []string{},
 	})
 	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("mavenBuild", "")
+	err = container.whenRunningPiperCommand("mavenBuild", "")
 	if err != nil {
 		t.Fatalf("Calling piper command failed %s", err)
 	}
@@ -29,7 +36,7 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 	container.assertHasOutput(t, "BUILD SUCCESS")
 	container.assertHasFiles(t,
 		"/project/application/target/cloud-sdk-spring-archetype-application.jar",
-		"/tmp/.m2/repository",
+		"/root/.m2/repository",
 	)
 
 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
@@ -46,17 +53,24 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 }
 
 func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
+
+	// Create a shared Maven cache directory to avoid re-downloading dependencies
+	mavenCache, err := createTmpDir(t)
+	if err != nil {
+		t.Fatalf("Failed to create Maven cache directory: %s", err)
+	}
+
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-tomee-archetype"},
-		Mounts:  map[string]string{},
+		Mounts:  map[string]string{mavenCache: "/root/.m2"},
 		Setup:   []string{},
 	})
 	defer container.terminate(t)
 
-	err := container.whenRunningPiperCommand("mavenBuild", "")
+	err = container.whenRunningPiperCommand("mavenBuild", "")
 	if err != nil {
 		t.Fatalf("Calling piper command failed %s", err)
 	}
@@ -65,7 +79,7 @@ func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
 	container.assertHasFiles(t,
 		"/project/application/target/cloud-sdk-tomee-archetype-application-classes.jar",
 		"/project/application/target/cloud-sdk-tomee-archetype-application.war",
-		"/tmp/.m2/repository",
+		"/root/.m2/repository",
 	)
 
 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
