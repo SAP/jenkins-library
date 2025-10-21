@@ -306,6 +306,14 @@ spec:
           - PARAMETERS
           - STEPS
         default: "https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz"
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -314,6 +322,7 @@ spec:
           - name: container/registryUrl
           - name: container/imageNameTag
           - name: container/imageDigest
+          - name: custom/dockerBuildArtifacts
           - name: container/imageNames
             type: "[]string"
           - name: container/imageNameTags
