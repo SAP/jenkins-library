@@ -13,22 +13,16 @@ import (
 func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 	t.Parallel()
 
-	// Create a shared Maven cache directory to avoid re-downloading dependencies
-	mavenCache, err := createTmpDir(t)
-	if err != nil {
-		t.Fatalf("Failed to create Maven cache directory: %s", err)
-	}
-
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
-		Mounts:  map[string]string{mavenCache: "/tmp/.m2"},
-		Setup:   []string{"chown -R 1000:1000 /tmp/.m2"},
+		Mounts:  map[string]string{},
+		Setup:   []string{},
 	})
 	defer container.terminate(t)
 
-	err = container.whenRunningPiperCommand("mavenBuild", "")
+	err := container.whenRunningPiperCommand("mavenBuild", "")
 	if err != nil {
 		t.Fatalf("Calling piper command failed %s", err)
 	}
@@ -55,22 +49,16 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
 	t.Parallel()
 
-	// Create a shared Maven cache directory to avoid re-downloading dependencies
-	mavenCache, err := createTmpDir(t)
-	if err != nil {
-		t.Fatalf("Failed to create Maven cache directory: %s", err)
-	}
-
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-tomee-archetype"},
-		Mounts:  map[string]string{mavenCache: "/tmp/.m2"},
-		Setup:   []string{"chown -R 1000:1000 /tmp/.m2"},
+		Mounts:  map[string]string{},
+		Setup:   []string{},
 	})
 	defer container.terminate(t)
 
-	err = container.whenRunningPiperCommand("mavenBuild", "")
+	err := container.whenRunningPiperCommand("mavenBuild", "")
 	if err != nil {
 		t.Fatalf("Calling piper command failed %s", err)
 	}
