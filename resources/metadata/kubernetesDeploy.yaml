@@ -557,6 +557,7 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        default: ca-certificate
         resourceRef:
           - type: vaultSecretFile
             name: CACertificateVaultSecretName
