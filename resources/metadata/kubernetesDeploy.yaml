@@ -557,9 +557,9 @@ spec:
           - STAGES
           - STEPS
         resourceRef:
-          - type: vaultSecretFile
-            param: CACertificateVaultSecretName
+          - type: vaultSecret
             name: CACertificateVaultSecretName
+            default: common-repository
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
