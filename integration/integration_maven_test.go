@@ -24,7 +24,7 @@ func TestMavenIntegrationBuildCloudSdkSpringProject(t *testing.T) {
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
 		Mounts:  map[string]string{mavenCache: "/tmp/.m2"},
-		Setup:   []string{},
+		Setup:   []string{"chown -R 1000:1000 /tmp/.m2"},
 	})
 	defer container.terminate(t)
 
@@ -66,7 +66,7 @@ func TestMavenIntegrationBuildCloudSdkTomeeProject(t *testing.T) {
 		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-tomee-archetype"},
 		Mounts:  map[string]string{mavenCache: "/tmp/.m2"},
-		Setup:   []string{},
+		Setup:   []string{"chown -R 1000:1000 /tmp/.m2"},
 	})
 	defer container.terminate(t)
 
