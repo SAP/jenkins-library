@@ -127,6 +127,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.KubeToken)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
+			log.RegisterSecret(stepConfig.CACertificate)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -742,8 +743,8 @@ func kubernetesDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:    "CACertificateVaultSecretName",
-								Type:    "vaultSecret",
-								Default: "common-repository",
+								Type:    "vaultSecretFile",
+								Default: "ca-certificate",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
