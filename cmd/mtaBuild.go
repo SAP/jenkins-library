@@ -229,6 +229,20 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		return err
 	}
 
+	// Validate SBOM if created
+	if config.CreateBOM {
+		bomPath := filepath.Join(getMtarFileRoot(config), "sbom-gen/bom-mta.xml")
+		log.Entry().Infof("Validating generated SBOM: %s", bomPath)
+
+		if err := piperutils.ValidateCycloneDX14(bomPath); err != nil {
+			log.Entry().Warnf("SBOM validation failed: %v", err)
+		} else {
+			purl := piperutils.GetPurl(bomPath)
+			log.Entry().Infof("SBOM validation passed")
+			log.Entry().Infof("SBOM PURL: %s", purl)
+		}
+	}
+
 	log.Entry().Debugf("creating build settings information...")
 	stepName := "mtaBuild"
 	dockerImage, err := GetDockerImageValue(stepName)
