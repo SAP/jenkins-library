@@ -55,6 +55,8 @@ type kubernetesDeployOptions struct {
 	SetupScript                string                 `json:"setupScript,omitempty"`
 	VerificationScript         string                 `json:"verificationScript,omitempty"`
 	TeardownScript             string                 `json:"teardownScript,omitempty"`
+	InsecureSkipTLSVerify      bool                   `json:"insecureSkipTLSVerify,omitempty"`
+	CACertificate              string                 `json:"CACertificate,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -249,6 +251,8 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "HTTP location of setup script")
 	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
 	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
+	cmd.Flags().BoolVar(&stepConfig.InsecureSkipTLSVerify, "insecureSkipTLSVerify", false, "This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)")
+	cmd.Flags().StringVar(&stepConfig.CACertificate, "CACertificate", os.Getenv("PIPER_CACertificate"), "Path to the Kubernetes CA certificate file.")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -723,6 +727,30 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_teardownScript"),
+					},
+					{
+						Name:        "insecureSkipTLSVerify",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "CACertificate",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "CACertificateVaultSecretName",
+								Param: "CACertificateVaultSecretName",
+								Type:  "vaultSecretFile",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_CACertificate"),
 					},
 				},
 			},
