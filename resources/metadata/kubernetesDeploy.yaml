@@ -556,10 +556,12 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
+        default: ca-certificate
         resourceRef:
           - type: vaultSecretFile
-            param: CACertificateVaultSecretName
             name: CACertificateVaultSecretName
+            default: ca-certificate
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config
