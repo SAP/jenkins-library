@@ -173,14 +173,24 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"setup.py", "version.txt", "VERSION"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{TomlBuildDescriptor, "setup.py", "version.txt", "VERSION"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
 		}
-		artifact = &Pip{
-			path:       buildDescriptorFilePath,
-			fileExists: fileExists,
+		switch buildDescriptorFilePath {
+		case TomlBuildDescriptor:
+			artifact = &Toml{
+				Pip: Pip{
+					path:       buildDescriptorFilePath,
+					fileExists: fileExists,
+				},
+			}
+		default:
+			artifact = &Pip{
+				path:       buildDescriptorFilePath,
+				fileExists: fileExists,
+			}
 		}
 	case "sbt":
 		if len(buildDescriptorFilePath) == 0 {
