@@ -116,4 +116,4 @@ spec:
           - name: custom/buildSettingsInfo
   containers:
     - name: python
-      image: python:3.10
+      image: python:3.11
