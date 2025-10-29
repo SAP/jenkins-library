@@ -85,6 +85,6 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	}
 	output = string(content)
 	assert.Contains(t, output, "bom-pip.xml")
-	assert.Contains(t, output, "example-pkg-0.0.1.tar.gz")
+	assert.Contains(t, output, "example_pkg-0.0.1.tar.gz")
 	assert.Contains(t, output, "example_pkg-0.0.1-py3-none-any.whl")
 }

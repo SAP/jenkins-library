@@ -100,5 +100,5 @@ spec:
             type: delivery-mapping
   containers:
     - name: newman
-      image: node:lts-bookworm
+      image: node:22-bookworm
       workingDir: /home/node

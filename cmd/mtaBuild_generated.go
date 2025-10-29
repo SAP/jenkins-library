@@ -294,6 +294,18 @@ func mtaBuildMetadata() config.StepData {
 			Name:        "mtaBuild",
 			Aliases:     []config.Alias{},
 			Description: "Performs an mta build",
+			Errors: []config.StepError{
+				{
+					Pattern:  "cannot find symbol",
+					Message:  "Java compilation failed due to missing symbol. Check imports and dependencies.",
+					Category: "compilation",
+				},
+				{
+					Pattern:  "has been compiled by a more recent version of the Java Runtime.*class file version",
+					Message:  "Java version incompatibility. Update Java runtime or use compatible dependency versions.",
+					Category: "version",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
