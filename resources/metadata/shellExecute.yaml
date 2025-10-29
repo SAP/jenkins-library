@@ -2,6 +2,28 @@ metadata:
   name: shellExecute
   description: Step executes defined script
   longDescription: Step executes defined script provided in the 'sources' parameter
+  errors:
+    # File and permission errors
+    - pattern: "No such file or directory"
+      message: "Required file not found. Check file paths and existence."
+      category: "file"
+    - pattern: "Permission denied"
+      message: "Insufficient permissions. Check file/directory permissions and user access."
+      category: "permission"
+
+    # Exit code patterns
+    - pattern: "exit status 1"
+      message: "Script execution failed with general error. Check script logic and dependencies."
+      category: "execution"
+    - pattern: "exit status 2"
+      message: "Script execution failed with invalid usage. Check command syntax and arguments."
+      category: "execution"
+    - pattern: "exit status 126"
+      message: "Script not executable. Check file permissions and execute bit."
+      category: "permission"
+    - pattern: "exit status 127"
+      message: "Command not found. Check if required commands/tools are installed and in PATH."
+      category: "environment"
 spec:
   inputs:
     secrets:
@@ -57,5 +79,5 @@ spec:
         mandatory: false
   containers:
     - name: shell
-      image: node:lts-bookworm
+      image: node:22-bookworm
       workingDir: /home/node

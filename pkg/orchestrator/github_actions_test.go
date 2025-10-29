@@ -17,20 +17,20 @@ import (
 
 func TestGitHubActionsConfigProvider_GetBuildStatus(t *testing.T) {
 	tests := []struct {
-		name    string
-		runData run
-		want    string
+		name string
+		jobs []job
+		want string
 	}{
-		{"BuildStatusSuccess", run{fetched: true, Status: "success"}, BuildStatusSuccess},
-		{"BuildStatusAborted", run{fetched: true, Status: "cancelled"}, BuildStatusAborted},
-		{"BuildStatusInProgress", run{fetched: true, Status: "in_progress"}, BuildStatusInProgress},
-		{"BuildStatusFailure", run{fetched: true, Status: "qwertyu"}, BuildStatusFailure},
-		{"BuildStatusFailure", run{fetched: true, Status: ""}, BuildStatusFailure},
+		{"BuildStatusSuccess", []job{{Conclusion: "success"}, {Conclusion: "success"}, {Conclusion: "success"}}, BuildStatusSuccess},
+		{"BuildStatusAborted", []job{{Conclusion: "success"}, {Conclusion: "success"}, {Conclusion: "cancelled"}}, BuildStatusAborted},
+		{"BuildStatusFailure", []job{{Conclusion: "success"}, {Conclusion: "failure"}, {Conclusion: "cancelled"}}, BuildStatusFailure},
+		{"BuildStatusSuccess", []job{{Conclusion: "success"}, {Conclusion: "cancelled"}, {Conclusion: "failure"}}, BuildStatusAborted},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &githubActionsConfigProvider{
-				runData: tt.runData,
+				jobsFetched: true,
+				jobs:        tt.jobs,
 			}
 			assert.Equalf(t, tt.want, g.BuildStatus(), "BuildStatus()")
 		})
@@ -113,7 +113,6 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	wantRunData := run{
 		fetched:   true,
-		Status:    "completed",
 		StartedAt: startedAt,
 	}
 
@@ -285,7 +284,6 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	startedAt, _ := time.Parse(time.RFC3339, "2023-08-11T07:28:24Z")
 	p.runData = run{
 		fetched:   true,
-		Status:    "",
 		StartedAt: startedAt,
 	}
 

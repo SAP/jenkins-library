@@ -64,8 +64,8 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	}
 	output := string(content)
 
-	assert.Contains(t, output, "info  pythonBuild - running command: python setup.py sdist bdist_wheel")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade cyclonedx-bom")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/python setup.py sdist bdist_wheel")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore cyclonedx-bom==")
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
@@ -85,6 +85,6 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 	}
 	output = string(content)
 	assert.Contains(t, output, "bom-pip.xml")
-	assert.Contains(t, output, "example-pkg-0.0.1.tar.gz")
+	assert.Contains(t, output, "example_pkg-0.0.1.tar.gz")
 	assert.Contains(t, output, "example_pkg-0.0.1-py3-none-any.whl")
 }
