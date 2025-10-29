@@ -429,6 +429,23 @@ func whitesourceExecuteScanMetadata() config.StepData {
 			Name:        "whitesourceExecuteScan",
 			Aliases:     []config.Alias{},
 			Description: "Execute a Mend (formerly known as WhiteSource) scan",
+			Errors: []config.StepError{
+				{
+					Pattern:  "Open Source Software Security vulnerabilities with CVSS score greater or equal to .* detected in project",
+					Message:  "Security vulnerabilities with high CVSS scores detected. Review and address the identified vulnerabilities to meet security requirements.",
+					Category: "security",
+				},
+				{
+					Pattern:  "policy violation\\(s\\) found",
+					Message:  "Policy violations detected in the scan. Review the violations and update dependencies or policies to resolve compliance issues.",
+					Category: "compliance",
+				},
+				{
+					Pattern:  "running command 'java' failed",
+					Message:  "Java command execution failed during WhiteSource scan. Verify Java installation, memory settings, and agent configuration.",
+					Category: "execution",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -1125,9 +1142,9 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				{Image: "gradle", WorkingDir: "/home/gradle", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "gradle"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
-				{Image: "node:lts-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
+				{Image: "node:22-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}}},
 				{Image: "python:3.6-stretch", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
-				{Image: "node:lts-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
+				{Image: "node:22-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "yarn"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
