@@ -50,7 +50,7 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 		}, options.CfLoginOpts...)
 
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
-
+		log.Entry().Debugf("DEBUG111: cf login command: cf %v", cfLoginScript)
 		err = _c.RunExecutable("cf", cfLoginScript...)
 	}
 

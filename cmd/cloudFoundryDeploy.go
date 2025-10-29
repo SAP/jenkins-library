@@ -443,7 +443,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	}
 
 	cfDeployParams = append(cfDeployParams, extFileParams...)
-
+	log.Entry().Debugf("DEBUG111: cfDeployParams: %v", cfDeployParams)
 	err := cfDeploy(config, cfDeployParams, nil, command)
 
 	for _, extFile := range extFiles {
@@ -595,6 +595,7 @@ func cfDeploy(
 	err = command.RunExecutable("cf", "version")
 
 	if err == nil {
+		log.Entry().Debugf("_cfLogin: %s", config.LoginParameters)
 		err = _cfLogin(command, cloudfoundry.LoginOptions{
 			CfAPIEndpoint: config.APIEndpoint,
 			CfOrg:         config.Org,
