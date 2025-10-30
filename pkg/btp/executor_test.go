@@ -21,12 +21,12 @@ func TestRun(t *testing.T) {
 	m.Stdout(new(bytes.Buffer))
 
 	// Test successful command execution
-	err := m.Run("btp login")
+	err := m.Run([]string{"btp", "login"})
 	assert.NoError(t, err)
 	assert.Contains(t, m.GetStdoutValue(), "Login successful")
 
 	// Test failing command execution
-	err = m.Run("btp logout")
+	err = m.Run([]string{"btp", "logout"})
 	assert.Error(t, err)
 	assert.Equal(t, "Logout failed", err.Error())
 }
@@ -45,7 +45,7 @@ func TestRunSync_Success(t *testing.T) {
 
 	// Test successful polling execution
 	err := m.RunSync(RunSyncOptions{
-		CmdScript:      "btp deploy",
+		CmdScript:      []string{"btp", "deploy"},
 		TimeoutSeconds: 1,
 		PollInterval:   30,
 		CheckFunc: func() bool {
@@ -66,7 +66,7 @@ func TestRunSync_Erro_On_Check(t *testing.T) {
 
 	timeoutMin := 1
 	err := m.RunSync(RunSyncOptions{
-		CmdScript:      "btp deploy",
+		CmdScript:      []string{"btp", "deploy"},
 		TimeoutSeconds: timeoutMin,
 		PollInterval:   20,
 		CheckFunc: func() bool {
