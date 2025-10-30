@@ -21,11 +21,6 @@ func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) 
 		return false
 	}
 
-	err = btp.Logout()
-	if err != nil {
-		return false
-	}
-
 	return data.Ready
 }
 
@@ -52,11 +47,6 @@ func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bo
 
 	err = json.Unmarshal([]byte(serviceBindingJSON), &data)
 
-	if err != nil {
-		return false
-	}
-
-	err = btp.Logout()
 	if err != nil {
 		return false
 	}
