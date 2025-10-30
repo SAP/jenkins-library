@@ -42,7 +42,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 
 	btpLoginScript, _ := builder.Build()
 
-	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("Password", options.Password).WithField("Tenant", options.Tenant)
+	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("Tenant", options.Tenant)
 
 	err := btp.Exec.Run(btpLoginScript)
 
