@@ -3,7 +3,7 @@ package btp
 import "time"
 
 type RunSyncOptions struct {
-	CmdScript      string
+	CmdScript      []string
 	TimeoutSeconds int
 	PollInterval   int
 	CheckFunc      func() bool // Function to check the command status

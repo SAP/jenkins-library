@@ -1,6 +1,7 @@
 package btp
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,14 +19,14 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 		builder := NewBTPCommandBuilder().WithAction("list")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp list", cmd)
+		assert.Equal(t, "btp list", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with action and target", func(t *testing.T) {
 		builder := NewBTPCommandBuilder().WithAction("get").WithTarget("subaccount")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp get subaccount", cmd)
+		assert.Equal(t, "btp get subaccount", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with action, target, options, and params", func(t *testing.T) {
@@ -37,7 +38,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithParam("my-instance")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp --global delete service-instance --force my-instance", cmd)
+		assert.Equal(t, "btp --global delete service-instance --force my-instance", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with multiple options and params", func(t *testing.T) {
@@ -52,7 +53,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithParam("standard")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp --global --json create service-instance --name test --plan standard", cmd)
+		assert.Equal(t, "btp --global --json create service-instance --name test --plan standard", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with specific parameter methods", func(t *testing.T) {
@@ -81,31 +82,34 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithFormat("json").
 			WithVerbose().
 			WithTenant("tenant-1")
+
 		cmd, err := builder.Build()
+
+		cmdString := strings.Join(cmd, " ")
 		assert.NoError(t, err)
-		assert.Contains(t, cmd, "btp get subaccount")
-		assert.Contains(t, cmd, "--subaccount 123")
-		assert.Contains(t, cmd, "--id my-id")
-		assert.Contains(t, cmd, "--name my-name")
-		assert.Contains(t, cmd, "--show-parameters true")
-		assert.Contains(t, cmd, "--data-center eu10")
-		assert.Contains(t, cmd, "--service hana")
-		assert.Contains(t, cmd, "--plan plan-123")
-		assert.Contains(t, cmd, "--plan-name plan-name")
-		assert.Contains(t, cmd, "--offering-name offering")
-		assert.Contains(t, cmd, "--parameters {\"foo\":\"bar\"}")
-		assert.Contains(t, cmd, "--labels {\"env\":\"prod\"}")
-		assert.Contains(t, cmd, "--confirm true")
-		assert.Contains(t, cmd, "--binding bind1")
-		assert.Contains(t, cmd, "--instance-name svc1")
-		assert.Contains(t, cmd, "--service-instancee svc-id")
-		assert.Contains(t, cmd, "--url https://example.com")
-		assert.Contains(t, cmd, "--subdomain mydomain")
-		assert.Contains(t, cmd, "--user user")
-		assert.Contains(t, cmd, "--password pass")
-		assert.Contains(t, cmd, "--format json")
-		assert.Contains(t, cmd, "--verbose")
-		assert.Contains(t, cmd, "--idp tenant-1")
+		assert.Contains(t, cmdString, "btp get subaccount")
+		assert.Contains(t, cmdString, "--subaccount 123")
+		assert.Contains(t, cmdString, "--id my-id")
+		assert.Contains(t, cmdString, "--name my-name")
+		assert.Contains(t, cmdString, "--show-parameters true")
+		assert.Contains(t, cmdString, "--data-center eu10")
+		assert.Contains(t, cmdString, "--service hana")
+		assert.Contains(t, cmdString, "--plan plan-123")
+		assert.Contains(t, cmdString, "--plan-name plan-name")
+		assert.Contains(t, cmdString, "--offering-name offering")
+		assert.Contains(t, cmdString, "--parameters {\"foo\":\"bar\"}")
+		assert.Contains(t, cmdString, "--labels {\"env\":\"prod\"}")
+		assert.Contains(t, cmdString, "--confirm true")
+		assert.Contains(t, cmdString, "--binding bind1")
+		assert.Contains(t, cmdString, "--instance-name svc1")
+		assert.Contains(t, cmdString, "--service-instancee svc-id")
+		assert.Contains(t, cmdString, "--url https://example.com")
+		assert.Contains(t, cmdString, "--subdomain mydomain")
+		assert.Contains(t, cmdString, "--user user")
+		assert.Contains(t, cmdString, "--password pass")
+		assert.Contains(t, cmdString, "--format json")
+		assert.Contains(t, cmdString, "--verbose")
+		assert.Contains(t, cmdString, "--idp tenant-1")
 	})
 
 	t.Run("reset clears all fields", func(t *testing.T) {

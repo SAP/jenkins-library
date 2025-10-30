@@ -22,9 +22,8 @@ func (b *BtpExecutorMock) GetStdoutValue() string {
 	return b.stdout.(*bytes.Buffer).String()
 }
 
-func (b *BtpExecutorMock) Run(cmdScript string) (err error) {
-	parts := strings.Fields(cmdScript)
-	execCall := BtpExecCall{Exec: parts[0], Params: parts[1:]}
+func (b *BtpExecutorMock) Run(cmdScript []string) (err error) {
+	execCall := BtpExecCall{Exec: cmdScript[0], Params: cmdScript[1:]}
 	b.Calls = append(b.Calls, execCall)
 
 	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout)
@@ -52,7 +51,7 @@ func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 }
 
 // Processes command results based on predefined mock data.
-func (e *BtpExecutorMock) handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
 	// Check if the command should return a specific output
 	if stdoutReturn != nil {
 		for pattern, output := range stdoutReturn {
@@ -76,12 +75,12 @@ func (e *BtpExecutorMock) handleCall(call string, stdoutReturn map[string]string
 }
 
 // matchCommand checks if a command matches a pattern (direct string match or regex).
-func matchCommand(pattern, command string) bool {
-	if pattern == command {
+func matchCommand(pattern string, command []string) bool {
+	if pattern == strings.Join(command, " ") {
 		return true
 	}
 	r, err := regexp.Compile(pattern)
-	return err == nil && r.MatchString(command)
+	return err == nil && r.MatchString(strings.Join(command, " "))
 }
 
 type BtpExecutorMock struct {

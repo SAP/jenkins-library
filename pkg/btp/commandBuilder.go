@@ -3,7 +3,6 @@ package btp
 import (
 	"errors"
 	"strconv"
-	"strings"
 )
 
 // Initialize a new builder
@@ -195,23 +194,20 @@ func (b *BTPCommandBuilder) WithTenant(tenantID string) *BTPCommandBuilder {
 }
 
 // Build the final command string
-func (b *BTPCommandBuilder) Build() (string, error) {
+func (b *BTPCommandBuilder) Build() ([]string, error) {
 	if b.action == "" {
-		return "", errors.New("action is required")
+		return nil, errors.New("action is required")
 	}
 
-	cmd := "btp"
-	if len(b.options) > 0 {
-		cmd += " " + strings.Join(b.options, " ")
-	}
-	cmd += " " + b.action
+	cmdList := []string{"btp"}
+	cmdList = append(cmdList, b.options...)
+	cmdList = append(cmdList, b.action)
 	if b.target != "" {
-		cmd += " " + b.target
+		cmdList = append(cmdList, b.target)
 	}
-	if len(b.params) > 0 {
-		cmd += " " + strings.Join(b.params, " ")
-	}
-	return cmd, nil
+	cmdList = append(cmdList, b.params...)
+
+	return cmdList, nil
 }
 
 type BTPCommandBuilder struct {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -24,9 +23,8 @@ func (e *Executor) GetStdoutValue() string {
 	return e.Cmd.GetStdout().(*bytes.Buffer).String()
 }
 
-func (e *Executor) Run(cmdScript string) (err error) {
-	parts := strings.Fields(cmdScript)
-	if err := e.Cmd.RunExecutable(parts[0], parts[1:]...); err != nil {
+func (e *Executor) Run(cmdScript []string) (err error) {
+	if err := e.Cmd.RunExecutable(cmdScript[0], cmdScript[1:]...); err != nil {
 		return fmt.Errorf("Failed to execute BTP CLI: %w", err)
 	}
 	return nil
@@ -78,6 +76,6 @@ type btpRunner interface {
 
 type ExecRunner interface {
 	btpRunner
-	Run(cmdScript string) error
+	Run(cmdScript []string) error
 	RunSync(opts RunSyncOptions) error
 }
