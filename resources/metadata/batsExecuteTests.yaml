@@ -60,7 +60,7 @@ spec:
                 type: bool
   containers:
     - name: bats
-      image: node:lts-bookworm
+      image: node:22-bookworm
       workingDir: /home/node
       conditions:
         - conditionRef: strings-equal
