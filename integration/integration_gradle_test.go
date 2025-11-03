@@ -9,7 +9,6 @@ package main
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/integration/testhelper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,13 +17,13 @@ const DOCKER_IMAGE_GRADLE = "gradle:6-jdk11-alpine"
 func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GRADLE,
 		TestData: "TestGradleIntegration/java-project",
 		WorkDir:  "/java-project",
 	})
 
-	output := testhelper.RunPiper(t, container, "/java-project", "gradleExecuteBuild")
+	output := RunPiper(t, container, "/java-project", "gradleExecuteBuild")
 
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew tasks")
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew cyclonedxBom --init-script initScript.gradle.tmp")
@@ -32,20 +31,20 @@ func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *test
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
-	lsOutput := testhelper.ExecCommand(t, container, "/java-project", []string{"ls", "-l", "./build/reports/"})
+	lsOutput := ExecCommand(t, container, "/java-project", []string{"ls", "-l", "./build/reports/"})
 	assert.Contains(t, lsOutput, "bom-gradle.xml")
 }
 
 func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GRADLE,
 		TestData: "TestGradleIntegration/java-project-with-bom-plugin",
 		WorkDir:  "/java-project-with-bom-plugin",
 	})
 
-	output := testhelper.RunPiper(t, container, "/java-project-with-bom-plugin", "gradleExecuteBuild")
+	output := RunPiper(t, container, "/java-project-with-bom-plugin", "gradleExecuteBuild")
 
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle tasks")
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle cyclonedxBom")
@@ -53,23 +52,23 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
-	lsOutput := testhelper.ExecCommand(t, container, "/java-project-with-bom-plugin", []string{"ls", "-l", "./build/reports/"})
+	lsOutput := ExecCommand(t, container, "/java-project-with-bom-plugin", []string{"ls", "-l", "./build/reports/"})
 	assert.Contains(t, lsOutput, "bom-gradle.xml")
 }
 
 func TestGradleIntegrationExecuteBuildWithBOMValidation(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GRADLE,
 		TestData: "TestGradleIntegration/java-project",
 		WorkDir:  "/java-project",
 	})
 
-	output := testhelper.RunPiper(t, container, "/java-project", "gradleExecuteBuild")
+	output := RunPiper(t, container, "/java-project", "gradleExecuteBuild")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
-	output = testhelper.RunPiper(t, container, "/java-project", "validateBOM")
+	output = RunPiper(t, container, "/java-project", "validateBOM")
 	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
 	assert.Contains(t, output, "info  validateBOM - Validating BOM file:")
 	assert.Contains(t, output, "bom-gradle.xml")

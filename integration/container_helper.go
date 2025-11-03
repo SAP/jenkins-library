@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package testhelper
+package main
 
 import (
 	"context"

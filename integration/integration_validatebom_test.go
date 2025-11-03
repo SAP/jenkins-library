@@ -9,7 +9,6 @@ package main
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/integration/testhelper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,13 +19,13 @@ const DOCKER_IMAGE_VALIDATEBOM = "alpine:latest"
 func TestValidateBOMIntegrationInvalidBOM(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_VALIDATEBOM,
 		TestData: "TestValidateBOMIntegration/invalid-bom",
 		WorkDir:  "/invalid-bom",
 	})
 
-	output := testhelper.RunPiper(t, container, "/invalid-bom", "validateBOM")
+	output := RunPiper(t, container, "/invalid-bom", "validateBOM")
 
 	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
 	assert.Contains(t, output, "info  validateBOM - Validating BOM file:")
@@ -40,13 +39,13 @@ func TestValidateBOMIntegrationInvalidBOM(t *testing.T) {
 func TestValidateBOMIntegrationFailOnError(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_VALIDATEBOM,
 		TestData: "TestValidateBOMIntegration/invalid-bom",
 		WorkDir:  "/invalid-bom",
 	})
 
-	exitCode, output := testhelper.RunPiperExpectFailure(t, container, "/invalid-bom", "validateBOM", "--failOnValidationError")
+	exitCode, output := RunPiperExpectFailure(t, container, "/invalid-bom", "validateBOM", "--failOnValidationError")
 
 	assert.NotEqual(t, 0, exitCode)
 	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
@@ -60,13 +59,13 @@ func TestValidateBOMIntegrationFailOnError(t *testing.T) {
 func TestValidateBOMIntegrationSkip(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_VALIDATEBOM,
 		TestData: "TestValidateBOMIntegration/invalid-bom",
 		WorkDir:  "/invalid-bom",
 	})
 
-	output := testhelper.RunPiper(t, container, "/invalid-bom", "validateBOM", "--skip")
+	output := RunPiper(t, container, "/invalid-bom", "validateBOM", "--skip")
 
 	assert.Contains(t, output, "info  validateBOM - BOM validation skipped (skip: true)")
 	assert.NotContains(t, output, "info  validateBOM - Found")
@@ -77,13 +76,13 @@ func TestValidateBOMIntegrationSkip(t *testing.T) {
 func TestValidateBOMIntegrationNoBOMs(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_VALIDATEBOM,
 		TestData: "TestValidateBOMIntegration/no-boms",
 		WorkDir:  "/no-boms",
 	})
 
-	output := testhelper.RunPiper(t, container, "/no-boms", "validateBOM")
+	output := RunPiper(t, container, "/no-boms", "validateBOM")
 
 	assert.Contains(t, output, "info  validateBOM - No BOM files found matching pattern")
 	assert.Contains(t, output, "skipping validation")
@@ -93,13 +92,13 @@ func TestValidateBOMIntegrationNoBOMs(t *testing.T) {
 func TestValidateBOMIntegrationMultipleBOMs(t *testing.T) {
 	t.Parallel()
 
-	container := testhelper.StartPiperContainer(t, testhelper.ContainerConfig{
+	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_VALIDATEBOM,
 		TestData: "TestValidateBOMIntegration/multiple-boms",
 		WorkDir:  "/multiple-boms",
 	})
 
-	output := testhelper.RunPiper(t, container, "/multiple-boms", "validateBOM")
+	output := RunPiper(t, container, "/multiple-boms", "validateBOM")
 
 	assert.Contains(t, output, "info  validateBOM - Found 3 BOM file(s) to validate")
 	assert.Contains(t, output, "info  validateBOM - BOM validation complete: 3/3 files validated successfully")
