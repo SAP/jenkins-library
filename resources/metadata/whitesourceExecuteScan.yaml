@@ -1,6 +1,16 @@
 metadata:
   name: whitesourceExecuteScan
   description: Execute a Mend (formerly known as WhiteSource) scan
+  errors:
+    - pattern: "Open Source Software Security vulnerabilities with CVSS score greater or equal to .* detected in project"
+      message: "Security vulnerabilities with high CVSS scores detected. Review and address the identified vulnerabilities to meet security requirements."
+      category: "security"
+    - pattern: "policy violation\\(s\\) found"
+      message: "Policy violations detected in the scan. Review the violations and update dependencies or policies to resolve compliance issues."
+      category: "compliance"
+    - pattern: "running command 'java' failed"
+      message: "Java command execution failed during WhiteSource scan. Verify Java installation, memory settings, and agent configuration."
+      category: "execution"
   longDescription: |-
     With this step [Mend](https://www.mend.io/) (formerly known as Whitesource) security and license compliance scans can be executed and assessed.
     Mend is a Software as a Service offering based on a so called unified agent that locally determines the dependency
@@ -796,7 +806,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:lts-bookworm
+    - image: node:22-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -812,7 +822,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:lts-bookworm
+    - image: node:22-bookworm
       workingDir: /home/node
       env: []
       conditions:
