@@ -48,7 +48,7 @@ void call(Map parameters = [:]) {
     boolean approval = false
     def userInput
 
-    milestone()
+    milestone 75
 
     timeout(
         unit: 'HOURS',
