@@ -28,11 +28,11 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/binding": fmt.Sprintf(`
-{
-  "id": "xxxx",
-  "name": "%s",
-  "ready": true
-}`, btpConfig.BindingName),
+				{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.BindingName),
 			},
 		}
 
@@ -70,11 +70,11 @@ func TestBTPGetServiceBinding(t *testing.T) {
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/binding": fmt.Sprintf(`
-{
-  "id": "xxxx",
-  "name": "%s",
-  "ready": true
-}`, btpConfig.BindingName),
+				{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.BindingName),
 			},
 		}
 
@@ -116,10 +116,10 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 			},
 			ShouldFailOnCommand: map[string]error{
 				"btp delete services/binding": fmt.Errorf(`
-{
-  "error": "BadRequest",
-  "description": "Could not find such binding"
-}`),
+				{
+				"error": "BadRequest",
+				"description": "Could not find such binding"
+				}`),
 			},
 		}
 
@@ -156,10 +156,10 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 			},
 			ShouldFailOnCommand: map[string]error{
 				"btp get services/binding": fmt.Errorf(`
-{
-  "error": "BadRequest",
-  "description": "Could not find such binding"
-}`),
+				{
+				"error": "BadRequest",
+				"description": "Could not find such binding"
+				}`),
 			},
 		}
 
@@ -200,11 +200,11 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/instance": fmt.Sprintf(`
-{
-	"id": "xxx",
-	"name": "%s",
-	"ready": true
-}`, btpConfig.InstanceName),
+				{
+					"id": "xxx",
+					"name": "%s",
+					"ready": true
+				}`, btpConfig.InstanceName),
 			},
 		}
 
@@ -242,11 +242,11 @@ func TestBTPGetServiceInstance(t *testing.T) {
 			StdoutReturn: map[string]string{
 				"btp login .*": "Authentication successful",
 				"btp get services/instance": fmt.Sprintf(`
-{
-  "id": "xxx",
-  "name": "%s",
-  "ready": true
-}`, btpConfig.InstanceName),
+				{
+				"id": "xxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.InstanceName),
 			},
 		}
 
@@ -288,10 +288,10 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 			},
 			ShouldFailOnCommand: map[string]error{
 				"btp delete services/instance": fmt.Errorf(`
-{
-  "error": "BadRequest",
-  "description": "Could not find such instance"
-}`),
+				{
+				"error": "BadRequest",
+				"description": "Could not find such instance"
+				}`),
 			},
 		}
 
@@ -328,10 +328,10 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 			},
 			ShouldFailOnCommand: map[string]error{
 				"btp get services/instance": fmt.Errorf(`
-{
-  "error": "BadRequest",
-  "description": "Could not find such instance"
-}`),
+				{
+				"error": "BadRequest",
+				"description": "Could not find such instance"
+				}`),
 			},
 		}
 

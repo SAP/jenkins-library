@@ -34,10 +34,7 @@ func TestRun(t *testing.T) {
 func TestRunSync_Success(t *testing.T) {
 	m := &BtpExecutorMock{
 		StdoutReturn: map[string]string{
-			"btp check": `dummy
-							dummy
-
-							OK`,
+			"btp check": `OK`,
 		},
 	}
 
