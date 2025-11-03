@@ -88,7 +88,7 @@ jobs:
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
-        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration
       - name: Form integration tests run matrix
         if: success()
         id: matrix
