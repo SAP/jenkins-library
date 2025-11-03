@@ -12,11 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const DOCKER_IMAGE_PYTHON = "python:3.10"
+
 func TestPythonIntegrationBuildProject(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	container := StartPiperContainer(t, ContainerConfig{
-		Image:    "python:3.10",
+		Image:    DOCKER_IMAGE_PYTHON,
 		TestData: "TestPythonIntegration/python-project",
 		WorkDir:  "/python-project",
 	})
@@ -34,25 +36,20 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 }
 
 func TestPythonIntegrationBuildWithBOMValidation(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	container := StartPiperContainer(t, ContainerConfig{
-		Image:    "python:3.10",
+		Image:    DOCKER_IMAGE_PYTHON,
 		TestData: "TestPythonIntegration/python-project",
 		WorkDir:  "/python-project",
 	})
 
-	// First, run pythonBuild to generate the BOM
 	output := RunPiper(t, container, "/python-project", "pythonBuild")
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
-	t.Log(output)
-
-	// Now run validateBOM on the generated BOM
 	output = RunPiper(t, container, "/python-project", "validateBOM")
 
-	t.Log(output)
 	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
 	assert.Contains(t, output, "info  validateBOM - Validating BOM file:")
 	assert.Contains(t, output, "bom-pip.xml")
