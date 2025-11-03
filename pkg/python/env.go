@@ -29,8 +29,15 @@ func CreateVirtualEnvironment(
 	if err := executeFn("python3", "-m", "venv", virtualEnv); err != nil {
 		return exitHandler, fmt.Errorf("failed to create virtual environment %s: %w", virtualEnv, err)
 	}
+
 	if err := executeFn("bash", "-c", fmt.Sprintf("source %s", filepath.Join(virtualEnv, "bin", "activate"))); err != nil {
 		return exitHandler, fmt.Errorf("failed to activate virtual environment %s: %w", virtualEnv, err)
 	}
+
+	pipPath := filepath.Join(virtualEnv, "bin", "pip")
+	if err := executeFn(pipPath, "install", "--upgrade", "pip", "build", "wheel", "setuptools"); err != nil {
+		return exitHandler, fmt.Errorf("failed to activate virtual environment %s: %w", virtualEnv, err)
+	}
+
 	return exitHandler, nil
 }
