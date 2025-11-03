@@ -66,9 +66,6 @@ func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *test
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: ./gradlew build")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
-	assert.Contains(t, output, "Validating generated SBOM:")
-	assert.Contains(t, output, "SBOM validation passed")
-	assert.Contains(t, output, "SBOM PURL:")
 
 	code, reader, err = nodeContainer.Exec(ctx, []string{"ls", "-l", "./build/reports/"}, exec.WithWorkingDir("/java-project"))
 	assert.NoError(t, err)
@@ -123,9 +120,6 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	assert.Contains(t, output, "info  gradleExecuteBuild - running command: gradle build")
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
-	assert.Contains(t, output, "Validating generated SBOM:")
-	assert.Contains(t, output, "SBOM validation passed")
-	assert.Contains(t, output, "SBOM PURL:")
 
 	code, reader, err = nodeContainer.Exec(ctx, []string{"ls", "-l", "./build/reports/"}, exec.WithWorkingDir("/java-project-with-bom-plugin"))
 	assert.NoError(t, err)
@@ -135,4 +129,61 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	assert.NoError(t, err)
 	lsOutput := string(lsOutputBytes)
 	assert.Contains(t, lsOutput, "bom-gradle.xml")
+}
+
+func TestGradleIntegrationExecuteBuildWithBOMValidation(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pwd, err := os.Getwd()
+	assert.NoError(t, err, "Getting current working directory failed.")
+	pwd = filepath.Dir(pwd)
+
+	reqNode := testcontainers.ContainerRequest{
+		Image: DOCKER_IMAGE_GRADLE,
+		Cmd:   []string{"tail", "-f"},
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join(pwd, "integration", "testdata", "TestGradleIntegration", "java-project"),
+				ContainerFilePath: "/",
+				FileMode:          0755,
+			},
+		},
+		HostConfigModifier: func(hc *container.HostConfig) {
+			hc.Binds = []string{
+				fmt.Sprintf("%s:/piperbin", pwd),
+			}
+		},
+	}
+
+	nodeContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: reqNode,
+		Started:          true,
+	})
+	require.NoError(t, err)
+
+	// First, run gradleExecuteBuild to generate the BOM
+	code, reader, err := nodeContainer.Exec(ctx, []string{"/piperbin/piper", "gradleExecuteBuild"}, exec.WithWorkingDir("/java-project"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
+
+	outputBytes, err := io.ReadAll(reader)
+	assert.NoError(t, err)
+	output := string(outputBytes)
+	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
+
+	// Now run validateBOM on the generated BOM
+	code, reader, err = nodeContainer.Exec(ctx, []string{"/piperbin/piper", "validateBOM"}, exec.WithWorkingDir("/java-project"))
+	assert.NoError(t, err)
+	assert.Equal(t, 0, code)
+
+	outputBytes, err = io.ReadAll(reader)
+	assert.NoError(t, err)
+	output = string(outputBytes)
+	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
+	assert.Contains(t, output, "info  validateBOM - Validating BOM file:")
+	assert.Contains(t, output, "bom-gradle.xml")
+	assert.Contains(t, output, "info  validateBOM - BOM validation passed:")
+	assert.Contains(t, output, "info  validateBOM - BOM PURL:")
+	assert.Contains(t, output, "info  validateBOM - BOM validation complete: 1/1 files validated successfully")
 }
