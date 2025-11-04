@@ -667,6 +667,7 @@ func (sys *SystemInstance) UpdateProject(project *Project) error {
 	delete(filteredMap, "applicationIds")
 	delete(filteredMap, "createdAt")
 	delete(filteredMap, "updatedAt")
+	delete(filteredMap, "groups") // groups is causing "failed to check groups access" in 3.46
 	jsonBody, err = json.Marshal(filteredMap)
 
 	if err != nil {
