@@ -539,6 +539,29 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: insecureSkipTLSVerify
+        type: bool
+        description: This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: CACertificate
+        type: string
+        description: Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate').
+        longDescription: |
+          Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate'). If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        default: ca-certificate
+        resourceRef:
+          - type: vaultSecretFile
+            name: CACertificateVaultSecretName
+            default: ca-certificate
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config

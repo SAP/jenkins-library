@@ -47,7 +47,7 @@ cd /test
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
-		Image: "getgauge/gocd-jdk-mvn-node",
+		Image: "timbru31/java-node:17-jdk-22",
 		Cmd:   []string{"tail", "-f"},
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(pwd, "/piperbin"),

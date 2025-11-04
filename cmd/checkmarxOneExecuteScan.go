@@ -77,9 +77,16 @@ func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry
 
 func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux, cx1sh *checkmarxOneExecuteScanHelper) error {
 	err := error(nil)
-	cx1sh.Project, err = cx1sh.GetProjectByName()
-	if err != nil && err.Error() != "project not found" {
-		return fmt.Errorf("failed to get project: %s", err)
+	if len(cx1sh.config.ProjectID) == 0 {
+		cx1sh.Project, err = cx1sh.GetProjectByName()
+		if err != nil && err.Error() != "project not found" {
+			return fmt.Errorf("failed to get project: %s", err)
+		}
+	} else {
+		cx1sh.Project, err = cx1sh.GetProjectByID(cx1sh.config.ProjectID)
+		if err != nil {
+			return fmt.Errorf("failed to get project by ID: %s", err)
+		}
 	}
 
 	if len(config.GroupName) > 0 {
@@ -90,7 +97,12 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	if cx1sh.Project == nil {
-		if len(config.ApplicationName) > 0 {
+		if len(config.ApplicationID) > 0 {
+			cx1sh.App, err = cx1sh.GetApplicationByID(config.ApplicationID)
+			if err != nil {
+				return fmt.Errorf("failed to get application by ID: %v", err)
+			}
+		} else if len(config.ApplicationName) > 0 {
 			cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
 			if err != nil {
 				return fmt.Errorf("failed to get application: %v", err)
@@ -324,7 +336,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	if c.App != nil {
 		project, err = c.sys.CreateProjectInApplication(c.config.ProjectName, c.App.ApplicationID, groupIDs)
 	} else {
-		project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
+		// don't allow creation of project at tenant level
+		return nil, fmt.Errorf("No application found in config, project cannot be created")
+		//project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
 	}
 
 	if err != nil {

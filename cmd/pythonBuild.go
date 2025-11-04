@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -58,18 +61,39 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		defer exitHandler()
 	}
 
-	if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
-		return err
+	// check project descriptor
+	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
+	if err != nil {
+		return fmt.Errorf("failed to determine build descriptor file: %w", err)
+	}
+
+	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		// handle pyproject.toml file
+		workDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		utils.AppendEnv([]string{
+			fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirtualEnvironmentName)),
+		})
+		if err := python.BuildWithPyProjectToml(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+			return fmt.Errorf("failed to build python project: %w", err)
+		}
+	} else {
+		// handle legacy setup.py file
+		if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+			return fmt.Errorf("failed to build python project: %w", err)
+		}
 	}
 
 	if config.CreateBOM {
 		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
-			return fmt.Errorf("BOM creation failed: %w", err)
+			return fmt.Errorf("failed to create BOM: %w", err)
 		}
 	}
 
 	if info, err := createBuildSettingsInfo(config); err != nil {
-		return err
+		return fmt.Errorf("failed to create build settings info: %v", err)
 	} else {
 		commonPipelineEnvironment.custom.buildSettingsInfo = info
 	}
@@ -95,7 +119,6 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	pythonConfig := buildsettings.BuildOptions{
 		CreateBOM:         config.CreateBOM,
 		Publish:           config.Publish,
@@ -107,4 +130,19 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
 	return buildSettingsInfo, nil
+}
+
+func searchDescriptor(supported []string, existsFunc func(string) (bool, error)) (string, error) {
+	var descriptor string
+	for _, f := range supported {
+		exists, _ := existsFunc(f)
+		if exists {
+			descriptor = f
+			break
+		}
+	}
+	if len(descriptor) == 0 {
+		return "", fmt.Errorf("no build descriptor available, supported: %v", supported)
+	}
+	return descriptor, nil
 }

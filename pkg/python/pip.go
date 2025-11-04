@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -11,21 +10,14 @@ var (
 	PipInstallFlags = []string{"install", "--upgrade", "--root-user-action=ignore"}
 )
 
-func Install(
+func install(
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,
 	module string,
 	version string,
 	extraArgs []string,
 ) error {
-	pipBinary := "pip"
-	if len(virtualEnv) > 0 {
-		pipBinary = filepath.Join(virtualEnv, "bin", pipBinary)
-	}
-
 	flags := PipInstallFlags
-	// flags := append([]string{"-m", "pip"}, PipInstallFlags...)
-
 	if len(extraArgs) > 0 {
 		flags = append(flags, extraArgs...)
 	}
@@ -36,10 +28,23 @@ func Install(
 		flags = append(flags, module)
 	}
 
-	if err := executeFn(pipBinary, flags...); err != nil {
-		return fmt.Errorf("failed to install %s: %w", module, err)
-	}
-	return nil
+	return executeFn(getBinary(virtualEnv, "pip"), flags...)
+}
+
+func InstallPip(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("updating pip")
+	return install(executeFn, virtualEnv, "pip", "", nil)
+}
+
+func InstallProjectDependencies(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing project dependencies")
+	return install(executeFn, virtualEnv, ".", "", nil)
 }
 
 func InstallRequirements(
@@ -48,7 +53,15 @@ func InstallRequirements(
 	requirementsFile string,
 ) error {
 	log.Entry().Debug("installing requirements")
-	return Install(executeFn, virtualEnv, "", "", []string{"--requirement", requirementsFile})
+	return install(executeFn, virtualEnv, "", "", []string{"--requirement", requirementsFile})
+}
+
+func InstallBuild(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing build")
+	return install(executeFn, virtualEnv, "build", "", nil)
 }
 
 func InstallWheel(
@@ -56,7 +69,7 @@ func InstallWheel(
 	virtualEnv string,
 ) error {
 	log.Entry().Debug("installing wheel")
-	return Install(executeFn, virtualEnv, "wheel", "", nil)
+	return install(executeFn, virtualEnv, "wheel", "", nil)
 }
 
 func InstallTwine(
@@ -64,7 +77,7 @@ func InstallTwine(
 	virtualEnv string,
 ) error {
 	log.Entry().Debug("installing twine")
-	return Install(executeFn, virtualEnv, "twine", "", nil)
+	return install(executeFn, virtualEnv, "twine", "", nil)
 }
 
 func InstallCycloneDX(
@@ -73,5 +86,5 @@ func InstallCycloneDX(
 	cycloneDXVersion string,
 ) error {
 	log.Entry().Debug("installing cyclonedx-bom")
-	return Install(executeFn, virtualEnv, "cyclonedx-bom", cycloneDXVersion, nil)
+	return install(executeFn, virtualEnv, "cyclonedx-bom", cycloneDXVersion, nil)
 }

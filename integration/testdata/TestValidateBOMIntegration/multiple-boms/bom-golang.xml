@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1" serialNumber="urn:uuid:test-golang-bom">
+  <metadata>
+    <timestamp>2025-10-31T10:30:00Z</timestamp>
+    <component type="application">
+      <name>test-golang-app</name>
+      <version>1.0.0</version>
+      <purl>pkg:golang/github.com/example/test-golang-app@1.0.0</purl>
+      <description>Test Golang BOM</description>
+    </component>
+  </metadata>
+  <components>
+    <component type="library">
+      <name>gin</name>
+      <version>1.9.0</version>
+      <purl>pkg:golang/github.com/gin-gonic/gin@1.9.0</purl>
+    </component>
+  </components>
+</bom>

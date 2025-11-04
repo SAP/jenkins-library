@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
@@ -19,6 +20,8 @@ type pythonBuildMockUtils struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
 }
+
+const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	utils := pythonBuildMockUtils{
@@ -34,14 +37,25 @@ func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 
 func TestRunPythonBuild(t *testing.T) {
 	cpe := pythonBuildCommonPipelineEnvironment{}
+	// utils := newPythonBuildTestsUtils()
+
+	SetConfigOptions(ConfigCommandOptions{
+		// OpenFile: utils.FilesMock.OpenFile,
+		OpenFile: config.OpenPiperFile,
+	})
+
 	t.Run("success - build", func(t *testing.T) {
 		config := pythonBuildOptions{
 			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		// assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
 	})
@@ -49,11 +63,12 @@ func TestRunPythonBuild(t *testing.T) {
 	t.Run("failure - build failure", func(t *testing.T) {
 		config := pythonBuildOptions{}
 		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.ShouldFailOnCommand = map[string]error{"python setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.EqualError(t, err, "failed to build package: build failure")
+		assert.EqualError(t, err, "failed to build python project: build failure")
 	})
 
 	t.Run("success - publishes binaries", func(t *testing.T) {
@@ -65,16 +80,19 @@ func TestRunPythonBuild(t *testing.T) {
 			VirtualEnvironmentName:   "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "dummy/bin/pip", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, utils.ExecMockRunner.Calls[2].Params)
-		assert.Equal(t, "dummy/bin/python", utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "python"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "twine"}, utils.ExecMockRunner.Calls[4].Params)
@@ -91,17 +109,19 @@ func TestRunPythonBuild(t *testing.T) {
 			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		runPythonBuild(&config, &telemetryData, utils, &cpe)
-		// assert.NoError(t, err)
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
 		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
-		assert.Equal(t, "dummy/bin/pip", utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, utils.ExecMockRunner.Calls[2].Params)
-		assert.Equal(t, "dummy/bin/python", utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, filepath.Join("dummy", "bin", "python"), utils.ExecMockRunner.Calls[3].Exec)
 		assert.Equal(t, []string{"setup.py", "sdist", "bdist_wheel"}, utils.ExecMockRunner.Calls[3].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[4].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[4].Params)

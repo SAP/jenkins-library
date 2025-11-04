@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1" serialNumber="urn:uuid:test-invalid-bom">
+  <metadata>
+    <timestamp>2025-10-31T10:30:00Z</timestamp>
+    <component type="application">
+      <name>invalid-test-app</name>
+      <version>1.0.0</version>
+      <description>Test BOM without PURL - should fail validation</description>
+      <!-- PURL is missing - this makes the BOM invalid -->
+    </component>
+  </metadata>
+  <components>
+    <component type="library">
+      <name>test-library</name>
+      <version>1.0.0</version>
+      <purl>pkg:npm/test-library@1.0.0</purl>
+    </component>
+  </components>
+</bom>
