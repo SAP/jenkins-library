@@ -17,7 +17,6 @@ const DOCKER_IMAGE_PYTHON = "python:3.11"
 func TestPythonIntegrationBuildProject(t *testing.T) {
 	t.Parallel()
 
-
 	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_PYTHON,
 		TestData: "TestPythonIntegration/python-project",
