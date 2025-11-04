@@ -98,6 +98,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
 		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
 
+		apiClient.SetOptions(piperhttp.ClientOptions{TransportProxy: transportProxy})
 		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
 	}
 

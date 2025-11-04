@@ -253,7 +253,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
 	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
 	cmd.Flags().BoolVar(&stepConfig.InsecureSkipTLSVerify, "insecureSkipTLSVerify", false, "This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)")
-	cmd.Flags().StringVar(&stepConfig.CACertificate, "CACertificate", `ca-certificate`, "Path to the Kubernetes CA certificate file.")
+	cmd.Flags().StringVar(&stepConfig.CACertificate, "CACertificate", `ca-certificate`, "Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate').")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
