@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const DOCKER_IMAGE_PYTHON = "python:3.10"
+const DOCKER_IMAGE_PYTHON = "python:3.11"
 
 func TestPythonIntegrationBuildProject(t *testing.T) {
 	t.Parallel()
