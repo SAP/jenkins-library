@@ -129,3 +129,99 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[5].Params)
 	})
 }
+
+func TestRunPythonBuildWithToml(t *testing.T) {
+	cpe := pythonBuildCommonPipelineEnvironment{}
+	// utils := newPythonBuildTestsUtils()
+
+	SetConfigOptions(ConfigCommandOptions{
+		// OpenFile: utils.FilesMock.OpenFile,
+		OpenFile: config.OpenPiperFile,
+	})
+
+	t.Run("success - build", func(t *testing.T) {
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		// assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - publishes binaries", func(t *testing.T) {
+		config := pythonBuildOptions{
+			Publish:                  true,
+			TargetRepositoryURL:      "https://my.target.repository.local",
+			TargetRepositoryUser:     "user",
+			TargetRepositoryPassword: "password",
+			VirtualEnvironmentName:   "dummy",
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pip"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "."}, utils.ExecMockRunner.Calls[3].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[4].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "build"}, utils.ExecMockRunner.Calls[4].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[5].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, utils.ExecMockRunner.Calls[5].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "python"), utils.ExecMockRunner.Calls[6].Exec)
+		assert.Equal(t, []string{"-m", "build", "--no-isolation"}, utils.ExecMockRunner.Calls[6].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[7].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "twine"}, utils.ExecMockRunner.Calls[7].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "twine"), utils.ExecMockRunner.Calls[8].Exec)
+		assert.Equal(t, []string{"upload", "--username", config.TargetRepositoryUser,
+			"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL,
+			"--disable-progress-bar", "dist/*"}, utils.ExecMockRunner.Calls[8].Params)
+	})
+
+	t.Run("success - create BOM", func(t *testing.T) {
+		config := pythonBuildOptions{
+			CreateBOM:              true,
+			Publish:                false,
+			VirtualEnvironmentName: "dummy",
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"-c", "source " + filepath.Join("dummy", "bin", "activate")}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pip"}, utils.ExecMockRunner.Calls[2].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[2].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "."}, utils.ExecMockRunner.Calls[3].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[3].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "build"}, utils.ExecMockRunner.Calls[4].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[4].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "wheel"}, utils.ExecMockRunner.Calls[5].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[5].Exec)
+		assert.Equal(t, []string{"-m", "build", "--no-isolation"}, utils.ExecMockRunner.Calls[6].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "python"), utils.ExecMockRunner.Calls[6].Exec)
+		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[7].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[7].Exec)
+		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[8].Params)
+		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[8].Exec)
+	})
+}
