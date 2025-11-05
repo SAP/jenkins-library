@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1" serialNumber="urn:uuid:test-gradle-bom">
+  <metadata>
+    <timestamp>2025-10-31T10:30:00Z</timestamp>
+    <component type="application">
+      <name>test-gradle-app</name>
+      <version>1.0.0</version>
+      <purl>pkg:maven/com.example/test-gradle-app@1.0.0</purl>
+      <description>Test Gradle BOM</description>
+    </component>
+  </metadata>
+  <components>
+    <component type="library">
+      <name>junit</name>
+      <version>4.13.2</version>
+      <purl>pkg:maven/junit/junit@4.13.2</purl>
+    </component>
+  </components>
+</bom>

@@ -25,7 +25,7 @@ spec:
           - STEPS
       - name: setupFlags
         type: "[]string"
-        description: Defines list of flags passed to setup.py.
+        description: Defines list of flags passed to setup.py / build module.
         scope:
           - PARAMETERS
           - STAGES
@@ -116,4 +116,4 @@ spec:
           - name: custom/buildSettingsInfo
   containers:
     - name: python
-      image: python:3.10
+      image: python:3.11

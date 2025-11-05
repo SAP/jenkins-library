@@ -205,7 +205,7 @@ and are exposed are environment variables that must be present in the environmen
 
 func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags passed to python binary.")
-	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py.")
+	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py / build module.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
@@ -341,7 +341,7 @@ func pythonBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3.10"},
+				{Name: "python", Image: "python:3.11"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

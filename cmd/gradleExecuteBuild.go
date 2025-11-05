@@ -236,32 +236,6 @@ func createBOM(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils)
 		return err
 	}
 
-	// Validate generated SBOMs
-	bomFilename := gradleBomFilename + ".xml"
-	err = utils.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if strings.HasSuffix(path, bomFilename) {
-			log.Entry().Infof("Validating generated SBOM: %s", path)
-
-			if err := piperutils.ValidateCycloneDX14(path); err != nil {
-				log.Entry().Warnf("SBOM validation failed: %v", err)
-			} else {
-				purl := piperutils.GetPurl(path)
-				log.Entry().Infof("SBOM validation passed")
-				log.Entry().Infof("SBOM PURL: %s", purl)
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		log.Entry().Warnf("Failed to walk directory for SBOM validation: %v", err)
-	}
-
 	return nil
 }
 

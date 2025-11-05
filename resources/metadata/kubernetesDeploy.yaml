@@ -549,9 +549,9 @@ spec:
         default: false
       - name: CACertificate
         type: string
-        description: Path to the Kubernetes CA certificate file.
+        description: Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate').
         longDescription: |
-          Path to the Kubernetes CA certificate file. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
+          Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate'). If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
         scope:
           - PARAMETERS
           - STAGES
