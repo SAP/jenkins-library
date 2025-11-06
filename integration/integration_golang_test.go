@@ -28,7 +28,7 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 
 	output := RunPiper(t, container, "/golang-project1", "golangBuild")
 
-	assert.Contains(output, "info  golangBuild - running command: gos install gotest.tools/gotestsum@latest")
+	assert.Contains(output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
 	assert.Contains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
 	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
 	assert.Contains(output, "info  golangBuild - DONE 8 tests")
