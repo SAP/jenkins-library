@@ -9,6 +9,7 @@ package main
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,12 +28,13 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/python -m build --no-isolation")
 	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore cyclonedx-bom==")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4 --pyproject pyproject.toml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
-	lsOutput := ExecCommand(t, container, "/python-project", []string{"ls", "-l", ".", "dist", "build"})
-	assert.Contains(t, lsOutput, "example_pkg-0.0.1.tar.gz")
-	assert.Contains(t, lsOutput, "example_pkg-0.0.1-py3-none-any.whl")
+	AssertFileExists(t, container,
+		"/python-project/dist/example_pkg-0.0.1.tar.gz",
+		"/python-project/dist/example_pkg-0.0.1-py3-none-any.whl",
+	)
 }
 
 func TestPythonIntegrationBuildWithBOMValidation(t *testing.T) {
@@ -45,15 +47,61 @@ func TestPythonIntegrationBuildWithBOMValidation(t *testing.T) {
 	})
 
 	output := RunPiper(t, container, "/python-project", "pythonBuild")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4")
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4 --pyproject pyproject.toml")
 	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
 
-	output = RunPiper(t, container, "/python-project", "validateBOM")
+	// Read BOM content and validate
+	bomContent := ReadFile(t, container, "/python-project/bom-pip.xml")
+	err := piperutils.ValidateBOM(bomContent)
+	assert.NoError(t, err, "BOM validation should pass for Python project with valid metadata")
+}
 
-	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
-	assert.Contains(t, output, "info  validateBOM - Validating BOM file:")
-	assert.Contains(t, output, "bom-pip.xml")
-	assert.Contains(t, output, "warn  validateBOM - BOM validation failed for:") // cyclonedx-py currently generates incomplete BOMs
-	assert.Contains(t, output, "metadata.component.name is required but missing")
-	assert.Contains(t, output, "info  validateBOM - BOM validation complete:")
+func TestPythonIntegrationBuildLegacy(t *testing.T) {
+	t.Parallel()
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-legacy",
+		WorkDir:  "/python-project-legacy",
+	})
+
+	output := RunPiper(t, container, "/python-project-legacy", "pythonBuild")
+
+	// Should build using setup.py
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/python setup.py sdist bdist_wheel")
+	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
+
+	// Read BOM content and validate - should fail due to missing metadata
+	bomContent := ReadFile(t, container, "/python-project-legacy/bom-pip.xml")
+	err := piperutils.ValidateBOM(bomContent)
+	assert.Error(t, err, "BOM validation should fail for legacy Python project without metadata")
+	assert.Regexp(t, "metadata\\.component\\.(name|purl)", err.Error())
+}
+
+func TestPythonIntegrationBuildMinimal(t *testing.T) {
+	t.Parallel()
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-minimal",
+		WorkDir:  "/python-project-minimal",
+	})
+
+	output := RunPiper(t, container, "/python-project-minimal", "pythonBuild")
+
+	// Should build using python -m build (modern approach)
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/python -m build --no-isolation")
+	// Should generate BOM without --pyproject flag (no [project] metadata)
+	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4")
+	assert.NotContains(t, output, "--pyproject")
+	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
+
+	// Verify BOM was generated
+	AssertFileExists(t, container, "/python-project-minimal/bom-pip.xml")
+
+	// Read BOM content and validate - should fail (no [project] metadata in pyproject.toml)
+	bomContent := ReadFile(t, container, "/python-project-minimal/bom-pip.xml")
+	err := piperutils.ValidateBOM(bomContent)
+	assert.Error(t, err, "BOM validation should fail for minimal Python project without metadata")
+	assert.Regexp(t, "metadata\\.component\\.(name|purl)", err.Error())
 }

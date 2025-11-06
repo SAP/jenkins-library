@@ -9,6 +9,7 @@ package main
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,8 +32,7 @@ func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *test
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
-	lsOutput := ExecCommand(t, container, "/java-project", []string{"ls", "-l", "./build/reports/"})
-	assert.Contains(t, lsOutput, "bom-gradle.xml")
+	AssertFileExists(t, container, "/java-project/build/reports/bom-gradle.xml")
 }
 
 func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
@@ -52,8 +52,7 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 	assert.Contains(t, output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
-	lsOutput := ExecCommand(t, container, "/java-project-with-bom-plugin", []string{"ls", "-l", "./build/reports/"})
-	assert.Contains(t, lsOutput, "bom-gradle.xml")
+	AssertFileExists(t, container, "/java-project-with-bom-plugin/build/reports/bom-gradle.xml")
 }
 
 func TestGradleIntegrationExecuteBuildWithBOMValidation(t *testing.T) {
@@ -68,11 +67,8 @@ func TestGradleIntegrationExecuteBuildWithBOMValidation(t *testing.T) {
 	output := RunPiper(t, container, "/java-project", "gradleExecuteBuild")
 	assert.Contains(t, output, "info  gradleExecuteBuild - SUCCESS")
 
-	output = RunPiper(t, container, "/java-project", "validateBOM")
-	assert.Contains(t, output, "info  validateBOM - Found 1 BOM file(s) to validate")
-	assert.Contains(t, output, "info  validateBOM - Validating BOM file:")
-	assert.Contains(t, output, "bom-gradle.xml")
-	assert.Contains(t, output, "info  validateBOM - BOM validation passed:")
-	assert.Contains(t, output, "info  validateBOM - BOM PURL:")
-	assert.Contains(t, output, "info  validateBOM - BOM validation complete: 1/1 files validated successfully")
+	// Read BOM content and validate
+	bomContent := ReadFile(t, container, "/java-project/build/reports/bom-gradle.xml")
+	err := piperutils.ValidateBOM(bomContent)
+	assert.NoError(t, err, "BOM validation should pass for Gradle project")
 }

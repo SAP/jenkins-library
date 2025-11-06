@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -79,13 +80,18 @@ func RunPiper(t *testing.T, container testcontainers.Container, workDir, command
 	cmd := append([]string{"/piperbin/piper", command}, args...)
 
 	code, reader, err := container.Exec(ctx, cmd, exec.WithWorkingDir(workDir))
-	require.NoError(t, err, "Failed to execute piper command")
-	require.Equal(t, 0, code, "Piper command failed with non-zero exit code")
 
-	output, err := io.ReadAll(reader)
-	require.NoError(t, err, "Failed to read command output")
+	output, readErr := io.ReadAll(reader)
+	outputStr := string(output)
 
-	return string(output)
+	require.NoError(t, err, "Failed to execute piper command: %v\nCommand: %v\nWorkDir: %s", err, cmd, workDir)
+	require.NoError(t, readErr, "Failed to read command output for: %v", cmd)
+
+	require.Equal(t, 0, code,
+		"Piper command failed with exit code %d\nCommand: %v\nWorkDir: %s\nOutput:\n%s",
+		code, cmd, workDir, outputStr)
+
+	return outputStr
 }
 
 // RunPiperExpectFailure executes a piper command expecting it to fail.
@@ -97,12 +103,23 @@ func RunPiperExpectFailure(t *testing.T, container testcontainers.Container, wor
 	cmd := append([]string{"/piperbin/piper", command}, args...)
 
 	code, reader, err := container.Exec(ctx, cmd, exec.WithWorkingDir(workDir))
-	require.NoError(t, err, "Failed to execute piper command")
 
-	output, err := io.ReadAll(reader)
-	require.NoError(t, err, "Failed to read command output")
+	output, readErr := io.ReadAll(reader)
+	outputStr := string(output)
 
-	return code, string(output)
+	require.NoError(t, err,
+		"Failed to execute piper command: %v\nCommand: %v\nWorkDir: %s",
+		err, cmd, workDir)
+	require.NoError(t, readErr,
+		"Failed to read command output for: %v", cmd)
+
+	if code == 0 {
+		t.Logf("WARNING: Command succeeded with exit code 0 (expected failure)\nOutput:\n%s", outputStr)
+	} else {
+		t.Logf("Command failed as expected with exit code %d\nOutput:\n%s", code, outputStr)
+	}
+
+	return code, outputStr
 }
 
 // AssertFileExists checks that one or more files exist in the container.
@@ -113,9 +130,28 @@ func AssertFileExists(t *testing.T, container testcontainers.Container, paths ..
 	ctx := context.Background()
 	cmd := append([]string{"stat"}, paths...)
 
-	code, _, err := container.Exec(ctx, cmd)
-	require.NoError(t, err, "Failed to check file existence")
-	require.Equal(t, 0, code, "One or more files do not exist: %v", paths)
+	code, reader, err := container.Exec(ctx, cmd)
+	output, _ := io.ReadAll(reader)
+
+	assert.NoError(t, err, "Failed to execute stat command: %v", err)
+	assert.Equal(t, 0, code,
+		"One or more files do not exist: %v\nstat output:\n%s",
+		paths, string(output))
+}
+
+// ReadFile reads the content of a file from the container and returns it as a byte slice.
+func ReadFile(t *testing.T, container testcontainers.Container, path string) []byte {
+	t.Helper()
+
+	ctx := context.Background()
+	reader, err := container.CopyFileFromContainer(ctx, path)
+	require.NoError(t, err, "Failed to copy file '%s' from container", path)
+	defer reader.Close()
+
+	output, err := io.ReadAll(reader)
+	require.NoError(t, err, "Failed to read content of file '%s'", path)
+
+	return output
 }
 
 // ExecCommand executes an arbitrary command in the container.
@@ -124,15 +160,19 @@ func ExecCommand(t *testing.T, container testcontainers.Container, workDir strin
 	t.Helper()
 
 	ctx := context.Background()
-
 	code, reader, err := container.Exec(ctx, command, exec.WithWorkingDir(workDir))
-	require.NoError(t, err, "Failed to execute command")
-	require.Equal(t, 0, code, "Command failed with non-zero exit code")
 
-	output, err := io.ReadAll(reader)
-	require.NoError(t, err, "Failed to read command output")
+	// Always read output first
+	output, readErr := io.ReadAll(reader)
+	outputStr := string(output)
 
-	return string(output)
+	require.NoError(t, err, "Failed to execute command: %v\nCommand: %v\nWorkDir: %s", err, command, workDir)
+	require.NoError(t, readErr, "Failed to read output for command: %v", command)
+	require.Equal(t, 0, code,
+		"Command failed with exit code %d\nCommand: %v\nWorkDir: %s\nOutput:\n%s",
+		code, command, workDir, outputStr)
+
+	return outputStr
 }
 
 // getProjectRoot returns the absolute path to the project root directory.

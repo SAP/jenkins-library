@@ -215,10 +215,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		if err != nil {
 			log.Entry().Warnf("unable to get artifact coordinates : %v", err)
 		} else {
+			component := piperutils.GetComponent(filepath.Join(filepath.Dir(packageJSON), npmBomFilename))
 			coordinate.BuildPath = filepath.Dir(packageJSON)
 			coordinate.URL = registry
 			coordinate.Packaging = "tgz"
-			coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir(packageJSON), npmBomFilename))
+			coordinate.PURL = component.Purl
 
 			*buildCoordinates = append(*buildCoordinates, coordinate)
 		}

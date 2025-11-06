@@ -4,6 +4,7 @@
 package python
 
 import (
+	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -20,17 +21,159 @@ func TestCreateBOM(t *testing.T) {
 
 	// assert
 	assert.NoError(t, err)
-	assert.Len(t, mockRunner.Calls, 2)
+	assert.Len(t, mockRunner.Calls, 3)
 	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[0].Exec)
 	assert.Equal(t, []string{
 		"install",
 		"--upgrade",
 		"--root-user-action=ignore",
-		"cyclonedx-bom==1.2.3"}, mockRunner.Calls[0].Params)
-	assert.Equal(t, ".venv/bin/cyclonedx-py", mockRunner.Calls[1].Exec)
+		"."}, mockRunner.Calls[0].Params)
+	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[1].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"cyclonedx-bom==1.2.3"}, mockRunner.Calls[1].Params)
+	assert.Equal(t, ".venv/bin/cyclonedx-py", mockRunner.Calls[2].Exec)
+	assert.Equal(t, []string{
+		"env",
+		".venv/bin/python",
+		"--output-file", "bom-pip.xml",
+		"--output-format", "XML",
+		"--spec-version", "16"}, mockRunner.Calls[2].Params)
+}
+
+func TestCreateBOMWithPyProjectToml(t *testing.T) {
+	// init
+	mockRunner := mock.ExecMockRunner{}
+	mockFiles := mock.FilesMock{}
+
+	// Create a temporary directory and pyproject.toml file
+	tmpDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(originalDir)
+
+	// Write pyproject.toml with [project] metadata section
+	err := os.WriteFile("pyproject.toml", []byte(`[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "example-pkg"
+version = "0.0.1"
+`), 0644)
+	assert.NoError(t, err)
+
+	// test
+	err = CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, ".venv", "requirements.txt", "1.2.3", "1.4")
+
+	// assert
+	assert.NoError(t, err)
+	assert.Len(t, mockRunner.Calls, 3)
+	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[0].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"."}, mockRunner.Calls[0].Params)
+	assert.Equal(t, ".venv/bin/pip", mockRunner.Calls[1].Exec)
+	assert.Equal(t, []string{
+		"install",
+		"--upgrade",
+		"--root-user-action=ignore",
+		"cyclonedx-bom==1.2.3"}, mockRunner.Calls[1].Params)
+	assert.Equal(t, ".venv/bin/cyclonedx-py", mockRunner.Calls[2].Exec)
 	assert.Equal(t, []string{
 		"env",
 		"--output-file", "bom-pip.xml",
 		"--output-format", "XML",
-		"--spec-version", "16"}, mockRunner.Calls[1].Params)
+		"--spec-version", "1.4",
+		"--pyproject", "pyproject.toml"}, mockRunner.Calls[2].Params)
+}
+
+func TestCreateBOMWithMinimalPyProjectToml(t *testing.T) {
+	// init
+	mockRunner := mock.ExecMockRunner{}
+	mockFiles := mock.FilesMock{}
+
+	// Create a temporary directory and pyproject.toml file
+	tmpDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(originalDir)
+
+	// Write pyproject.toml WITHOUT [project] metadata section
+	err := os.WriteFile("pyproject.toml", []byte(`[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+`), 0644)
+	assert.NoError(t, err)
+
+	// test
+	err = CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, ".venv", "requirements.txt", "1.2.3", "1.4")
+
+	// assert
+	assert.NoError(t, err)
+	assert.Len(t, mockRunner.Calls, 3)
+	assert.Equal(t, ".venv/bin/cyclonedx-py", mockRunner.Calls[2].Exec)
+	// Should NOT include --pyproject flag since there's no [project] metadata
+	assert.Equal(t, []string{
+		"env",
+		"--output-file", "bom-pip.xml",
+		"--output-format", "XML",
+		"--spec-version", "1.4"}, mockRunner.Calls[2].Params)
+}
+
+func TestPyprojectHasMetadata(t *testing.T) {
+	t.Run("file does not exist", func(t *testing.T) {
+		hasMetadata := pyprojectHasMetadata("nonexistent.toml")
+		assert.False(t, hasMetadata)
+	})
+
+	t.Run("file has [project] section", func(t *testing.T) {
+		// Create a temporary file with [project] section
+		tmpDir := t.TempDir()
+		tmpFile := tmpDir + "/pyproject.toml"
+		err := os.WriteFile(tmpFile, []byte(`[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "test"
+version = "1.0.0"
+`), 0644)
+		assert.NoError(t, err)
+
+		hasMetadata := pyprojectHasMetadata(tmpFile)
+		assert.True(t, hasMetadata)
+	})
+
+	t.Run("file without [project] section", func(t *testing.T) {
+		// Create a temporary file without [project] section
+		tmpDir := t.TempDir()
+		tmpFile := tmpDir + "/pyproject.toml"
+		err := os.WriteFile(tmpFile, []byte(`[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+`), 0644)
+		assert.NoError(t, err)
+
+		hasMetadata := pyprojectHasMetadata(tmpFile)
+		assert.False(t, hasMetadata)
+	})
+
+	t.Run("file with [project] section with whitespace", func(t *testing.T) {
+		// Create a temporary file with [project] section with leading whitespace
+		tmpDir := t.TempDir()
+		tmpFile := tmpDir + "/pyproject.toml"
+		err := os.WriteFile(tmpFile, []byte(`[build-system]
+requires = ["setuptools"]
+
+  [project]
+name = "test"
+`), 0644)
+		assert.NoError(t, err)
+
+		hasMetadata := pyprojectHasMetadata(tmpFile)
+		assert.True(t, hasMetadata)
+	})
 }
