@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -120,23 +119,6 @@ func RunPiperExpectFailure(t *testing.T, container testcontainers.Container, wor
 	}
 
 	return code, outputStr
-}
-
-// AssertFileExists checks that one or more files exist in the container.
-// It fails the test if any file is missing.
-func AssertFileExists(t *testing.T, container testcontainers.Container, paths ...string) {
-	t.Helper()
-
-	ctx := context.Background()
-	cmd := append([]string{"stat"}, paths...)
-
-	code, reader, err := container.Exec(ctx, cmd)
-	output, _ := io.ReadAll(reader)
-
-	assert.NoError(t, err, "Failed to execute stat command: %v", err)
-	assert.Equal(t, 0, code,
-		"One or more files do not exist: %v\nstat output:\n%s",
-		paths, string(output))
 }
 
 // ReadFile reads the content of a file from the container and returns it as a byte slice.

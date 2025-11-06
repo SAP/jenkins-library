@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/stretchr/testify/assert"
 )
 
 const DOCKER_IMAGE_GOLANG = "golang:1"
@@ -19,6 +18,7 @@ const DOCKER_IMAGE_GOLANG = "golang:1"
 // The configuration for golangBuild can be found in testdata/TestGolangIntegration/golang-project1/.pipeline/config.yml
 func TestGolangIntegrationBuildProject1(t *testing.T) {
 	t.Parallel()
+	assert := NewContainerAssert(t)
 
 	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GOLANG,
@@ -28,18 +28,18 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 
 	output := RunPiper(t, container, "/golang-project1", "golangBuild")
 
-	assert.Contains(t, output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	assert.Contains(t, output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
-	assert.Contains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
-	assert.Contains(t, output, "info  golangBuild - DONE 8 tests")
-	assert.Contains(t, output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
-	assert.Contains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.Contains(t, output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
-	assert.Contains(t, output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64 cmd/server/server.go")
-	assert.Contains(t, output, "info  golangBuild - SUCCESS")
+	assert.Contains(output, "info  golangBuild - running command: gos install gotest.tools/gotestsum@latest")
+	assert.Contains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
+	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
+	assert.Contains(output, "info  golangBuild - DONE 8 tests")
+	assert.Contains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
+	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
+	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64 cmd/server/server.go")
+	assert.Contains(output, "info  golangBuild - SUCCESS")
 
 	// Verify files were created
-	AssertFileExists(t, container,
+	assert.FileExists(container,
 		"/golang-project1/TEST-go.xml",
 		"/golang-project1/TEST-integration.xml",
 		"/golang-project1/bom-golang.xml",
@@ -52,6 +52,7 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 // This test extends TestGolangIntegrationBuildProject1 with multi-package build
 func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 	t.Parallel()
+	assert := NewContainerAssert(t)
 
 	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GOLANG,
@@ -61,18 +62,18 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 
 	output := RunPiper(t, container, "/golang-project1", "golangBuild", "--packages", "github.com/example/golang-app/cmd/server,github.com/example/golang-app/cmd/helper")
 
-	assert.Contains(t, output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	assert.Contains(t, output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
-	assert.Contains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
-	assert.Contains(t, output, "info  golangBuild - DONE 8 tests")
-	assert.Contains(t, output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
-	assert.Contains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.Contains(t, output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
-	assert.Contains(t, output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux-amd64/ github.com/example/golang-app/cmd/server github.com/example/golang-app/cmd/helper")
-	assert.Contains(t, output, "info  golangBuild - SUCCESS")
+	assert.Contains(output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
+	assert.Contains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
+	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
+	assert.Contains(output, "info  golangBuild - DONE 8 tests")
+	assert.Contains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
+	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
+	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux-amd64/ github.com/example/golang-app/cmd/server github.com/example/golang-app/cmd/helper")
+	assert.Contains(output, "info  golangBuild - SUCCESS")
 
 	// Verify files were created
-	AssertFileExists(t, container,
+	assert.FileExists(container,
 		"/golang-project1/TEST-go.xml",
 		"/golang-project1/TEST-integration.xml",
 		"/golang-project1/bom-golang.xml",
@@ -87,6 +88,7 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 // The configuration for golangBuild can be found in testdata/TestGolangIntegration/golang-project2/.pipeline/config.yml
 func TestGolangIntegrationBuildProject2(t *testing.T) {
 	t.Parallel()
+	assert := NewContainerAssert(t)
 
 	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GOLANG,
@@ -97,21 +99,22 @@ func TestGolangIntegrationBuildProject2(t *testing.T) {
 	output := RunPiper(t, container, "/golang-project2", "golangBuild")
 
 	// Should NOT run testing or BOM generation
-	assert.NotContains(t, output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	assert.NotContains(t, output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
-	assert.NotContains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
-	assert.NotContains(t, output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
-	assert.NotContains(t, output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.NotContains(t, output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
+	assert.NotContains(output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
+	assert.NotContains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
+	assert.NotContains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
+	assert.NotContains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
+	assert.NotContains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
+	assert.NotContains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
 
 	// Should only run build
-	assert.Contains(t, output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64")
-	assert.Contains(t, output, "info  golangBuild - SUCCESS")
+	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64")
+	assert.Contains(output, "info  golangBuild - SUCCESS")
 }
 
 // This test verifies that BOM validation works for BOMs generated by golangBuild
 func TestGolangIntegrationBuildWithBOMValidation(t *testing.T) {
 	t.Parallel()
+	assert := NewContainerAssert(t)
 
 	container := StartPiperContainer(t, ContainerConfig{
 		Image:    DOCKER_IMAGE_GOLANG,
@@ -121,14 +124,14 @@ func TestGolangIntegrationBuildWithBOMValidation(t *testing.T) {
 
 	// First, run golangBuild to generate the BOM
 	output := RunPiper(t, container, "/golang-project1", "golangBuild")
-	assert.Contains(t, output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
-	assert.Contains(t, output, "info  golangBuild - SUCCESS")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
+	assert.Contains(output, "info  golangBuild - SUCCESS")
 
 	// Verify BOM file was created
-	AssertFileExists(t, container, "/golang-project1/bom-golang.xml")
+	assert.FileExists(container, "/golang-project1/bom-golang.xml")
 
 	// Read BOM content and validate
 	bomContent := ReadFile(t, container, "/golang-project1/bom-golang.xml")
 	err := piperutils.ValidateBOM(bomContent)
-	assert.NoError(t, err, "BOM validation should pass for Golang project")
+	assert.NoError(err, "BOM validation should pass for Golang project")
 }
