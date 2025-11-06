@@ -37,7 +37,6 @@ func TestCreateBOM(t *testing.T) {
 	assert.Equal(t, ".venv/bin/cyclonedx-py", mockRunner.Calls[2].Exec)
 	assert.Equal(t, []string{
 		"env",
-		".venv/bin/python",
 		"--output-file", "bom-pip.xml",
 		"--output-format", "XML",
 		"--spec-version", "16"}, mockRunner.Calls[2].Params)
