@@ -541,7 +541,7 @@ spec:
           - STEPS
       - name: insecureSkipTLSVerify
         type: bool
-        description: This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)
+        description: This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. (Please note that for helm deployments this parameter is always set to true) [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)
         scope:
           - PARAMETERS
           - STAGES
@@ -549,9 +549,9 @@ spec:
         default: false
       - name: CACertificate
         type: string
-        description: Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate').
+        description: Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate' with a subkey called 'CACertificate'. The data needs to be stored in the subkey value). This parameter is only supported for kubectl-based deployments. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
         longDescription: |
-          Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate'). If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
+          Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate' with a subkey called 'CACertificate'. The data needs to be stored in the subkey value)). This parameter is only supported for kubectl-based deployments. If provided, secure connections for kubectl deployments will be established using this certificate when 'insecureSkipTLSVerify' is false.
         scope:
           - PARAMETERS
           - STAGES
