@@ -254,9 +254,10 @@ func createBuildArtifactsMetadata(config *mavenBuildOptions, commonPipelineEnvir
 			if err != nil {
 				log.Entry().Warnf("unable to get artifact coordinates : %v", err)
 			} else {
+				component := piperutils.GetComponent(filepath.Join(filepath.Dir(match), "/target/"+mvnSimpleBomFilename+".xml"))
 				coordinate.BuildPath = filepath.Dir(match)
 				coordinate.URL = config.AltDeploymentRepositoryURL
-				coordinate.PURL = piperutils.GetPurl(filepath.Join(filepath.Dir(match), "/target/"+mvnSimpleBomFilename+".xml"))
+				coordinate.PURL = component.Purl
 				buildCoordinates = append(buildCoordinates, coordinate)
 			}
 		}

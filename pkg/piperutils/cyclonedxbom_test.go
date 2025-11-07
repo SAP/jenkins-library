@@ -120,13 +120,13 @@ func TestGetPurl(t *testing.T) {
 				filePath = "nonexistent.xml"
 			}
 
-			purl := GetPurl(filePath)
+			purl := GetComponent(filePath).Purl
 			assert.Equal(t, tt.expectedPurl, purl)
 		})
 	}
 }
 
-func TestValidateCycloneDX14(t *testing.T) {
+func TestValidateBOM(t *testing.T) {
 	tests := []struct {
 		name          string
 		bomContent    string
@@ -189,10 +189,7 @@ func TestValidateCycloneDX14(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fileName, cleanup := createTempFile(t, tt.bomContent)
-			defer cleanup()
-
-			err := ValidateCycloneDX14(fileName)
+			err := ValidateBOM([]byte(tt.bomContent))
 
 			if tt.errorContains != "" {
 				assert.Error(t, err)
@@ -319,7 +316,9 @@ func TestParseMTASampleBOM(t *testing.T) {
 	assert.NotEmpty(t, bom.Components, "Expected at least one component in components list")
 
 	// Validate the BOM
-	err = ValidateCycloneDX14(bomPath)
+	bomContent, err := os.ReadFile(bomPath)
+	assert.NoError(t, err, "Failed to read BOM file")
+	err = ValidateBOM(bomContent)
 	assert.NoError(t, err, "MTA sample BOM validation failed")
 
 	// Verify version detection
