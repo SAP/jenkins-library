@@ -32,7 +32,6 @@ func CreateBOM(
 	// Install current package to ensure it's in the venv for cyclonedx-py to detect
 	// For pyproject.toml builds, this is already done in BuildWithPyProjectToml, but doing it again is safe
 	// For setup.py builds, this ensures the package is installed
-	log.Entry().Debug("installing current package for SBOM generation")
 	if err := InstallProjectDependencies(executeFn, virtualEnv); err != nil {
 		return fmt.Errorf("failed to install project dependencies: %w", err)
 	}
