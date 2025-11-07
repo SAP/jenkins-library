@@ -99,8 +99,7 @@ func GetBomVersion(bomFilePath string) (string, error) {
 // with mandatory PURL as per project specifications
 func ValidateBOM(bomContent []byte) error {
 	var bom Bom
-	err := xml.Unmarshal(bomContent, &bom)
-	if err != nil {
+	if err := xml.Unmarshal(bomContent, &bom); err != nil {
 		return fmt.Errorf("failed to parse BOM: %w", err)
 	}
 
