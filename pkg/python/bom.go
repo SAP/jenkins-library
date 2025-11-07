@@ -41,9 +41,7 @@ func CreateBOM(
 	}
 
 	log.Entry().Debug("creating BOM")
-	args := []string{"env"}
-
-	args = append(args,
+	args := append([]string{"env"},
 		"--output-file", BOMFilename,
 		"--output-format", "XML",
 		"--spec-version", cycloneDxSchemaVersion,
