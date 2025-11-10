@@ -2,7 +2,6 @@ package python
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -16,6 +15,7 @@ const (
 func CreateBOM(
 	executeFn func(executable string, params ...string) error,
 	existsFn func(path string) (bool, error),
+	readFileFn func(path string) ([]byte, error),
 	virtualEnv string,
 	requirementsFile string,
 	cycloneDxVersion string,
@@ -32,7 +32,6 @@ func CreateBOM(
 	// Install current package to ensure it's in the venv for cyclonedx-py to detect
 	// For pyproject.toml builds, this is already done in BuildWithPyProjectToml, but doing it again is safe
 	// For setup.py builds, this ensures the package is installed
-	log.Entry().Debug("installing current package for SBOM generation")
 	if err := InstallProjectDependencies(executeFn, virtualEnv); err != nil {
 		return fmt.Errorf("failed to install project dependencies: %w", err)
 	}
@@ -42,9 +41,7 @@ func CreateBOM(
 	}
 
 	log.Entry().Debug("creating BOM")
-	args := []string{"env"}
-
-	args = append(args,
+	args := append([]string{"env"},
 		"--output-file", BOMFilename,
 		"--output-format", "XML",
 		"--spec-version", cycloneDxSchemaVersion,
@@ -52,7 +49,7 @@ func CreateBOM(
 
 	// Add pyproject.toml only if it exists AND contains [project] metadata
 	// Without [project] metadata, cyclonedx-py will fail when using --pyproject flag
-	if hasMetadata := pyprojectHasMetadata("pyproject.toml"); hasMetadata {
+	if hasMetadata := pyprojectHasMetadata(readFileFn, "pyproject.toml"); hasMetadata {
 		args = append(args, "--pyproject", "pyproject.toml")
 	}
 
@@ -95,8 +92,8 @@ func addPurlToRootComponent(bomFile string) error {
 
 // pyprojectHasMetadata checks if pyproject.toml exists and contains [project] metadata section
 // Returns true only if the file exists and contains a [project] section
-func pyprojectHasMetadata(path string) bool {
-	data, err := os.ReadFile(path)
+func pyprojectHasMetadata(readFileFn func(path string) ([]byte, error), path string) bool {
+	data, err := readFileFn(path)
 	if err != nil {
 		// File doesn't exist or can't be read
 		return false

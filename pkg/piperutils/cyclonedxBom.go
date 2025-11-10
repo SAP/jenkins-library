@@ -93,8 +93,7 @@ func GetBomVersion(bomFilePath string) (string, error) {
 // with mandatory PURL as per project specifications
 func ValidateBOM(bomContent []byte) error {
 	var bom Bom
-	err := xml.Unmarshal(bomContent, &bom)
-	if err != nil {
+	if err := xml.Unmarshal(bomContent, &bom); err != nil {
 		return fmt.Errorf("failed to parse BOM: %w", err)
 	}
 
@@ -159,7 +158,7 @@ func UpdatePurl(sbomPath string, newPurl string) error {
 
 		if parent.PackageURL == "" {
 			parent.PackageURL = newPurl
-			log.Entry().Debugf("updated purl in BOM: %s", newPurl)
+			log.Entry().Debugf("adding purl in BOM: %s", newPurl)
 		} else {
 			log.Entry().Debugf("purl already present in parent component hence not updating for: %s", sbomPath)
 		}

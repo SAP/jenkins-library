@@ -17,7 +17,7 @@ func TestCreateBOM(t *testing.T) {
 	mockFiles := mock.FilesMock{}
 
 	// test
-	err := CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, ".venv", "requirements.txt", "1.2.3", "16")
+	err := CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, mockFiles.ReadFile, ".venv", "requirements.txt", "1.2.3", "16")
 
 	// assert
 	assert.NoError(t, err)
@@ -47,24 +47,17 @@ func TestCreateBOMWithPyProjectToml(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockFiles := mock.FilesMock{}
 
-	// Create a temporary directory and pyproject.toml file
-	tmpDir := t.TempDir()
-	originalDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(originalDir)
-
-	// Write pyproject.toml with [project] metadata section
-	err := os.WriteFile("pyproject.toml", []byte(`[build-system]
+	// Add pyproject.toml with [project] metadata section to mock
+	mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
 requires = ["setuptools"]
 
 [project]
 name = "example-pkg"
 version = "0.0.1"
-`), 0644)
-	assert.NoError(t, err)
+`))
 
 	// test
-	err = CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, ".venv", "requirements.txt", "1.2.3", "1.4")
+	err := CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, mockFiles.ReadFile, ".venv", "requirements.txt", "1.2.3", "1.4")
 
 	// assert
 	assert.NoError(t, err)
@@ -95,21 +88,14 @@ func TestCreateBOMWithMinimalPyProjectToml(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockFiles := mock.FilesMock{}
 
-	// Create a temporary directory and pyproject.toml file
-	tmpDir := t.TempDir()
-	originalDir, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(originalDir)
-
-	// Write pyproject.toml WITHOUT [project] metadata section
-	err := os.WriteFile("pyproject.toml", []byte(`[build-system]
+	// Add pyproject.toml WITHOUT [project] metadata section to mock
+	mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
-`), 0644)
-	assert.NoError(t, err)
+`))
 
 	// test
-	err = CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, ".venv", "requirements.txt", "1.2.3", "1.4")
+	err := CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, mockFiles.ReadFile, ".venv", "requirements.txt", "1.2.3", "1.4")
 
 	// assert
 	assert.NoError(t, err)
@@ -125,54 +111,46 @@ build-backend = "setuptools.build_meta"
 
 func TestPyprojectHasMetadata(t *testing.T) {
 	t.Run("file does not exist", func(t *testing.T) {
-		hasMetadata := pyprojectHasMetadata("nonexistent.toml")
+		mockFiles := mock.FilesMock{}
+		hasMetadata := pyprojectHasMetadata(mockFiles.ReadFile, "nonexistent.toml")
 		assert.False(t, hasMetadata)
 	})
 
 	t.Run("file has [project] section", func(t *testing.T) {
-		// Create a temporary file with [project] section
-		tmpDir := t.TempDir()
-		tmpFile := tmpDir + "/pyproject.toml"
-		err := os.WriteFile(tmpFile, []byte(`[build-system]
+		mockFiles := mock.FilesMock{}
+		mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
 requires = ["setuptools"]
 
 [project]
 name = "test"
 version = "1.0.0"
-`), 0644)
-		assert.NoError(t, err)
+`))
 
-		hasMetadata := pyprojectHasMetadata(tmpFile)
+		hasMetadata := pyprojectHasMetadata(mockFiles.ReadFile, "pyproject.toml")
 		assert.True(t, hasMetadata)
 	})
 
 	t.Run("file without [project] section", func(t *testing.T) {
-		// Create a temporary file without [project] section
-		tmpDir := t.TempDir()
-		tmpFile := tmpDir + "/pyproject.toml"
-		err := os.WriteFile(tmpFile, []byte(`[build-system]
+		mockFiles := mock.FilesMock{}
+		mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
-`), 0644)
-		assert.NoError(t, err)
+`))
 
-		hasMetadata := pyprojectHasMetadata(tmpFile)
+		hasMetadata := pyprojectHasMetadata(mockFiles.ReadFile, "pyproject.toml")
 		assert.False(t, hasMetadata)
 	})
 
 	t.Run("file with [project] section with whitespace", func(t *testing.T) {
-		// Create a temporary file with [project] section with leading whitespace
-		tmpDir := t.TempDir()
-		tmpFile := tmpDir + "/pyproject.toml"
-		err := os.WriteFile(tmpFile, []byte(`[build-system]
+		mockFiles := mock.FilesMock{}
+		mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
 requires = ["setuptools"]
 
   [project]
 name = "test"
-`), 0644)
-		assert.NoError(t, err)
+`))
 
-		hasMetadata := pyprojectHasMetadata(tmpFile)
+		hasMetadata := pyprojectHasMetadata(mockFiles.ReadFile, "pyproject.toml")
 		assert.True(t, hasMetadata)
 	})
 }
