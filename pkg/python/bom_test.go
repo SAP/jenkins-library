@@ -4,7 +4,6 @@
 package python
 
 import (
-	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"

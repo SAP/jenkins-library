@@ -26,11 +26,6 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 
 	output := RunPiper(t, container, "/python-project", "pythonBuild")
 
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/python -m build --no-isolation")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore cyclonedx-bom==")
-	assert.Contains(t, output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4 --pyproject pyproject.toml")
-	assert.Contains(t, output, "info  pythonBuild - SUCCESS")
-
 	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/python -m build --no-isolation")
 	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore cyclonedx-bom==")
 	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4 --pyproject pyproject.toml")
