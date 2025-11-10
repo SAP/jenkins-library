@@ -40,9 +40,11 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
-
 func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
-	flags := []string{"-update-snapshots", "--batch-mode"}
+	// CycloneDX always requires online mode - never use offline
+	flags := []string{"--batch-mode"}
+	// Note: No offline/update-snapshots logic here since CycloneDX requires online mode
+
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
 	}
@@ -74,6 +76,8 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
+	log.Entry().Info("Running makeBOM goal in online mode (CycloneDX requirement)")
+
 	mavenOptions := maven.ExecuteOptions{
 		Flags:                       flags,
 		Goals:                       goals,
@@ -90,7 +94,17 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 }
 
 func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
-	flags := []string{"-update-snapshots", "--batch-mode"}
+	flags := []string{"--batch-mode"}
+
+	// Intelligent decision on snapshot updates
+	useOfflineMode := !shouldUpdateSnapshots(utils, config)
+
+	if useOfflineMode {
+		flags = append(flags, "--offline")
+		log.Entry().Info("Running in offline mode with cached dependencies")
+	} else {
+		flags = append(flags, "-update-snapshots")
+	}
 
 	if len(config.Profiles) > 0 {
 		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
@@ -109,8 +123,9 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
-	if config.CreateBOM {
-		// Append the makeAggregateBOM goal to the rest of the goals
+	// DON'T add BOM goal to main build if we're in offline mode
+	if config.CreateBOM && !useOfflineMode {
+		// Only add BOM to main build if we're online
 		goals = append(goals, mvnCycloneDXPackage+":makeAggregateBom")
 		createBOMConfig := []string{
 			"-DschemaVersion=1.4",
@@ -151,8 +166,54 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
 	}
 
+	// If CreateBOM is true AND we ran in offline mode, run BOM generation separately in online mode
+	if config.CreateBOM && useOfflineMode {
+		log.Entry().Info("Running BOM generation separately in online mode")
+
+		// Run just the BOM goals in online mode
+		bomFlags := []string{"--batch-mode"} // No --offline flag
+
+		if len(config.Profiles) > 0 {
+			bomFlags = append(bomFlags, "--activate-profiles", strings.Join(config.Profiles, ","))
+		}
+
+		if exists {
+			bomFlags = append(bomFlags, "-pl", "!integration-tests")
+		}
+
+		bomGoals := []string{mvnCycloneDXPackage + ":makeAggregateBom"}
+		bomDefines := []string{
+			"-DschemaVersion=1.4",
+			"-DincludeBomSerialNumber=true",
+			"-DincludeCompileScope=true",
+			"-DincludeProvidedScope=true",
+			"-DincludeRuntimeScope=true",
+			"-DincludeSystemScope=true",
+			"-DincludeTestScope=false",
+			"-DincludeLicenseText=false",
+			"-DoutputFormat=xml",
+			"-DoutputName=" + mvnBomFilename,
+		}
+
+		bomMavenOptions := maven.ExecuteOptions{
+			Flags:                       bomFlags,
+			Goals:                       bomGoals,
+			Defines:                     bomDefines,
+			PomPath:                     config.PomPath,
+			ProjectSettingsFile:         config.ProjectSettingsFile,
+			GlobalSettingsFile:          config.GlobalSettingsFile,
+			M2Path:                      config.M2Path,
+			LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		}
+
+		_, err := maven.Execute(&bomMavenOptions, utils)
+		if err != nil {
+			return errors.Wrap(err, "failed to execute BOM generation")
+		}
+	}
+
 	if config.CreateBOM {
-		// Separate run for makeBOM goal
+		// Separate run for makeBOM goal (simple BOM)
 		if err := runMakeBOMGoal(config, utils); err != nil {
 			return errors.Wrap(err, "failed to execute makeBOM goal")
 		}
@@ -192,7 +253,11 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
-			deployFlags := []string{}
+			// Deploy always requires online mode to upload artifacts
+			deployFlags := []string{"--batch-mode"}
+
+			log.Entry().Info("Deploy phase requires online mode")
+
 			if len(config.DeployFlags) > 0 {
 				deployFlags = append(deployFlags, config.DeployFlags...)
 			}
@@ -372,4 +437,36 @@ func getTempDirForCertFile() string {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
 	return tmpFolder
+}
+
+func shouldUpdateSnapshots(utils maven.Utils, config *mavenBuildOptions) bool {
+	cacheRestored := os.Getenv("PIPER_CACHE_RESTORED") == "true"
+	dependenciesChanged := os.Getenv("PIPER_DEPENDENCIES_CHANGED") == "true"
+
+	log.Entry().Debugf("Cache state - restored: %v, dependencies changed: %v", cacheRestored, dependenciesChanged)
+
+	if !cacheRestored {
+		log.Entry().Info("Cache not restored, will update snapshots")
+		return true
+	}
+
+	if dependenciesChanged {
+		log.Entry().Info("Dependencies changed, will update snapshots")
+		return true
+	}
+
+	// Check if project actually uses SNAPSHOT dependencies
+	pomContent, err := utils.FileRead(config.PomPath)
+	if err != nil {
+		log.Entry().Warnf("Could not read pom.xml to check for SNAPSHOTs: %v", err)
+		return true // safe default
+	}
+
+	if strings.Contains(string(pomContent), "-SNAPSHOT</version>") {
+		log.Entry().Info("SNAPSHOT dependencies detected, will check for updates")
+		return true
+	}
+
+	log.Entry().Info("No SNAPSHOT dependencies found, skipping update checks")
+	return false
 }
