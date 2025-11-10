@@ -69,12 +69,6 @@ func GetComponent(bomFilePath string) BomComponent {
 	return bom.Metadata.Component
 }
 
-// GetPurl returns the PURL from the BOM metadata component
-// Deprecated: Use GetComponent instead for more flexibility
-func GetPurl(bomFilePath string) string {
-	return GetComponent(bomFilePath).Purl
-}
-
 // GetBomVersion extracts the CycloneDX schema version from the BOM
 func GetBomVersion(bomFilePath string) (string, error) {
 	bom, err := GetBom(bomFilePath)
@@ -119,16 +113,6 @@ func ValidateBOM(bomContent []byte) error {
 	}
 
 	return nil
-}
-
-// ValidateCycloneDX14 validates a BOM file path (backward compatibility wrapper)
-// Deprecated: Use ValidateBOM with file content instead
-func ValidateCycloneDX14(bomFilePath string) error {
-	bomContent, err := os.ReadFile(bomFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to read BOM file: %w", err)
-	}
-	return ValidateBOM(bomContent)
 }
 
 // ValidatePurl validates that a PURL is present and follows the Package URL spec
