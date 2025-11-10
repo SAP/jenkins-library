@@ -115,6 +115,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
+		config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
 		err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 		if err != nil {
 			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
