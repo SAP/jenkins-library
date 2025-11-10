@@ -20,7 +20,7 @@ func TestCreateVirtualEnvironment(t *testing.T) {
 
 	// assert
 	assert.NoError(t, err)
-	assert.Len(t, mockRunner.Calls, 2)
+	assert.Len(t, mockRunner.Calls, 3)
 	assert.Equal(t, "python3", mockRunner.Calls[0].Exec)
 	assert.Equal(t, []string{"-m", "venv", ".venv"}, mockRunner.Calls[0].Params)
 	assert.Equal(t, "bash", mockRunner.Calls[1].Exec)
