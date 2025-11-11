@@ -19,7 +19,7 @@ import (
 )
 
 type pythonBuildOptions struct {
-	BuildFlags               []string `json:"buildFlags,omitempty"`m
+	BuildFlags               []string `json:"buildFlags,omitempty"`
 	SetupFlags               []string `json:"setupFlags,omitempty"`
 	CreateBOM                bool     `json:"createBOM,omitempty"`
 	Publish                  bool     `json:"publish,omitempty"`
