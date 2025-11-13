@@ -17,7 +17,7 @@ type BaseData struct {
 	BuildURLHash      string `json:"buildUrlHash"`      // defaults to sha1 of provider.GetJobURL()
 	Orchestrator      string `json:"orchestrator"`      // defaults to provider.OrchestratorType()
 	TemplateName      string `json:"templateName"`      // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
-	TemplateStageName string `json:"templateStageName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
+	StageTemplateName string `json:"stageTemplateName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
 }
 
 var baseData BaseData

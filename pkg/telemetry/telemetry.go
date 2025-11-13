@@ -4,10 +4,11 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -62,7 +63,7 @@ func (t *Telemetry) Initialize(stepName string) {
 	t.baseData = BaseData{
 		Orchestrator:      t.provider.OrchestratorType(),
 		TemplateName:      piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
-		TemplateStageName: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME"), "n/a"),
+		StageTemplateName: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_STAGE_TEMPLATE_NAME"), "n/a"),
 		StageName:         t.provider.StageName(),
 		URL:               LibraryRepository,
 		ActionName:        actionName,
