@@ -806,7 +806,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:22-bookworm
+    - image: node:24-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -822,7 +822,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:22-bookworm
+    - image: node:24-bookworm
       workingDir: /home/node
       env: []
       conditions:
