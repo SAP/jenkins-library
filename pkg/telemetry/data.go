@@ -13,13 +13,11 @@ type BaseData struct {
 	URL               string `json:"url"`
 	StepName          string `json:"stepName"` // set by step generator
 	StageName         string `json:"stageName"`
-	PipelineURLHash   string `json:"pipelineUrlHash"` // defaults to sha1 of provider.GetBuildURL()
-	BuildURLHash      string `json:"buildUrlHash"`    // defaults to sha1 of provider.GetJobURL()
-	Orchestrator      string `json:"orchestrator"`    // defaults to provider.OrchestratorType()
-	// TemplateName indicates what template was used to run the pipeline (gpp, oss, ctp or custom)
-	TemplateName      string `json:"templateName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
-	// TemplateStageName indicates what stage template was used in this pipeline (gpp-build, gpp-promote or custom)
-	TemplateStageName string `json:"templateName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
+	PipelineURLHash   string `json:"pipelineUrlHash"`   // defaults to sha1 of provider.GetBuildURL()
+	BuildURLHash      string `json:"buildUrlHash"`      // defaults to sha1 of provider.GetJobURL()
+	Orchestrator      string `json:"orchestrator"`      // defaults to provider.OrchestratorType()
+	TemplateName      string `json:"templateName"`      // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
+	TemplateStageName string `json:"templateStageName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
 }
 
 var baseData BaseData
