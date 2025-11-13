@@ -37,7 +37,7 @@ func TestNPMIntegrationRunScriptsWithOptions(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --runScripts=start --scriptOptions=--tag,tag1 >test-log-runScriptWithOptions.txt 2>&1
+/piperbin/piper npmExecuteScripts --runScripts=start --virtualFrameBuffer=false --scriptOptions=--tag,tag1 >test-log-runScriptWithOptions.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -89,7 +89,7 @@ func TestNPMIntegrationRegistrySetInFlags(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --defaultNpmRegistry=https://foo.bar >test-log-registrySetInFlags.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --virtualFrameBuffer=false --defaultNpmRegistry=https://foo.bar >test-log-registrySetInFlags.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -140,7 +140,7 @@ func TestNPMIntegrationRegistrySetInNpmrc(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build >test-log-registrySetInNpmrc.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --virtualFrameBuffer=false >test-log-registrySetInNpmrc.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
@@ -191,7 +191,7 @@ func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := `#!/bin/sh
 cd /test
-/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --defaultNpmRegistry=https://foo.bar >test-log-registryWithTwoModules.txt 2>&1
+/piperbin/piper npmExecuteScripts --install --runScripts=ci-build --virtualFrameBuffer=false --defaultNpmRegistry=https://foo.bar >test-log-registryWithTwoModules.txt 2>&1
 `
 	os.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
