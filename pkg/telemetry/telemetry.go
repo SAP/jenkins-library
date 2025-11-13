@@ -60,16 +60,17 @@ func (t *Telemetry) Initialize(stepName string) {
 	}
 
 	t.baseData = BaseData{
-		Orchestrator:    t.provider.OrchestratorType(),
-		TemplateName:    piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
-		StageName:       t.provider.StageName(),
-		URL:             LibraryRepository,
-		ActionName:      actionName,
-		EventType:       eventType,
-		StepName:        stepName,
-		SiteID:          t.SiteID,
-		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
-		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
+		Orchestrator:         t.provider.OrchestratorType(),
+		TemplateName:         piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
+		TemplateStageName:    piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME"), "n/a"),
+		StageName:            t.provider.StageName(),
+		URL:                  LibraryRepository,
+		ActionName:           actionName,
+		EventType:            eventType,
+		StepName:             stepName,
+		SiteID:               t.SiteID,
+		PipelineURLHash:      t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
+		BuildURLHash:         t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 	}
 }
 
