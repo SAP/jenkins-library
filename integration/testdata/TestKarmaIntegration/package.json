@@ -10,7 +10,7 @@
     "type": "git"
   },
   "devDependencies": {
-    "karma": "^1.4.0",
+    "karma": "^6.0.0",
     "karma-openui5": "^0.2.1",
     "karma-qunit": "^1.2.1",
     "karma-webdriver-launcher": "^1.0.5",
