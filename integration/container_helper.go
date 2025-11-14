@@ -113,9 +113,7 @@ func RunPiperExpectFailure(t *testing.T, container testcontainers.Container, wor
 		"Failed to read command output for: %v", cmd)
 
 	if code == 0 {
-		t.Logf("WARNING: Command succeeded with exit code 0 (expected failure)\nOutput:\n%s", outputStr)
-	} else {
-		t.Logf("Command failed as expected with exit code %d\nOutput:\n%s", code, outputStr)
+		t.Errorf("WARNING: Command succeeded with exit code 0 (expected failure)\nOutput:\n%s", outputStr)
 	}
 
 	return code, outputStr
