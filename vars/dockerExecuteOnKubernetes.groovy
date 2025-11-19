@@ -362,7 +362,7 @@ private String generatePodSpec(Map config) {
         apiVersion: "v1",
         kind      : "Pod",
         metadata  : [
-            lables: config.uniqueId,
+            labels: config.uniqueId,
             annotations: [:]
         ],
         spec      : [:]
