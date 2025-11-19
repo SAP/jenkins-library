@@ -451,9 +451,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	const detectTargetFilename = "detect.sh"
 
 	downloadScript := func() error {
-		if config.UseDetect8 {
-			log.Entry().Warn("The useDetect8 option is deprecated")
-		} else if config.UseDetect9 {
+		if config.UseDetect9 {
 			log.Entry().Warn("The useDetect9 option is deprecated")
 		} else if config.UseDetect10 {
 			return utils.DownloadFile("https://detect.blackduck.com/detect10.sh", detectTargetFilename, nil, nil)

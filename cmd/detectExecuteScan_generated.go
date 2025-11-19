@@ -76,7 +76,6 @@ type detectExecuteScanOptions struct {
 	RegistryURL                     string   `json:"registryUrl,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
-	UseDetect8                      bool     `json:"useDetect8,omitempty"`
 	UseDetect9                      bool     `json:"useDetect9,omitempty"`
 	UseDetect10                     bool     `json:"useDetect10,omitempty"`
 	ContainerScan                   bool     `json:"containerScan,omitempty"`
@@ -367,7 +366,6 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "DEPRECATED: This flag enables the use of the supported version 8 of the Detect script instead of default version 11")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect10, "useDetect10", false, "This flag enables the use of the supported version 10 of the Detect script instead of default version 11")
 	cmd.Flags().BoolVar(&stepConfig.ContainerScan, "containerScan", false, "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan")
@@ -959,15 +957,6 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_repositoryPassword"),
-					},
-					{
-						Name:        "useDetect8",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect8", Deprecated: true}},
-						Default:     false,
 					},
 					{
 						Name:        "useDetect9",
