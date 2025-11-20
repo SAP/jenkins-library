@@ -4,6 +4,8 @@ metadata:
   longDescription: |
     Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.
 
+    **Note:** This step uses the [Chainguard fork](https://github.com/chainguard-dev/kaniko) of Kaniko (`cgr.dev/chainguard/kaniko:latest-dev`), as the original Google Kaniko project has been archived and is no longer maintained. The Chainguard fork maintains full compatibility while providing ongoing security updates and bug fixes.
+
     ### Building one container image
 
     For building one container image the step expects that one of the containerImage, containerImageName or --destination (via buildOptions) is set.
@@ -90,7 +92,6 @@ spec:
           # fixing Kaniko issue https://github.com/GoogleContainerTools/kaniko/issues/1586
           # as per comment https://github.com/GoogleContainerTools/kaniko/issues/1586#issuecomment-945718536
           - --ignore-path=/workspace
-          - --ignore-path=/busybox
       - name: buildSettingsInfo
         type: string
         description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
@@ -327,10 +328,10 @@ spec:
           - filePattern: "**/bom-*.xml"
             type: sbom
   containers:
-    - image: gcr.io/kaniko-project/executor:debug
+    - image: cgr.dev/chainguard/kaniko:latest-dev
       command:
-        - /busybox/tail -f /dev/null
-      shell: /busybox/sh
+        - tail -f /dev/null
+      shell: /bin/sh
       options:
         - name: -u
           value: "0"
