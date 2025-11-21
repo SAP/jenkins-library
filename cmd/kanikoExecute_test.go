@@ -95,7 +95,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, execRunner.Calls[1].Params)
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
-		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"cgr.dev/chainguard/kaniko:latest-dev"}]`)
+		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
 
 		assert.Equal(t, "myImage:tag", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)
@@ -146,7 +146,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", "dir://" + cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag", "--digest-file", "/tmp/*-kanikoExecutetest/digest.txt"}, execRunner.Calls[1].Params)
 
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
-		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"cgr.dev/chainguard/kaniko:latest-dev"}]`)
+		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"kanikoExecute":[{"dockerImage":"gcr.io/kaniko-project/executor:debug"}]`)
 
 		assert.Equal(t, "myImage:tag", commonPipelineEnvironment.container.imageNameTag)
 		assert.Equal(t, "https://index.docker.io", commonPipelineEnvironment.container.registryURL)

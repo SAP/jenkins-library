@@ -325,7 +325,7 @@ Following final image names will be built:
 }
 
 func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions) {
-	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`}, "Defines a list of build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.ContainerBuildOptions, "containerBuildOptions", os.Getenv("PIPER_containerBuildOptions"), "Deprected, please use buildOptions. Defines the build options for the [kaniko](https://github.com/GoogleContainerTools/kaniko) build.")
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If `containerImage` is not provided, then `containerImageName` or `--destination` (via buildOptions) should be provided.")
@@ -370,7 +370,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`},
+						Default:     []string{`--skip-tls-verify-pull`, `--ignore-path=/workspace`, `--ignore-path=/busybox`},
 					},
 					{
 						Name: "buildSettingsInfo",
@@ -590,7 +590,7 @@ func kanikoExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "cgr.dev/chainguard/kaniko:latest-dev", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
+				{Image: "gcr.io/kaniko-project/executor:debug", EnvVars: []config.EnvVar{{Name: "container", Value: "docker"}}, Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
