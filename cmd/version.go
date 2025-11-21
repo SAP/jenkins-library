@@ -3,14 +3,17 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
 )
 
+// TODO: deprecated, remove in future releases
 // GitCommit ...
 var GitCommit string
 
+// TODO: deprecated, remove in future releases
 // GitTag ...
 var GitTag string
 
@@ -37,16 +40,12 @@ func VersionCommand() *cobra.Command {
 }
 
 func version() {
+	fmt.Printf("piper-version: %s\n", getVersion())
+}
 
-	gitCommit, gitTag := "<n/a>", "<n/a>"
-
-	if len(GitCommit) > 0 {
-		gitCommit = GitCommit
+func getVersion() string {
+	if build, ok := debug.ReadBuildInfo(); ok && build != nil {
+		return build.Main.Version
 	}
-
-	if len(GitTag) > 0 {
-		gitTag = GitTag
-	}
-
-	fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
+	return "n/a"
 }
