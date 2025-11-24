@@ -309,7 +309,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
 	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
-	cmd.Flags().StringSliceVar(&stepConfig.ExcludeFiles, "excludeFiles", []string{}, "List of files to exclude when committing all changes into created tag. You need to provide full path to the file from the project root. (Useful when using versioningType: cloud with npm or maven.)")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeFiles, "excludeFiles", []string{}, "List of files to exclude when committing changes into created tag. You need to provide full path to the file from the project root. (Useful when using versioningType: cloud with npm or maven.)")
 
 	cmd.MarkFlagRequired("buildTool")
 }

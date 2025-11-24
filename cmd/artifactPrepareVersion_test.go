@@ -640,7 +640,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{All: true, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: false, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
@@ -660,7 +660,7 @@ func TestPushChanges(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
 		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
-		assert.Equal(t, &git.CommitOptions{All: true, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, &git.CommitOptions{All: false, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &ssh.PublicKeysCallback{}, CABundle: customCerts}, repo.pushOptions)
@@ -691,7 +691,7 @@ func TestPushChanges(t *testing.T) {
 
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.Equal(t, "0000000000000000000000000000000000000000", commitID)
-		assert.EqualError(t, err, "failed to commit new version: commit error")
+		assert.EqualError(t, err, "failed to read worktree status: commit error")
 	})
 
 	t.Run("error - create tag", func(t *testing.T) {
