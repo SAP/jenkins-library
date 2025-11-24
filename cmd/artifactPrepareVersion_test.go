@@ -164,6 +164,7 @@ func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 	w.checkoutOpts = opts
 	return nil
 }
+
 func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
 	if len(w.commitError) > 0 {
 		return plumbing.Hash{}, fmt.Errorf("%s", w.commitError)
@@ -171,6 +172,21 @@ func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.
 	w.commitMsg = msg
 	w.commitOpts = opts
 	return w.commitHash, nil
+}
+
+func (w *gitWorktreeMock) Add(path string) (plumbing.Hash, error) {
+	if len(w.commitError) > 0 {
+		return plumbing.Hash{}, fmt.Errorf("%s", w.commitError)
+	}
+	w.commitMsg = path
+	return w.commitHash, nil
+}
+
+func (w *gitWorktreeMock) Status() (git.Status, error) {
+	if len(w.commitError) > 0 {
+		return git.Status{}, fmt.Errorf("%s", w.commitError)
+	}
+	return git.Status{}, nil
 }
 
 type artifactPrepareVersionMockUtils struct {
