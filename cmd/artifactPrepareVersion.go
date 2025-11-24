@@ -474,7 +474,6 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		return plumbing.ZeroHash, errors.Wrap(err, "failed to read worktree status")
 	}
 
-	// Build a matcher for excludes; use exact names or glob matching
 	for path, s := range st {
 		if s.Worktree == git.Unmodified && s.Staging == git.Unmodified {
 			continue
@@ -499,7 +498,6 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 
 func shouldExclude(path string, excludes []string) bool {
 	for _, ex := range excludes {
-		// exact match or glob
 		if path == ex {
 			return true
 		}
