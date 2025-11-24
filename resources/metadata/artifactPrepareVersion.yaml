@@ -372,6 +372,13 @@ spec:
                 value: maven
               - name: buildTool
                 value: gradle
+      - name: excludeFiles
+        type: "[]string"
+        description: "List of files to exclude when committing all changes into created tag. (Useful when using versioningType: cloud with npm or maven.)"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
