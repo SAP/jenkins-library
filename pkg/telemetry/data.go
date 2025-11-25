@@ -7,17 +7,17 @@ import (
 
 // BaseData object definition containing the base data
 type BaseData struct {
-	ActionName        string `json:"actionName"`
-	EventType         string `json:"eventType"`
-	SiteID            string `json:"idsite"`
-	URL               string `json:"url"`
-	StepName          string `json:"stepName"` // set by step generator
-	StageName         string `json:"stageName"`
-	PipelineURLHash   string `json:"pipelineUrlHash"`   // defaults to sha1 of provider.GetBuildURL()
-	BuildURLHash      string `json:"buildUrlHash"`      // defaults to sha1 of provider.GetJobURL()
-	Orchestrator      string `json:"orchestrator"`      // defaults to provider.OrchestratorType()
-	TemplateName      string `json:"templateName"`      // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
-	StageTemplateName string `json:"stageTemplateName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
+	ActionName              string `json:"actionName"`
+	EventType               string `json:"eventType"`
+	SiteID                  string `json:"idsite"`
+	URL                     string `json:"url"`
+	StepName                string `json:"stepName"` // set by step generator
+	StageName               string `json:"stageName"`
+	PipelineURLHash         string `json:"pipelineUrlHash"`                   // defaults to sha1 of provider.GetBuildURL()
+	BuildURLHash            string `json:"buildUrlHash"`                      // defaults to sha1 of provider.GetJobURL()
+	Orchestrator            string `json:"orchestrator"`                      // defaults to provider.OrchestratorType()
+	TemplateName            string `json:"templateName"`                      // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
+	StageTemplateName       string `json:"stageTemplateName"`                 // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
 	BinaryVersion           string `json:"binaryVersion"`                     // version of the piper binary, defaults to build info
 	OrchestratorTaskVersion string `json:"orchestratorTaskVersion,omitempty"` // version of the orchestrator task
 	PipelineTemplateVersion string `json:"pipelineTemplateVersion,omitempty"` // version of the pipeline template
