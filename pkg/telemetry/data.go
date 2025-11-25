@@ -17,7 +17,10 @@ type BaseData struct {
 	BuildURLHash    string `json:"buildUrlHash"`    // defaults to sha1 of provider.GetJobURL()
 	Orchestrator    string `json:"orchestrator"`    // defaults to provider.OrchestratorType()
 	// TemplateName indicates what template was used to run the pipeline (gpp, oss, ctp or custom)
-	TemplateName string `json:"templateName"` // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
+	TemplateName            string `json:"templateName"`                      // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
+	BinaryVersion           string `json:"binaryVersion"`                     // version of the piper binary, defaults to build info
+	OrchestratorTaskVersion string `json:"orchestratorTaskVersion,omitempty"` // version of the orchestrator task
+	PipelineTemplateVersion string `json:"pipelineTemplateVersion,omitempty"` // version of the pipeline template
 }
 
 var baseData BaseData
@@ -52,17 +55,20 @@ type CustomData struct {
 
 // StepTelemetryData definition for telemetry reporting and monitoring
 type StepTelemetryData struct {
-	StepStartTime   string                 `json:"StepStartTime"`
-	PipelineURLHash string                 `json:"PipelineURLHash"`
-	BuildURLHash    string                 `json:"BuildURLHash"`
-	StageName       string                 `json:"StageName"`
-	StepName        string                 `json:"StepName"`
-	ErrorCode       string                 `json:"ErrorCode"`
-	StepDuration    string                 `json:"StepDuration"`
-	ErrorCategory   string                 `json:"ErrorCategory"`
-	CorrelationID   string                 `json:"CorrelationID"`
-	PiperCommitHash string                 `json:"PiperCommitHash"`
-	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
+	StepStartTime           string                 `json:"StepStartTime"`
+	PipelineURLHash         string                 `json:"PipelineURLHash"`
+	BuildURLHash            string                 `json:"BuildURLHash"`
+	StageName               string                 `json:"StageName"`
+	StepName                string                 `json:"StepName"`
+	ErrorCode               string                 `json:"ErrorCode"`
+	StepDuration            string                 `json:"StepDuration"`
+	ErrorCategory           string                 `json:"ErrorCategory"`
+	CorrelationID           string                 `json:"CorrelationID"`
+	PiperCommitHash         string                 `json:"PiperCommitHash"`
+	ErrorDetail             map[string]interface{} `json:"ErrorDetail"`
+	BinaryVersion           string                 `json:"BinaryVersion"`
+	OrchestratorTaskVersion string                 `json:"OrchestratorTaskVersion,omitempty"`
+	PipelineTemplateVersion string                 `json:"PipelineTemplateVersion,omitempty"`
 }
 
 // Data object definition containing all telemetry data
