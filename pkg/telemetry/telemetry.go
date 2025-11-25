@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
