@@ -7,7 +7,7 @@
 
 ## Project Piper Repository
 
-The Project  "Piper" offers default pipelines to easily implement CI/CD processes integrating SAP systems. The corresponding "Shared Library" provides a set of "steps" to build your own scenarios beyond defaults.
+The Project "Piper" offers default pipelines to easily implement CI/CD processes integrating SAP systems. The corresponding "Shared Library" provides a set of "steps" to build your own scenarios beyond defaults.
 
 ## User Documentation
 
