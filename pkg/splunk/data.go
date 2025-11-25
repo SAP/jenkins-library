@@ -16,24 +16,24 @@ type Details struct {
 
 // MonitoringData definition for monitoring
 type MonitoringData struct {
-	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
-	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
-	Orchestrator    string `json:"Orchestrator,omitempty"`
-	// TemplateName indicates what template was used to run the pipeline (gpp, oss, ctp or custom)
-	TemplateName            string `json:"TemplateName,omitempty"`
-	PiperCommitHash         string `json:"PiperCommitHash,omitempty"`
-	StageName               string `json:"StageName,omitempty"`
-	StepName                string `json:"StepName,omitempty"`
-	ExitCode                string `json:"ExitCode,omitempty"`
-	Duration                string `json:"Duration,omitempty"`
-	ErrorCode               string `json:"ErrorCode,omitempty"`
-	ErrorCategory           string `json:"ErrorCategory,omitempty"`
-	ErrorMessage            string `json:"ErrorMessage,omitempty"`
-	CorrelationID           string `json:"CorrelationId,omitempty"`
-	CommitHash              string `json:"CommitHash,omitempty"`
-	Branch                  string `json:"Branch,omitempty"`
-	GitOwner                string `json:"GitOwner,omitempty"`
-	GitRepository           string `json:"GitRepository,omitempty"`
+	PipelineUrlHash   string `json:"PipelineUrlHash,omitempty"`
+	BuildUrlHash      string `json:"BuildUrlHash,omitempty"`
+	Orchestrator      string `json:"Orchestrator,omitempty"`
+	TemplateName      string `json:"TemplateName,omitempty"`
+	StageTemplateName string `json:"StageTemplateName,omitempty"`
+	PiperCommitHash   string `json:"PiperCommitHash,omitempty"`
+	StageName         string `json:"StageName,omitempty"`
+	StepName          string `json:"StepName,omitempty"`
+	ExitCode          string `json:"ExitCode,omitempty"`
+	Duration          string `json:"Duration,omitempty"`
+	ErrorCode         string `json:"ErrorCode,omitempty"`
+	ErrorCategory     string `json:"ErrorCategory,omitempty"`
+	ErrorMessage      string `json:"ErrorMessage,omitempty"`
+	CorrelationID     string `json:"CorrelationId,omitempty"`
+	CommitHash        string `json:"CommitHash,omitempty"`
+	Branch            string `json:"Branch,omitempty"`
+	GitOwner          string `json:"GitOwner,omitempty"`
+	GitRepository     string `json:"GitRepository,omitempty"`
 	BinaryVersion           string `json:"BinaryVersion,omitempty"`
 	OrchestratorTaskVersion string `json:"OrchestratorTaskVersion,omitempty"`
 	PipelineTemplateVersion string `json:"PipelineTemplateVersion,omitempty"`

@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -62,6 +64,7 @@ func (t *Telemetry) Initialize(stepName string) {
 	t.baseData = BaseData{
 		Orchestrator:            t.provider.OrchestratorType(),
 		TemplateName:            piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
+		StageTemplateName:       piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_STAGE_TEMPLATE_NAME"), "n/a"),
 		StageName:               t.provider.StageName(),
 		URL:                     LibraryRepository,
 		ActionName:              actionName,

@@ -74,7 +74,7 @@ spec:
             type: delivery-mapping
   containers:
     - name: uiVeri5
-      image: node:22-bookworm
+      image: node:24-bookworm
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy
