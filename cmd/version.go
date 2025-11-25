@@ -3,10 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
+
+	"github.com/spf13/cobra"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/spf13/cobra"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // TODO: deprecated, remove in future releases
@@ -32,20 +33,9 @@ func VersionCommand() *cobra.Command {
 			log.RegisterHook(fatalHook)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			version()
+			fmt.Printf("piper-version: %s\n", piperutils.GetVersion())
 		},
 	}
 
 	return createVersionCmd
-}
-
-func version() {
-	fmt.Printf("piper-version: %s\n", getVersion())
-}
-
-func getVersion() string {
-	if build, ok := debug.ReadBuildInfo(); ok && build != nil {
-		return build.Main.Version
-	}
-	return "n/a"
 }
