@@ -128,8 +128,6 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		CAPVersioningPreference: config.CAPVersioningPreference,
 	}
 
-	log.Entry().Infof("checking excludes the following paths: %s", config.ExcludeFiles) //todo remove
-
 	var err error
 	if artifact == nil {
 		artifact, err = versioning.GetArtifact(config.BuildTool, config.FilePath, &artifactOpts, utils)

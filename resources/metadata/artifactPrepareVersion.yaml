@@ -376,6 +376,7 @@ spec:
         type: "[]string"
         description: "List of files to exclude when committing changes into created tag. You need to provide full path to the file from the project root. (Useful when using versioningType: cloud with npm or maven.)"
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
