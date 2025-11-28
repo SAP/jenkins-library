@@ -36,7 +36,7 @@ type MonitoringData struct {
 	GitRepository     string `json:"GitRepository,omitempty"`
 	BinaryVersion     string `json:"BinaryVersion,omitempty"`
 	TaskVersion       string `json:"TaskVersion,omitempty"`
-	TemplateVersion   string `json:"PipelineTemplateVersion,omitempty"`
+	TemplateVersion   string `json:"TemplateVersion,omitempty"`
 }
 
 type LogFileEvent struct {

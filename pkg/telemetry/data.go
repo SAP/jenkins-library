@@ -13,14 +13,14 @@ type BaseData struct {
 	URL               string `json:"url"`
 	StepName          string `json:"stepName"` // set by step generator
 	StageName         string `json:"stageName"`
-	PipelineURLHash   string `json:"pipelineUrlHash"`                   // defaults to sha1 of provider.GetBuildURL()
-	BuildURLHash      string `json:"buildUrlHash"`                      // defaults to sha1 of provider.GetJobURL()
-	Orchestrator      string `json:"orchestrator"`                      // defaults to provider.OrchestratorType()
-	TemplateName      string `json:"templateName"`                      // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
-	StageTemplateName string `json:"stageTemplateName"`                 // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
-	BinaryVersion     string `json:"binaryVersion"`                     // version of the piper binary, defaults to build info
-	TaskVersion       string `json:"orchestratorTaskVersion,omitempty"` // version of the orchestrator task
-	TemplateVersion   string `json:"pipelineTemplateVersion,omitempty"` // version of the pipeline template
+	PipelineURLHash   string `json:"pipelineUrlHash"`           // defaults to sha1 of provider.GetBuildURL()
+	BuildURLHash      string `json:"buildUrlHash"`              // defaults to sha1 of provider.GetJobURL()
+	Orchestrator      string `json:"orchestrator"`              // defaults to provider.OrchestratorType()
+	TemplateName      string `json:"templateName"`              // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
+	StageTemplateName string `json:"stageTemplateName"`         // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
+	BinaryVersion     string `json:"binaryVersion"`             // version of the piper binary, defaults to build info
+	TaskVersion       string `json:"taskVersion,omitempty"`     // version of the orchestrator task
+	TemplateVersion   string `json:"templateVersion,omitempty"` // version of the pipeline template
 }
 
 var baseData BaseData
