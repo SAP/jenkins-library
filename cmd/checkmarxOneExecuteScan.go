@@ -747,7 +747,8 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 			scanIcon = ":white_check_mark:"
 		}
 		comment := &github.IssueComment{
-			Body: github.Ptr(fmt.Sprintf(`# %s Checkmarx %s scan completed 
+			Body: github.Ptr(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
+# %s Checkmarx %s scan completed 
 **Project**: %s
 **ScanId**: %s
 **Preset**: %s
@@ -764,6 +765,23 @@ Severity | Number of unaudited findings
 		pullRequestNumber, err := strconv.Atoi(pullRequestId)
 		if err != nil {
 			return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
+		}
+		// Check if comment already exists, delete old one to avoid multiple comments
+		// search for watermark <!-- Piper CxOne Scan Summary -->
+		comments, _, err := ghIssues.ListComments(c.ctx, owner, repository, pullRequestNumber, &github.IssueListCommentsOptions{})
+		if err != nil {
+			log.Entry().Errorf("failed to list GitHub issue comments: %s", err)
+		} else {
+			for _, existingComment := range comments {
+				if strings.Contains(*existingComment.Body, "<!-- Piper CxOne Scan Summary -->") {
+					_, err := ghIssues.DeleteComment(c.ctx, owner, repository, existingComment.GetID())
+					if err != nil {
+						log.Entry().Errorf("failed to delete old GitHub issue comment: %s", err)
+					}
+					log.Entry().Infof("Deleted old GitHub issue comment for project %v", c.Project.Name)
+					break
+				}
+			}
 		}
 		_, _, err = ghIssues.CreateComment(c.ctx, owner, repository, pullRequestNumber, comment)
 		if err != nil {
