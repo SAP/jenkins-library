@@ -9,11 +9,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// TODO: deprecated, remove in future releases
 // GitCommit ...
 var GitCommit string
 
-// TODO: deprecated, remove in future releases
 // GitTag ...
 var GitTag string
 
@@ -40,7 +38,6 @@ func VersionCommand() *cobra.Command {
 }
 
 func version() {
-
 	gitCommit, gitTag := "<n/a>", "<n/a>"
 
 	if len(GitCommit) > 0 {
