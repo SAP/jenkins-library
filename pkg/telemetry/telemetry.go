@@ -60,20 +60,20 @@ func (t *Telemetry) Initialize(stepName string) {
 	}
 
 	t.baseData = BaseData{
-		Orchestrator:            t.provider.OrchestratorType(),
-		TemplateName:            piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
-		StageTemplateName:       piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_STAGE_TEMPLATE_NAME"), "n/a"),
-		StageName:               t.provider.StageName(),
-		URL:                     LibraryRepository,
-		ActionName:              actionName,
-		EventType:               eventType,
-		StepName:                stepName,
-		SiteID:                  t.SiteID,
-		PipelineURLHash:         t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
-		BuildURLHash:            t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
-		BinaryVersion:           piperutils.GetVersion(),
-		OrchestratorTaskVersion: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TASK_VERSION"), "n/a"),
-		PipelineTemplateVersion: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_VERSION"), "n/a"),
+		Orchestrator:      t.provider.OrchestratorType(),
+		TemplateName:      piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
+		StageTemplateName: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_STAGE_TEMPLATE_NAME"), "n/a"),
+		StageName:         t.provider.StageName(),
+		URL:               LibraryRepository,
+		ActionName:        actionName,
+		EventType:         eventType,
+		StepName:          stepName,
+		SiteID:            t.SiteID,
+		PipelineURLHash:   t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
+		BuildURLHash:      t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
+		BinaryVersion:     piperutils.GetVersion(),
+		TaskVersion:       piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TASK_VERSION"), "n/a"),
+		TemplateVersion:   piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_VERSION"), "n/a"),
 	}
 }
 
@@ -136,20 +136,20 @@ func (t *Telemetry) LogStepTelemetryData() {
 	starTime := time.Now().UTC().Add(-duration)
 
 	stepTelemetryData := StepTelemetryData{
-		StepStartTime:           starTime.String(),
-		PipelineURLHash:         t.data.PipelineURLHash,
-		BuildURLHash:            t.data.BuildURLHash,
-		StageName:               t.data.StageName,
-		StepName:                t.data.BaseData.StepName,
-		ErrorCode:               t.data.CustomData.ErrorCode,
-		StepDuration:            t.data.CustomData.Duration,
-		ErrorCategory:           t.data.CustomData.ErrorCategory,
-		ErrorDetail:             fatalError,
-		CorrelationID:           t.provider.BuildURL(),
-		PiperCommitHash:         t.data.CustomData.PiperCommitHash,
-		BinaryVersion:           t.data.BinaryVersion,
-		OrchestratorTaskVersion: t.data.OrchestratorTaskVersion,
-		PipelineTemplateVersion: t.data.PipelineTemplateVersion,
+		StepStartTime:   starTime.String(),
+		PipelineURLHash: t.data.PipelineURLHash,
+		BuildURLHash:    t.data.BuildURLHash,
+		StageName:       t.data.StageName,
+		StepName:        t.data.BaseData.StepName,
+		ErrorCode:       t.data.CustomData.ErrorCode,
+		StepDuration:    t.data.CustomData.Duration,
+		ErrorCategory:   t.data.CustomData.ErrorCategory,
+		ErrorDetail:     fatalError,
+		CorrelationID:   t.provider.BuildURL(),
+		PiperCommitHash: t.data.CustomData.PiperCommitHash,
+		BinaryVersion:   t.data.BinaryVersion,
+		TaskVersion:     t.data.TaskVersion,
+		TemplateVersion: t.data.TemplateVersion,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
 	if err != nil {
