@@ -72,8 +72,8 @@ func (t *Telemetry) Initialize(stepName string) {
 		PipelineURLHash:         t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:            t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 		BinaryVersion:           piperutils.GetVersion(),
-		OrchestratorTaskVersion: "n/a",
-		PipelineTemplateVersion: "n/a",
+		OrchestratorTaskVersion: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TASK_VERSION"), "n/a"),
+		PipelineTemplateVersion: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_VERSION"), "n/a"),
 	}
 }
 
