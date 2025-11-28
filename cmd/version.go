@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // TODO: deprecated, remove in future releases
@@ -33,9 +32,24 @@ func VersionCommand() *cobra.Command {
 			log.RegisterHook(fatalHook)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("piper-version: %s\n", piperutils.GetVersion())
+			version()
 		},
 	}
 
 	return createVersionCmd
+}
+
+func version() {
+
+	gitCommit, gitTag := "<n/a>", "<n/a>"
+
+	if len(GitCommit) > 0 {
+		gitCommit = GitCommit
+	}
+
+	if len(GitTag) > 0 {
+		gitTag = GitTag
+	}
+
+	fmt.Printf("piper-version:\n    commit: \"%s\"\n    tag: \"%s\"\n", gitCommit, gitTag)
 }
