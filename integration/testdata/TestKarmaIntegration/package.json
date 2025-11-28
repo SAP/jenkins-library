@@ -14,7 +14,7 @@
     "karma-openui5": "^0.2.1",
     "karma-qunit": "^1.2.1",
     "karma-webdriver-launcher": "^1.0.5",
-    "qunitjs": "^1.22.0"
+    "qunitjs": "^2.0.0"
   },
   "scripts": {
     "karma": "./node_modules/.bin/karma start"
