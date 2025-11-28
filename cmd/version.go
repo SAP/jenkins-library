@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/spf13/cobra"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // GitCommit ...
@@ -37,7 +38,6 @@ func VersionCommand() *cobra.Command {
 }
 
 func version() {
-
 	gitCommit, gitTag := "<n/a>", "<n/a>"
 
 	if len(GitCommit) > 0 {
