@@ -210,6 +210,32 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 	})
 }
 
+func TestCheckNamespace(t *testing.T) {
+	pckgWR := []aakaas.PackageWithRepository{
+		{
+			Package: aakaas.Package{
+				ComponentName: "/DRNMSPC/COMP01",
+				VersionYAML:   "1.0.0",
+				PackageName:   "SAPK-001AAINDRNMSPC",
+				Type:          "AOI",
+			},
+			Repo: abaputils.Repository{
+				Name:        "/DRNMSPC/COMP01",
+				VersionYAML: "1.0.0",
+			},
+		},
+	}
+
+	t.Run("test copyFieldsToRepositories Planned success w/o predecessorcommitID", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = ""
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.ErrorContains(t, err, "AAKaaS returned a response with empty Namespace which indicates a configuration error")
+	})
+}
+
 // ********************* Test reserveNext *******************
 func TestReserveNextPackage(t *testing.T) {
 	t.Run("test reserveNext - success", func(t *testing.T) {

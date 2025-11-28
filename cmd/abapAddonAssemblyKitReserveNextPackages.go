@@ -82,6 +82,10 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 	var repos []abaputils.Repository
 	var checkFailure error = nil
 	for i := range pckgWR {
+		if pckgWR[i].Package.Status != aakaas.PackageStatusReleased && pckgWR[i].Package.Namespace == "" {
+			checkFailure = errors.New("AAKaaS returned a response with empty Namespace which indicates a configuration error")
+		}
+
 		checkFailure = checkCommitID(pckgWR, i, checkFailure)
 
 		pckgWR[i].Package.CopyFieldsToRepo(&pckgWR[i].Repo)
