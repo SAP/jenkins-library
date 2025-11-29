@@ -122,8 +122,8 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		}
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		// print dockerconfigjson file contents in debug log (without secrets)
-		log.Entry().Debugf("Using Docker config.json content: %v", dockerRegistrySecret.String())
-		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
+		log.Entry().Infof("Using Docker config.json content: %v", dockerRegistrySecret.String())
+		log.Entry().Infofs("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 		}
