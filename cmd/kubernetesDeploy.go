@@ -527,7 +527,15 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				return err, []string{}
 			}
 		} else {
+			log.Entry().Debugf("Using Docker config.json file at '%v' to create kubernetes secret", config.DockerConfigJSON)
 			targetPath = config.DockerConfigJSON
+			// show dockerConfig contents in debug log (without secrets)
+			dockerConfigContent, err := utils.FileRead(config.DockerConfigJSON)
+			if err != nil {
+				log.Entry().Warningf("failed to read Docker config.json: %v", err)
+				return err, []string{}
+			}
+			log.Entry().Debugf("Using Docker config.json content: %v", string(dockerConfigContent))
 		}
 	} else {
 		return fmt.Errorf("no docker config json file found to update credentials '%v'", config.DockerConfigJSON), []string{}
