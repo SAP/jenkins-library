@@ -526,8 +526,9 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 				return err, []string{}
 			}
+		} else {
+			targetPath = config.DockerConfigJSON
 		}
-
 	} else {
 		return fmt.Errorf("no docker config json file found to update credentials '%v'", config.DockerConfigJSON), []string{}
 	}
