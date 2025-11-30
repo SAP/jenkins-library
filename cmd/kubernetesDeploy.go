@@ -121,21 +121,27 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
 		}
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
-		// Print the source docker config file content for debugging (non-secret JSON)
-		if len(config.DockerConfigJSON) > 0 {
-			if content, err := utils.FileRead(config.DockerConfigJSON); err == nil {
-				log.Entry().Debugf("Using Docker config.json file: %s", config.DockerConfigJSON)
-				log.Entry().Debugf("Docker config.json content (source file): %s", string(content))
-			} else {
-				log.Entry().Warningf("failed to read Docker config.json: %v", err)
-			}
-		}
+		// print dockerconfigjson file contents in debug log (without secrets)
+		log.Entry().Infof("Using Docker config.json content: %v", dockerRegistrySecret.String())
 		log.Entry().Infof("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 		}
-		// Now the buffer contains the secret JSON
-		log.Entry().Debugf("Secret created: %s", dockerRegistrySecret.String())
+
+		var dockerRegistrySecretData struct {
+			Kind string `json:"kind"`
+			Data struct {
+				DockerConfJSON string `json:".dockerconfigjson"`
+			} `json:"data"`
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
+			log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
+		}
+		// make sure that secret is hidden in log output
+		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
+
+		log.Entry().Debugf("Secret created: %v", dockerRegistrySecret.String())
 
 		// pass secret in helm default template way and in Piper backward compatible way
 		helmValues.add("secret.name", config.ContainerRegistrySecret)
@@ -536,6 +542,16 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	} else {
 		return fmt.Errorf("no docker config json file found to update credentials '%v'", config.DockerConfigJSON), []string{}
 	}
+	// show dockerconfigjson contents
+	dockerConfigContent, err := utils.FileRead(targetPath)
+	if err != nil {
+		log.Entry().Warningf("failed to read Docker config.json: %v", err)
+		return err, []string{}
+	}
+	if dockerConfigContent == nil {
+		return fmt.Errorf("no docker config json content found at '%v'", targetPath), []string{}
+	}
+	log.Entry().Debugf("Using Docker config.json content: %v", string(dockerConfigContent))
 	return nil, []string{
 		"create",
 		"secret",
