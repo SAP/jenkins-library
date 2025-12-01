@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTestStepCommand(t *testing.T) {
+func Test{{.CobraCmdFuncName}}(t *testing.T) {
 	t.Parallel()
 
-	testCmd := TestStepCommand()
+	testCmd := {{.CobraCmdFuncName}}()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "testStep", testCmd.Use, "command name incorrect")
+	assert.Equal(t, {{ .StepName | quote }}, testCmd.Use, "command name incorrect")
 
 }
