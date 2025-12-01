@@ -118,13 +118,11 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 			var dockerRegistrySecret bytes.Buffer
 			utils.Stdout(&dockerRegistrySecret)
 			config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
-			// show contents of dockerConfig in debug log (without secrets)
-			targetPath = config.DockerConfigJSON
 			// show dockerConfig contents in debug log (without secrets)
 			dockerConfigContent, err := utils.FileRead(config.DockerConfigJSON)
 			if err != nil {
 				log.Entry().Warningf("failed to read Docker config.json: %v", err)
-				return err, []string{}
+				return err
 			}
 			log.Entry().Debugf("BEFORE defineKubeSecretParams func Using Docker config.json content: %s", string(dockerConfigContent))
 			err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
@@ -133,14 +131,13 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 			}
 			log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 			// print dockerconfigjson file contents in debug log (without secrets)
-			targetPath = config.DockerConfigJSON
 			// show dockerConfig contents in debug log (without secrets)
-			dockerConfigContent, err := utils.FileRead(config.DockerConfigJSON)
+			dockerConfigContent1, err := utils.FileRead(config.DockerConfigJSON)
 			if err != nil {
 				log.Entry().Warningf("failed to read Docker config.json: %v", err)
-				return err, []string{}
+				return err
 			}
-			log.Entry().Debugf("AFTER defineKubeSecretParams func Using Docker config.json content: %s", string(dockerConfigContent))
+			log.Entry().Debugf("AFTER defineKubeSecretParams func Using Docker config.json content: %s", string(dockerConfigContent1))
 			log.Entry().Infof("kubectl parameters %v", kubeSecretParams)
 			if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 				log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
