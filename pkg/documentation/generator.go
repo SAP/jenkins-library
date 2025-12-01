@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	generator "github.com/SAP/jenkins-library/pkg/documentation/generator"
-	generator2 "github.com/SAP/jenkins-library/pkg/generator"
+	"github.com/SAP/jenkins-library/pkg/documentation/generator"
+	pkgGenerator "github.com/SAP/jenkins-library/pkg/generator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 )
@@ -79,7 +79,7 @@ func main() {
 			fmt.Println(generator.CustomLibrarySteps)
 		}
 
-		metadataFiles, err := generator2.MetadataFiles(metadataPath)
+		metadataFiles, err := pkgGenerator.MetadataFiles(metadataPath)
 		checkError(err)
 		err = generator.GenerateStepDocumentation(metadataFiles, customDefaultFiles.list, generator.DocuHelperData{
 			DocTemplatePath:     docTemplatePath,
