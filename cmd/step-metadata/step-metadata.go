@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/SAP/jenkins-library/pkg/generator"
 )
 
 func main() {
@@ -28,12 +28,12 @@ func run() error {
 
 	fmt.Printf("metadataDir: %v\ntargetDir: %v\n", metadataPath, targetDir)
 
-	metadataFiles, err := helper.MetadataFiles(metadataPath)
+	metadataFiles, err := generator.MetadataFiles(metadataPath)
 	if err != nil {
 		return fmt.Errorf("failed to find metadata files in %s: %w", metadataPath, err)
 	}
 
-	if err := helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
+	if err := generator.ProcessMetaFiles(metadataFiles, targetDir, generator.StepHelperData{
 		OpenFile:  openMetaFile,
 		WriteFile: formatAndWriteFile,
 	}); err != nil {

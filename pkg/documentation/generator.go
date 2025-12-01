@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	generator "github.com/SAP/jenkins-library/pkg/documentation/generator"
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	generator2 "github.com/SAP/jenkins-library/pkg/generator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 )
@@ -79,7 +79,7 @@ func main() {
 			fmt.Println(generator.CustomLibrarySteps)
 		}
 
-		metadataFiles, err := helper.MetadataFiles(metadataPath)
+		metadataFiles, err := generator2.MetadataFiles(metadataPath)
 		checkError(err)
 		err = generator.GenerateStepDocumentation(metadataFiles, customDefaultFiles.list, generator.DocuHelperData{
 			DocTemplatePath:     docTemplatePath,

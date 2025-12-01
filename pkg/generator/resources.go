@@ -1,4 +1,4 @@
-package helper
+package generator
 
 import (
 	"bytes"
@@ -87,8 +87,7 @@ func (p *PiperEnvironmentResource) StructString() (string, error) {
 	}
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, &p)
-	if err != nil {
+	if err = tmpl.Execute(&generatedCode, &p); err != nil {
 		return "", err
 	}
 
@@ -184,8 +183,7 @@ func (i *InfluxResource) StructString() (string, error) {
 	}
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, &i)
-	if err != nil {
+	if err = tmpl.Execute(&generatedCode, &i); err != nil {
 		return "", err
 	}
 
@@ -266,10 +264,9 @@ func (p *ReportsResource) StructString() (string, error) {
 	}
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, &p)
-	if err != nil {
+	if err = tmpl.Execute(&generatedCode, &p); err != nil {
 		return "", err
 	}
 
-	return string(generatedCode.String()), nil
+	return generatedCode.String(), nil
 }
