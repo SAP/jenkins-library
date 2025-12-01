@@ -13,6 +13,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatalf("Error: %v\n", err)
+	}
+}
+
+func run() error {
 	var metadataPath string
 	var targetDir string
 
@@ -24,14 +30,17 @@ func main() {
 
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	if err != nil {
-		log.Fatalf("Error occurred: %v\n", err)
+		return fmt.Errorf("failed to find metadata files in %s: %w", metadataPath, err)
 	}
-	if err = helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
+
+	if err := helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
 		OpenFile:  openMetaFile,
 		WriteFile: formatAndWriteFile,
 	}); err != nil {
-		log.Fatalf("Error occurred: %v\n", err)
+		return fmt.Errorf("failed to process metadata files: %w", err)
 	}
+
+	return nil
 }
 
 func openMetaFile(name string) (io.ReadCloser, error) {

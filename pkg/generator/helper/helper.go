@@ -67,89 +67,28 @@ const metadataGeneratedFileName = "metadata_generated.go"
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
+	// Validate inputs
+	if len(metadataFiles) == 0 {
+		return errors.New("no metadata files provided")
+	}
+	if targetDir == "" {
+		return errors.New("target directory cannot be empty")
+	}
+	if stepHelperData.OpenFile == nil || stepHelperData.WriteFile == nil {
+		return errors.New("StepHelperData requires both OpenFile and WriteFile functions")
+	}
 
 	allSteps := struct{ Steps []string }{}
-	for key := range metadataFiles {
 
-		var stepData config.StepData
-
-		configFilePath := metadataFiles[key]
-
-		metadataFile, err := stepHelperData.OpenFile(configFilePath)
-		if err != nil {
-			log.Fatalf("Error occurred: %v\n", err)
-		}
-		defer metadataFile.Close()
-
-		fmt.Printf("Reading file %v\n", configFilePath)
-
-		if err = stepData.ReadPipelineStepData(metadataFile); err != nil {
-			log.Fatalf("Error occurred: %v\n", err)
-		}
-
-		stepName := stepData.Metadata.Name
-		fmt.Printf("Step name: %v\n", stepName)
-		if stepName+".yaml" != filepath.Base(configFilePath) {
-			fmt.Printf("Expected file %s to have name %s.yaml (<stepName>.yaml)\n", configFilePath, filepath.Join(filepath.Dir(configFilePath), stepName))
-			os.Exit(1)
-		}
-		allSteps.Steps = append(allSteps.Steps, stepName)
-
-		for _, parameter := range stepData.Spec.Inputs.Parameters {
-			for _, mandatoryIfCase := range parameter.MandatoryIf {
-				if mandatoryIfCase.Name == "" || mandatoryIfCase.Value == "" {
-					return errors.New("invalid mandatoryIf option")
-				}
-			}
-		}
-
-		osImport := false
-		osImport, err = setDefaultParameters(&stepData)
-		if err != nil {
-			log.Fatalf("Error occurred: %v\n", err)
-		}
-
-		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
-		if err != nil {
-			log.Fatalf("Error occurred: %v\n", err)
-		}
-
-		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
-		if err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644); err != nil {
-			log.Fatalf("Error occurred: %v\n", err)
-		}
-
-		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
-		if err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644); err != nil {
-			log.Fatalf("Error occurred: %v\n", err)
-		}
-
-		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)))
-		if !exists {
-			impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)), impl, 0644)
-			if err != nil {
-				log.Fatalf("Error occurred: %v\n", err)
-			}
-		}
-
-		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
-		if !exists {
-			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
-			if err != nil {
-				log.Fatalf("Error occurred: %v\n", err)
-			}
+	// Process each metadata file
+	for _, configFilePath := range metadataFiles {
+		if err := processMetadataFile(configFilePath, targetDir, stepHelperData, &allSteps); err != nil {
+			return err
 		}
 	}
 
-	// expose metadata functions
-	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, sprig.HermeticTxtFuncMap())
-	if err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644); err != nil {
-		log.Fatalf("Error occurred: %v\n", err)
-	}
-
-	return nil
+	// Generate metadata registry
+	return generateMetadataRegistry(allSteps, targetDir, stepHelperData)
 }
 
 func setDefaultParameters(stepData *config.StepData) (bool, error) {
@@ -336,14 +275,27 @@ func getOutputResourceDetails(stepData *config.StepData) ([]OutputResource, erro
 
 // MetadataFiles provides a list of all step metadata files
 func MetadataFiles(sourceDirectory string) ([]string, error) {
+	if sourceDirectory == "" {
+		return nil, errors.New("source directory cannot be empty")
+	}
+
 	var metadataFiles []string
 
-	_ = filepath.Walk(sourceDirectory, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(sourceDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("error accessing path %s: %w", path, err)
+		}
 		if filepath.Ext(path) == ".yaml" {
 			metadataFiles = append(metadataFiles, path)
 		}
 		return nil
-	})
+	}); err != nil {
+		return nil, fmt.Errorf("failed to walk directory %s: %w", sourceDirectory, err)
+	}
+
+	if len(metadataFiles) == 0 {
+		return nil, fmt.Errorf("no metadata files found in %s", sourceDirectory)
+	}
 
 	return metadataFiles, nil
 }
@@ -468,4 +420,132 @@ func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error)
 	default:
 		return nil, fmt.Errorf("cannot find uniq on type %s", tp)
 	}
+}
+
+// loadStepData reads and parses step metadata from a file
+func loadStepData(configFilePath string, stepHelperData StepHelperData) (*config.StepData, error) {
+	metadataFile, err := stepHelperData.OpenFile(configFilePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open metadata file: %w", err)
+	}
+	defer metadataFile.Close()
+
+	fmt.Printf("Reading file %v\n", configFilePath)
+
+	var stepData config.StepData
+	if err := stepData.ReadPipelineStepData(metadataFile); err != nil {
+		return nil, fmt.Errorf("failed to read pipeline step data: %w", err)
+	}
+
+	return &stepData, nil
+}
+
+// validateStepData validates the step metadata
+func validateStepData(stepData *config.StepData, configFilePath string) error {
+	stepName := stepData.Metadata.Name
+	fmt.Printf("Step name: %v\n", stepName)
+
+	// Validate filename matches step name
+	if stepName+".yaml" != filepath.Base(configFilePath) {
+		return fmt.Errorf("expected file %s to have name %s.yaml (<stepName>.yaml)",
+			configFilePath, filepath.Join(filepath.Dir(configFilePath), stepName))
+	}
+
+	// Validate mandatoryIf parameters
+	for _, parameter := range stepData.Spec.Inputs.Parameters {
+		for _, mandatoryIfCase := range parameter.MandatoryIf {
+			if mandatoryIfCase.Name == "" || mandatoryIfCase.Value == "" {
+				return errors.New("invalid mandatoryIf option: both name and value are required")
+			}
+		}
+	}
+
+	return nil
+}
+
+// generateStepFiles generates all files for a single step
+func generateStepFiles(stepData *config.StepData, targetDir string, stepHelperData StepHelperData) error {
+	osImport, err := setDefaultParameters(stepData)
+	if err != nil {
+		return fmt.Errorf("failed to set default parameters: %w", err)
+	}
+
+	myStepInfo, err := getStepInfo(stepData, osImport, stepHelperData.ExportPrefix)
+	if err != nil {
+		return fmt.Errorf("failed to get step info: %w", err)
+	}
+
+	stepName := stepData.Metadata.Name
+
+	// Generate main step file
+	step := stepTemplate(myStepInfo, "step", stepGoTemplate)
+	stepPath := filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName))
+	if err := stepHelperData.WriteFile(stepPath, step, 0644); err != nil {
+		return fmt.Errorf("failed to write step file %s: %w", stepPath, err)
+	}
+
+	// Generate test file
+	test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
+	testPath := filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName))
+	if err := stepHelperData.WriteFile(testPath, test, 0644); err != nil {
+		return fmt.Errorf("failed to write test file %s: %w", testPath, err)
+	}
+
+	// Generate implementation file if it doesn't exist
+	implPath := filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName))
+	exists, err := piperutils.FileExists(implPath)
+	if err != nil {
+		return fmt.Errorf("failed to check if implementation file exists %s: %w", implPath, err)
+	}
+	if !exists {
+		impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
+		if err := stepHelperData.WriteFile(implPath, impl, 0644); err != nil {
+			return fmt.Errorf("failed to write implementation file %s: %w", implPath, err)
+		}
+	}
+
+	// Generate implementation test file if it doesn't exist
+	implTestPath := filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName))
+	exists, err = piperutils.FileExists(implTestPath)
+	if err != nil {
+		return fmt.Errorf("failed to check if implementation test file exists %s: %w", implTestPath, err)
+	}
+	if !exists {
+		implTest := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
+		if err := stepHelperData.WriteFile(implTestPath, implTest, 0644); err != nil {
+			return fmt.Errorf("failed to write implementation test file %s: %w", implTestPath, err)
+		}
+	}
+
+	return nil
+}
+
+// processMetadataFile processes a single metadata file and generates its step files
+func processMetadataFile(configFilePath string, targetDir string, stepHelperData StepHelperData, allSteps *struct{ Steps []string }) error {
+	stepData, err := loadStepData(configFilePath, stepHelperData)
+	if err != nil {
+		return fmt.Errorf("processing %s: %w", configFilePath, err)
+	}
+
+	if err := validateStepData(stepData, configFilePath); err != nil {
+		return fmt.Errorf("validating %s: %w", configFilePath, err)
+	}
+
+	allSteps.Steps = append(allSteps.Steps, stepData.Metadata.Name)
+
+	if err := generateStepFiles(stepData, targetDir, stepHelperData); err != nil {
+		return fmt.Errorf("generating files for %s: %w", stepData.Metadata.Name, err)
+	}
+
+	return nil
+}
+
+// generateMetadataRegistry generates the metadata_generated.go file with all step metadata
+func generateMetadataRegistry(allSteps struct{ Steps []string }, targetDir string, stepHelperData StepHelperData) error {
+	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, sprig.HermeticTxtFuncMap())
+	metadataPath := filepath.Join(targetDir, metadataGeneratedFileName)
+	if err := stepHelperData.WriteFile(metadataPath, code, 0644); err != nil {
+		return fmt.Errorf("failed to write metadata registry file %s: %w", metadataPath, err)
+	}
+	return nil
 }
