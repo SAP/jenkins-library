@@ -612,10 +612,8 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		"generic",
 		config.ContainerRegistrySecret,
 		fmt.Sprintf("--from-file=.dockerconfigjson=%v", targetPath),
-		"--namespace " + config.Namespace,
 		"--type=kubernetes.io/dockerconfigjson",
 		"--insecure-skip-tls-verify=" + strconv.FormatBool(config.InsecureSkipTLSVerify),
-		"--dry-run=client",
 		"--output=json",
 	}
 }
