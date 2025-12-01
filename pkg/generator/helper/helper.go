@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -578,13 +579,16 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		configFilePath := metadataFiles[key]
 
 		metadataFile, err := stepHelperData.OpenFile(configFilePath)
-		checkError(err)
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
 		defer metadataFile.Close()
 
 		fmt.Printf("Reading file %v\n", configFilePath)
 
-		err = stepData.ReadPipelineStepData(metadataFile)
-		checkError(err)
+		if err = stepData.ReadPipelineStepData(metadataFile); err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
 
 		stepName := stepData.Metadata.Name
 		fmt.Printf("Step name: %v\n", stepName)
@@ -604,38 +608,49 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		osImport := false
 		osImport, err = setDefaultParameters(&stepData)
-		checkError(err)
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
 
 		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
-		checkError(err)
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
 
 		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
-		checkError(err)
+		if err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644); err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
 
 		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644)
-		checkError(err)
+		if err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644); err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
 
 		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)))
 		if !exists {
 			impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
 			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)), impl, 0644)
-			checkError(err)
+			if err != nil {
+				log.Fatalf("Error occurred: %v\n", err)
+			}
 		}
 
 		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
 		if !exists {
 			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
 			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
-			checkError(err)
+			if err != nil {
+				log.Fatalf("Error occurred: %v\n", err)
+			}
 		}
 	}
 
 	// expose metadata functions
 	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, sprig.HermeticTxtFuncMap())
-	err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
-	checkError(err)
+	if err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644); err != nil {
+		log.Fatalf("Error occurred: %v\n", err)
+	}
 
 	return nil
 }
@@ -750,7 +765,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				if len(paramSections) > 1 {
 					name = strings.Join(paramSections[1:], "_")
 					category = paramSections[0]
-					if !contains(envResource.Categories, category) {
+					if !slices.Contains(envResource.Categories, category) {
 						envResource.Categories = append(envResource.Categories, category)
 					}
 				}
@@ -823,18 +838,15 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 
 // MetadataFiles provides a list of all step metadata files
 func MetadataFiles(sourceDirectory string) ([]string, error) {
-
 	var metadataFiles []string
 
-	err := filepath.Walk(sourceDirectory, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(sourceDirectory, func(path string, info os.FileInfo, err error) error {
 		if filepath.Ext(path) == ".yaml" {
 			metadataFiles = append(metadataFiles, path)
 		}
 		return nil
 	})
-	if err != nil {
-		return metadataFiles, nil
-	}
+
 	return metadataFiles, nil
 }
 
@@ -845,7 +857,7 @@ func isCLIParam(myType string) bool {
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
-	funcMap["golangName"] = GolangNameTitle
+	funcMap["golangName"] = golangNameTitle
 	funcMap["title"] = piperutils.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
@@ -864,11 +876,14 @@ func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []
 
 func generateCode(dataObject interface{}, templateName, goTemplate string, funcMap template.FuncMap) []byte {
 	tmpl, err := template.New(templateName).Funcs(funcMap).Parse(goTemplate)
-	checkError(err)
+	if err != nil {
+		log.Fatalf("Error occurred: %v\n", err)
+	}
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, dataObject)
-	checkError(err)
+	if err = tmpl.Execute(&generatedCode, dataObject); err != nil {
+		log.Fatalf("Error occurred: %v\n", err)
+	}
 
 	return generatedCode.Bytes()
 }
@@ -898,8 +913,8 @@ func golangName(name string) string {
 	return properName
 }
 
-// GolangNameTitle returns name in title case with abbriviations in capital (API, URL, ID, JSON, TLS)
-func GolangNameTitle(name string) string {
+// golangNameTitle returns name in title case with abbriviations in capital (API, URL, ID, JSON, TLS)
+func golangNameTitle(name string) string {
 	return piperutils.Title(golangName(name))
 }
 
@@ -915,22 +930,19 @@ func flagType(paramType string) string {
 	case "[]string":
 		theFlagType = "StringSliceVar"
 	default:
-		fmt.Printf("Meta data type not set or not known: '%v'\n", paramType)
-		os.Exit(1)
+		log.Fatalf("Meta data type not set or not known: '%v'\n", paramType)
 	}
 	return theFlagType
 }
 
-func getStringSliceFromInterface(iSlice interface{}) []string {
+func getStringSliceFromInterface(iSlice any) []string {
+	t, ok := iSlice.([]any)
+	if !ok {
+		return []string{fmt.Sprintf("%v", iSlice)}
+	}
 	s := []string{}
-
-	t, ok := iSlice.([]interface{})
-	if ok {
-		for _, v := range t {
-			s = append(s, fmt.Sprintf("%v", v))
-		}
-	} else {
-		s = append(s, fmt.Sprintf("%v", iSlice))
+	for _, v := range t {
+		s = append(s, fmt.Sprintf("%v", v))
 	}
 
 	return s
@@ -956,6 +968,6 @@ func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error)
 
 		return dest, nil
 	default:
-		return nil, fmt.Errorf("Cannot find uniq on type %s", tp)
+		return nil, fmt.Errorf("cannot find uniq on type %s", tp)
 	}
 }

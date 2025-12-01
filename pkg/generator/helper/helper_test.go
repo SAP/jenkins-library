@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package helper
 
@@ -57,7 +56,7 @@ spec:
         type: stash
     params:
       - name: param0
-        aliases: 
+        aliases:
         - name: oldparam0
         type: string
         description: param0 description
@@ -67,7 +66,7 @@ spec:
         - PARAMETERS
         mandatory: true
       - name: param1
-        aliases: 
+        aliases:
         - name: oldparam1
           deprecated: true
         type: string
@@ -125,7 +124,10 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 func TestProcessMetaFiles(t *testing.T) {
 
 	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
-	ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
+	err := ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
+	if err != nil {
+		return
+	}
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -299,7 +301,7 @@ func TestGolangNameTitle(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		assert.Equal(t, v.expected, GolangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
+		assert.Equal(t, v.expected, golangNameTitle(v.input), fmt.Sprintf("wrong golang name for run %v", k))
 	}
 }
 
