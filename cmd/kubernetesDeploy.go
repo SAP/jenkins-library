@@ -539,7 +539,6 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		fmt.Sprintf("--from-file=.dockerconfigjson=%v", targetPath),
 		"--type=kubernetes.io/dockerconfigjson",
 		"--insecure-skip-tls-verify=" + strconv.FormatBool(config.InsecureSkipTLSVerify),
-		"--dry-run=client",
 		"--output=json",
 	}
 }
