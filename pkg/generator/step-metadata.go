@@ -1,13 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
+	"go/format"
 	"io"
 	"log"
 	"os"
-	"os/exec"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
 )
@@ -28,45 +28,29 @@ func main() {
 	}
 	if err = helper.ProcessMetaFiles(metadataFiles, targetDir, helper.StepHelperData{
 		OpenFile:  openMetaFile,
-		WriteFile: fileWriter,
+		WriteFile: formatAndWriteFile,
 	}); err != nil {
 		log.Fatalf("Error occurred: %v\n", err)
 	}
-
-	fmt.Printf("Running go fmt %v\n", targetDir)
-	cmd := exec.Command("go", "fmt", targetDir)
-	r, _ := cmd.StdoutPipe()
-	cmd.Stderr = cmd.Stdout
-	done := make(chan struct{})
-	scanner := bufio.NewScanner(r)
-	go func() {
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-		done <- struct{}{}
-	}()
-	if err = cmd.Run(); err != nil {
-		log.Fatalf("Error occurred: %v\n", err)
-	}
 }
+
 func openMetaFile(name string) (io.ReadCloser, error) {
 	return os.Open(name)
 }
 
-func fileWriter(filename string, data []byte, perm os.FileMode) error {
-	return os.WriteFile(filename, data, perm)
-}
-
-func openDocTemplate(docTemplateFilePath string) (io.ReadCloser, error) {
-	//check if template exists otherwise print No Template found
-	if _, err := os.Stat(docTemplateFilePath); os.IsNotExist(err) {
-		err := fmt.Errorf("no template found: %v", docTemplateFilePath)
-		return nil, err
+// formatAndWriteFile formats Go files using go/format before writing
+func formatAndWriteFile(filename string, data []byte, perm os.FileMode) error {
+	// Only format .go files
+	if filepath.Ext(filename) == ".go" {
+		formatted, err := format.Source(data)
+		if err != nil {
+			// If formatting fails, log the error but write the unformatted content
+			// This prevents generation from failing due to syntax errors in templates
+			fmt.Printf("Warning: failed to format %s: %v\n", filename, err)
+			return os.WriteFile(filename, data, perm)
+		}
+		return os.WriteFile(filename, formatted, perm)
 	}
-
-	return os.Open(docTemplateFilePath)
-}
-
-func docFileWriter(filename string, data []byte, perm os.FileMode) error {
+	// Non-Go files are written as-is
 	return os.WriteFile(filename, data, perm)
 }
