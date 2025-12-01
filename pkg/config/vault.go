@@ -335,7 +335,7 @@ func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string,
 	for secretKey, secretValue := range secret {
 		for _, key := range keys {
 			if secretKey == key {
-				//log.RegisterSecret(secretValue)
+				log.RegisterSecret(secretValue)
 				envVariable := vaultTestCredentialEnvPrefix + ConvertEnvVar(secretKey)
 				log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, secretValue)
@@ -357,12 +357,12 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 	for secretKey, secretValue := range secret {
 		for _, key := range keys {
 			if secretKey == key {
-				//log.RegisterSecret(secretValue)
+				log.RegisterSecret(secretValue)
 				envVariable := vaultCredentialEnvPrefix + ConvertEnvVar(secretKey)
 				log.Entry().Debugf("Exposing general purpose credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, secretValue)
 
-				//log.RegisterSecret(piperutils.EncodeString(secretValue))
+				log.RegisterSecret(piperutils.EncodeString(secretValue))
 				envVariable = vaultCredentialEnvPrefix + ConvertEnvVar(secretKey) + "_BASE64"
 				log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
 				os.Setenv(envVariable, piperutils.EncodeString(secretValue))
@@ -377,12 +377,12 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 		for secretKey, secretValue := range secret {
 			for _, key := range keys {
 				if secretKey == key {
-					//log.RegisterSecret(secretValue)
+					log.RegisterSecret(secretValue)
 					envVariable := VaultCredentialEnvPrefixDefault + ConvertEnvVar(secretKey)
 					log.Entry().Debugf("Exposing general purpose credential '%v' as '%v'", key, envVariable)
 					os.Setenv(envVariable, secretValue)
 
-					//log.RegisterSecret(piperutils.EncodeString(secretValue))
+					log.RegisterSecret(piperutils.EncodeString(secretValue))
 					envVariable = VaultCredentialEnvPrefixDefault + ConvertEnvVar(secretKey) + "_BASE64"
 					log.Entry().Debugf("Exposing general purpose base64 encoded credential '%v' as '%v'", key, envVariable)
 					os.Setenv(envVariable, piperutils.EncodeString(secretValue))
@@ -483,7 +483,7 @@ func lookupPath(client VaultClient, path string, param *StepParameters) *string 
 
 	field := secret[param.Name]
 	if field != "" {
-		//log.RegisterSecret(field)
+		log.RegisterSecret(field)
 		return &field
 	}
 	log.Entry().Debugf("Secret did not contain a field name '%s'", param.Name)
@@ -492,7 +492,7 @@ func lookupPath(client VaultClient, path string, param *StepParameters) *string 
 		log.Entry().Debugf("Trying alias field name '%s'", alias.Name)
 		field := secret[alias.Name]
 		if field != "" {
-			//log.RegisterSecret(field)
+			log.RegisterSecret(field)
 			if alias.Deprecated {
 				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%s' used in Vault. Please switch to '%s'!", alias.Name, param.Name)
 			}
