@@ -18,6 +18,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+// OutputResource represents a step output resource with type-safe fields
+type OutputResource struct {
+	Name       string // Variable name for the resource
+	Type       string // Type of resource: "influx", "reports", "piperEnvironment"
+	Definition string // Go struct definition code
+	ObjectName string // Go type name for the resource
+}
+
 type stepInfo struct {
 	CobraCmdFuncName string
 	CreateCmdVar     string
@@ -27,7 +35,7 @@ type stepInfo struct {
 	StepParameters   []config.StepParameters
 	StepAliases      []config.Alias
 	OSImport         bool
-	OutputResources  []map[string]string
+	OutputResources  []OutputResource
 	Short            string
 	StepFunc         string
 	StepName         string
@@ -234,13 +242,14 @@ func getSecretFields(stepData *config.StepData) []string {
 	return secretFields
 }
 
-func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, error) {
-	outputResources := []map[string]string{}
+func getOutputResourceDetails(stepData *config.StepData) ([]OutputResource, error) {
+	var outputResources []OutputResource
 
 	for _, res := range stepData.Spec.Outputs.Resources {
-		currentResource := map[string]string{}
-		currentResource["name"] = res.Name
-		currentResource["type"] = res.Type
+		currentResource := OutputResource{
+			Name: res.Name,
+			Type: res.Type,
+		}
 
 		switch res.Type {
 		case "piperEnvironment":
@@ -263,10 +272,10 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			}
 			def, err := envResource.StructString()
 			if err != nil {
-				return outputResources, err
+				return nil, err
 			}
-			currentResource["def"] = def
-			currentResource["objectname"] = envResource.StructName()
+			currentResource.Definition = def
+			currentResource.ObjectName = envResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "influx":
 			var influxResource InfluxResource
@@ -293,10 +302,10 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			}
 			def, err := influxResource.StructString()
 			if err != nil {
-				return outputResources, err
+				return nil, err
 			}
-			currentResource["def"] = def
-			currentResource["objectname"] = influxResource.StructName()
+			currentResource.Definition = def
+			currentResource.ObjectName = influxResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "reports":
 			var reportsResource ReportsResource
@@ -306,7 +315,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				filePattern, _ := param["filePattern"].(string)
 				paramRef, _ := param["paramRef"].(string)
 				if filePattern == "" && paramRef == "" {
-					return outputResources, errors.New("both filePattern and paramRef cannot be empty at the same time")
+					return nil, errors.New("both filePattern and paramRef cannot be empty at the same time")
 				}
 				stepResultType, _ := param["type"].(string)
 				reportsParam := ReportsParameter{FilePattern: filePattern, ParamRef: paramRef, Type: stepResultType}
@@ -314,10 +323,10 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			}
 			def, err := reportsResource.StructString()
 			if err != nil {
-				return outputResources, err
+				return nil, err
 			}
-			currentResource["def"] = def
-			currentResource["objectname"] = reportsResource.StructName()
+			currentResource.Definition = def
+			currentResource.ObjectName = reportsResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		}
 	}
