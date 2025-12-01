@@ -110,43 +110,55 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	if len(config.ContainerRegistryUser) == 0 && len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
 		if len(config.ContainerRegistrySecret) > 0 {
+			log.Entry().Debugf("Using existing container registry secret: %v", config.ContainerRegistrySecret)
+			helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
+		// } else {
+		// 	log.Entry().Debugf("Using Docker config.json file at '%v' to create kubernetes secret", config.DockerConfigJSON)
+		// 	err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+		// 	// show dockerConfig contents in debug log (without secrets)
+		// 	dockerConfigContent, err := utils.FileRead(config.DockerConfigJSON)
+		// 	if err != nil {
+		// 		log.Entry().Warningf("failed to read Docker config.json: %v", err)
+		// 		return err, []string{}
+		// 	}
+		// 	log.Entry().Debugf("Using Docker config.json content: %v", string(dockerConfigContent))
+		// }
+		} else {
+			var dockerRegistrySecret bytes.Buffer
+			utils.Stdout(&dockerRegistrySecret)
+			config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
+			err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
+			if err != nil {
+				log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
+			}
+			log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
+			// print dockerconfigjson file contents in debug log (without secrets)
+			log.Entry().Infof("Using Docker config.json content: %v", dockerRegistrySecret.String())
+			log.Entry().Infofs("kubectl parameters %v", kubeSecretParams)
+			if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
+				log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
+			}
+
+			var dockerRegistrySecretData struct {
+				Kind string `json:"kind"`
+				Data struct {
+					DockerConfJSON string `json:".dockerconfigjson"`
+				} `json:"data"`
+				Type string `json:"type"`
+			}
+			if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
+				log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
+			}
+			// make sure that secret is hidden in log output
+			log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
+
+			log.Entry().Debugf("Secret created: %v", dockerRegistrySecret.String())
+
+			// pass secret in helm default template way and in Piper backward compatible way
+			helmValues.add("secret.name", config.ContainerRegistrySecret)
+			helmValues.add("secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
 			helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 		}
-	} else {
-		var dockerRegistrySecret bytes.Buffer
-		utils.Stdout(&dockerRegistrySecret)
-		config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
-		err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
-		if err != nil {
-			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
-		}
-		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
-		// print dockerconfigjson file contents in debug log (without secrets)
-		log.Entry().Infof("Using Docker config.json content: %v", dockerRegistrySecret.String())
-		log.Entry().Infof("kubectl parameters %v", kubeSecretParams)
-		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
-			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
-		}
-
-		var dockerRegistrySecretData struct {
-			Kind string `json:"kind"`
-			Data struct {
-				DockerConfJSON string `json:".dockerconfigjson"`
-			} `json:"data"`
-			Type string `json:"type"`
-		}
-		if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
-			log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
-		}
-		// make sure that secret is hidden in log output
-		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
-
-		log.Entry().Debugf("Secret created: %v", dockerRegistrySecret.String())
-
-		// pass secret in helm default template way and in Piper backward compatible way
-		helmValues.add("secret.name", config.ContainerRegistrySecret)
-		helmValues.add("secret.dockerconfigjson", dockerRegistrySecretData.Data.DockerConfJSON)
-		helmValues.add("imagePullSecrets[0].name", config.ContainerRegistrySecret)
 	}
 
 	// Deprecated functionality
@@ -542,16 +554,6 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 	} else {
 		return fmt.Errorf("no docker config json file found to update credentials '%v'", config.DockerConfigJSON), []string{}
 	}
-	// show dockerconfigjson contents
-	dockerConfigContent, err := utils.FileRead(targetPath)
-	if err != nil {
-		log.Entry().Warningf("failed to read Docker config.json: %v", err)
-		return err, []string{}
-	}
-	if dockerConfigContent == nil {
-		return fmt.Errorf("no docker config json content found at '%v'", targetPath), []string{}
-	}
-	log.Entry().Debugf("Using Docker config.json content: %v", string(dockerConfigContent))
 	return nil, []string{
 		"create",
 		"secret",
