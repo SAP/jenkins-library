@@ -72,7 +72,7 @@ func (t *Telemetry) Initialize(stepName string) {
 		PipelineURLHash:   t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:      t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
 		BinaryVersion:     piperutils.GetVersion(),
-		TaskVersion:       piperutils.StringWithDefault(os.Getenv("PIPER_ACTION_VERSION"), "n/a"),
+		ActionVersion:     piperutils.StringWithDefault(os.Getenv("PIPER_ACTION_VERSION"), "n/a"),
 		TemplateVersion:   piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_VERSION"), "n/a"),
 	}
 }
@@ -148,7 +148,7 @@ func (t *Telemetry) LogStepTelemetryData() {
 		CorrelationID:   t.provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 		BinaryVersion:   t.data.BinaryVersion,
-		TaskVersion:     t.data.TaskVersion,
+		ActionVersion:   t.data.ActionVersion,
 		TemplateVersion: t.data.TemplateVersion,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)

@@ -19,7 +19,7 @@ type BaseData struct {
 	TemplateName      string `json:"templateName"`              // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
 	StageTemplateName string `json:"stageTemplateName"`         // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
 	BinaryVersion     string `json:"binaryVersion"`             // version of the piper binary, defaults to build info
-	TaskVersion       string `json:"taskVersion,omitempty"`     // version of the orchestrator task
+	ActionVersion     string `json:"actionVersion,omitempty"`   // version of the orchestrator action
 	TemplateVersion   string `json:"templateVersion,omitempty"` // version of the pipeline template
 }
 
@@ -67,7 +67,7 @@ type StepTelemetryData struct {
 	PiperCommitHash string                 `json:"PiperCommitHash"`
 	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
 	BinaryVersion   string                 `json:"BinaryVersion"`
-	TaskVersion     string                 `json:"TaskVersion,omitempty"`
+	ActionVersion   string                 `json:"ActionVersion,omitempty"`
 	TemplateVersion string                 `json:"TemplateVersion,omitempty"`
 }
 

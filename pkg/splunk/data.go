@@ -35,7 +35,7 @@ type MonitoringData struct {
 	GitOwner          string `json:"GitOwner,omitempty"`
 	GitRepository     string `json:"GitRepository,omitempty"`
 	BinaryVersion     string `json:"BinaryVersion,omitempty"`
-	TaskVersion       string `json:"TaskVersion,omitempty"`
+	ActionVersion     string `json:"ActionVersion,omitempty"`
 	TemplateVersion   string `json:"TemplateVersion,omitempty"`
 }
 

@@ -154,7 +154,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 		GitOwner:          readCommonPipelineEnvironment("git/organization"),
 		GitRepository:     readCommonPipelineEnvironment("git/repository"),
 		BinaryVersion:     telemetryData.BinaryVersion,
-		TaskVersion:       telemetryData.TaskVersion,
+		ActionVersion:     telemetryData.ActionVersion,
 		TemplateVersion:   telemetryData.TemplateVersion,
 	}
 	monitoringJson, err := json.Marshal(monitoringData)
