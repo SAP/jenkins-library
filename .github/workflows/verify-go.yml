@@ -81,7 +81,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
       - name: generate
-        run: go run pkg/generator/step-metadata.go
+        run: go run cmd/step-metadata/step-metadata.go
       - name: verify
         run: git diff --exit-code
   dependencies:
