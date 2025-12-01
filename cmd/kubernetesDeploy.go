@@ -124,6 +124,8 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		// 	log.Entry().Debugf("Using Docker config.json content: %v", string(dockerConfigContent))
 		// }
 		} else {
+			log.Entry().Debugf("No container registry credentials provided: %v", config.ContainerRegistrySecret)
+			log.Entry().Debugf("Using Docker config.json file at '%v' to create kubernetes secret", config.DockerConfigJSON)
 			var dockerRegistrySecret bytes.Buffer
 			utils.Stdout(&dockerRegistrySecret)
 			config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
