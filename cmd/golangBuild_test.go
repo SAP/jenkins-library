@@ -711,7 +711,7 @@ func TestPrepareLdflags(t *testing.T) {
 	err := os.Mkdir(filepath.Join(dir, "commonPipelineEnvironment"), 0o777)
 	assert.NoError(t, err, "Error when creating folder structure")
 
-	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0666)
+	err = os.WriteFile(filepath.Join(dir, "commonPipelineEnvironment", "artifactVersion"), []byte("1.2.3"), 0o666)
 	assert.NoError(t, err, "Error when creating cpe file")
 
 	t.Run("success - default", func(t *testing.T) {
@@ -967,8 +967,16 @@ func TestRunGolangciLint(t *testing.T) {
 		"additionalParams": "",
 	}
 
+	config := &golangBuildOptions{
+		GolangciLintArgs: []string{
+			"--output.checkstyle.path",
+			"golangci-lint-report.xml",
+		},
+	}
+
 	tt := []struct {
 		name                string
+		golangciLintVersion string
 		shouldFailOnCommand map[string]error
 		fileWriteError      error
 		exitCode            int
@@ -977,7 +985,8 @@ func TestRunGolangciLint(t *testing.T) {
 		failOnLintingError  bool
 	}{
 		{
-			name:                "success",
+			name:                "success v1",
+			golangciLintVersion: "v1.50.1",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
@@ -985,7 +994,17 @@ func TestRunGolangciLint(t *testing.T) {
 			expectedErr:         nil,
 		},
 		{
-			name:                "failure - failed to run golangci-lint",
+			name:                "success v2",
+			golangciLintVersion: "v2.6.2",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{binaryPath, "run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:         nil,
+		},
+		{
+			name:                "failure - failed to run golangci-lint v1",
+			golangciLintVersion: "v1.50.1",
 			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
 			fileWriteError:      nil,
 			exitCode:            0,
@@ -993,7 +1012,17 @@ func TestRunGolangciLint(t *testing.T) {
 			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
 		},
 		{
+			name:                "failure - failed to run golangci-lint v2",
+			golangciLintVersion: "v2.6.2",
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --output.checkstyle.path golangci-lint-report.xml", binaryPath): fmt.Errorf("err")},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommand:     []string{},
+			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
+		},
+		{
 			name:                "failure - failed to write golangci-lint report",
+			golangciLintVersion: "v1.50.1",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
 			exitCode:            0,
@@ -1002,6 +1031,7 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 		{
 			name:                "failure - failed with ExitCode == 1",
+			golangciLintVersion: "v1.50.1",
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
 			expectedCommand:     []string{},
@@ -1010,6 +1040,7 @@ func TestRunGolangciLint(t *testing.T) {
 		},
 		{
 			name:                "success - ignore failed with ExitCode == 1",
+			golangciLintVersion: "v1.50.1",
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
 			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
@@ -1026,7 +1057,7 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
+			err := runGolangciLint(config, utils, golangciLintDir, test.failOnLintingError, lintSettings, test.golangciLintVersion)
 
 			if test.expectedErr == nil {
 				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
@@ -1045,13 +1076,22 @@ func TestRetrieveGolangciLint(t *testing.T) {
 	golangciLintDir := filepath.Join(goPath, "bin")
 
 	tt := []struct {
-		name        string
-		downloadErr error
-		untarErr    error
-		expectedErr error
+		name            string
+		downloadURL     string
+		expectedVersion string
+		downloadErr     error
+		untarErr        error
+		expectedErr     error
 	}{
 		{
-			name: "success",
+			name:            "success v1",
+			downloadURL:     "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz",
+			expectedVersion: "v1.50.1",
+		},
+		{
+			name:            "success v2",
+			downloadURL:     "https://github.com/golangci/golangci-lint/releases/download/v2.6.2/golangci-lint-2.6.2-darwin-arm64.tar.gz",
+			expectedVersion: "v2.6.2",
 		},
 		{
 			name:        "failure - failed to download golangci-lint",
@@ -1074,13 +1114,14 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			utils.returnFileUntarError = test.untarErr
 			utils.untarFileNames = []string{"golangci-lint"}
 			config := golangBuildOptions{
-				GolangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz",
+				GolangciLintURL: test.downloadURL,
 			}
-			err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL)
+			lintVersion, err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL)
 
 			if test.expectedErr != nil {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			} else {
+				assert.Equal(t, test.expectedVersion, lintVersion)
 				b, err := utils.ReadFile("golangci-lint.tar.gz")
 				assert.NoError(t, err)
 				assert.Equal(t, []byte("content"), b)

@@ -256,7 +256,16 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz"
+        default: "https://github.com/golangci/golangci-lint/releases/download/v2.6.2/golangci-lint-2.6.2-linux-amd64.tar.gz"
+      - name: golangciLintArgs
+        type: "[]string"
+        description: List of additional arguments to be passed to golangci-lint. Only applicable if golangci-lint v2.6.2 or newer is used.
+        scope:
+          - STAGES
+          - PARAMETERS
+        default:
+          - "--output.checkstyle.path"
+          - "golangci-lint-report.xml"
   outputs:
     resources:
       - name: commonPipelineEnvironment
