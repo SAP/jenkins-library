@@ -63,11 +63,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	// check project descriptor
 	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
+	log.Entry().Debugf("using build descriptor file: %s", buildDescriptorFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to determine build descriptor file: %w", err)
 	}
 
 	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		log.Entry().Debug("using pyproject.toml")
 		// handle pyproject.toml file
 		workDir, err := os.Getwd()
 		if err != nil {
@@ -80,6 +82,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	} else {
+		log.Entry().Debug("using setup.py")
 		// handle legacy setup.py file
 		if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
 			return fmt.Errorf("failed to build python project: %w", err)
@@ -141,6 +144,7 @@ func searchDescriptor(supported []string, existsFunc func(string) (bool, error))
 			break
 		}
 	}
+	log.Entry().Debugf("search descriptor found: %s", descriptor)
 	if len(descriptor) == 0 {
 		return "", fmt.Errorf("no build descriptor available, supported: %v", supported)
 	}

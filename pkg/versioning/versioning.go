@@ -2,6 +2,7 @@ package versioning
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"net/http"
 	"os"
@@ -84,6 +85,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		buildTool = opts.CAPVersioningPreference
 	}
 
+	log.Entry().Debugf("selected build tool: %s", buildTool)
 	switch buildTool {
 	case "custom":
 		var err error
@@ -171,7 +173,9 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			versionField: "version",
 		}
 	case "pip":
+		log.Entry().Debugf("building pip project with descriptor file: %s", buildDescriptorFilePath)
 		if len(buildDescriptorFilePath) == 0 {
+			log.Entry().Debug("building pip project with descriptor file not found")
 			var err error
 			buildDescriptorFilePath, err = searchDescriptor([]string{TomlBuildDescriptor, "setup.py", "version.txt", "VERSION"}, fileExists)
 			if err != nil {
@@ -180,6 +184,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		}
 		switch buildDescriptorFilePath {
 		case TomlBuildDescriptor:
+			log.Entry().Debug("building pip project with descriptor file toml")
 			artifact = &Toml{
 				Pip: Pip{
 					path:       buildDescriptorFilePath,
@@ -187,6 +192,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 				},
 			}
 		default:
+			log.Entry().Debug("building pip project with descriptor file py (default)")
 			artifact = &Pip{
 				path:       buildDescriptorFilePath,
 				fileExists: fileExists,

@@ -12,6 +12,7 @@ func BuildWithSetupPy(
 	pythonArgs []string,
 	setupArgs []string,
 ) error {
+	log.Entry().Debug("building project with setup.py")
 	// install dependency
 	if err := InstallWheel(executeFn, virtualEnv); err != nil {
 		return fmt.Errorf("failed to install wheel module: %w", err)
@@ -23,7 +24,7 @@ func BuildWithSetupPy(
 	flags = append(flags, setupArgs...)
 	flags = append(flags, "sdist", "bdist_wheel")
 
-	log.Entry().Debug("building project")
+	log.Entry().Debugf("building project with flags: %v", flags)
 	return executeFn(getBinary(virtualEnv, "python"), flags...)
 }
 
@@ -33,6 +34,7 @@ func BuildWithPyProjectToml(
 	pythonArgs []string,
 	moduleArgs []string,
 ) error {
+	log.Entry().Debug("building project with toml")
 	// install dependencies
 	if err := InstallPip(executeFn, virtualEnv); err != nil {
 		return fmt.Errorf("failed to upgrade pip: %w", err)
@@ -52,6 +54,6 @@ func BuildWithPyProjectToml(
 	flags = append(flags, "-m", "build", "--no-isolation")
 	flags = append(flags, moduleArgs...)
 
-	log.Entry().Debug("building project")
+	log.Entry().Debugf("building project with flags: %v", flags)
 	return executeFn(getBinary(virtualEnv, "python"), flags...)
 }
