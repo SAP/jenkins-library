@@ -479,7 +479,40 @@ spec:
           - STEPS
       - name: dockerConfigJSON
         type: string
-        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        description: |-
+          Docker registry authentication (config.json) handling:
+
+          1. If a Vault secret (default name: docker-config) exists with the required key, its content is copied to:
+             .pipeline/docker/config.json (this path is used as the parameter value).
+          2. Usage by deploy tool:
+             - deployTool: kubectl
+               The file is read to create (or reuse) a Kubernetes Secret of type kubernetes.io/dockerconfigjson.
+             - deployTool: helm
+               The base64 content is passed as Helm value secret.dockerconfigjson. Your Helm chart MUST template a Secret using these values.
+          3. Helm chart requirement:
+             Provide a template that creates the secret (e.g. templates/secret.yaml) and reference it in workload specs (Deployment/StatefulSet/etc.) via imagePullSecrets so pods can pull images.
+
+          Example Helm templates:
+
+          templates/secret.yaml:
+            {{`{{- if and .Values.secret.enabled (ne .Values.secret.name \"\") -}}`}}
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{`{{ .Values.secret.name }}`}}
+            type: kubernetes.io/dockerconfigjson
+            data:
+              .dockerconfigjson: {{`{{ .Values.secret.dockerconfigjson | quote }}`}}
+            {{`{{- end }}`}}
+
+          templates/deployment.yaml (excerpt):
+            spec:
+              template:
+                spec:
+                  imagePullSecrets:
+                    - name: {{`{{ .Values.secret.name }}`}}
+
+          More details about Docker credentials: https://docs.docker.com/engine/reference/commandline/login/
         scope:
           - PARAMETERS
           - STAGES
