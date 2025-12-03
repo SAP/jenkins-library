@@ -8,11 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const (
@@ -72,6 +71,9 @@ func (t *Telemetry) Initialize(stepName string) {
 		SiteID:            t.SiteID,
 		PipelineURLHash:   t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
 		BuildURLHash:      t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
+		BinaryVersion:     piperutils.GetVersion(),
+		ActionVersion:     piperutils.StringWithDefault(os.Getenv("PIPER_ACTION_VERSION"), "n/a"),
+		TemplateVersion:   piperutils.StringWithDefault(os.Getenv("PIPER_TEMPLATE_VERSION"), "n/a"),
 	}
 }
 
@@ -145,6 +147,9 @@ func (t *Telemetry) LogStepTelemetryData() {
 		ErrorDetail:     fatalError,
 		CorrelationID:   t.provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
+		BinaryVersion:   t.data.BinaryVersion,
+		ActionVersion:   t.data.ActionVersion,
+		TemplateVersion: t.data.TemplateVersion,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
 	if err != nil {
