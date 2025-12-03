@@ -726,7 +726,7 @@ spec:
             type: blackduck-security
   containers:
     - name: openjdk
-      image: openjdk:11
+      image: openjdk:11-ea
       workingDir: /root
       options:
         - name: -u

@@ -988,7 +988,7 @@ func detectExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "openjdk", Image: "openjdk:11-ea", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Sidecars: []config.Container{
 				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},

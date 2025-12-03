@@ -5,10 +5,11 @@ package cmd
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestVersion(t *testing.T) {
@@ -40,7 +41,6 @@ func runVersionCommand(t *testing.T, commitID, tag string) string {
 
 	os.Stdout = w
 
-	//
 	// needs to be set in the free wild by the build process:
 	// go build -ldflags "-X github.com/SAP/jenkins-library/cmd.GitCommit=${GIT_COMMIT} -X github.com/SAP/jenkins-library/cmd.GitTag=${GIT_TAG}"
 	if len(commitID) > 0 {
