@@ -64,6 +64,8 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions, gc
 	}
 	log.Entry().Info("Uploading reports to Google Cloud Storage...")
 	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/codecheck.json", ParamRef: "", StepResultType: "sonarqube"},
+		{FilePattern: "**/hotspot.json", ParamRef: "", StepResultType: "sonarqube"},
 		{FilePattern: "**/sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
 		{FilePattern: "**/sonarscan-result.json", ParamRef: "", StepResultType: "sonarqube"},
 	}
@@ -649,6 +651,8 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "reports",
 						Type: "reports",
 						Parameters: []map[string]interface{}{
+							{"filePattern": "**/codecheck.json", "type": "sonarqube"},
+							{"filePattern": "**/hotspot.json", "type": "sonarqube"},
 							{"filePattern": "**/sonarscan.json", "type": "sonarqube"},
 							{"filePattern": "**/sonarscan-result.json", "type": "sonarqube"},
 						},
