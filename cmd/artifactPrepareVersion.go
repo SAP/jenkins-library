@@ -502,9 +502,11 @@ func shouldExclude(path string, excludes []string) bool {
 		if path == ex {
 			return true
 		}
-		if ok, _ := filepath.Match(ex, path); ok {
-			return true
-		}
+		if ok, err := filepath.Match(ex, path); err != nil {
+                    log.Entry().Warnf("Invalid exclusion pattern %s: %v", ex, err)
+                } else if ok {
+                    return true
+                }
 	}
 	return false
 }
