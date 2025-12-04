@@ -34,6 +34,9 @@ type MonitoringData struct {
 	Branch            string `json:"Branch,omitempty"`
 	GitOwner          string `json:"GitOwner,omitempty"`
 	GitRepository     string `json:"GitRepository,omitempty"`
+	BinaryVersion     string `json:"BinaryVersion,omitempty"`
+	ActionVersion     string `json:"ActionVersion,omitempty"`
+	TemplateVersion   string `json:"TemplateVersion,omitempty"`
 }
 
 type LogFileEvent struct {
