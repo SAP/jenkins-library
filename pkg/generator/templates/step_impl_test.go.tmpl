@@ -1,0 +1,53 @@
+package cmd
+
+import (
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+type {{.StepName}}MockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func new{{.StepName | title}}TestsUtils() {{.StepName}}MockUtils {
+	utils := {{.StepName}}MockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return utils
+}
+
+func TestRun{{.StepName | title}}(t *testing.T) {
+	t.Parallel()
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := {{.StepName}}Options{}
+
+		utils := new{{.StepName | title}}TestsUtils()
+		utils.AddFile("file.txt", []byte("dummy content"))
+
+		// test
+		err := run{{.StepName | title}}(&config, nil, utils)
+
+		// assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("error path", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := {{.StepName}}Options{}
+
+		utils := new{{.StepName | title}}TestsUtils()
+
+		// test
+		err := run{{.StepName | title}}(&config, nil, utils)
+
+		// assert
+		assert.EqualError(t, err, "cannot run without important file")
+	})
+}
