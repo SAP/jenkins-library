@@ -354,6 +354,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		}
 		// images produces with cnb have sboms
 		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger,go-module-binary-cataloger,apk-db-cataloger,dpkg-db-cataloger,rpm-db-cataloger")
+		syftScanner.AddArgument("--exclude=**/paketo-buildpacks_npm-install/launch-modules/*.spdx.*")
 		err = syftScanner.ScanImages(filepath.Dir(config.DockerConfigJSON), utils, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)

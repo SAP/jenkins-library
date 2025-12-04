@@ -339,7 +339,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz"
+        default: "https://github.com/anchore/syft/releases/download/v1.38.0/syft_1.38.0_linux_amd64.tar.gz"
       - name: runImage
         type: string
         description: "Base image from which application images are built. Will be defaulted to the image provided by the builder. See also https://buildpacks.io/docs/for-app-developers/concepts/base-images/."
