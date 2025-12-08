@@ -31,18 +31,18 @@ func initGcsClient(ctx context.Context, keyFile, token string, opts ...option.Cl
 		return client, nil
 	default: // Both keyFile and token are provided - token takes precedence
 		log.Entry().Debug("Authenticating with token")
-		client, err = initWithToken(ctx, token, opts...)
-		if err == nil {
+		client, errTok := initWithToken(ctx, token, opts...)
+		if errTok == nil {
 			log.Entry().Debug("Successfully initialized GCS client")
 			return client, nil
 		}
 		log.Entry().Warn("Failed to authenticate with token, falling back to key file")
-		client, err = initWithKeyFile(ctx, keyFile, opts...)
-		if err == nil {
+		client, errKey := initWithKeyFile(ctx, keyFile, opts...)
+		if errKey == nil {
 			log.Entry().Debug("Successfully initialized GCS client")
 			return client, nil
 		}
-		return nil, fmt.Errorf("failed to authenticate with both token (%v) and key file (%v)", err, err)
+		return nil, fmt.Errorf("failed to authenticate with both token (%v) and key file (%v)", errTok, errKey)
 	}
 }
 
