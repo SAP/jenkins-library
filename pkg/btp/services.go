@@ -2,11 +2,11 @@ package btp
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (string, error) {
@@ -33,7 +33,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceBindingBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceBindingBytes)
@@ -78,7 +78,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service binding JSON failed")
 	}
 
 	err = btp.Logout()
@@ -110,7 +110,7 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceBindingBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceBindingBytes)
@@ -137,12 +137,12 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service binding JSON failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceBindingJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceBindingJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceBindingJSON, nil
@@ -171,7 +171,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 
 	if err != nil {
 		// error while trying to run btp login
-		return fmt.Errorf("Login to BTP failed: %w", err)
+		return errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceBindingBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceBindingBytes)
@@ -242,7 +242,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceInstanceBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceInstanceBytes)
@@ -260,7 +260,8 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		WithName(options.InstanceName).
 		WithSubAccount(options.Subaccount).
 		WithParameters(options.Parameters).
-		WithPlanName(options.PlanName).WithOfferingName(options.OfferingName).
+		WithPlanName(options.PlanName).
+		WithOfferingName(options.OfferingName).
 		Build()
 
 	err = btp.Exec.RunSync(RunSyncOptions{
@@ -290,12 +291,12 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service instance JSON failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceInstanceJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceInstanceJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceInstanceJSON, nil
@@ -322,7 +323,7 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceInstanceBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceInstanceBytes)
@@ -349,12 +350,12 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service instance JSON failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceInstanceJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceInstanceJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceInstanceJSON, nil

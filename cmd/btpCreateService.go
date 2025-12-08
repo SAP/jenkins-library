@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func newBtpCreateServiceUtils() btp.BTPUtils {
@@ -33,15 +32,15 @@ func runBtpCreateService(config *btpCreateServiceOptions, telemetryData *telemet
 		Tenant:       config.Tenant,
 		PlanName:     config.PlanName,
 		OfferingName: config.OfferingName,
-		InstanceName: config.InstanceName,
-		Parameters:   config.Parameters,
+		InstanceName: config.ServiceInstanceName,
+		Parameters:   config.CreateServiceConfig,
 		Timeout:      config.Timeout,
 		PollInterval: config.PollInterval,
 	}
 
 	_, err := utils.CreateServiceInstance(btpConfig)
 	if err != nil {
-		return fmt.Errorf("failed to create BTP service instance: %w", err)
+		return errors.Wrap(err, "failed to create BTP service instance")
 	}
 
 	log.Entry().Info("Service creation completed successfully")

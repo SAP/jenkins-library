@@ -17,18 +17,18 @@ import (
 )
 
 type btpCreateServiceOptions struct {
-	Url          string `json:"url,omitempty"`
-	Subdomain    string `json:"subdomain,omitempty"`
-	Tenant       string `json:"tenant,omitempty"`
-	Subaccount   string `json:"subaccount,omitempty"`
-	PlanName     string `json:"planName,omitempty"`
-	OfferingName string `json:"offeringName,omitempty"`
-	InstanceName string `json:"instanceName,omitempty"`
-	Parameters   string `json:"parameters,omitempty"`
-	Timeout      int    `json:"timeout,omitempty"`
-	PollInterval int    `json:"pollInterval,omitempty"`
-	User         string `json:"user,omitempty"`
-	Password     string `json:"password,omitempty"`
+	Url                 string `json:"url,omitempty"`
+	Subdomain           string `json:"subdomain,omitempty"`
+	Tenant              string `json:"tenant,omitempty"`
+	Subaccount          string `json:"subaccount,omitempty"`
+	PlanName            string `json:"planName,omitempty"`
+	OfferingName        string `json:"offeringName,omitempty"`
+	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
+	CreateServiceConfig string `json:"createServiceConfig,omitempty"`
+	Timeout             int    `json:"timeout,omitempty"`
+	PollInterval        int    `json:"pollInterval,omitempty"`
+	User                string `json:"user,omitempty"`
+	Password            string `json:"password,omitempty"`
 }
 
 // BtpCreateServiceCommand Creates a service instance in BTP
@@ -45,9 +45,7 @@ func BtpCreateServiceCommand() *cobra.Command {
 	var createBtpCreateServiceCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Creates a service instance in BTP",
-		Long: `Creates a service instance in SAP Business Technology Platform (BTP).
-Mandatory: BTP URL, Subdomain, Subaccount, PlanName, OfferingName, InstanceName, Parameters, Timeout and PollInterval.
-This metadata maps to the BTP utils implementation: CreateServiceInstance in pkg/btp/services.go.`,
+		Long:  `Creates a service instance in SAP Business Technology Platform (BTP).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -172,8 +170,8 @@ func addBtpCreateServiceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceOp
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
-	cmd.Flags().StringVar(&stepConfig.InstanceName, "instanceName", os.Getenv("PIPER_instanceName"), "Name of the service instance to create")
-	cmd.Flags().StringVar(&stepConfig.Parameters, "parameters", os.Getenv("PIPER_parameters"), "JSON string of parameters for the service instance")
+	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
+	cmd.Flags().StringVar(&stepConfig.CreateServiceConfig, "createServiceConfig", os.Getenv("PIPER_createServiceConfig"), "Path to JSON file or JSON in-line string for a Service creation")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for creation/polling")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 600, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User for BTP (alternatively provided via btpCredentialsId)")
@@ -184,10 +182,8 @@ func addBtpCreateServiceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceOp
 	cmd.MarkFlagRequired("subaccount")
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
-	cmd.MarkFlagRequired("instanceName")
-	cmd.MarkFlagRequired("parameters")
-	cmd.MarkFlagRequired("timeout")
-	cmd.MarkFlagRequired("pollInterval")
+	cmd.MarkFlagRequired("serviceInstanceName")
+	cmd.MarkFlagRequired("createServiceConfig")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -261,29 +257,29 @@ func btpCreateServiceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_offeringName"),
 					},
 					{
-						Name:        "instanceName",
+						Name:        "serviceInstanceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
-						Default:     os.Getenv("PIPER_instanceName"),
+						Default:     os.Getenv("PIPER_serviceInstanceName"),
 					},
 					{
-						Name:        "parameters",
+						Name:        "createServiceConfig",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/parameters"}},
-						Default:     os.Getenv("PIPER_parameters"),
+						Default:     os.Getenv("PIPER_createServiceConfig"),
 					},
 					{
 						Name:        "timeout",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "int",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/timeout"}},
 						Default:     3600,
 					},
@@ -292,7 +288,7 @@ func btpCreateServiceMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "int",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/pollInterval"}},
 						Default:     600,
 					},

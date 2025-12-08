@@ -3,8 +3,6 @@ metadata:
   description: Creates a service instance in BTP
   longDescription: |
     Creates a service instance in SAP Business Technology Platform (BTP).
-    Mandatory: BTP URL, Subdomain, Subaccount, PlanName, OfferingName, InstanceName, Parameters, Timeout and PollInterval.
-    This metadata maps to the BTP utils implementation: CreateServiceInstance in pkg/btp/services.go.
 spec:
   inputs:
     secrets:
@@ -88,7 +86,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/offeringName
-      - name: instanceName
+      - name: serviceInstanceName
         type: string
         description: Name of the service instance to create
         scope:
@@ -99,9 +97,9 @@ spec:
         mandatory: true
         aliases:
           - name: btp/instanceName
-      - name: parameters
+      - name: createServiceConfig
         type: string
-        description: JSON string of parameters for the service instance
+        description: Path to JSON file or JSON in-line string for a Service creation
         scope:
           - PARAMETERS
           - STAGES
@@ -118,7 +116,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        mandatory: true
+        mandatory: false
         default: 3600
         aliases:
           - name: btp/timeout
@@ -130,7 +128,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        mandatory: true
+        mandatory: false
         default: 600
         aliases:
           - name: btp/pollInterval
