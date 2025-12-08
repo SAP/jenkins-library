@@ -44,8 +44,6 @@ func NewClient(keyFile, token string, opts ...clientOptions) (Client, error) {
 		opt(client)
 	}
 
-	//gcs, err := initGcsClient(context.Background(), keyFile, token, client.gcsOptions...)
-
 	// For all steps other than sapCumulusUpload, we need to keep the old behavior
 	// where keyFile takes precedence over token
 	gcs, err := initGcsClientLegacy(context.Background(), keyFile, token, client.gcsOptions...)
