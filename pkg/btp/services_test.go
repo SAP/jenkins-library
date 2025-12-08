@@ -214,14 +214,14 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 
 		//when
 		var err error
-		var btpServiceBinding string
+		var btpServiceInstance string
 		btp := NewBTPUtils(m)
 
-		btpServiceBinding, err = btp.CreateServiceInstance(btpConfig)
+		btpServiceInstance, err = btp.CreateServiceInstance(btpConfig)
 
 		//then
 		if assert.NoError(t, err) {
-			assert.NotEmpty(t, btpServiceBinding)
+			assert.NotEmpty(t, btpServiceInstance)
 		}
 	})
 }
