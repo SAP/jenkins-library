@@ -54,17 +54,16 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 	// check input data
 	// example for script: sources: ["./script.sh"]
 	for position, source := range config.Sources {
-		sanitizedSource := piperutils.SanitizePath(source)
-		localSource := sanitizedSource
+		scriptPath := piperutils.SanitizePath(source)
 		if strings.Contains(source, "https") {
-			scriptLocation, err := piperhttp.DownloadExecutable(config.GithubToken, utils, utils, sanitizedSource)
+			scriptLocation, err := piperhttp.DownloadExecutable(config.GithubToken, utils, utils, scriptPath)
 			if err != nil {
 				return errors.Wrap(err, "script download error")
 			}
-			localSource = scriptLocation
+			scriptPath = scriptLocation
 		}
 		// check if the script is physically present
-		exists, err := utils.FileExists(localSource)
+		exists, err := utils.FileExists(scriptPath)
 		if err != nil {
 			log.Entry().WithError(err).Error("failed to check for defined script")
 			return fmt.Errorf("failed to check for defined script: %w", err)
@@ -81,7 +80,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 
 		log.Entry().Info("starting running script:", source)
 
-		err = utils.RunExecutable(localSource, args...)
+		err = utils.RunExecutable(scriptPath, args...)
 		if err != nil {
 			log.Entry().Errorln("starting running script:", source)
 		}
