@@ -174,8 +174,8 @@ func addBtpCreateServiceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceOp
 	cmd.Flags().StringVar(&stepConfig.CreateServiceConfig, "createServiceConfig", os.Getenv("PIPER_createServiceConfig"), "Path to JSON file or JSON in-line string for a Service creation")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for creation/polling")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 600, "Poll interval in seconds for checking instance readiness")
-	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User for BTP (alternatively provided via btpCredentialsId)")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP (alternatively provided via btpCredentialsId)")
+	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
 	cmd.MarkFlagRequired("url")
 	cmd.MarkFlagRequired("subdomain")
@@ -199,7 +199,7 @@ func btpCreateServiceMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
+					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

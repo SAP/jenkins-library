@@ -9,15 +9,6 @@ spec:
       - name: btpCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.
         type: jenkins
-        aliases:
-          - name: btp/credentialsId
-        resourceRef:
-          - name: btpCredentialsId
-            type: secret
-            param: username
-          - name: btpCredentialsId
-            type: secret
-            param: password
     params:
       - name: url
         type: string
@@ -134,7 +125,7 @@ spec:
           - name: btp/pollInterval
       - name: user
         type: string
-        description: User for BTP (alternatively provided via btpCredentialsId)
+        description: User or E-Mail for BTP
         scope:
           - PARAMETERS
           - STAGES
@@ -147,7 +138,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password for BTP (alternatively provided via btpCredentialsId)
+        description: Password for BTP
         scope:
           - PARAMETERS
           - STAGES
