@@ -52,6 +52,17 @@ spec:
           - STAGES
           - PARAMETERS
         default: true
+      - name: useReactorForMultiModuleBuild
+        type: bool
+        description:
+          "If enabled, it will use the Maven reactor to build all modules that the integration-tests module depends on.
+          This flag is mutually exclusive with installArtifacts."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string

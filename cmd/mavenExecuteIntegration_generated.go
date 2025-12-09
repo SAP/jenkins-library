@@ -20,14 +20,15 @@ import (
 )
 
 type mavenExecuteIntegrationOptions struct {
-	Retry                       int    `json:"retry,omitempty"`
-	ForkCount                   string `json:"forkCount,omitempty"`
-	Goal                        string `json:"goal,omitempty"`
-	InstallArtifacts            bool   `json:"installArtifacts,omitempty"`
-	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
-	M2Path                      string `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers bool   `json:"logSuccessfulMavenTransfers,omitempty"`
+	Retry                         int    `json:"retry,omitempty"`
+	ForkCount                     string `json:"forkCount,omitempty"`
+	Goal                          string `json:"goal,omitempty"`
+	InstallArtifacts              bool   `json:"installArtifacts,omitempty"`
+	UseReactorForMultiModuleBuild bool   `json:"useReactorForMultiModuleBuild,omitempty"`
+	ProjectSettingsFile           string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile            string `json:"globalSettingsFile,omitempty"`
+	M2Path                        string `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers   bool   `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
 type mavenExecuteIntegrationReports struct {
@@ -175,6 +176,7 @@ func addMavenExecuteIntegrationFlags(cmd *cobra.Command, stepConfig *mavenExecut
 	cmd.Flags().StringVar(&stepConfig.ForkCount, "forkCount", `1C`, "The number of JVM processes that are spawned to run the tests in parallel in case of using a maven based project structure. For more details visit the Surefire documentation at https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#forkCount.")
 	cmd.Flags().StringVar(&stepConfig.Goal, "goal", `test`, "The name of the Maven goal to execute.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", true, "If enabled, it will install all artifacts to the local maven repository to make them available before running the tests. This is required if the integration test module has dependencies to other modules in the repository and they were not installed before.")
+	cmd.Flags().BoolVar(&stepConfig.UseReactorForMultiModuleBuild, "useReactorForMultiModuleBuild", false, "If enabled, it will use the Maven reactor to build all modules in the project for the integration tests. This flag is mutually exclusive with installArtifacts.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -228,6 +230,15 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
+					},
+					{
+						Name:        "useReactorForMultiModuleBuild",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "projectSettingsFile",

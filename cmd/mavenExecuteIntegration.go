@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry.CustomData) {
@@ -19,21 +20,14 @@ func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry
 }
 
 func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils maven.Utils) error {
-	pomPath := filepath.Join("integration-tests", "pom.xml")
-	hasIntegrationTestsModule, _ := utils.FileExists(pomPath)
+	integrationTestsPomPath := filepath.Join("integration-tests", "pom.xml")
+	hasIntegrationTestsModule, _ := utils.FileExists(integrationTestsPomPath)
 	if !hasIntegrationTestsModule {
 		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
 	}
 
-	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
-			M2Path:              config.M2Path,
-			ProjectSettingsFile: config.ProjectSettingsFile,
-			GlobalSettingsFile:  config.GlobalSettingsFile,
-		}, utils)
-		if err != nil {
-			return err
-		}
+	if err := validateStepConfig(config); err != nil {
+		return err
 	}
 
 	if err := validateForkCount(config.ForkCount); err != nil {
@@ -43,18 +37,50 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
 	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
 
+	var targetPomPath string
+	var flags []string
+
+	if config.UseReactorForMultiModuleBuild {
+		targetPomPath = "pom.xml"
+		flags = []string{"-pl", "integration-tests"}
+	} else {
+		targetPomPath = integrationTestsPomPath
+		flags = []string{}
+
+		if config.InstallArtifacts {
+			err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
+				M2Path:              config.M2Path,
+				ProjectSettingsFile: config.ProjectSettingsFile,
+				GlobalSettingsFile:  config.GlobalSettingsFile,
+			}, utils)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+
 	mavenOptions := maven.ExecuteOptions{
-		PomPath:             pomPath,
+		PomPath:             targetPomPath,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		Goals:               []string{"org.jacoco:jacoco-maven-plugin:prepare-agent", config.Goal},
 		Defines:             []string{retryDefine, forkCountDefine},
+		Flags:               flags,
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
 
 	return err
+}
+
+func validateStepConfig(config *mavenExecuteIntegrationOptions) error {
+	if config.InstallArtifacts && config.UseReactorForMultiModuleBuild {
+		return fmt.Errorf("the parameters 'installArtifacts' and 'useReactorForMultiModuleBuild' cannot be used together, they are mutually exclusive")
+	}
+
+	return nil
 }
 
 func validateForkCount(value string) error {

@@ -5,11 +5,12 @@ package cmd
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"path/filepath"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 type mavenExecuteIntegrationTestUtilsBundle struct {
@@ -135,6 +136,60 @@ func TestValidateForkCount(t *testing.T) {
 				assert.NoError(t, err)
 			} else if assert.Error(t, err) {
 				assert.Contains(t, err.Error(), testCase.expectedError)
+			}
+		})
+	}
+}
+
+func TestValidateStepConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name                          string
+		installArtifacts              bool
+		useReactorForMultiModuleBuild bool
+		expectError                   bool
+	}{
+		{
+			name:                          "both flags false - valid",
+			installArtifacts:              false,
+			useReactorForMultiModuleBuild: false,
+			expectError:                   false,
+		},
+		{
+			name:                          "only installArtifacts true - valid",
+			installArtifacts:              true,
+			useReactorForMultiModuleBuild: false,
+			expectError:                   false,
+		},
+		{
+			name:                          "only useReactorForMultiModuleBuild true - valid",
+			installArtifacts:              false,
+			useReactorForMultiModuleBuild: true,
+			expectError:                   false,
+		},
+		{
+			name:                          "both flags true - invalid",
+			installArtifacts:              true,
+			useReactorForMultiModuleBuild: true,
+			expectError:                   true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			config := &mavenExecuteIntegrationOptions{
+				InstallArtifacts:              testCase.installArtifacts,
+				UseReactorForMultiModuleBuild: testCase.useReactorForMultiModuleBuild,
+			}
+			err := validateStepConfig(config)
+			if testCase.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "flags must be mutually exclusive")
+			} else {
+				assert.NoError(t, err)
 			}
 		})
 	}
