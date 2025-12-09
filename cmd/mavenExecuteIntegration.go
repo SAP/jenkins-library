@@ -26,16 +26,34 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
 	}
 
-	if err := validateStepConfig(config); err != nil {
-		return err
-	}
-
 	if err := validateForkCount(config.ForkCount); err != nil {
 		return err
 	}
 
 	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
 	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
+
+	if config.InstallArtifacts {
+		if config.UseReactorForMultiModuleBuild {
+			err := maven.InstallModuleWithReactor("integration-tests", &maven.EvaluateOptions{
+				M2Path:              config.M2Path,
+				ProjectSettingsFile: config.ProjectSettingsFile,
+				GlobalSettingsFile:  config.GlobalSettingsFile,
+			}, utils)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
+				M2Path:              config.M2Path,
+				ProjectSettingsFile: config.ProjectSettingsFile,
+				GlobalSettingsFile:  config.GlobalSettingsFile,
+			}, utils)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	var targetPomPath string
 	var flags []string
@@ -46,18 +64,6 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	} else {
 		targetPomPath = integrationTestsPomPath
 		flags = []string{}
-
-		if config.InstallArtifacts {
-			err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
-				M2Path:              config.M2Path,
-				ProjectSettingsFile: config.ProjectSettingsFile,
-				GlobalSettingsFile:  config.GlobalSettingsFile,
-			}, utils)
-			if err != nil {
-				return err
-			}
-		}
-
 	}
 
 	mavenOptions := maven.ExecuteOptions{
@@ -71,16 +77,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
-
 	return err
-}
-
-func validateStepConfig(config *mavenExecuteIntegrationOptions) error {
-	if config.InstallArtifacts && config.UseReactorForMultiModuleBuild {
-		return fmt.Errorf("the parameters 'installArtifacts' and 'useReactorForMultiModuleBuild' cannot be used together, they are mutually exclusive")
-	}
-
-	return nil
 }
 
 func validateForkCount(value string) error {
