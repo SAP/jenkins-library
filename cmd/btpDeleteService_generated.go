@@ -168,8 +168,8 @@ func addBtpDeleteServiceFlags(cmd *cobra.Command, stepConfig *btpDeleteServiceOp
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to delete")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for deletion operation")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 600, "Poll interval in seconds for checking instance readiness")
-	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User for BTP (alternatively provided via btpCredentialsId)")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP (alternatively provided via btpCredentialsId)")
+	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
 	cmd.MarkFlagRequired("url")
 	cmd.MarkFlagRequired("subdomain")
@@ -190,7 +190,7 @@ func btpDeleteServiceMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
+					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
