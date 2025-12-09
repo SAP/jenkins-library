@@ -192,7 +192,7 @@ spec:
             default: docker-config
       - name: dockerConfigJSONCPE
         type: string
-        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerConfigJSON) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerConfigJSON) having higher priority.
+        description: This property is intended only for reading the `dockerConfigJSON` from the Common Pipeline Environment. If you want to provide your own credentials, please refer to the [dockerConfigJSON](#dockerconfigjson) property. If both properties are set, the config files will be merged, with the [dockerConfigJSON](#dockerconfigjson) having higher priority.
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -292,13 +292,13 @@ spec:
           - containerImageName: example/java-app
             containerImageAlias: java
             buildpacks:
-            - "gcr.io/paketo-buildpacks/java"
+            - "docker.io/paketobuildpacks/java"
             path: "source/java"
           - containerImageName: example/nodejs-app
             containerImageAlias: nodejs
             containerImageTag: v1.0.0
             buildpacks:
-            - "gcr.io/paketo-buildpacks/nodejs"
+            - "docker.io/paketobuildpacks/nodejs"
             path: "source/nodejs"
           ```
         scope:
@@ -339,10 +339,10 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/anchore/syft/releases/download/v0.62.3/syft_0.62.3_linux_amd64.tar.gz"
+        default: "https://github.com/anchore/syft/releases/download/v1.38.0/syft_1.38.0_linux_amd64.tar.gz"
       - name: runImage
         type: string
-        description: "Base image from which application images are built. Will be defaulted to the image provided by the builder."
+        description: "Base image from which application images are built. Will be defaulted to the image provided by the builder. See also https://buildpacks.io/docs/for-app-developers/concepts/base-images/."
         scope:
           - GENERAL
           - STEPS

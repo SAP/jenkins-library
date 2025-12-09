@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -60,7 +59,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		connectionDetails.Password = options.Password
 	} else {
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
-			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return connectionDetails, err
 		}
@@ -179,7 +178,7 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 	return httpResponse, err
 }
 
-// HandleHTTPError handles ABAP error messages which can occur when using OData services
+// HandleHTTPError handles ABAP error messages which can occur when using OData V2 services
 //
 // The point of this function is to enrich the error received from a HTTP Request (which is passed as a parameter to this function).
 // Further error details may be present in the response body of the HTTP response.
@@ -197,7 +196,7 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		match, _ := regexp.MatchString(".*EOF$", err.Error())
 		if match {
 			AddDefaultDashedLine(1)
-			log.Entry().Infof("%s", "A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)")
+			log.Entry().Info("A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)")
 			AddDefaultDashedLine(1)
 		}
 
@@ -219,10 +218,11 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 	return errorCode, err
 }
 
+// GetErrorDetailsFromResponse parses OData V2 Responses containing ABAP Error messages
 func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, errorCode string, err error) {
 
 	// Include the error message of the ABAP Environment system, if available
-	var abapErrorResponse AbapError
+	var abapErrorResponse AbapErrorODataV2
 	bodyText, readError := io.ReadAll(resp.Body)
 	if readError != nil {
 		return "", "", readError
@@ -234,7 +234,7 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 	}
 	if _, ok := abapResp["error"]; ok {
 		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (AbapError{}) != abapErrorResponse {
+		if (AbapErrorODataV2{}) != abapErrorResponse {
 			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Debug(abapErrorResponse.Message.Value)
 			return abapErrorResponse.Message.Value, abapErrorResponse.Code, nil
 		}
@@ -244,27 +244,16 @@ func GetErrorDetailsFromResponse(resp *http.Response) (errorString string, error
 
 }
 
-// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
-func ConvertTime(logTimeStamp string) time.Time {
-	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-	n, error := strconv.ParseInt(seconds, 10, 64)
-	if error != nil {
-		return time.Unix(0, 0).UTC()
-	}
-	t := time.Unix(n, 0).UTC()
-	return t
-}
-
 // AddDefaultDashedLine adds 25 dashes
 func AddDefaultDashedLine(j int) {
 	for i := 1; i <= j; i++ {
-		log.Entry().Infof(strings.Repeat("-", 25))
+		log.Entry().Info(strings.Repeat("-", 25))
 	}
 }
 
 // AddDefaultDebugLine adds 25 dashes in debug
 func AddDebugDashedLine() {
-	log.Entry().Debugf(strings.Repeat("-", 25))
+	log.Entry().Debug(strings.Repeat("-", 25))
 }
 
 /*******************************
@@ -297,6 +286,9 @@ type AbapEnvironmentRunATCCheckOptions struct {
 type AbapEnvironmentOptions struct {
 	Username          string `json:"username,omitempty"`
 	Password          string `json:"password,omitempty"`
+	ByogUsername      string `json:"byogUsername,omitempty"`
+	ByogPassword      string `json:"byogPassword,omitempty"`
+	ByogAuthMethod    string `json:"byogAuthMethod,omitempty"`
 	Host              string `json:"host,omitempty"`
 	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string `json:"cfOrg,omitempty"`
@@ -312,17 +304,24 @@ type AbapMetadata struct {
 
 // ConnectionDetailsHTTP contains fields for HTTP connections including the XCSRF token
 type ConnectionDetailsHTTP struct {
-	Host       string
-	User       string `json:"user"`
-	Password   string `json:"password"`
-	URL        string `json:"url"`
-	XCsrfToken string `json:"xcsrftoken"`
+	Host             string
+	User             string   `json:"user"`
+	Password         string   `json:"password"`
+	URL              string   `json:"url"`
+	XCsrfToken       string   `json:"xcsrftoken"`
+	CertificateNames []string `json:"-"`
 }
 
-// AbapError contains the error code and the error message for ABAP errors
-type AbapError struct {
+// AbapErrorODataV2 contains the error code and the error message for ABAP errors
+type AbapErrorODataV2 struct {
 	Code    string           `json:"code"`
 	Message AbapErrorMessage `json:"message"`
+}
+
+// AbapErrorODataV4 contains the error code and the error message for ABAP errors
+type AbapErrorODataV4 struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
 // AbapErrorMessage contains the lanuage and value fields for ABAP errors
@@ -380,6 +379,7 @@ type ClientMock struct {
 	NilResponse        bool
 	ErrorInsteadOfDump bool
 	ErrorList          []error
+	RequestedURLs      []string
 }
 
 // SetOptions sets clientOptions for a client mock
@@ -391,7 +391,7 @@ func (c *ClientMock) SendRequest(method, url string, bdy io.Reader, hdr http.Hea
 	if c.NilResponse {
 		return nil, c.Error
 	}
-
+	c.RequestedURLs = append(c.RequestedURLs, url)
 	var body []byte
 	var responseError error
 	if c.Body != "" {

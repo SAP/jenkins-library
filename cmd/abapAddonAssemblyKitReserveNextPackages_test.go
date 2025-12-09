@@ -45,7 +45,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		})
 		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -71,7 +71,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		})
 		bodyList := []string{responseReserveNextPackageReleased, responseReserveNextPackagePlanned, responseReserveNextPackagePostReleased, "myToken", responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.NoError(t, err, "Did not expect error")
 		var addonDescriptorFinal abaputils.AddonDescriptor
 		err = json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
@@ -87,7 +87,7 @@ func TestReserveNextPackagesStep(t *testing.T) {
 				},
 			},
 		})
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 	t.Run("step error - timeout", func(t *testing.T) {
@@ -102,7 +102,8 @@ func TestReserveNextPackagesStep(t *testing.T) {
 		bodyList := []string{responseReserveNextPackageCreationTriggered, responseReserveNextPackagePostPlanned, "myToken"}
 		bundle.SetBodyList(bodyList)
 		bundle.SetMaxRuntime(time.Duration(1 * time.Microsecond))
-		err := runAbapAddonAssemblyKitReserveNextPackages(&config, nil, &utils, &cpe)
+		bundle.ClientMock.ErrorInsteadOfDump = true
+		err := runAbapAddonAssemblyKitReserveNextPackages(&config, &utils, &cpe)
 		assert.Error(t, err, "Did expect error")
 	})
 }
@@ -163,19 +164,28 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("test copyFieldsToRepositories Planned error with predecessorcommitID same as commitID", func(t *testing.T) {
+	t.Run("test copyFieldsToRepositories Planned success with predecessorcommitI short AAKaaS", func(t *testing.T) {
 		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
-		pckgWR[0].Package.PredecessorCommitID = pckgWR[0].Repo.CommitID
+		pckgWR[0].Package.PredecessorCommitID = "predecessor"
 		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
 		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
 		_, err := checkAndCopyFieldsToRepositories(pckgWR)
-		assert.Error(t, err)
+		assert.NoError(t, err)
 	})
 
-	t.Run("test copyFieldsToRepositories Planned error with too long commitID in addon.yml", func(t *testing.T) {
+	t.Run("test copyFieldsToRepositories Planned success with predecessorcommitID short addon.yml", func(t *testing.T) {
 		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
-		pckgWR[0].Package.PredecessorCommitID = "something40charslongPREDECESSORyyyyyyyyy"
-		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxxtoolong"
+		pckgWR[0].Package.PredecessorCommitID = "predecessor"
+		pckgWR[0].Repo.CommitID = "successor"
+		pckgWR[0].Package.CommitID = "successorANDsomemore"
+		_, err := checkAndCopyFieldsToRepositories(pckgWR)
+		assert.NoError(t, err)
+	})
+
+	t.Run("test copyFieldsToRepositories Planned error with predecessorcommitID same as commitID", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.PredecessorCommitID = pckgWR[0].Repo.CommitID
 		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
 		_, err := checkAndCopyFieldsToRepositories(pckgWR)
 		assert.Error(t, err)
@@ -198,14 +208,31 @@ func TestCopyFieldsToRepositoriesPackage(t *testing.T) {
 		_, err := checkAndCopyFieldsToRepositories(pckgWR)
 		assert.Error(t, err)
 	})
+}
 
-	t.Run("test copyFieldsToRepositories Released error with too long commitID in addon.yml", func(t *testing.T) {
-		pckgWR[0].Package.Status = aakaas.PackageStatusReleased
-		pckgWR[0].Package.PredecessorCommitID = "" //released packages do not have this attribute
-		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxxtoolong"
-		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxO"
+func TestCheckNamespace(t *testing.T) {
+	pckgWR := []aakaas.PackageWithRepository{
+		{
+			Package: aakaas.Package{
+				ComponentName: "/DRNMSPC/COMP01",
+				VersionYAML:   "1.0.0",
+				PackageName:   "SAPK-001AAINDRNMSPC",
+				Type:          "AOI",
+			},
+			Repo: abaputils.Repository{
+				Name:        "/DRNMSPC/COMP01",
+				VersionYAML: "1.0.0",
+			},
+		},
+	}
+
+	t.Run("test copyFieldsToRepositories Planned success w/o predecessorcommitID", func(t *testing.T) {
+		pckgWR[0].Package.Status = aakaas.PackageStatusPlanned
+		pckgWR[0].Package.PredecessorCommitID = ""
+		pckgWR[0].Repo.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
+		pckgWR[0].Package.CommitID = "something40charslongxxxxxxxxxxxxxxxxxxxx"
 		_, err := checkAndCopyFieldsToRepositories(pckgWR)
-		assert.Error(t, err)
+		assert.ErrorContains(t, err, "AAKaaS returned a response with empty Namespace which indicates a configuration error")
 	})
 }
 

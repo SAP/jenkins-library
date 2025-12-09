@@ -8,21 +8,40 @@ import (
 	"path/filepath"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
 type npmMockUtilsBundle struct {
 	*mock.FilesMock
-	execRunner *mock.ExecMockRunner
+	execRunner     *mock.ExecMockRunner
+	downloadClient *mock.HttpClientMock
 }
 
 func (u *npmMockUtilsBundle) GetExecRunner() ExecRunner {
 	return u.execRunner
 }
 
+func (u *npmMockUtilsBundle) GetFileUtils() piperutils.FileUtils {
+	return u.FilesMock
+}
+
+func (u *npmMockUtilsBundle) GetDownloadUtils() piperhttp.Downloader {
+	return u.downloadClient
+}
+
 func newNpmMockUtilsBundle() npmMockUtilsBundle {
-	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
+	filesMock := &mock.FilesMock{}
+	utils := npmMockUtilsBundle{
+		FilesMock:  filesMock,
+		execRunner: &mock.ExecMockRunner{},
+		downloadClient: &mock.HttpClientMock{
+			FileUploads:   make(map[string]string),
+			HTTPFileUtils: filesMock,
+		},
+	}
 	return utils
 }
 
@@ -36,12 +55,14 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
 
 		assert.Equal(t, []string{"package.json"}, packageJSONFiles)
-
 	})
 
 	t.Run("find package.json files with two package.json and default filter", func(t *testing.T) {
@@ -56,6 +77,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFiles := exec.FindPackageJSONFiles()
@@ -80,6 +104,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes([]string{"filter/**", "filterPath/package.json"})
@@ -100,6 +127,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 
 		packageJSONFilesWithScript, err := exec.FindPackageJSONFilesWithScript([]string{"package.json", filepath.Join("src", "package.json"), filepath.Join("test", "package.json")}, "ci-lint")
@@ -120,6 +150,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
@@ -140,6 +173,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
@@ -161,12 +197,55 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.install("package.json")
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "yarn", Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[1])
+			}
+		}
+	})
+
+	t.Run("Install deps for package.json with pnpm-lock.yaml", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+		// Mock expects absolute path for locally installed pnpm
+		absolutePnpmPath := "/tmp/node_modules/.bin/pnpm"
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			"pnpm --version":                fmt.Errorf("pnpm not installed globally"),
+			absolutePnpmPath + " --version": fmt.Errorf("pnpm not installed locally"),
+		}
+
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
+		}
+		err := exec.install("package.json")
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 5, len(utils.execRunner.Calls)) {
+				// Set npm registry
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
+				// Check global pnpm version command
+				assert.Equal(t, mock.ExecCall{Exec: "pnpm", Params: []string{"--version"}}, utils.execRunner.Calls[1])
+				// Check local pnpm version command
+				assert.Equal(t, mock.ExecCall{Exec: absolutePnpmPath, Params: []string{"--version"}}, utils.execRunner.Calls[2])
+				// Check pnpm install command
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "pnpm", "--prefix", "/tmp"}}, utils.execRunner.Calls[3])
+				// Check pnpm install --frozen-lockfile command
+				assert.Equal(t, mock.ExecCall{Exec: absolutePnpmPath, Params: []string{"install", "--frozen-lockfile"}}, utils.execRunner.Calls[4])
 			}
 		}
 	})
@@ -184,6 +263,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.InstallAllDependencies([]string{"package.json", filepath.Join("src", "package.json")})
 
@@ -192,44 +274,6 @@ func TestNpm(t *testing.T) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[3])
 			}
-		}
-	})
-
-	t.Run("check if yarn.lock and package-lock exist", func(t *testing.T) {
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile("yarn.lock", []byte("{}"))
-		utils.AddFile("package-lock.json", []byte("{}"))
-
-		options := ExecutorOptions{}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		packageLock, yarnLock, err := exec.checkIfLockFilesExist()
-
-		if assert.NoError(t, err) {
-			assert.True(t, packageLock)
-			assert.True(t, yarnLock)
-		}
-	})
-
-	t.Run("check that yarn.lock and package-lock do not exist", func(t *testing.T) {
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-
-		options := ExecutorOptions{}
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		packageLock, yarnLock, err := exec.checkIfLockFilesExist()
-
-		if assert.NoError(t, err) {
-			assert.False(t, packageLock)
-			assert.False(t, yarnLock)
 		}
 	})
 
@@ -242,6 +286,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.executeScript("package.json", "ci-lint", []string{"--silent"}, []string{"--tag", "tag1"})
 
@@ -263,6 +310,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, nil)
 
@@ -281,17 +331,20 @@ func TestNpm(t *testing.T) {
 
 		options := ExecutorOptions{}
 		runScripts := []string{"ci-lint", "ci-build"}
-		buildDescriptorList := []string{filepath.Join("src", "package.json")}
+		buildDescriptorList := []string{filepath.Join("src", "package.json"), "package.json"}
 
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[1])
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
@@ -300,20 +353,23 @@ func TestNpm(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))
-		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry": "undefined"}}
+		utils.execRunner = &mock.ExecMockRunner{StdoutReturn: map[string]string{"npm config get registry -ws=false -iwr": "undefined"}}
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "https://example.org/npm"
 
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.SetNpmRegistries()
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.Options.DefaultNpmRegistry}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry", "-ws=false", "-iwr"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "registry", exec.Options.DefaultNpmRegistry, "-ws=false", "-iwr"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
@@ -327,6 +383,9 @@ func TestNpm(t *testing.T) {
 		exec := &Execute{
 			Utils:   &utils,
 			Options: options,
+			pnpmSetup: pnpmSetupState{
+				rootDir: "/", // Mock root directory
+			},
 		}
 		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil, nil)
 
@@ -343,72 +402,4 @@ func TestNpm(t *testing.T) {
 		}
 	})
 
-	t.Run("Create BOM with cyclonedx-npm", func(t *testing.T) {
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile("package-lock.json", []byte("{}"))
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
-
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
-		cycloneDxNpmRunParams := []string{
-			"--output-format",
-			"XML",
-			"--spec-version",
-			cycloneDxSchemaVersion,
-			"--output-file",
-		}
-
-		if assert.NoError(t, err) {
-			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, "bom-npm.xml", "package.json")}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "./tmp/node_modules/.bin/cyclonedx-npm", Params: append(cycloneDxNpmRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src", "package.json"))}, utils.execRunner.Calls[2])
-			}
-
-		}
-	})
-
-	t.Run("Create BOM with fallback cyclonedx/bom", func(t *testing.T) {
-		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile("package-lock.json", []byte("{}"))
-		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
-		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
-		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@1.11.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
-
-		options := ExecutorOptions{}
-		options.DefaultNpmRegistry = "foo.bar"
-
-		exec := &Execute{
-			Utils:   &utils,
-			Options: options,
-		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
-
-		cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
-		cycloneDxBomRunParams := []string{
-			"cyclonedx-bom",
-			"--output",
-		}
-
-		if assert.NoError(t, err) {
-			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxBomInstallParams}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src"))}, utils.execRunner.Calls[3])
-			}
-
-		}
-	})
 }

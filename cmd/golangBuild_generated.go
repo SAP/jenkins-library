@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -94,10 +95,8 @@ func (p *golangBuildReports) persist(stepConfig golangBuildOptions, gcpJsonKeyFi
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -147,15 +146,29 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.TargetRepositoryPassword)
 			log.RegisterSecret(stepConfig.TargetRepositoryUser)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
@@ -187,6 +200,11 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -197,7 +215,7 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -214,10 +232,23 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			golangBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -238,7 +269,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
 	cmd.Flags().BoolVar(&stepConfig.FailOnLintingError, "failOnLintingError", true, "Defines if step will return an error in case linting runs into a problem")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
-	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the build result or output directory as per `go build` documentation.")
+	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the resulting executable or object name as per `go build` documentation. For multiple architectures, output serves as prefix, and the resulting name will be in format `<output>-<os>.<arch>`.")
 	cmd.Flags().StringSliceVar(&stepConfig.Packages, "packages", []string{}, "List of packages to be build as per `go build` documentation.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
@@ -248,7 +279,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().BoolVar(&stepConfig.RunLint, "runLint", false, "Configures the build to run linters with [golangci-lint](https://golangci-lint.run/).")
 	cmd.Flags().BoolVar(&stepConfig.RunTests, "runTests", true, "Activates execution of tests using [gotestsum](https://github.com/gotestyourself/gotestsum). Tag Go unit tests with 'unit' build tag to exclude them using `--runTests=false`")
 	cmd.Flags().BoolVar(&stepConfig.RunIntegrationTests, "runIntegrationTests", false, "Activates execution of a second test run using tag `integration`.")
-	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{`linux,amd64`}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma.")
+	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{`linux,amd64`}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma. If you specify multiple architectures, make sure to set [output](#output) parameter as well.")
 	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{}, "Options to pass to test as per `go test` documentation (comprises e.g. flags, packages).")
 	cmd.Flags().StringVar(&stepConfig.TestResultFormat, "testResultFormat", `junit`, "Defines the output format of the test results.")
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")

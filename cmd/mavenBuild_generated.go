@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -40,11 +41,13 @@ type mavenBuildOptions struct {
 	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty"`
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 	DeployFlags                     []string `json:"deployFlags,omitempty"`
+	CreateBuildArtifactsMetadata    bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type mavenBuildCommonPipelineEnvironment struct {
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo   string
+		mavenBuildArtifacts string
 	}
 }
 
@@ -55,6 +58,7 @@ func (p *mavenBuildCommonPipelineEnvironment) persist(path, resourceName string)
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "mavenBuildArtifacts", value: p.custom.mavenBuildArtifacts},
 	}
 
 	errCount := 0
@@ -84,10 +88,8 @@ func (p *mavenBuildReports) persist(stepConfig mavenBuildOptions, gcpJsonKeyFile
 		{FilePattern: "**/TEST-*.xml", ParamRef: "", StepResultType: "junit"},
 		{FilePattern: "**/jacoco.xml", ParamRef: "", StepResultType: "jacoco-coverage"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -128,7 +130,8 @@ func MavenBuildCommand() *cobra.Command {
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.
 
-### build with depedencies from a private repository
+### build with dependencies from a private repository
+
 if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the ` + "`" + `<url>` + "`" + `
 tag with a valid private repo url).
 ` + "`" + `` + "`" + `` + "`" + `xml
@@ -171,15 +174,29 @@ general:
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.AltDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -209,6 +226,11 @@ general:
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -219,7 +241,7 @@ general:
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -236,10 +258,23 @@ general:
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			mavenBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -269,6 +304,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.JavaCaCertFilePath, "javaCaCertFilePath", os.Getenv("PIPER_javaCaCertFilePath"), "path to the cacerts file used by Java. When maven publish is set to True and customTlsCertificateLinks (to deploy the artifact to a repository with a self signed cert) are provided to trust the self signed certs, Piper will extend the existing Java cacerts to include the new self signed certs. if not provided Piper will search for the cacerts in $JAVA_HOME/jre/lib/security/cacerts")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringSliceVar(&stepConfig.DeployFlags, "deployFlags", []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`}, "maven deploy flags that will be used when publish is detected.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -279,6 +315,18 @@ func mavenBuildMetadata() config.StepData {
 			Name:        "mavenBuild",
 			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
 			Description: "This step will install the maven project into the local maven repository.",
+			Errors: []config.StepError{
+				{
+					Pattern:  "BUILD FAILURE",
+					Message:  "Maven build failed. Check build logs for compilation errors, test failures, or plugin execution issues.",
+					Category: "build",
+				},
+				{
+					Pattern:  "Failed to execute goal.*exec-maven-plugin.*exec",
+					Message:  "Maven exec plugin execution failed. Verify exec plugin configuration and command execution.",
+					Category: "plugin",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -396,7 +444,7 @@ func mavenBuildMetadata() config.StepData {
 							{
 								Name:    "altDeploymentRepositoryPasswordFileVaultSecretName",
 								Type:    "vaultSecretFile",
-								Default: "alt-deployment-repository-passowrd",
+								Default: "alt-deployment-repository-password",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -507,10 +555,19 @@ func mavenBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`},
 					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.6-jdk-8"},
+				{Name: "mvn", Image: "maven:3.8-jdk-8"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
@@ -519,6 +576,7 @@ func mavenBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/mavenBuildArtifacts"},
 						},
 					},
 					{

@@ -4,22 +4,35 @@
 package npm
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"path/filepath"
+	"slices"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/stretchr/testify/assert"
 )
 
 type npmMockUtilsBundleRelativeGlob struct {
 	*mock.FilesMockRelativeGlob
-	execRunner *mock.ExecMockRunner
+	execRunner     *mock.ExecMockRunner
+	downloadClient piperhttp.Downloader
 }
 
 func (u *npmMockUtilsBundleRelativeGlob) GetExecRunner() ExecRunner {
 	return u.execRunner
+}
+
+func (u *npmMockUtilsBundleRelativeGlob) GetFileUtils() piperutils.FileUtils {
+	return u.FilesMock
+}
+
+func (u *npmMockUtilsBundleRelativeGlob) GetDownloadUtils() piperhttp.Downloader {
+	return u.downloadClient
 }
 
 func newNpmMockUtilsBundleRelativeGlob() npmMockUtilsBundleRelativeGlob {
@@ -35,6 +48,8 @@ func TestNpmPublish(t *testing.T) {
 		publishConfig     string
 
 		tarballPath string
+
+		hasTagFlag bool // for prerelease versions
 
 		err string
 	}
@@ -508,6 +523,67 @@ func TestNpmPublish(t *testing.T) {
 				tarballPath:       "/sub/package.tgz",
 			},
 		},
+		// prerelease versions
+		{
+			name: "success - prerelease version, unpacked package - should add --tag prerelease",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "0.0.2-20251029013231"}`,
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+
+			wants: wants{
+				publishConfigPath: `\.piperNpmrc`,
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				hasTagFlag:        true,
+			},
+		},
+		{
+			name: "success - prerelease version, packed package - should add --tag prerelease",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "1.0.0-beta.1"}`,
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			packBeforePublish: true,
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+
+			wants: wants{
+				publishConfigPath: `\.piperNpmrc`,
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				tarballPath:       "/package.tgz",
+				hasTagFlag:        true,
+			},
+		},
+		{
+			name: "success - prerelease version with alpha tag, unpacked package - should add --tag prerelease",
+
+			files: map[string]string{
+				"package.json": `{"name": "@piper/project", "version": "2.0.0-alpha.3"}`,
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+
+			wants: wants{
+				publishConfigPath: `\.piperNpmrc`,
+				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				hasTagFlag:        true,
+			},
+		},
 		// TODO multiple projects
 	}
 
@@ -529,12 +605,13 @@ func TestNpmPublish(t *testing.T) {
 
 			// This stub simulates the behavior of npm pack and puts a tgz into the requested
 			utils.execRunner.Stub = func(call string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
-				//tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
+				// tgzTargetPath := filepath.Dir(test.packageDescriptors[0])
 				utils.AddFile(filepath.Join(".", "package.tgz"), []byte("this is a tgz file"))
 				return nil
 			}
 
-			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.packBeforePublish)
+			coordinates := []versioning.Coordinates{}
+			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.packBeforePublish, &coordinates)
 
 			if len(test.wants.err) == 0 && assert.NoError(t, err) {
 				if assert.NotEmpty(t, utils.execRunner.Calls) {
@@ -545,12 +622,12 @@ func TestNpmPublish(t *testing.T) {
 					assert.Equal(t, "publish", publishCmd.Params[0])
 
 					if len(test.wants.tarballPath) > 0 && assert.Contains(t, publishCmd.Params, "--tarball") {
-						tarballPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--tarball")+1]
+						tarballPath := publishCmd.Params[slices.Index(publishCmd.Params, "--tarball")+1]
 						assert.Equal(t, test.wants.tarballPath, filepath.ToSlash(tarballPath))
 					}
 
 					if assert.Contains(t, publishCmd.Params, "--userconfig") {
-						effectivePublishConfigPath := publishCmd.Params[piperutils.FindString(publishCmd.Params, "--userconfig")+1]
+						effectivePublishConfigPath := publishCmd.Params[slices.Index(publishCmd.Params, "--userconfig")+1]
 
 						assert.Regexp(t, test.wants.publishConfigPath, filepath.ToSlash(effectivePublishConfigPath))
 
@@ -564,10 +641,43 @@ func TestNpmPublish(t *testing.T) {
 							assert.Equal(t, test.wants.publishConfig, string(effectiveConfig))
 						}
 					}
+
+					// Check for --tag flag on prerelease versions
+					if test.wants.hasTagFlag {
+						if assert.Contains(t, publishCmd.Params, "--tag") {
+							tagValue := publishCmd.Params[slices.Index(publishCmd.Params, "--tag")+1]
+							assert.Equal(t, "prerelease", tagValue)
+						}
+					}
 				}
 			} else {
 				assert.EqualError(t, err, test.wants.err)
 			}
+		})
+	}
+}
+
+func TestIsPrerelease(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected bool
+	}{
+		{"prerelease with timestamp", "0.0.2-20251029013231", true},
+		{"prerelease with timestamp and git hash", "0.0.2-20251029013231+a28cbc5623de32dff88f64cfd8b0795f57050d0c", true},
+		{"prerelease beta", "1.0.0-beta.1", true},
+		{"prerelease alpha", "2.0.0-alpha.3", true},
+		{"prerelease rc", "3.5.0-rc.2", true},
+		{"stable version", "1.0.0", false},
+		{"stable version with patch", "1.2.3", false},
+		{"version with build metadata", "1.0.0+build123", false},
+		{"prerelease with build metadata", "1.0.0-beta+build", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isPrerelease(tt.version)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

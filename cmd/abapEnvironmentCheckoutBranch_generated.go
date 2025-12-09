@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -16,17 +17,19 @@ import (
 )
 
 type abapEnvironmentCheckoutBranchOptions struct {
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	RepositoryName    string `json:"repositoryName,omitempty"`
-	BranchName        string `json:"branchName,omitempty"`
-	Host              string `json:"host,omitempty"`
-	Repositories      string `json:"repositories,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
+	Username          string   `json:"username,omitempty"`
+	Password          string   `json:"password,omitempty"`
+	RepositoryName    string   `json:"repositoryName,omitempty"`
+	BranchName        string   `json:"branchName,omitempty"`
+	Host              string   `json:"host,omitempty"`
+	Repositories      string   `json:"repositories,omitempty"`
+	LogOutput         string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD"`
+	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg             string   `json:"cfOrg,omitempty"`
+	CfSpace           string   `json:"cfSpace,omitempty"`
+	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
+	CertificateNames  []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentCheckoutBranchCommand Switches between branches of a git repository on a SAP BTP ABAP Environment system
@@ -46,8 +49,8 @@ func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 		Long: `This step switches between branches of a git repository (Software Component) on a SAP BTP ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+* The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0948](https://help.sap.com/docs/sap-btp-abap-environment/abap-environment/api-for-managing-software-components-61f4d47af1394b1c8ad684b71d3ad6a0?locale=en-US).
+* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0948.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -56,15 +59,29 @@ Please provide either of the following options:
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -95,6 +112,11 @@ Please provide either of the following options:
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -103,7 +125,7 @@ Please provide either of the following options:
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -120,10 +142,23 @@ Please provide either of the following options:
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			abapEnvironmentCheckoutBranch(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -135,17 +170,19 @@ Please provide either of the following options:
 }
 
 func addAbapEnvironmentCheckoutBranchFlags(cmd *cobra.Command, stepConfig *abapEnvironmentCheckoutBranchOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948")
 	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a Repository (Software Component) on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Specifies a Branch of a Repository (Software Component) on the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
+	cmd.Flags().StringVar(&stepConfig.LogOutput, "logOutput", `STANDARD`, "Specifies how the clone logs from the Manage Software Components App are displayed or saved")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -232,6 +269,15 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_repositories"),
 					},
 					{
+						Name:        "logOutput",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `STANDARD`,
+					},
+					{
 						Name:        "cfApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
@@ -276,10 +322,19 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKeyName"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
 					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli:v12"},
+				{Name: "cf", Image: "ppiper/cf-cli:latest"},
 			},
 		},
 	}

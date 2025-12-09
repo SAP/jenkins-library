@@ -167,6 +167,10 @@ func (h *HelmExecute) RunHelmUpgrade() error {
 
 	helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
@@ -238,6 +242,10 @@ func (h *HelmExecute) RunHelmInstall() error {
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	helmParams = append(helmParams, "--create-namespace")
 
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
+
 	if !h.config.KeepFailedDeployments {
 		helmParams = append(helmParams, "--atomic")
 	}
@@ -257,13 +265,10 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
-	}
 
-	if h.verbose {
-		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		helmParamsDryRun := append(helmParams, "--dry-run", "--hide-secret")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
-			log.Entry().WithError(err).Error("Helm install --dry-run call failed")
+			log.Entry().WithError(err).Error("Helm install --dry-run --hide-secret call failed")
 		}
 	}
 
@@ -276,8 +281,7 @@ func (h *HelmExecute) RunHelmInstall() error {
 
 // RunHelmUninstall is used to uninstall a chart
 func (h *HelmExecute) RunHelmUninstall() error {
-	err := h.runHelmInit()
-	if err != nil {
+	if err := h.runHelmInit(); err != nil {
 		return fmt.Errorf("failed to execute deployments: %v", err)
 	}
 
@@ -288,17 +292,17 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	if len(h.config.Namespace) <= 0 {
 		return fmt.Errorf("namespace has not been set, please configure namespace parameter")
 	}
+	if len(h.config.KubeContext) > 0 {
+		helmParams = append(helmParams, "--kube-context", h.config.KubeContext)
+	}
 	helmParams = append(helmParams, "--namespace", h.config.Namespace)
 	if h.config.HelmDeployWaitSeconds > 0 {
 		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
-	}
 
-	if h.verbose {
-		helmParamsDryRun := helmParams
-		helmParamsDryRun = append(helmParamsDryRun, "--dry-run")
+		helmParamsDryRun := append(helmParams, "--dry-run")
 		if err := h.runHelmCommand(helmParamsDryRun); err != nil {
 			log.Entry().WithError(err).Error("Helm uninstall --dry-run call failed")
 		}
@@ -390,9 +394,7 @@ func (h *HelmExecute) RunHelmDependency() error {
 		"dependency",
 	}
 
-	helmParams = append(helmParams, h.config.Dependency)
-
-	helmParams = append(helmParams, h.config.ChartPath)
+	helmParams = append(helmParams, h.config.Dependency, h.config.ChartPath)
 
 	if len(h.config.AdditionalParameters) > 0 {
 		helmParams = append(helmParams, h.config.AdditionalParameters...)

@@ -15,6 +15,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInitialize(t *testing.T) {
@@ -354,7 +356,11 @@ func Test_prepareTelemetry(t *testing.T) {
 		{name: "Testing prepare telemetry information",
 			args: args{
 				telemetryData: telemetry.Data{
-					BaseData: telemetry.BaseData{},
+					BaseData: telemetry.BaseData{
+						Orchestrator:      "Jenkins",
+						TemplateName:      "hyperspace-piper-gpp",
+						StageTemplateName: "hyperspace-piper-gpp-build",
+					},
 					CustomData: telemetry.CustomData{
 						Duration:      "1234",
 						ErrorCode:     "0",
@@ -363,19 +369,23 @@ func Test_prepareTelemetry(t *testing.T) {
 				},
 			},
 			want: MonitoringData{
-				PipelineUrlHash: "",
-				BuildUrlHash:    "",
-				StageName:       "",
-				StepName:        "",
-				ExitCode:        "0",
-				Duration:        "1234",
-				ErrorCode:       "0",
-				ErrorCategory:   "Undefined",
-				CorrelationID:   "Correlation-Test",
-				CommitHash:      "N/A",
-				Branch:          "N/A",
-				GitOwner:        "N/A",
-				GitRepository:   "N/A",
+				PipelineUrlHash:   "",
+				BuildUrlHash:      "",
+				Orchestrator:      "Jenkins",
+				TemplateName:      "hyperspace-piper-gpp",
+				StageTemplateName: "hyperspace-piper-gpp-build",
+				StageName:         "",
+				StepName:          "",
+				ExitCode:          "0",
+				Duration:          "1234",
+				ErrorCode:         "0",
+				ErrorCategory:     "Undefined",
+				ErrorMessage:      "",
+				CorrelationID:     "Correlation-Test",
+				CommitHash:        "N/A",
+				Branch:            "N/A",
+				GitOwner:          "N/A",
+				GitRepository:     "N/A",
 			},
 		},
 	}
@@ -390,6 +400,66 @@ func Test_prepareTelemetry(t *testing.T) {
 			if got := splunkClient.prepareTelemetry(tt.args.telemetryData); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("prepareTelemetry() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_prepareTelemetry_ErrorMessageCapture(t *testing.T) {
+	tests := []struct {
+		name             string
+		errorCode        string
+		fatalErrorDetail map[string]any
+		expectedMessage  string
+	}{
+		{
+			name:      "captures error message when step fails",
+			errorCode: "1",
+			fatalErrorDetail: map[string]any{
+				"error": "failed publishing artifact: npm ERR! 401 Unauthorized - authentication required",
+			},
+			expectedMessage: "failed publishing artifact: npm ERR! 401 Unauthorized - authentication required",
+		},
+		{
+			name:             "no error message when step succeeds",
+			errorCode:        "0",
+			fatalErrorDetail: nil,
+			expectedMessage:  "",
+		},
+		{
+			name:             "no error message when step fails but no fatal error detail available",
+			errorCode:        "1",
+			fatalErrorDetail: nil,
+			expectedMessage:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.fatalErrorDetail != nil {
+				errorDetailBytes, err := json.Marshal(tt.fatalErrorDetail)
+				require.NoError(t, err)
+				log.SetFatalErrorDetail(errorDetailBytes)
+			} else {
+				log.SetFatalErrorDetail(nil)
+			}
+			defer log.SetFatalErrorDetail(nil)
+
+			telemetryData := telemetry.Data{
+				BaseData: telemetry.BaseData{
+					Orchestrator: "Jenkins",
+				},
+				CustomData: telemetry.CustomData{
+					ErrorCode: tt.errorCode,
+				},
+			}
+
+			splunkClient := &Splunk{}
+			err := splunkClient.Initialize("test", "url", "token", "index", false)
+			require.NoError(t, err)
+
+			result := splunkClient.prepareTelemetry(telemetryData)
+
+			assert.Equal(t, tt.expectedMessage, result.ErrorMessage)
 		})
 	}
 }
@@ -416,6 +486,7 @@ func Test_tryPostMessages(t *testing.T) {
 					Duration:        "12345678",
 					ErrorCode:       "0",
 					ErrorCategory:   "undefined",
+					ErrorMessage:    "",
 					CorrelationID:   "123",
 					CommitHash:      "a6bc",
 					Branch:          "prod",
@@ -438,6 +509,7 @@ func Test_tryPostMessages(t *testing.T) {
 					Duration:        "12345678",
 					ErrorCode:       "0",
 					ErrorCategory:   "undefined",
+					ErrorMessage:    "",
 					CorrelationID:   "123",
 					CommitHash:      "a6bc",
 					Branch:          "prod",

@@ -52,8 +52,8 @@
 cnbBuild*                                       @SAP/jenkins-library-cnb
 CnbBuild*                                       @SAP/jenkins-library-cnb
 
-sonarExecuteScan*                               @CCFenner
-SonarExecuteScan*                               @CCFenner
+sonarExecuteScan*                               @SAP/sonar
+SonarExecuteScan*                               @SAP/sonar
 
 abapAddonAssemblyKit*                           @SAP/jenkins-library-abap
 AbapAddonAssemblyKit*                           @SAP/jenkins-library-abap
@@ -65,6 +65,13 @@ AscAppUpload*                                   @Mau04 @inf2381
 
 credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins 
 CredentialdiggerScan*                           @SAP/credential-digger-admins @SAP/credential-digger-members 
+
+detectExecuteScan*                              @SAP/oss-team
+DetectExecuteScan*                              @SAP/oss-team
+whitesourceExecuteScan*                         @SAP/oss-team
+WhitesourceExecuteScan*                         @SAP/oss-team
+protecodeExecuteScan*                           @SAP/oss-team
+ProtecodeExecuteScan*                           @SAP/oss-team
 
 #####################
 # Integration tests #
@@ -80,14 +87,17 @@ integration/testdata/TestCnbIntegration/        @SAP/jenkins-library-cnb
 
 /pkg/cnbutils/                                  @SAP/jenkins-library-cnb
 
-/pkg/sonar/                                     @CCFenner
-
 /pkg/jenkins/                                   @CCFenner
+/pkg/sonar/                                     @SAP/sonar
 
 /pkg/orchestrator/                              @inf2381
 
 /pkg/abap/                                      @SAP/jenkins-library-abap
 /pkg/abaputils/                                 @SAP/jenkins-library-abap
+
+/pkg/blackduck/                                 @SAP/oss-team
+/pkg/whitesource/                               @SAP/oss-team
+/pkg/protecode/                                 @SAP/oss-team
 
 ####################
 # Misc             #

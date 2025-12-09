@@ -1,3 +1,4 @@
+import com.sap.piper.BashUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
@@ -9,8 +10,12 @@ import org.junit.rules.ExpectedException
 import util.BasePiperTest
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
+
+import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
+import static org.hamcrest.Matchers.containsString
 
 import com.sap.piper.Utils
 
@@ -229,5 +234,17 @@ class TestsPublishResultsTest extends BasePiperTest {
         thrown.expectMessage('[testsPublishResults] Some tests failed!')
 
         stepRule.step.testsPublishResults(script: nullScript, failOnError: true)
+    }
+
+    @Test
+    void testPublishUnitTestsWithUpdateResultsDoesNotAllowCommandExecution() throws Exception {
+        def injectString = "' -exec touch {} ; rm -rf / # –"
+        helper.registerAllowedMethod('sh', [String], { String cmd ->
+            assertThat(cmd, containsString(BashUtils.quoteAndEscape(injectString)))
+        })
+
+        stepRule.step.testsPublishResults(script: nullScript, junit: [pattern: injectString, archive: true, active: true, updateResults: true])
+
+
     }
 }

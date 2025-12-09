@@ -14,17 +14,18 @@ import (
 
 func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) {
 	utils := aakaas.NewAakBundleWithTime(time.Duration(config.MaxRuntimeInMinutes), time.Duration(config.PollingIntervalInSeconds))
+	telemetryData.BuildTool = "AAKaaS"
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runAbapAddonAssemblyKitReleasePackages(&config, telemetryData, &utils, cpe); err != nil {
+	if err := runAbapAddonAssemblyKitReleasePackages(&config, &utils, cpe); err != nil {
+		telemetryData.ErrorCode = err.Error()
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, utils *aakaas.AakUtils,
+func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleasePackagesOptions, utils *aakaas.AakUtils,
 	cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
-	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils); err != nil {
+	if err := conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, *utils, config.AbapAddonAssemblyKitOriginHash, config.AbapAddonAssemblyKitCertificateFile, config.AbapAddonAssemblyKitCertificatePass); err != nil {
 		return err
 	}
 	var addonDescriptor abaputils.AddonDescriptor

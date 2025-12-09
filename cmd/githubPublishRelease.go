@@ -7,16 +7,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
-// mock generated with: mockery --name GithubRepoClient --dir cmd --output cmd/mocks
 type GithubRepoClient interface {
 	CreateRelease(ctx context.Context, owner string, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, *github.Response, error)
 	DeleteReleaseAsset(ctx context.Context, owner string, repo string, id int64) (*github.Response, error)
@@ -31,9 +31,10 @@ type githubIssueClient interface {
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.
-		NewClientBuilder(config.Token, config.APIURL).
-		WithUploadURL(config.UploadURL).Build()
+	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).
+		WithTimeout(time.Duration(config.GithubAPITimeout) * time.Second).
+		WithUploadURL(config.UploadURL).
+		Build()
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client.")
 	}

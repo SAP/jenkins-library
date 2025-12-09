@@ -2,7 +2,7 @@ metadata:
   name: gaugeExecuteTests
   description: Installs gauge and executes specified gauge tests.
   longDescription: |
-    In this step Gauge ([getgauge.io](https://getgauge.io)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
+    In this step Gauge ([gauge.org](https://gauge.org)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
 
     Acceptance Criteria
     Test implemenation layer
@@ -75,7 +75,7 @@ spec:
             type: delivery-mapping
   containers:
     - name: gauge
-      image: node:lts-buster
+      image: node:24-bookworm
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy

@@ -113,34 +113,34 @@ func TestCreateMarkdownReport(t *testing.T) {
 					ErrorMessage:                   "",
 				},
 			},
-			expectedReport: "\n##  :x: OSS related checks failed\n ### :clipboard: Policies violated by added OSS components\n " +
+			expectedReport: "\n  :x: **OSS related checks failed**\n  :clipboard: Policies violated by added OSS components\n " +
 				"<table>\n <tr><td><b>Component name</b></td><td><b>High Vulnerability Security Issue</b></td><td><b>OutdatedFOSSLibraries</b></td><td><b>" +
 				"Test High Severity Vuln Filter</b></td></tr>\n <tr><td>Chalk 1.1.3 (npmjs:chalk/1.1.3)</td><td>0</td><td>1</td><td>0</td></tr><tr><td>Lodash " +
 				"4.17.10 (npmjs:lodash/4.17.10)</td><td>3</td><td>1</td><td>3</td></tr><tr><td>qs -  QS Querystring 5.2.1 " +
-				"(npmjs:qs/5.2.1)</td><td>1</td><td>0</td><td>0</td></tr>\n </table>\n\n<details><summary>\n\n<h3> 4 Policy " +
-				"Violations of High Vulnerability Security Issue </h3> \n</summary>\n\t<table>\n\t\t<tr><td><b>Vulnerability ID</b></td><td><b>Vulnerability" +
+				"(npmjs:qs/5.2.1)</td><td>1</td><td>0</td><td>0</td></tr>\n </table>\n\n<details><summary>\n\n<h4> 4 Policy " +
+				"Violations of High Vulnerability Security Issue </h4> \n</summary>\n\t<table>\n\t\t<tr><td><b>Vulnerability ID</b></td><td><b>Vulnerability" +
 				" Score</b></td><td><b>Component Name</b></td></tr>\n\t\t<tr>\n\t\t\t<td> <a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/CVE-2019-10744\"> CVE-2019-10744 </a> </td><td>9.1 CRITICAL</td><td>Lodash 4.17.10 " +
 				"(npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t<tr>\n\t\t\t<td> <a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/CVE-2017-1000048\"> " +
 				"CVE-2017-1000048 </a> </td><td>7.5 HIGH</td><td>qs -  QS Querystring 5.2.1 (npmjs:qs/5.2.1)</td>\n\t\t\t</tr>\n\t\t<tr>\n\t\t\t<td> " +
 				"<a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/CVE-2020-8203\"> CVE-2020-8203 </a> </td><td>7.4 HIGH</td><td>Lodash " +
 				"4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t<tr>\n\t\t\t<td> <a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/BDSA-2019-3842\"> " +
-				"BDSA-2019-3842 </a> </td><td>7.1 HIGH</td><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t</table>\n</details>\n<details><summary>\n\n<h3> " +
-				"3 Policy Violations of Test High Severity Vuln Filter </h3> \n</summary>\n\t<table>\n\t\t<tr><td><b>Vulnerability ID</b></td><td><b>Vulnerability " +
+				"BDSA-2019-3842 </a> </td><td>7.1 HIGH</td><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t</table>\n</details>\n<details><summary>\n\n<h4> " +
+				"3 Policy Violations of Test High Severity Vuln Filter </h4> \n</summary>\n\t<table>\n\t\t<tr><td><b>Vulnerability ID</b></td><td><b>Vulnerability " +
 				"Score</b></td><td><b>Component Name</b></td></tr>\n\t\t<tr>\n\t\t\t<td> <a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/CVE-2019-10744\"> " +
 				"CVE-2019-10744 </a> </td><td>9.1 CRITICAL</td><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t<tr>\n\t\t\t<td> " +
 				"<a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/CVE-2020-8203\"> CVE-2020-8203 </a> </td><td>7.4 " +
 				"HIGH</td><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t<tr>\n\t\t\t<td> <a href=\"https://sap-staging.app.blackduck.com/api/vulnerabilities/BDSA-2019-3842\"> " +
-				"BDSA-2019-3842 </a> </td><td>7.1 HIGH</td><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t</table>\n</details>\n<details><summary>\n\n<h3> " +
-				"2 Policy Violations of OutdatedFOSSLibraries </h3> \n</summary>\n\t<table>\n\t\t<tr><td><b>Component Name</b></td></tr>\n\t\t<tr><td>Chalk 1.1.3 " +
+				"BDSA-2019-3842 </a> </td><td>7.1 HIGH</td><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td>\n\t\t\t</tr>\n\t\t</table>\n</details>\n<details><summary>\n\n<h4> " +
+				"2 Policy Violations of OutdatedFOSSLibraries </h4> \n</summary>\n\t<table>\n\t\t<tr><td><b>Component Name</b></td></tr>\n\t\t<tr><td>Chalk 1.1.3 " +
 				"(npmjs:chalk/1.1.3)</td></tr>\n\t\t<tr><td>Lodash 4.17.10 (npmjs:lodash/4.17.10)</td></tr>\n\t\t</table>\n</details>\n\n",
 		},
 		{
 			testName:   "No vulnerabilities && successful build",
 			components: &Components{},
-			expectedReport: "\n## :heavy_check_mark: OSS related checks passed successfully\n ### :clipboard: OSS related checks executed by Black Duck " +
+			expectedReport: "\n :heavy_check_mark: **OSS related checks passed successfully**\n  :clipboard: OSS related checks executed by Black Duck " +
 				"- rapid scan passed successfully.\n" +
-				" <a href=\"https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=downloadingandrunning%2Frapidscan.html&_LANG=enus\">" +
-				"<h3>RAPID SCAN</h3> </a>\n\n\n",
+				" <h4><a href=\"https://documentation.blackduck.com/bundle/detect/page/runningdetect/rapidscan.html\">" +
+				"RAPID SCAN</a></h4>\n\n\n",
 		},
 	}
 

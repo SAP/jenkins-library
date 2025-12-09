@@ -52,6 +52,10 @@ func (api *SAP_COM_0510) init(con ConnectionDetailsHTTP, client piperhttp.Sender
 	api.retryAllowedErrorCodes = append(api.retryAllowedErrorCodes, "A4C_A2G/501")
 }
 
+func (api *SAP_COM_0510) GetExecutionLog() (execLog ExecutionLog, err error) {
+	return execLog, errors.New("Not implemented")
+}
+
 func (api *SAP_COM_0510) getUUID() string {
 	return api.uuid
 }
@@ -221,10 +225,14 @@ func (api *SAP_COM_0510) GetAction() (string, error) {
 	return abapStatusCode, nil
 }
 
-func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
+func (api *SAP_COM_0510) getRepositoryName() string {
+	return api.repository.Name
+}
+
+func (api *SAP_COM_0510) GetRepository() (bool, string, error, bool) {
 
 	if api.repository.Name == "" {
-		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'")
+		return false, "", errors.New("An empty string was passed for the parameter 'repositoryName'"), false
 	}
 
 	swcConnectionDetails := api.con
@@ -232,7 +240,7 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	resp, err := GetHTTPResponse("GET", swcConnectionDetails, nil, api.client)
 	if err != nil {
 		_, errRepo := HandleHTTPError(resp, err, "Reading the Repository / Software Component failed", api.con)
-		return false, "", errRepo
+		return false, "", errRepo, false
 	}
 	defer resp.Body.Close()
 
@@ -240,25 +248,25 @@ func (api *SAP_COM_0510) GetRepository() (bool, string, error) {
 	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 
 	if err := json.Unmarshal(bodyText, &abapResp); err != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 	if err := json.Unmarshal(*abapResp["d"], &body); err != nil {
-		return false, "", err
+		return false, "", err, false
 	}
 	if reflect.DeepEqual(RepositoryEntity{}, body) {
 		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", api.repository.Name).WithField("branchName", api.repository.Branch).WithField("commitID", api.repository.CommitID).WithField("Tag", api.repository.Tag).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
-		return false, "", err
+		return false, "", err, false
 	}
 
 	if body.AvailOnInst {
-		return true, body.ActiveBranch, nil
+		return true, body.ActiveBranch, nil, false
 	}
-	return false, "", err
+	return false, "", err, false
 
 }
 
@@ -271,7 +279,7 @@ func (api *SAP_COM_0510) Clone() error {
 
 	cloneConnectionDetails := api.con
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.cloneEntity
-	body := []byte(api.repository.GetCloneRequestBody())
+	body := []byte(api.repository.GetCloneRequestBodyWithSWC())
 
 	return api.triggerRequest(cloneConnectionDetails, body)
 
@@ -326,6 +334,7 @@ func (api *SAP_COM_0510) initialRequest() error {
 		CookieJar:          cookieJar,
 		Username:           api.con.User,
 		Password:           api.con.Password,
+		TrustedCerts:       api.con.CertificateNames,
 	})
 
 	headConnection := api.con
@@ -382,4 +391,25 @@ func (api *SAP_COM_0510) getLogProtocolQuery(page int) string {
 	top := numberOfEntriesPerPage
 
 	return fmt.Sprintf("?$skip=%s&$top=%s&$inlinecount=allpages", fmt.Sprint(skip), fmt.Sprint(top))
+}
+
+// ConvertTime formats an ABAP timestamp string from format /Date(1585576807000+0000)/ into a UNIX timestamp and returns it
+func (api *SAP_COM_0510) ConvertTime(logTimeStamp string) time.Time {
+	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
+	n, error := strconv.ParseInt(seconds, 10, 64)
+	if error != nil {
+		return time.Unix(0, 0).UTC()
+	}
+	t := time.Unix(n, 0).UTC()
+	return t
+}
+
+// Dummy implementation of the "optional" method UpdateRepoWithBYOGCredentials (only used in SAP_COM_0948)
+func (api *SAP_COM_0510) UpdateRepoWithBYOGCredentials(byogAuthMethod string, byogUsername string, byogPassword string) {
+	panic("UpdateRepoWithBYOGCredentials cannot be used in SAP_COM_0510")
+}
+
+// Dummy implementation of the "optional" method LogArchive (only used in SAP_COM_0948)
+func (api *SAP_COM_0510) GetLogArchive() (result []byte, err error) {
+	panic("GetLogArchive cannot be used in SAP_COM_0510")
 }

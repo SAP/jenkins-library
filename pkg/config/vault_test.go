@@ -22,7 +22,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	const secretNameOverrideKey = "mySecretVaultSecretName"
 	t.Parallel()
 	t.Run("Load secret from vault", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
@@ -35,7 +35,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("Load secret from Vault with path override", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":           "team1",
 			secretNameOverrideKey: "overrideSecretName",
@@ -49,7 +49,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("Secrets are not overwritten", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":             "team1",
 			secretName:              "preset value",
@@ -64,7 +64,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("Secrets can be overwritten", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 			secretName:  "preset value",
@@ -78,7 +78,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("Error is passed through", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
@@ -89,7 +89,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("Secret doesn't exist", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
@@ -101,7 +101,7 @@ func TestVaultConfigLoad(t *testing.T) {
 
 	t.Run("Alias names should be considered", func(t *testing.T) {
 		aliasName := "alias"
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
@@ -115,7 +115,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("Search over multiple paths", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultBasePath": "team2",
 			"vaultPath":     "team1",
@@ -131,7 +131,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	})
 
 	t.Run("No BasePath is stepConfig.Configured", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
@@ -144,7 +144,7 @@ func TestVaultSecretFiles(t *testing.T) {
 	const secretName = "testSecret"
 	const secretNameOverrideKey = "mySecretVaultSecretName"
 	t.Run("Test Vault Secret File Reference", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
@@ -164,7 +164,7 @@ func TestVaultSecretFiles(t *testing.T) {
 	VaultSecretFileDirectory = ""
 
 	t.Run("Test temporary secret file cleanup", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
@@ -232,7 +232,7 @@ func TestResolveVaultTestCredentialsWrapper(t *testing.T) {
 	t.Run("Default test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		envPrefix := "PIPER_TESTCREDENTIAL_"
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":               "team1",
@@ -272,7 +272,7 @@ func TestResolveVaultTestCredentialsWrapper(t *testing.T) {
 	t.Run("Multiple test credential prefixes", func(t *testing.T) {
 		t.Parallel()
 		// init
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		envPrefixes := []interface{}{"TEST1_", "TEST2_"}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":                    "team1",
@@ -313,7 +313,7 @@ func TestResolveVaultTestCredentialsWrapper(t *testing.T) {
 	t.Run("Multiple custom general purpuse credential environment prefixes", func(t *testing.T) {
 		t.Parallel()
 		// init
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		envPrefixes := []interface{}{"CUSTOM1_", "CUSTOM2_"}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":                "team1",
@@ -362,7 +362,7 @@ func TestResolveVaultTestCredentialsWrapper(t *testing.T) {
 		t.Run("Custom general purpose credential prefix along with fixed standard prefix", func(t *testing.T) {
 			t.Parallel()
 			// init
-			vaultMock := &mocks.VaultMock{}
+			vaultMock := &mocks.VaultClient{}
 			standardEnvPrefix := "PIPER_VAULTCREDENTIAL_"
 			stepConfig := StepConfig{Config: map[string]interface{}{
 				"vaultPath":                "team1",
@@ -401,7 +401,7 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 	t.Run("Default test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		envPrefix := "PIPER_TESTCREDENTIAL_"
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":               "team1",
@@ -438,7 +438,7 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 		t.Run("Custom general purpose credential prefix along with fixed standard prefix", func(t *testing.T) {
 			t.Parallel()
 			// init
-			vaultMock := &mocks.VaultMock{}
+			vaultMock := &mocks.VaultClient{}
 			standardEnvPrefix := "PIPER_VAULTCREDENTIAL_"
 			stepConfig := StepConfig{Config: map[string]interface{}{
 				"vaultPath":                "team1",
@@ -474,7 +474,7 @@ func TestResolveVaultTestCredentials(t *testing.T) {
 	t.Run("Custom test credential prefix", func(t *testing.T) {
 		t.Parallel()
 		// init
-		vaultMock := &mocks.VaultMock{}
+		vaultMock := &mocks.VaultClient{}
 		envPrefix := "CUSTOM_CREDENTIAL_"
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath":                    "team1",

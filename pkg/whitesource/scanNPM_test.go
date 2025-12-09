@@ -159,6 +159,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	expected["productToken"] = "mock-product-token"
 	expected["productVer"] = "product-version"
 	expected["devDep"] = true
+	expected["includeDevDependencies"] = false
 	expected["ignoreNpmLsErrors"] = true
 
 	t.Parallel()

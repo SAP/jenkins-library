@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gradle"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	gradleBomFilename = "bom-gradle"
+	gradleBomFilename        = "bom-gradle"
+	stepNameForBuildSettings = "gradleExecuteBuild"
 )
 
 var (
@@ -81,7 +83,7 @@ initscript {
     }
   }
   dependencies {
-    classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.0"
+    classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.4"
   }
 }
 
@@ -189,6 +191,25 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		return err
 	}
 
+	log.Entry().Debugf("creating build settings information...")
+
+	dockerImage, err := GetDockerImageValue(stepNameForBuildSettings)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve dockerImage configuration: %w", err)
+	}
+
+	gradleConfig := buildsettings.BuildOptions{
+		CreateBOM:         config.CreateBOM,
+		Publish:           config.Publish,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+		DockerImage:       dockerImage,
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&gradleConfig, stepNameForBuildSettings)
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	pipelineEnv.custom.buildSettingsInfo = buildSettingsInfo
+
 	log.Entry().Info("Publishing of artifacts to staging repository...")
 	if config.Publish {
 		if err := publishArtifacts(config, utils, pipelineEnv); err != nil {
@@ -214,6 +235,7 @@ func createBOM(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils)
 		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
 		return err
 	}
+
 	return nil
 }
 

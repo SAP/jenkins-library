@@ -36,7 +36,7 @@ func setupDockerRegistry(t *testing.T, ctx context.Context) testcontainers.Conta
 }
 
 func TestCNBIntegrationNPMProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -86,7 +86,7 @@ func TestCNBIntegrationNPMProject(t *testing.T) {
 }
 
 func TestCNBIntegrationProjectDescriptor(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -116,7 +116,7 @@ func TestCNBIntegrationProjectDescriptor(t *testing.T) {
 	container.terminate(t)
 }
 func TestCNBIntegrationBuildSummary(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -141,7 +141,7 @@ func TestCNBIntegrationBuildSummary(t *testing.T) {
 }
 
 func TestCNBIntegrationZipPath(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -163,14 +163,14 @@ func TestCNBIntegrationZipPath(t *testing.T) {
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
 		"*** Images (sha256:",
 		"SUCCESS",
-		"syft packages registry:localhost:5000/not-found:0.0.1 -o cyclonedx-xml --file bom-docker-0.xml -q",
+		"syft scan registry:localhost:5000/not-found:0.0.1 -o cyclonedx-xml@1.4=bom-docker-0.xml -q",
 	)
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
 	container.terminate(t)
 }
 
 func TestCNBIntegrationNonZipPath(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -190,7 +190,7 @@ func TestCNBIntegrationNonZipPath(t *testing.T) {
 }
 
 func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -202,12 +202,12 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "docker.io/paketobuildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
 
 	container.assertHasOutput(t,
-		"Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:2.0.0]'",
-		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
+		"Setting custom buildpacks: '[docker.io/paketobuildpacks/nodejs:2.0.0]'",
+		"Downloading buildpack 'docker.io/paketobuildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
 		"running command: /cnb/lifecycle/creator",
 		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
@@ -218,7 +218,7 @@ func TestCNBIntegrationNPMCustomBuildpacksFullProject(t *testing.T) {
 }
 
 func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -230,11 +230,11 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 		Network: fmt.Sprintf("container:%s", registryContainer.GetContainerID()),
 	})
 
-	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "gcr.io/paketo-buildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
+	err := container.whenRunningPiperCommand("cnbBuild", "--noTelemetry", "--verbose", "--buildpacks", "docker.io/paketobuildpacks/nodejs:2.0.0", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", registryURL)
 	assert.NoError(t, err)
 
-	container.assertHasOutput(t, "Setting custom buildpacks: '[gcr.io/paketo-buildpacks/nodejs:2.0.0]'",
-		"Downloading buildpack 'gcr.io/paketo-buildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
+	container.assertHasOutput(t, "Setting custom buildpacks: '[docker.io/paketobuildpacks/nodejs:2.0.0]'",
+		"Downloading buildpack 'docker.io/paketobuildpacks/nodejs:2.0.0' to /tmp/buildpacks_cache/sha256:",
 		"running command: /cnb/lifecycle/creator",
 		"Paketo Buildpack for NPM Start",
 		fmt.Sprintf("Saving %s/not-found:0.0.1", registryURL),
@@ -245,7 +245,7 @@ func TestCNBIntegrationNPMCustomBuildpacksBuildpacklessProject(t *testing.T) {
 }
 
 func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "nginx:latest",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
@@ -259,7 +259,7 @@ func TestCNBIntegrationWrongBuilderProject(t *testing.T) {
 }
 
 func TestCNBIntegrationBindings(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -287,7 +287,7 @@ func TestCNBIntegrationBindings(t *testing.T) {
 }
 
 func TestCNBIntegrationMultiImage(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -309,9 +309,9 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 		"Saving localhost:5000/go-app:v1.0.0...",
 		"Using cached buildpack",
 		"Saving localhost:5000/my-app2:latest...",
-		"syft packages registry:localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml --file bom-docker-0.xml -q",
-		"syft packages registry:localhost:5000/go-app:v1.0.0 -o cyclonedx-xml --file bom-docker-1.xml -q",
-		"syft packages registry:localhost:5000/my-app2:latest -o cyclonedx-xml --file bom-docker-2.xml -q",
+		"syft scan registry:localhost:5000/io-buildpacks-my-app:latest -o cyclonedx-xml@1.4=bom-docker-0.xml -q",
+		"syft scan registry:localhost:5000/go-app:v1.0.0 -o cyclonedx-xml@1.4=bom-docker-1.xml -q",
+		"syft scan registry:localhost:5000/my-app2:latest -o cyclonedx-xml@1.4=bom-docker-2.xml -q",
 	)
 
 	container.assertHasFiles(t, "/project/bom-docker-0.xml")
@@ -321,7 +321,7 @@ func TestCNBIntegrationMultiImage(t *testing.T) {
 }
 
 func TestCNBIntegrationPreserveFiles(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -341,7 +341,7 @@ func TestCNBIntegrationPreserveFiles(t *testing.T) {
 }
 
 func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)
@@ -360,7 +360,7 @@ func TestCNBIntegrationPreserveFilesIgnored(t *testing.T) {
 }
 
 func TestCNBIntegrationPrePostBuildpacks(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	registryContainer := setupDockerRegistry(t, ctx)
 	defer registryContainer.Terminate(ctx)

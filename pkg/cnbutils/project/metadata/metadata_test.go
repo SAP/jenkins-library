@@ -19,7 +19,6 @@ func TestWriteProjectMetadata(t *testing.T) {
   type = "git"
   [source.version]
     commit = "012548"
-    describe = "test-commit"
   [source.metadata]
     refs = ["main"]
 `
@@ -31,9 +30,8 @@ func TestWriteProjectMetadata(t *testing.T) {
 	fileutils := piperutils.Files{}
 
 	cpeFiles := map[string]string{
-		"headCommitId":  "012548",
-		"commitMessage": "test-commit",
-		"branch":        "main",
+		"headCommitId": "012548",
+		"branch":       "main",
 	}
 
 	dir := t.TempDir()

@@ -161,7 +161,7 @@ func (sys *SystemInstance) CreateRelease(ascAppId int, version string, descripti
 
 	response, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("api/v1/apps/%v/releases", ascAppId), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return createReleaseResponse, errors.Wrapf(err, "creating release")
+		return createReleaseResponse, errors.Wrap(err, "creating release")
 	}
 
 	json.Unmarshal(response, &createReleaseResponse)

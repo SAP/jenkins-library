@@ -40,16 +40,21 @@ def issuesWrapper(Map parameters = [:], Script script, Closure body){
     try {
         body()
     } finally {
-        recordIssues(
-            blameDisabled: true,
-            enabledForFailure: true,
-            aggregatingResults: false,
-            qualityGates: config.qualityGates,
-            tool: checkStyle(
-                id: config.reportName,
-                name: config.reportName,
-                pattern: config.reportFile
+        try {
+            recordIssues(
+                skipBlames: true,
+                enabledForFailure: true,
+                aggregatingResults: false,
+                qualityGates: config.qualityGates,
+                tool: checkStyle(
+                    id: config.reportName,
+                    name: config.reportName,
+                    pattern: config.reportFile
+                )
             )
-        )
+        } catch (e) {
+            echo "recordIssues has failed. Possibly due to an outdated version of the warnings-ng plugin."
+            e.printStackTrace()
+        }
     }
 }

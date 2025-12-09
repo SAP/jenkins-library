@@ -52,7 +52,7 @@ general:
   gitSshKeyCredentialsId: '' #needed to allow sshagent to run with local ssh key
   globalExtensionsDirectory: '.pipeline/tmp/global_extensions/'
   jenkinsKubernetes:
-    jnlpAgent: 'jenkins/inbound-agent:jdk11'
+    jnlpAgent: 'jenkins/inbound-agent:jdk17'
     securityContext:
     # Setting security context globally is currently not working with jaas
     #  runAsUser: 1000
@@ -102,7 +102,7 @@ steps:
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
   batsExecuteTests:
     #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-buster'
+    dockerImage: 'node:lts-bookworm'
     dockerWorkspace: '/home/node'
     envVars: {}
     outputFormat: 'junit' # tap, junit
@@ -237,7 +237,7 @@ steps:
       workspace: '**/*'
     stashExcludes:
       workspace: 'nohup.out'
-      stashBack: '**/node_modules/**,nohup.out'
+      stashBack: '**/node_modules/**,nohup.out,.git/**'
   dubExecute:
     dockerImage: 'dlang2/dmd-ubuntu:latest'
   githubPublishRelease:
@@ -271,7 +271,7 @@ steps:
       testOptions: '-DspecsDir=specs'
     npm:
       #TODO: check wheather defaults in here are still required
-      dockerImage: 'node:lts-buster'
+      dockerImage: 'node:lts-bookworm'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
       languageRunner: 'js'
@@ -306,14 +306,14 @@ steps:
     influxServer: ''
   karmaExecuteTests:
     containerPortMappings:
-      'node:lts-buster':
+      'node:lts-bookworm':
         - containerPort: 9876
           hostPort: 9876
     dockerEnvVars:
       NO_PROXY: 'localhost,selenium,$NO_PROXY'
       no_proxy: 'localhost,selenium,$no_proxy'
     #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-buster'
+    dockerImage: 'node:lts-bookworm'
     dockerName: 'karma'
     dockerWorkspace: '/home/node'
     installCommand: 'npm install --quiet'
@@ -355,7 +355,7 @@ steps:
     parallelExecution: false
   npmExecute:
     #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-buster'
+    dockerImage: 'node:lts-bookworm'
   npmExecuteScripts:
     install: true
   npmExecuteEndToEndTests:
@@ -374,7 +374,7 @@ steps:
     stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, dist/**'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original, **/dist/**'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       checkmarxOne: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html, **/*.ts'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
@@ -415,7 +415,7 @@ steps:
     parserPattern: '\[(INFO|WARNING|ERROR)\] (.*) \(([^) ]*)\/([^) ]*)\)'
     parserScript: 'return builder.guessSeverity(matcher.group(1)).setMessage(matcher.group(2)).setModuleName(matcher.group(3)).setType(matcher.group(4)).buildOptional()'
     recordIssuesSettings:
-      blameDisabled: true
+      skipBlames: true
       enabledForFailure: true
   seleniumExecuteTests:
     buildTool: 'npm'
@@ -435,7 +435,7 @@ steps:
       dockerName: 'maven'
       dockerWorkspace: ''
     npm:
-      dockerImage: 'node:lts-buster'
+      dockerImage: 'node:lts-bookworm'
       dockerName: 'npm'
       dockerWorkspace: '/home/node'
     bundler:
@@ -447,7 +447,7 @@ steps:
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
-    dockerImage: 'node:lts-buster'
+    dockerImage: 'node:lts-bookworm'
     exclude: []
     monitor: true
     scanType: 'npm'

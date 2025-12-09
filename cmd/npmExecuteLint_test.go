@@ -418,4 +418,39 @@ func TestNpmExecuteLint(t *testing.T) {
 
 		assert.EqualError(t, err, "runScript is not allowed to be empty!")
 	})
+
+	t.Run("Test linter installation failed", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm install eslint@^7.0.0 typescript@^3.7.4 @typescript-eslint/parser@^3.0.0 @typescript-eslint/eslint-plugin@^3.0.0": errors.New("exit 1")}}
+
+		npmUtils := newNpmMockUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+
+		config := defaultConfig
+		config.FailOnError = true
+
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.EqualError(t, err, "linter installation failed: exit 1")
+	})
+
+	t.Run("Test npx eslint fail", func(t *testing.T) {
+		lintUtils := newLintMockUtilsBundle()
+		lintUtils.execRunner = &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npx --no-install eslint . --ext .js,.jsx,.ts,.tsx -c .pipeline/.eslintrc.json -f checkstyle --ignore-pattern .eslintrc.js -o ./defaultlint.xml": errors.New("exit 1")}}
+
+		npmUtils := newNpmMockUtilsBundle()
+		npmUtils.execRunner = lintUtils.execRunner
+		npmUtils.FilesMock = lintUtils.FilesMock
+
+		config := defaultConfig
+		config.FailOnError = true
+
+		npmExecutor := npm.Execute{Utils: &npmUtils, Options: npm.ExecutorOptions{}}
+		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
+
+		assert.EqualError(t, err, "lint execution failed. This might be the result of severe linting findings. The lint configuration used can be found here: https://raw.githubusercontent.com/SAP/jenkins-library/master/resources/.eslintrc.json")
+	})
+
 }

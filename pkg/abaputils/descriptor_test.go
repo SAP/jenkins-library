@@ -40,6 +40,9 @@ func TestAddonDescriptorNew(t *testing.T) {
 		assert.Equal(t, "/DMO/REPO_B", repos[0].Name)
 	})
 
+	t.Run("AsReducedJson", func(t *testing.T) {
+		assert.NotContains(t, "commitID", addonDescriptor.AsReducedJson())
+	})
 }
 
 var TestAddonDescriptorYAML = `---

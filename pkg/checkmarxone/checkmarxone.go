@@ -8,22 +8,20 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-
-	//"strconv"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
-	//"encoding/xml"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // ReportsDirectory defines the subfolder for the Checkmarx reports which are generated
 const ReportsDirectory = "checkmarxOne"
-const cxOrigin = "GolangScript"
+const cxOrigin = ""
 
 // AuthToken - Structure to store OAuth2 token
 // Updated for Cx1
@@ -159,6 +157,12 @@ type ScanMetadata struct {
 	IsIncremental         bool
 	IsIncrementalCanceled bool
 	PresetName            string `json:"queryPreset"`
+}
+
+type ScanMetadataList struct {
+	TotalCount int
+	Scans      []ScanMetadata
+	Missing    []string
 }
 
 type ScanResultData struct {
@@ -302,16 +306,18 @@ type System interface {
 
 	GetScan(scanID string) (Scan, error)
 	GetScanMetadata(scanID string) (ScanMetadata, error)
+	GetScanMetadatas(scanIDs []string) ([]ScanMetadata, error)
 	GetScanResults(scanID string, limit uint64) ([]ScanResult, error)
 	GetScanSummary(scanID string) (ScanSummary, error)
 	GetResultsPredicates(SimilarityID int64, ProjectID string) ([]ResultsPredicates, error)
 	GetScanWorkflow(scanID string) ([]WorkflowLog, error)
-	GetLastScans(projectID string, limit int) ([]Scan, error)
-	GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error)
+	GetLastScans(projectID, branch string, limit int) ([]Scan, error)
+	GetLastScansByStatus(projectID, branch string, limit int, status []string) ([]Scan, error)
 
-	ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration) (Scan, error)
-	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration) (Scan, error)
-	ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration) (Scan, error)
+	ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
+	ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
+	ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error)
+	UpdateProject(project *Project) error
 
 	UploadProjectSourceCode(projectID string, zipFile string) (string, error)
 	CreateProject(projectName string, groupIDs []string) (Project, error)
@@ -411,7 +417,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 	//header.Set("User-Agent", "Project-Piper.io cicd pipeline") // currently this causes some requests to fail due to unknown UA validation in the backend.
 
 	response, err := sys.client.SendRequest(method, url, requestBody, header, nil)
-	if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
+	if err != nil && (response == nil || !slices.Contains(acceptedErrorCodes, response.StatusCode)) {
 
 		var resBodyBytes []byte
 		if response != nil && response.Body != nil {
@@ -651,6 +657,32 @@ func (sys *SystemInstance) UpdateApplication(app *Application) error {
 	return nil
 }
 
+func (sys *SystemInstance) UpdateProject(project *Project) error {
+	sys.logger.Debugf("Updating project: %v", project.Name)
+	jsonBody, err := json.Marshal(*project)
+
+	// Remove fields that can cause API errors in Cx1 3.30
+	var filteredMap map[string]interface{}
+	json.Unmarshal(jsonBody, &filteredMap)
+	delete(filteredMap, "applicationIds")
+	delete(filteredMap, "createdAt")
+	delete(filteredMap, "updatedAt")
+	delete(filteredMap, "groups") // groups is causing "failed to check groups access" in 3.46
+	jsonBody, err = json.Marshal(filteredMap)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v", project.ProjectID), bytes.NewReader(jsonBody), nil, []int{})
+	if err != nil {
+		sys.logger.Errorf("Error while updating project: %s", err)
+		return err
+	}
+
+	return nil
+}
+
 // Updated for Cx1
 func (sys *SystemInstance) GetGroups() ([]Group, error) {
 	sys.logger.Debug("Getting Groups...")
@@ -744,7 +776,7 @@ func (sys *SystemInstance) GetProjectsByName(projectName string) ([]Project, err
 	var err error
 
 	body := url.Values{}
-	body.Add("name", projectName)
+	body.Add("names", projectName)
 
 	data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
 
@@ -825,10 +857,11 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error) {
 	var project Project
 	jsonData := map[string]interface{}{
-		"name":        projectName,
-		"groups":      groupIDs,
-		"origin":      cxOrigin,
-		"criticality": 3, // default
+		"name":           projectName,
+		"groups":         groupIDs,
+		"origin":         cxOrigin,
+		"criticality":    3, // default
+		"applicationIds": []string{applicationID},
 		// multiple additional parameters exist as options
 	}
 
@@ -839,17 +872,7 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-
-	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("/projects/application/%v", applicationID), bytes.NewBuffer(jsonValue), header, []int{})
-
-	if err != nil && err.Error()[0:8] == "HTTP 404" { // At some point, the api /projects/applications will be removed and instead the normal /projects API will do the job.
-		jsonData["applicationIds"] = []string{applicationID}
-		jsonValue, err = json.Marshal(data)
-		if err != nil {
-			return project, err
-		}
-		data, err = sendRequest(sys, http.MethodPost, "/projects", bytes.NewReader(jsonValue), header, []int{})
-	}
+	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewReader(jsonValue), header, []int{})
 
 	if err != nil {
 		return project, errors.Wrapf(err, "failed to create project %v under %v", projectName, applicationID)
@@ -934,7 +957,7 @@ func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan,
 	jsonValue, err := json.Marshal(scanConfig)
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
-	sys.logger.Tracef("Starting scan with settings: " + string(jsonValue))
+	sys.logger.Tracef("Starting scan with settings: %s", string(jsonValue))
 
 	data, err := sendRequest(sys, http.MethodPost, "/scans/", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
@@ -945,7 +968,7 @@ func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan,
 	return scan, err
 }
 
-func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration) (Scan, error) {
+func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
 	jsonBody := map[string]interface{}{
 		"project": map[string]interface{}{"id": projectID},
 		"type":    "upload",
@@ -954,6 +977,7 @@ func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, s
 			"branch":    branch,
 		},
 		"config": settings,
+		"tags":   tags,
 	}
 
 	scan, err := sys.scanProject(jsonBody)
@@ -963,7 +987,7 @@ func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, s
 	return scan, err
 }
 
-func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration) (Scan, error) {
+func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
 	jsonBody := map[string]interface{}{
 		"project": map[string]interface{}{"id": projectID},
 		"type":    "git",
@@ -972,6 +996,7 @@ func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, set
 			"branch":  branch,
 		},
 		"config": settings,
+		"tags":   tags,
 	}
 
 	scan, err := sys.scanProject(jsonBody)
@@ -981,11 +1006,11 @@ func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, set
 	return scan, err
 }
 
-func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration) (Scan, error) {
+func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
 	if scanType == "upload" {
-		return sys.ScanProjectZip(projectID, sourceUrl, branch, settings)
+		return sys.ScanProjectZip(projectID, sourceUrl, branch, settings, tags)
 	} else if scanType == "git" {
-		return sys.ScanProjectGit(projectID, sourceUrl, branch, settings)
+		return sys.ScanProjectGit(projectID, sourceUrl, branch, settings, tags)
 	}
 
 	return Scan{}, errors.New("Invalid scanType provided, must be 'upload' or 'git'")
@@ -1099,6 +1124,25 @@ func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
 	return scan, nil
 }
 
+func (sys *SystemInstance) GetScanMetadatas(scanIDs []string) ([]ScanMetadata, error) {
+	params := url.Values{
+		"scan-ids": scanIDs,
+	}
+	var scanmetadatalistresp ScanMetadataList
+	var scans []ScanMetadata
+
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata?%v", params.Encode()), nil, http.Header{}, []int{})
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch metadata for scans %s, error was: %s", fmt.Sprintf("%v", strings.Join(scanIDs, ",")), err)
+		return scans, errors.Wrapf(err, "failed to fetch metadata for scans")
+	}
+
+	json.Unmarshal(data, &scanmetadatalistresp)
+	scans = scanmetadatalistresp.Scans
+	return scans, nil
+
+}
+
 func (sys *SystemInstance) GetScanMetadata(scanID string) (ScanMetadata, error) {
 	var scanmeta ScanMetadata
 
@@ -1125,18 +1169,28 @@ func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 	return workflow, nil
 }
 
-func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, error) {
+func (sys *SystemInstance) GetLastScans(projectID, branch string, limit int) ([]Scan, error) {
 	var scanResponse struct {
 		TotalCount         uint64
 		FilteredTotalCount uint64
 		Scans              []Scan
 	}
 
+	sortStr := "-created_at"
+
+	version, err := sys.GetVersion()
+	if err != nil {
+		sys.logger.Errorf("Failed to get version info: %s. Defaulting to -created_at for sorting.", err)
+	} else if version.CheckCxOne("3.30.0") < 0 {
+		sortStr = "+created_at"
+	}
+
 	body := url.Values{
 		"project-id": {projectID},
 		"offset":     {fmt.Sprintf("%v", 0)},
 		"limit":      {fmt.Sprintf("%v", limit)},
-		"sort":       {"+created_at"},
+		"sort":       {sortStr},
+		"branches":   []string{branch},
 	}
 
 	header := http.Header{}
@@ -1151,19 +1205,29 @@ func (sys *SystemInstance) GetLastScans(projectID string, limit int) ([]Scan, er
 	return scanResponse.Scans, err
 }
 
-func (sys *SystemInstance) GetLastScansByStatus(projectID string, limit int, status []string) ([]Scan, error) {
+func (sys *SystemInstance) GetLastScansByStatus(projectID, branch string, limit int, status []string) ([]Scan, error) {
 	var scanResponse struct {
 		TotalCount         uint64
 		FilteredTotalCount uint64
 		Scans              []Scan
 	}
 
+	sortStr := "-created_at"
+
+	version, err := sys.GetVersion()
+	if err != nil {
+		sys.logger.Errorf("Failed to get version info: %s. Defaulting to -created_at for sorting.", err)
+	} else if version.CheckCxOne("3.30.0") < 0 {
+		sortStr = "+created_at"
+	}
+
 	body := url.Values{
 		"project-id": {projectID},
 		"offset":     {fmt.Sprintf("%d", 0)},
 		"limit":      {fmt.Sprintf("%d", limit)},
-		"sort":       {"+created_at"},
+		"sort":       {sortStr},
 		"statuses":   status,
+		"branches":   []string{branch},
 	}
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/?%v", body.Encode()), nil, nil, []int{})
@@ -1304,22 +1368,37 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
+	return sys.RequestNewReportV2(scanID, reportType) // Report generation v1 API is removed in CxONE 3.36, use RequestNewReportV2 instead
+}
+
+// Use the new V2 Report API to generate a PDF report
+func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string, error) {
 	jsonData := map[string]interface{}{
-		"fileFormat": reportType,
-		"reportType": "ui",
-		"reportName": "scan-report",
-		"data": map[string]interface{}{
-			"scanId":     scanID,
-			"projectId":  projectID,
-			"branchName": branch,
-			"sections": []string{
-				"ScanSummary",
-				"ExecutiveSummary",
-				"ScanResults",
+		"reportName": "improved-scan-report",
+		"entities": []map[string]interface{}{
+			{
+				"entity": "scan",
+				"ids":    []string{scanID},
+				"tags":   []string{},
 			},
-			"scanners": []string{"SAST"},
-			"host":     "",
 		},
+		"filters": map[string][]string{
+			"scanners": {"sast"},
+			"severities": {
+				"critical",
+				"high",
+				"medium",
+				"low",
+			},
+			"states": {
+				"to-verify",
+				"confirmed",
+				"urgent",
+				"proposed-not-exploitable",
+			},
+		},
+		"reportType": "ui",
+		"fileFormat": reportType,
 	}
 
 	jsonValue, _ := json.Marshal(jsonData)
@@ -1327,7 +1406,7 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 	header := http.Header{}
 	header.Set("cxOrigin", cxOrigin)
 	header.Set("Content-Type", "application/json")
-	data, err := sendRequest(sys, http.MethodPost, "/reports", bytes.NewBuffer(jsonValue), header, []int{})
+	data, err := sendRequest(sys, http.MethodPost, "/reports/v2", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
 	} else {
@@ -1340,6 +1419,7 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 	err = json.Unmarshal(data, &reportResponse)
 
 	return reportResponse.ReportId, err
+
 }
 
 // GetReportStatus returns the status of the report generation process
@@ -1348,7 +1428,7 @@ func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error
 
 	header := http.Header{}
 	header.Set("Accept", "application/json")
-	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v", reportID), nil, header, []int{})
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v?returnUrl=true", reportID), nil, header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
 		return response, errors.Wrapf(err, "failed to fetch report status for reportID %v", reportID)
@@ -1401,4 +1481,41 @@ func (sys *SystemInstance) GetVersion() (VersionInfo, error) {
 
 	err = json.Unmarshal(data, &version)
 	return version, err
+}
+
+func (v VersionInfo) CheckCxOne(version string) int {
+	check := versionStringToInts(version)
+	cx1 := versionStringToInts(v.CxOne)
+
+	if check[0] < cx1[0] {
+		return 1
+	} else if check[0] > cx1[0] {
+		return -1
+	} else {
+		if check[1] < cx1[1] {
+			return 1
+		} else if check[1] > cx1[1] {
+			return -1
+		} else {
+			if check[2] < cx1[2] {
+				return 1
+			} else if check[2] > cx1[2] {
+				return -1
+			} else {
+				return 0
+			}
+		}
+	}
+}
+
+func versionStringToInts(version string) []int64 {
+	if version == "" {
+		return []int64{0, 0, 0}
+	}
+	str := strings.Split(version, ".")
+	ints := make([]int64, len(str))
+	for id, val := range str {
+		ints[id], _ = strconv.ParseInt(val, 10, 64)
+	}
+	return ints
 }

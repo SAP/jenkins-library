@@ -59,14 +59,19 @@ type SoftwareComponentApiInterface interface {
 	setSleepTimeConfig(timeUnit time.Duration, maxSleepTime time.Duration)
 	getSleepTime(n int) (time.Duration, error)
 	getUUID() string
+	getRepositoryName() string
+	GetRepository() (bool, string, error, bool)
 	Clone() error
 	Pull() error
 	CheckoutBranch() error
-	GetRepository() (bool, string, error)
 	GetAction() (string, error)
+	CreateTag(tag Tag) error
 	GetLogOverview() ([]LogResultsV2, error)
 	GetLogProtocol(LogResultsV2, int) (result []LogProtocol, count int, err error)
-	CreateTag(tag Tag) error
+	ConvertTime(logTimeStamp string) time.Time
+	GetExecutionLog() (ExecutionLog, error)
+	GetLogArchive() (result []byte, err error)
+	UpdateRepoWithBYOGCredentials(string, string, string)
 }
 
 /****************************************
@@ -126,6 +131,7 @@ type CloneEntity struct {
 type RepositoryEntity struct {
 	Metadata     AbapMetadata `json:"__metadata"`
 	ScName       string       `json:"sc_name"`
+	ByogUrl      string       `json:"url"`
 	ActiveBranch string       `json:"active_branch"`
 	AvailOnInst  bool         `json:"avail_on_inst"`
 }
@@ -146,6 +152,17 @@ type LogResultsV2 struct {
 	Status        string              `json:"type_of_found_issues"`
 	Timestamp     string              `json:"timestamp"`
 	ToLogProtocol LogProtocolDeferred `json:"to_Log_Protocol"`
+}
+
+type ExecutionLog struct {
+	Value []ExecutionLogValue `json:"value"`
+}
+
+type ExecutionLogValue struct {
+	IndexNo   int    `json:"index_no"`
+	Type      string `json:"type"`
+	Descr     string `json:"descr"`
+	Timestamp string `json:"timestamp"`
 }
 
 type LogProtocolDeferred struct {
@@ -188,6 +205,9 @@ type RepositoriesConfig struct {
 	BranchName      string
 	CommitID        string
 	RepositoryName  string
+	ByogUsername    string
+	ByogPassword    string
+	ByogAuthMethod  string
 	RepositoryNames []string
 	Repositories    string
 }

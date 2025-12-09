@@ -155,12 +155,17 @@ func (tv *TargetVector) GetTargetVector(conn *abapbuild.Connector) error {
 
 // PollForStatus : Poll AAKaaS until final PublishStatus reached and check if desired Status was reached
 func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus TargetVectorStatus) error {
+	var cachedError error
 	timeout := time.After(conn.MaxRuntime)
 	ticker := time.Tick(conn.PollingInterval)
 	for {
 		select {
 		case <-timeout:
-			return errors.New("Timed out (AAKaaS target Vector Status change)")
+			if cachedError == nil {
+				return errors.New("Timed out (AAKaaS target Vector Status change)")
+			} else {
+				return cachedError
+			}
 		case <-ticker:
 			if err := tv.GetTargetVector(conn); err != nil {
 				return errors.Wrap(err, "Getting TargetVector status during polling resulted in an error")
@@ -172,7 +177,8 @@ func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus Ta
 				if TargetVectorStatus(tv.Status) == targetStatus {
 					return nil
 				} else {
-					return errors.New("Publishing of Targetvector " + tv.ID + " resulted in state " + string(tv.Status) + " instead of expected state " + string(targetStatus))
+					cachedError = errors.New("Publishing of Targetvector " + tv.ID + " resulted in state " + string(tv.Status) + " instead of expected state " + string(targetStatus))
+					continue
 				}
 			case TargetVectorPublishStatusError:
 				return errors.New("Publishing of Targetvector " + tv.ID + " failed in AAKaaS")

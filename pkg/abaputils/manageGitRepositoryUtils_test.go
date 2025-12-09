@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,7 +64,14 @@ func TestPollEntity(t *testing.T) {
 		repo := Repository{Name: "testRepo1"}
 		api, _ := swcManager.GetAPI(con, repo)
 
-		status, _ := PollEntity(api, 0)
+		var reports []piperutils.Path
+		logOutputManager := LogOutputManager{
+			LogOutput:   "STANDARD",
+			PiperStep:   "pull",
+			StepReports: reports,
+		}
+
+		status, _ := PollEntity(api, 0, &logOutputManager)
 		assert.Equal(t, "S", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -95,7 +103,14 @@ func TestPollEntity(t *testing.T) {
 		repo := Repository{Name: "testRepo1"}
 		api, _ := swcManager.GetAPI(con, repo)
 
-		status, _ := PollEntity(api, 0)
+		var reports []piperutils.Path
+		logOutputManager := LogOutputManager{
+			LogOutput:   "STANDARD",
+			PiperStep:   "pull",
+			StepReports: reports,
+		}
+
+		status, _ := PollEntity(api, 0, &logOutputManager)
 		assert.Equal(t, "E", status)
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -268,8 +283,8 @@ func TestCreateRequestBodies(t *testing.T) {
 			CommitID: "1234567",
 			Tag:      "myTag",
 		}
-		body := repo.GetCloneRequestBody()
-		assert.Equal(t, `{"sc_name":"/DMO/REPO", "branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
+		body, _ := repo.GetCloneRequestBody()
+		assert.Equal(t, `{"branch_name":"main", "commit_id":"1234567"}`, body, "Expected different body")
 	})
 	t.Run("Clone Body Tag", func(t *testing.T) {
 		repo := Repository{
@@ -277,7 +292,7 @@ func TestCreateRequestBodies(t *testing.T) {
 			Branch: "main",
 			Tag:    "myTag",
 		}
-		body := repo.GetCloneRequestBody()
+		body := repo.GetCloneRequestBodyWithSWC()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "branch_name":"main", "tag_name":"myTag"}`, body, "Expected different body")
 	})
 	t.Run("Pull Body Tag and Commit", func(t *testing.T) {
@@ -298,5 +313,20 @@ func TestCreateRequestBodies(t *testing.T) {
 		}
 		body := repo.GetPullRequestBody()
 		assert.Equal(t, `{"sc_name":"/DMO/REPO", "tag_name":"myTag"}`, body, "Expected different body")
+	})
+}
+
+func TestExecutionLogOutput(t *testing.T) {
+	t.Run("Test execution log output", func(t *testing.T) {
+
+		executionLogValue := []ExecutionLogValue{
+			{IndexNo: 1, Type: "Success", Descr: "Something went well", Timestamp: "/Date(1644332299000+0000)/"},
+			{IndexNo: 2, Type: "Error", Descr: "Something went wrong", Timestamp: "/Date(1644332299000+0000)/"},
+		}
+		executionLog := ExecutionLog{
+			Value: executionLogValue,
+		}
+		printExecutionLogs(executionLog)
+
 	})
 }

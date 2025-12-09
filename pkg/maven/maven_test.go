@@ -5,8 +5,10 @@ package maven
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/mock"
+	"os"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"net/http"
 	"testing"
@@ -78,7 +80,10 @@ func TestExecute(t *testing.T) {
 			Goals: []string{"flatten", "install"}, Defines: []string{"-Da=b"},
 			Flags: []string{"-q"}, LogSuccessfulMavenTransfers: true,
 			ReturnStdout: false}
-		expectedParameters := []string{"--global-settings", "anotherSettings.xml", "--settings", "settings.xml",
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, "anotherSettings.xml")
+		projectSettingsPath := filepath.Join(dir, "settings.xml")
+		expectedParameters := []string{"--global-settings", globalSettingsPath, "--settings", projectSettingsPath,
 			"-Dmaven.repo.local=.m2/", "--file", "pom.xml", "-q", "-Da=b", "--batch-mode",
 			"flatten", "install"}
 
@@ -115,9 +120,12 @@ func TestGetParameters(t *testing.T) {
 	t.Run("should resolve configured parameters and download the settings files", func(t *testing.T) {
 		utils := NewMockUtils(false)
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline", "mavenGlobalSettings.xml")
+		projectSettingsPath := filepath.Join(dir, ".pipeline", "mavenProjectSettings.xml")
 		expectedParameters := []string{
-			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
-			"--settings", ".pipeline/mavenProjectSettings.xml",
+			"--global-settings", globalSettingsPath,
+			"--settings", projectSettingsPath,
 			"--file", "pom.xml",
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode"}
@@ -139,9 +147,12 @@ func TestGetParameters(t *testing.T) {
 		utils.AddFile(".pipeline/mavenGlobalSettings.xml", []byte("dummyContent"))
 		utils.AddFile(".pipeline/mavenProjectSettings.xml", []byte("dummyContent"))
 		opts := ExecuteOptions{PomPath: "pom.xml", GlobalSettingsFile: "https://mysettings.com", ProjectSettingsFile: "http://myprojectsettings.com", ReturnStdout: false}
+		dir, _ := os.Getwd()
+		globalSettingsPath := filepath.Join(dir, ".pipeline", "mavenGlobalSettings.xml")
+		projectSettingsPath := filepath.Join(dir, ".pipeline", "mavenProjectSettings.xml")
 		expectedParameters := []string{
-			"--global-settings", ".pipeline/mavenGlobalSettings.xml",
-			"--settings", ".pipeline/mavenProjectSettings.xml",
+			"--global-settings", globalSettingsPath,
+			"--settings", projectSettingsPath,
 			"--file", "pom.xml",
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode"}
@@ -207,16 +218,17 @@ func TestMavenInstall(t *testing.T) {
 
 		options := EvaluateOptions{}
 		options.ProjectSettingsFile = "settings.xml"
-		utils.StdoutReturn = map[string]string{"mvn --settings settings.xml --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
+		dir, _ := os.Getwd()
+		projectSettingsPath := filepath.Join(dir, "settings.xml")
+		utils.StdoutReturn = map[string]string{"mvn --settings " + projectSettingsPath + " --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
 		err := doInstallMavenArtifacts(&options, &utils)
-
 		assert.NoError(t, err)
 		if assert.Equal(t, 5, len(utils.Calls)) {
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dflatten.mode=resolveCiFriendliesOnly", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "flatten:flatten"}}, utils.Calls[0])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dexpression=project.packaging", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, utils.Calls[1])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, utils.Calls[2])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dfile=" + filepath.Join(".", "target", "foo.jar"), "-Dpackaging=jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, utils.Calls[3])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dfile=" + filepath.Join(".", "target", "foo.war"), "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, utils.Calls[4])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", projectSettingsPath, "-Dflatten.mode=resolveCiFriendliesOnly", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "flatten:flatten"}}, utils.Calls[0])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", projectSettingsPath, "--file", "pom.xml", "-Dexpression=project.packaging", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, utils.Calls[1])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", projectSettingsPath, "--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, utils.Calls[2])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", projectSettingsPath, "-Dfile=" + filepath.Join(".", "target", "foo.jar"), "-Dpackaging=jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, utils.Calls[3])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", projectSettingsPath, "-Dfile=" + filepath.Join(".", "target", "foo.war"), "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, utils.Calls[4])
 		}
 	})
 

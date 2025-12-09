@@ -150,6 +150,25 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "maven", maven.VersioningScheme())
 	})
 
+	t.Run("CAP - maven", func(t *testing.T) {
+		opts := Options{
+			ProjectSettingsFile:     "projectsettings.xml",
+			GlobalSettingsFile:      "globalsettings.xml",
+			M2Path:                  "m2/path",
+			CAPVersioningPreference: "maven",
+		}
+		maven, err := GetArtifact("CAP", "", &opts, nil)
+		assert.NoError(t, err)
+
+		theType, ok := maven.(*Maven)
+		assert.True(t, ok)
+		assert.Equal(t, "pom.xml", theType.options.PomPath)
+		assert.Equal(t, opts.ProjectSettingsFile, theType.options.ProjectSettingsFile)
+		assert.Equal(t, opts.GlobalSettingsFile, theType.options.GlobalSettingsFile)
+		assert.Equal(t, opts.M2Path, theType.options.M2Path)
+		assert.Equal(t, "maven", maven.VersioningScheme())
+	})
+
 	t.Run("mta", func(t *testing.T) {
 		mta, err := GetArtifact("mta", "", &Options{VersionField: "theversion"}, nil)
 
@@ -174,6 +193,17 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", npm.VersioningScheme())
 	})
 
+	t.Run("CAP - npm", func(t *testing.T) {
+		npm, err := GetArtifact("CAP", "", &Options{VersionField: "theversion", CAPVersioningPreference: "npm"}, nil)
+		assert.NoError(t, err)
+
+		theType, ok := npm.(*JSONfile)
+		assert.True(t, ok)
+		assert.Equal(t, "package.json", theType.path)
+		assert.Equal(t, "version", theType.versionField)
+		assert.Equal(t, "semver2", npm.VersioningScheme())
+	})
+
 	t.Run("yarn", func(t *testing.T) {
 		npm, err := GetArtifact("yarn", "", &Options{VersionField: "theversion"}, nil)
 
@@ -187,8 +217,10 @@ func TestGetArtifact(t *testing.T) {
 	})
 
 	t.Run("pip", func(t *testing.T) {
-		fileExists = func(string) (bool, error) { return true, nil }
-		pip, err := GetArtifact("pip", "", &Options{}, nil)
+		utils := newVersioningMockUtils()
+		utils.FilesMock.AddFile("setup.py", []byte(""))
+		fileExists = utils.FilesMock.FileExists
+		pip, err := GetArtifact("pip", "", &Options{}, utils)
 
 		assert.NoError(t, err)
 
@@ -202,7 +234,7 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("pip", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [setup.py version.txt VERSION]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [pyproject.toml setup.py version.txt VERSION]")
 	})
 
 	t.Run("sbt", func(t *testing.T) {

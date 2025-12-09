@@ -1,16 +1,26 @@
 package telemetry
 
+import (
+	"encoding/json"
+	"net/url"
+)
+
 // BaseData object definition containing the base data
 type BaseData struct {
-	ActionName      string `json:"actionName"`
-	EventType       string `json:"eventType"`
-	SiteID          string `json:"idsite"`
-	URL             string `json:"url"`
-	StepName        string `json:"stepName"` // set by step generator
-	StageName       string `json:"stageName"`
-	PipelineURLHash string `json:"pipelineUrlHash"` // defaults to sha1 of provider.GetBuildURL()
-	BuildURLHash    string `json:"buildUrlHash"`    // defaults to sha1 of provider.GetJobURL()
-	Orchestrator    string `json:"orchestrator"`    // defaults to provider.OrchestratorType()
+	ActionName        string `json:"actionName"`
+	EventType         string `json:"eventType"`
+	SiteID            string `json:"idsite"`
+	URL               string `json:"url"`
+	StepName          string `json:"stepName"` // set by step generator
+	StageName         string `json:"stageName"`
+	PipelineURLHash   string `json:"pipelineUrlHash"`           // defaults to sha1 of provider.GetBuildURL()
+	BuildURLHash      string `json:"buildUrlHash"`              // defaults to sha1 of provider.GetJobURL()
+	Orchestrator      string `json:"orchestrator"`              // defaults to provider.OrchestratorType()
+	TemplateName      string `json:"templateName"`              // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME") or "n/a" if not set.
+	StageTemplateName string `json:"stageTemplateName"`         // defaults to os.Getenv("PIPER_PIPELINE_TEMPLATE_STAGE_NAME") or "n/a" if not set.
+	BinaryVersion     string `json:"binaryVersion"`             // version of the piper binary, defaults to build info
+	ActionVersion     string `json:"actionVersion,omitempty"`   // version of the orchestrator action
+	TemplateVersion   string `json:"templateVersion,omitempty"` // version of the pipeline template
 }
 
 var baseData BaseData
@@ -33,7 +43,8 @@ type CustomData struct {
 	LegacyJobNameTemplate string `json:"legacyJobNameTemplate,omitempty"`
 	LegacyJobName         string `json:"legacyJobName,omitempty"`
 	DeployType            string `json:"deployType,omitempty"`
-	CnbBuildStepData      string `json:"cnbBuildStepData,omitempty"`
+	CnbBuilder            string `json:"cnbBuilder,omitempty"`
+	CnbRunImage           string `json:"cnbRunImage,omitempty"`
 	ServerURL             string `json:"serverURL,omitempty"`
 	ECCNMessageStatus     string `json:"eccnMessageStatus,omitempty"`
 	ChangeRequestUpload   string `json:"changeRequestUpload,omitempty"`
@@ -55,10 +66,33 @@ type StepTelemetryData struct {
 	CorrelationID   string                 `json:"CorrelationID"`
 	PiperCommitHash string                 `json:"PiperCommitHash"`
 	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
+	BinaryVersion   string                 `json:"BinaryVersion"`
+	ActionVersion   string                 `json:"ActionVersion,omitempty"`
+	TemplateVersion string                 `json:"TemplateVersion,omitempty"`
 }
 
 // Data object definition containing all telemetry data
 type Data struct {
 	BaseData
 	CustomData
+}
+
+// toMap transfers the data object into a map using JSON tags
+func (d *Data) toMap() (result map[string]string) {
+	jsonObj, _ := json.Marshal(d)
+	json.Unmarshal(jsonObj, &result)
+	return
+}
+
+// toPayloadString transfers the data object into a 'key=value&..' string
+func (d *Data) toPayloadString() string {
+	parameters := url.Values{}
+
+	for key, value := range d.toMap() {
+		if len(value) > 0 {
+			parameters.Add(key, value)
+		}
+	}
+
+	return parameters.Encode()
 }

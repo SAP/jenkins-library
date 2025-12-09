@@ -11,7 +11,6 @@ import (
 )
 
 // Jenkins is an interface to abstract gojenkins.Jenkins.
-// mock generated with: mockery --name Jenkins --dir pkg/jenkins --output pkg/jenkins/mocks
 type Jenkins interface {
 	GetJobObj(ctx context.Context, name string) *gojenkins.Job
 	BuildJob(ctx context.Context, name string, params map[string]string) (int64, error)

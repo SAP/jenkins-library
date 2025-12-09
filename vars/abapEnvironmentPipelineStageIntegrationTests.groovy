@@ -51,6 +51,10 @@ void call(Map parameters = [:]) {
                 echo "Deployment test of add-on product failed."
                 throw e
             } finally {
+                if (config.confirmDeletion) {
+                    input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
+                }
+
                 if (!config.debug) {
                     cloudFoundryDeleteService script: parameters.script
                 }
@@ -66,10 +70,6 @@ void call(Map parameters = [:]) {
         } else {
             e = new Error('Unsupoorted integration test option.')
             throw e
-        }
-
-        if (config.confirmDeletion) {
-            input message: "Deployment test has been executed. Once you proceed, the test system will be deleted."
         }
     }
 }

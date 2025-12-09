@@ -2,12 +2,14 @@ package abaputils
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -15,12 +17,36 @@ const numberOfEntriesPerPage = 100000
 const logOutputStatusLength = 10
 const logOutputTimestampLength = 29
 
+// Specifies which output option is used for logs
+type LogOutputManager struct {
+	LogOutput    string
+	PiperStep    string
+	FileNameStep string
+	StepReports  []piperutils.Path
+}
+
+func PersistArchiveLogsForPiperStep(logOutputManager *LogOutputManager) {
+	fileUtils := piperutils.Files{}
+	switch logOutputManager.PiperStep {
+	case "clone":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCloneGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
+	case "pull":
+		piperutils.PersistReportsAndLinks("abapEnvironmentPullGitRepo", "", fileUtils, logOutputManager.StepReports, nil)
+	case "checkoutBranch":
+		piperutils.PersistReportsAndLinks("abapEnvironmentCheckoutBranch", "", fileUtils, logOutputManager.StepReports, nil)
+	default:
+		log.Entry().Info("Cannot save log archive because no piper step was defined.")
+	}
+}
+
 // PollEntity periodically polls the action entity to get the status. Check if the import is still running
-func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) (string, error) {
+func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration, logOutputManager *LogOutputManager) (string, error) {
 
 	log.Entry().Info("Start polling the status...")
 	var statusCode string = "R"
 	var err error
+
+	api.initialRequest()
 
 	for {
 		// pullEntity, responseStatus, err := api.GetStatus(failureMessageClonePull+repositoryName, connectionDetails, client)
@@ -31,7 +57,7 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 
 		if statusCode != "R" && statusCode != "Q" {
 
-			PrintLogs(api)
+			PrintLogs(api, logOutputManager)
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -39,31 +65,66 @@ func PollEntity(api SoftwareComponentApiInterface, pollIntervall time.Duration) 
 	return statusCode, nil
 }
 
-func PrintLogs(api SoftwareComponentApiInterface) {
-	// connectionDetails.URL = connectionDetails.URL + "?$expand=to_Log_Overview"
-	results, err := api.GetLogOverview()
-	if err != nil || len(results) == 0 {
-		// return if no logs are available
-		return
+func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputManager) {
+
+	// Get Execution Logs
+	executionLogs, err := api.GetExecutionLog()
+	if err == nil {
+		printExecutionLogs(executionLogs)
 	}
+
+	results, _ := api.GetLogOverview()
 
 	// Sort logs
 	sort.SliceStable(results, func(i, j int) bool {
 		return results[i].Index < results[j].Index
 	})
 
-	printOverview(results)
+	printOverview(results, api)
 
-	// Print Details
-	for _, logEntryForDetails := range results {
-		printLog(logEntryForDetails, api)
+	if logOutputManager.LogOutput == "ZIP" {
+		// get zip file as byte array
+		zipfile, err := api.GetLogArchive()
+		// Saving logs in file and adding to piperutils to archive file
+		if err == nil {
+			fileName := "LogArchive-" + logOutputManager.FileNameStep + "-" + strings.Replace(api.getRepositoryName(), "/", "_", -1) + "-" + api.getUUID() + "_" + time.Now().Format("2006-01-02T15:04:05") + ".zip"
+
+			err = os.WriteFile(fileName, zipfile, 0o644)
+
+			if err == nil {
+				log.Entry().Infof("Writing %s file was successful", fileName)
+				logOutputManager.StepReports = append(logOutputManager.StepReports, piperutils.Path{Target: fileName, Name: "Log_Archive_" + api.getUUID(), Mandatory: true})
+			}
+		}
+
+	} else {
+		// Print Details
+		if len(results) != 0 {
+			for _, logEntryForDetails := range results {
+				printLog(logEntryForDetails, api)
+			}
+		}
+		AddDefaultDashedLine(1)
 	}
-	AddDefaultDashedLine(1)
 
-	return
 }
 
-func printOverview(results []LogResultsV2) {
+func printExecutionLogs(executionLogs ExecutionLog) {
+	log.Entry().Infof("\n")
+	AddDefaultDashedLine(1)
+	log.Entry().Infof("Execution Logs")
+	AddDefaultDashedLine(1)
+	for _, entry := range executionLogs.Value {
+		log.Entry().Infof("%7s - %s", entry.Type, entry.Descr)
+	}
+	AddDefaultDashedLine(1)
+}
+
+func printOverview(results []LogResultsV2, api SoftwareComponentApiInterface) {
+
+	if len(results) == 0 {
+		return
+	}
 
 	logOutputPhaseLength, logOutputLineLength := calculateLenghts(results)
 
@@ -76,7 +137,7 @@ func printOverview(results []LogResultsV2) {
 	printDashedLine(logOutputLineLength)
 
 	for _, logEntry := range results {
-		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("| %-"+fmt.Sprint(logOutputPhaseLength)+"s | %"+fmt.Sprint(logOutputStatusLength)+"s | %-"+fmt.Sprint(logOutputTimestampLength)+"s |", logEntry.Name, logEntry.Status, api.ConvertTime(logEntry.Timestamp))
 	}
 	printDashedLine(logOutputLineLength)
 }
@@ -94,13 +155,13 @@ func calculateLenghts(results []LogResultsV2) (int, int) {
 }
 
 func printDashedLine(i int) {
-	log.Entry().Infof(strings.Repeat("-", i))
+	log.Entry().Info(strings.Repeat("-", i))
 }
 
 func printLog(logOverviewEntry LogResultsV2, api SoftwareComponentApiInterface) {
 
 	page := 0
-	printHeader(logOverviewEntry)
+	printHeader(logOverviewEntry, api)
 	for {
 		logProtocols, count, err := api.GetLogProtocol(logOverviewEntry, page)
 		printLogProtocolEntries(logOverviewEntry, logProtocols)
@@ -118,11 +179,11 @@ func printLogProtocolEntries(logEntry LogResultsV2, logProtocols []LogProtocol) 
 	})
 	if logEntry.Status == `Error` {
 		for _, entry := range logProtocols {
-			log.Entry().Info(entry.Description)
+			log.Entry().Infof("%s %s", entry.Type, entry.Description)
 		}
 	} else {
 		for _, entry := range logProtocols {
-			log.Entry().Debug(entry.Description)
+			log.Entry().Debugf("%s %s", entry.Type, entry.Description)
 		}
 	}
 }
@@ -132,21 +193,21 @@ func allLogsHaveBeenPrinted(protocols []LogProtocol, page int, count int, err er
 	return (err != nil || allPagesHaveBeenRead || reflect.DeepEqual(protocols, []LogProtocol{}))
 }
 
-func printHeader(logEntry LogResultsV2) {
-	if logEntry.Status != `Success` {
+func printHeader(logEntry LogResultsV2, api SoftwareComponentApiInterface) {
+	if logEntry.Status == `Error` {
 		log.Entry().Infof("\n")
 		AddDefaultDashedLine(1)
-		log.Entry().Infof("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Infof("%s (%v)", logEntry.Name, api.ConvertTime(logEntry.Timestamp))
 		AddDefaultDashedLine(1)
 	} else {
 		log.Entry().Debugf("\n")
 		AddDebugDashedLine()
-		log.Entry().Debugf("%s (%v)", logEntry.Name, ConvertTime(logEntry.Timestamp))
+		log.Entry().Debugf("%s (%v)", logEntry.Name, api.ConvertTime(logEntry.Timestamp))
 		AddDebugDashedLine()
 	}
 }
 
-// GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
+// GetRepositories for parsing one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
 func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
@@ -176,6 +237,7 @@ func GetRepositories(config *RepositoriesConfig, branchRequired bool) ([]Reposit
 	if config.RepositoryName != "" && !branchRequired {
 		repositories = append(repositories, Repository{Name: config.RepositoryName, CommitID: config.CommitID})
 	}
+
 	if len(config.RepositoryNames) > 0 {
 		for _, repository := range config.RepositoryNames {
 			repositories = append(repositories, Repository{Name: repository})
@@ -193,6 +255,25 @@ func (repo *Repository) GetRequestBodyForCommitOrTag() (requestBodyString string
 	return requestBodyString
 }
 
+func (repo *Repository) GetRequestBodyForBYOGCredentials() (string, error) {
+	var byogBodyString string
+
+	if repo.ByogAuthMethod != "" {
+		byogBodyString += `, "auth_method":"` + repo.ByogAuthMethod + `"`
+	}
+	if repo.ByogUsername != "" {
+		byogBodyString += `, "username":"` + repo.ByogUsername + `"`
+	} else {
+		return "", fmt.Errorf("Failed to get BYOG credentials: %w", errors.New("Username for BYOG is missing, please provide git username to authenticate"))
+	}
+	if repo.ByogPassword != "" {
+		byogBodyString += `, "password":"` + repo.ByogPassword + `"`
+	} else {
+		return "", fmt.Errorf("Failed to get BYOG credentials: %w", errors.New("Password/Token for BYOG is missing, please provide git password or token to authenticate"))
+	}
+	return byogBodyString, nil
+}
+
 func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	if repo.CommitID != "" {
 		logString = ", commit '" + repo.CommitID + "'"
@@ -202,13 +283,30 @@ func (repo *Repository) GetLogStringForCommitOrTag() (logString string) {
 	return logString
 }
 
-func (repo *Repository) GetCloneRequestBody() (body string) {
+func (repo *Repository) GetCloneRequestBodyWithSWC() (body string) {
 	if repo.CommitID != "" && repo.Tag != "" {
 		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
 	}
 	requestBodyString := repo.GetRequestBodyForCommitOrTag()
 	body = `{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + requestBodyString + `}`
 	return body
+}
+
+func (repo *Repository) GetCloneRequestBody() (body string, err error) {
+	if repo.CommitID != "" && repo.Tag != "" {
+		log.Entry().WithField("Tag", repo.Tag).WithField("Commit ID", repo.CommitID).Info("The commit ID takes precedence over the tag")
+	}
+	requestBodyString := repo.GetRequestBodyForCommitOrTag()
+	var byogBodyString = ""
+	if repo.IsByog {
+		byogBodyString, err = repo.GetRequestBodyForBYOGCredentials()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	body = `{"branch_name":"` + repo.Branch + `"` + requestBodyString + byogBodyString + `}`
+	return body, nil
 }
 
 func (repo *Repository) GetCloneLogString() (logString string) {

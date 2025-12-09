@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -66,10 +67,8 @@ func (p *sonarExecuteScanReports) persist(stepConfig sonarExecuteScanOptions, gc
 		{FilePattern: "**/sonarscan.json", ParamRef: "", StepResultType: "sonarqube"},
 		{FilePattern: "**/sonarscan-result.json", ParamRef: "", StepResultType: "sonarqube"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
 		return
@@ -155,7 +154,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 	var createSonarExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes the Sonar scanner",
-		Long:  `The step executes the [sonar-scanner](https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner) cli command to scan the defined sources and publish the results to a SonarQube instance.`,
+		Long:  `The step executes the [sonar-scanner](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner/) cli command to scan the defined sources and publish the results to a SonarQube instance. Check [source repository](https://github.com/SonarSource/sonar-scanner-cli) for more details.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -163,15 +162,29 @@ func SonarExecuteScanCommand() *cobra.Command {
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
 
@@ -202,6 +215,11 @@ func SonarExecuteScanCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -212,7 +230,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -229,10 +247,23 @@ func SonarExecuteScanCommand() *cobra.Command {
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			sonarExecuteScan(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -246,20 +277,20 @@ func SonarExecuteScanCommand() *cobra.Command {
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use serverUrl parameter instead")
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for communication with the SonarQube instance.")
-	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Sonar backend.")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Sonar backend. Jenkins only: The serverUrl parameter requires the [`instance`](#instance) parameter to be explicitly set to an empty string, as it will have no effect otherwise.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
-	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip`, "URL to the sonar-scanner-cli archive.")
+	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.2.0.5079-linux-x64.zip`, "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for the version when reporting the results for the project.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The project version that is reported to SonarQube.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.ProjectKey, "projectKey", os.Getenv("PIPER_projectKey"), "The project key identifies the project in SonarQube.")
 	cmd.Flags().StringSliceVar(&stepConfig.CoverageExclusions, "coverageExclusions", []string{}, "A list of patterns that should be excluded from the coverage scan.")
-	cmd.Flags().BoolVar(&stepConfig.InferJavaBinaries, "inferJavaBinaries", false, "Find the location of generated Java class files in all modules and pass the option `sonar.java.binaries to the sonar tool.")
+	cmd.Flags().BoolVar(&stepConfig.InferJavaBinaries, "inferJavaBinaries", false, "Find the location of generated Java class files in all modules and pass the option `sonar.java.binaries` to the sonar tool.")
 	cmd.Flags().BoolVar(&stepConfig.InferJavaLibraries, "inferJavaLibraries", false, "If the parameter `m2Path` is configured for the step `mavenExecute` in the general section of the configuration, pass it as option `sonar.java.libraries` to the sonar tool.")
 	cmd.Flags().StringSliceVar(&stepConfig.Options, "options", []string{}, "A list of options which are passed to the sonar-scanner.")
-	cmd.Flags().BoolVar(&stepConfig.WaitForQualityGate, "waitForQualityGate", false, "Whether the scan should wait for and consider the result of the quality gate.")
+	cmd.Flags().BoolVar(&stepConfig.WaitForQualityGate, "waitForQualityGate", false, "Whether the scan should wait for and consider the result of the quality gate. This sets parameter `sonar.qualitygate.wait`.")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to. Automatically inferred from environment variables on supported orchestrators if `inferBranchName` is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.InferBranchName, "inferBranchName", false, "Whether to infer the `branchName` parameter automatically based on the orchestrator-specific environment variable in runs of the pipeline.")
 	cmd.Flags().StringVar(&stepConfig.ChangeID, "changeId", os.Getenv("PIPER_changeId"), "Pull-Request only: The id of the pull-request. Automatically inferred from environment variables on supported orchestrators.")
@@ -283,6 +314,18 @@ func sonarExecuteScanMetadata() config.StepData {
 			Name:        "sonarExecuteScan",
 			Aliases:     []config.Alias{},
 			Description: "Executes the Sonar scanner",
+			Errors: []config.StepError{
+				{
+					Pattern:  "QUALITY GATE STATUS: FAILED",
+					Message:  "SonarQube quality gate failed. Review code quality issues and fix them to meet quality standards.",
+					Category: "quality",
+				},
+				{
+					Pattern:  "Error during parsing of generic test execution report",
+					Message:  "Test execution report parsing failed. Verify test report format matches SonarQube expectations.",
+					Category: "configuration",
+				},
+			},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -331,6 +374,12 @@ func sonarExecuteScanMetadata() config.StepData {
 								Name: "sonarTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:    "sonarSystemtrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "sonar",
+							},
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
@@ -363,7 +412,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip`,
+						Default:     `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.2.0.5079-linux-x64.zip`,
 					},
 					{
 						Name:        "versioningModel",
@@ -592,7 +641,7 @@ func sonarExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.8", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:11", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

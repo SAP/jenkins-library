@@ -9,9 +9,29 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestCLIFailure(t *testing.T) {
+	t.Run("function error leads to pipeline error", func(t *testing.T) {
+
+		execRunner := &mock.ExecMockRunner{}
+		autils := abaputils.AbapUtils{
+			Exec: execRunner,
+		}
+		options := abapEnvironmentRunATCCheckOptions{}
+		fileUtils := piperutils.Files{}
+		client := piperhttp.Client{}
+
+		err := runAbapEnvironmentRunATCCheck(autils, client, options, fileUtils)
+
+		assert.Error(t, err)
+
+	})
+}
 
 func TestHostConfig(t *testing.T) {
 	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
@@ -58,10 +78,10 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 
 		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {

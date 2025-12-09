@@ -33,7 +33,7 @@ const (
 	integrationJsonReport       = "integration-report.out"
 	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
 	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.4.0"
+	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0"
 	sbomFilename                = "bom-golang.xml"
 )
 
@@ -442,7 +442,7 @@ func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
 
-	log.Entry().Infof("lint report: \n" + outputBuffer.String())
+	log.Entry().Infof("lint report: \n%s", outputBuffer.String())
 	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
 	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
 	if err != nil {
@@ -570,7 +570,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	utils.Stderr(outBuffer)
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
 	}
 
 	if outBuffer.String() != "main" {

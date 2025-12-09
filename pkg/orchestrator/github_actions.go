@@ -14,7 +14,7 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -31,14 +31,15 @@ type githubActionsConfigProvider struct {
 
 type run struct {
 	fetched   bool
-	Status    string    `json:"status"`
 	StartedAt time.Time `json:"run_started_at"`
 }
 
+// used to unmarshal list jobs of the current workflow run into []job
 type job struct {
-	ID      int64  `json:"id"`
-	Name    string `json:"name"`
-	HtmlURL string `json:"html_url"`
+	ID         int64  `json:"id"`
+	Name       string `json:"name"`
+	HtmlURL    string `json:"html_url"`
+	Conclusion string `json:"conclusion"`
 }
 
 type fullLog struct {
@@ -75,19 +76,26 @@ func (g *githubActionsConfigProvider) OrchestratorType() string {
 	return "GitHubActions"
 }
 
-// BuildStatus returns current run status
+// BuildStatus returns current run status by looking at all jobs of the current workflow run
+// if any job has conclusion "failure" the whole run is considered failed
+// if any job has conclusion "cancelled" the whole run is considered aborted
+// otherwise the run is considered successful
 func (g *githubActionsConfigProvider) BuildStatus() string {
-	g.fetchRunData()
-	switch g.runData.Status {
-	case "success":
-		return BuildStatusSuccess
-	case "cancelled":
-		return BuildStatusAborted
-	case "in_progress":
-		return BuildStatusInProgress
-	default:
+	if err := g.fetchJobs(); err != nil {
+		log.Entry().Debugf("fetching jobs: %s", err)
 		return BuildStatusFailure
 	}
+
+	for _, j := range g.jobs {
+		switch j.Conclusion {
+		case "failure":
+			return BuildStatusFailure
+		case "cancelled":
+			return BuildStatusAborted
+		}
+	}
+
+	return BuildStatusSuccess
 }
 
 // FullLogs returns the whole logfile for the current pipeline run
@@ -109,7 +117,7 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
-			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, true)
+			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 1)
 			if err != nil {
 				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
 				// Therefore, ignore this error.
@@ -261,12 +269,7 @@ func (g *githubActionsConfigProvider) fetchRunData() {
 		return
 	}
 
-	runId, err := g.runIdInt64()
-	if err != nil {
-		log.Entry().Errorf("fetchRunData: %s", err)
-	}
-
-	runData, resp, err := g.client.Actions.GetWorkflowRunByID(g.ctx, g.owner, g.repo, runId)
+	runData, resp, err := g.client.Actions.GetWorkflowRunByID(g.ctx, g.owner, g.repo, g.runIdInt64())
 	if err != nil || resp.StatusCode != 200 {
 		log.Entry().Errorf("failed to get API data: %s", err)
 		return
@@ -279,7 +282,6 @@ func (g *githubActionsConfigProvider) fetchRunData() {
 func convertRunData(runData *github.WorkflowRun) run {
 	startedAtTs := piperutils.SafeDereference(runData.RunStartedAt)
 	return run{
-		Status:    piperutils.SafeDereference(runData.Status),
 		StartedAt: startedAtTs.Time,
 	}
 }
@@ -289,12 +291,7 @@ func (g *githubActionsConfigProvider) fetchJobs() error {
 		return nil
 	}
 
-	runId, err := g.runIdInt64()
-	if err != nil {
-		return err
-	}
-
-	jobs, resp, err := g.client.Actions.ListWorkflowJobs(g.ctx, g.owner, g.repo, runId, nil)
+	jobs, resp, err := g.client.Actions.ListWorkflowJobs(g.ctx, g.owner, g.repo, g.runIdInt64(), nil)
 	if err != nil || resp.StatusCode != 200 {
 		return errors.Wrap(err, "failed to get API data")
 	}
@@ -312,22 +309,24 @@ func convertJobs(jobs []*github.WorkflowJob) []job {
 	result := make([]job, 0, len(jobs))
 	for _, j := range jobs {
 		result = append(result, job{
-			ID:      j.GetID(),
-			Name:    j.GetName(),
-			HtmlURL: j.GetHTMLURL(),
+			ID:         j.GetID(),
+			Name:       j.GetName(),
+			HtmlURL:    j.GetHTMLURL(),
+			Conclusion: j.GetConclusion(),
 		})
 	}
 	return result
 }
 
-func (g *githubActionsConfigProvider) runIdInt64() (int64, error) {
+func (g *githubActionsConfigProvider) runIdInt64() int64 {
 	strRunId := g.BuildID()
 	runId, err := strconv.ParseInt(strRunId, 10, 64)
 	if err != nil {
-		return 0, errors.Wrapf(err, "invalid GITHUB_RUN_ID value %s: %s", strRunId, err)
+		log.Entry().Debugf("invalid GITHUB_RUN_ID value %s: %s", strRunId, err)
+		return 0
 	}
 
-	return runId, nil
+	return runId
 }
 
 func getOwnerAndRepoNames() (string, string) {

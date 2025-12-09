@@ -24,18 +24,6 @@ docker run ...  -v /var/run/docker.sock:/var/run/docker.sock ...
 
 Project "Piper" requires a set of plugins installed on your Jenkins server. This set may evolve in the future. Make sure that all plugins of the appropriate versions are installed.
 
-The Cx server repository contains an [up-to-date list][devops-cxs-plugins] of the required plugins. To ease the installation, download the list with the following command and use the [Jenkins client][jenkins-doc-client]:
-
-```
-curl -o plugins.txt https://raw.githubusercontent.com/SAP/devops-docker-cx-server/master/jenkins-master/plugins.txt
-```
-
-On the Jenkins server, run the following command with a user that has administration rights:
-
-```
-cat plugins.txt | awk '{system("java " "-jar jenkins-cli.jar -s http://localhost:8080 -auth ${ADM_USER}:${ADM_PASSWD} install-plugin " $1)}'
-```
-
 ## Shared Library
 
 Shared libraries extending the Jenkins pipeline are defined within the Jenkins system configuration. A library is defined by a link to its source repository and an appropriate version identifier. To add the project "Piper"s library, execute the following steps:
@@ -100,7 +88,5 @@ If you face such a [user permission issue][piper-issue-781], choose between the 
 [docker-install]: https://docs.docker.com/install
 [dockerhub-node]: https://hub.docker.com/_/node/
 [docker-getstarted]: https://docs.docker.com/get-started/
-[jenkins-doc-client]: https://jenkins.io/doc/book/managing/cli/
 [jenkins-docker-image]: https://github.com/jenkinsci/docker/
 [piper-issue-781]: https://github.com/SAP/jenkins-library/issues/781
-[devops-cxs-plugins]: https://github.com/SAP/devops-docker-cx-server/blob/master/jenkins-master/plugins.txt

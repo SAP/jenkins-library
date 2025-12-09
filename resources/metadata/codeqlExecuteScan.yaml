@@ -44,7 +44,7 @@ spec:
         description: Defines the build tool which is used for building the project.
         longDescription: |-
           Based on the build tool the step will try to auto build the project. The step will try to auto select
-          the language and the build command. You can override the language and the build command by specifiying it seperatly.
+          the language and the build command.
         mandatory: true
         scope:
           - GENERAL
@@ -68,7 +68,7 @@ spec:
           - STEPS
       - name: language
         type: string
-        description: "The programming language used to analyze."
+        description: "The programming language used to analyze. Use coma separation and select custom build tool to analyze multiple languages"
         scope:
           - PARAMETERS
           - STAGES
@@ -209,6 +209,69 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/globalSettingsFile
+      - name: databaseCreateFlags
+        type: string
+        description: "A space-separated string of flags for the 'codeql database create' command."
+        longDescription: |-
+          A space-separated string of flags for the 'codeql database create' command.
+
+          If both long and short forms of the same flag are provided, the long form takes precedence.
+          Example input: "--threads=1 --ram=2000"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: databaseAnalyzeFlags
+        type: string
+        description: "A space-separated string of flags for the 'codeql database analyze' command."
+        longDescription: |-
+          A space-separated string of flags for the 'codeql database analyze' command.
+
+          If both long and short forms of the same flag are provided, the long form takes precedence.
+          Example input: "--threads=1 --ram=2000"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: customCommand
+        type: string
+        description: "A custom user-defined command to run between codeql analysis and results upload."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: transformQuerySuite
+        type: string
+        description: "A transform string that will be applied to the querySuite using the sed command."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: paths
+        type: string
+        description: |
+          List of file or directory patterns to include.
+          Each entry must be on its own line, e.g.:
+            src/**
+            lib/**
+          Note: This parameter is only applicable for interpreted languages.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: pathsIgnore
+        type: string
+        pathsIgnore:
+        description: |
+          List of file or directory patterns to ignore.
+          Each entry must be on its own line, e.g.:
+            **/*.md
+            docs/**
+          Note: This parameter is only applicable for interpreted languages.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - image: ""
   outputs:

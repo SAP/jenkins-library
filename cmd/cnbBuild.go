@@ -6,8 +6,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"syscall"
+	"slices"
 
+	"dario.cat/mergo"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -21,9 +22,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
-
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/imdario/mergo"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -170,18 +169,17 @@ func cleanDir(dir string, utils cnbutils.BuildUtils) error {
 }
 
 func extractZip(source, target string) error {
-	if isZip(source) {
-		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
-		_, err := piperutils.Unzip(source, target)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
-		}
-	} else {
+	if !isZip(source) {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.New("application path must be a directory or zip")
 	}
 
+	log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
+	_, err := piperutils.Unzip(source, target)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
+	}
 	return nil
 }
 
@@ -298,8 +296,10 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	if err != nil {
 		log.Entry().Warnf("failed to retrieve dockerImage configuration: '%v'", err)
 	}
+	telemetry.WithBuilder(dockerImage)
 
-	telemetry.WithImage(dockerImage)
+	buildTool, _ := getBuildToolFromStageConfig("cnbBuild")
+	telemetry.WithBuildTool(buildTool)
 
 	cnbBuildConfig := buildsettings.BuildOptions{
 		CreateBOM:         config.CreateBOM,
@@ -346,17 +346,28 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	buildSummary.Print()
 
 	if config.CreateBOM {
-		err = syft.GenerateSBOM(config.SyftDownloadURL, filepath.Dir(config.DockerConfigJSON), utils, utils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		log.Entry().Debugf("Creating sbom for %d images\n", len(commonPipelineEnvironment.container.imageNameTags))
+		syftScanner, err := syft.CreateSyftScanner(config.SyftDownloadURL, utils, httpClient)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return errors.Wrap(err, "failed to create syft scanner file")
+		}
+		// images produces with cnb have sboms
+		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger,go-module-binary-cataloger,apk-db-cataloger,dpkg-db-cataloger,rpm-db-cataloger")
+		syftScanner.AddArgument("--exclude=**/paketo-buildpacks_npm-install/launch-modules/*.spdx.*")
+		err = syftScanner.ScanImages(filepath.Dir(config.DockerConfigJSON), utils, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return errors.Wrap(err, "failed to create BOM file")
 		}
 	}
 
-	return telemetry.Export()
+	return nil
 }
 
 func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, imageSummary *cnbutils.ImageSummary, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
+	telemetry.WithRunImage(config.RunImage)
+
 	err := cleanDir("/layers", utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -390,10 +401,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 	config.BuildEnvVars["TMPDIR"] = tempdir
 
-	telemetrySegment := createInitialTelemetrySegment(config, utils)
-
 	include := ignore.CompileIgnoreLines("**/*")
-	exclude := ignore.CompileIgnoreLines("piper", ".pipeline", ".git")
+	exclude := ignore.CompileIgnoreLines("*/*piper", "*piper", ".pipeline", ".git")
 
 	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {
@@ -409,7 +418,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to parse %s", projDescPath)
 		}
-		telemetrySegment.WithProjectDescriptor(descriptor)
 
 		config.mergeEnvVars(descriptor.EnvVars)
 
@@ -441,8 +449,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve target image configuration")
 	}
-
-	telemetry.AddSegment(telemetrySegment.WithBuildpacksOverall(config.Buildpacks).WithKeyValues(config.BuildEnvVars))
 
 	if commonPipelineEnvironment.container.imageNameTag == "" {
 		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("%s://%s", targetImage.ContainerRegistry.Scheme, targetImage.ContainerRegistry.Host)
@@ -478,7 +484,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "could not resolve path")
+		return errors.Wrap(err, "could not resolve path")
 	}
 
 	target := "/workspace"
@@ -489,7 +495,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	if pathType != buildpacks.PathEnumArchive {
-		err = cnbutils.CopyProject(source, target, include, exclude, utils)
+		err = cnbutils.CopyProject(source, target, include, exclude, utils, false)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
@@ -532,12 +538,6 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		}
 	}
 
-	cnbRegistryAuth, err := cnbutils.GenerateCnbAuth(config.DockerConfigJSON, utils)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
-	}
-
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
@@ -553,7 +553,17 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		log.Entry().Info("skipping certificates update")
 	}
 
-	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbRegistryAuth)})
+	dockerKeychain, err := cnbutils.ParseDockerConfig(config.DockerConfigJSON, utils)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to parse dockerConfigJSON")
+	}
+	cnbAuthString, err := dockerKeychain.ToCNBString()
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
+	}
+	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbAuthString)})
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_PLATFORM_API=%s", platformAPIVersion)})
 
 	creatorArgs := []string{
@@ -569,6 +579,10 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	if config.RunImage != "" {
+		if !dockerKeychain.AuthExistsForImage(config.RunImage) {
+			log.Entry().Warnf("provided dockerConfigJSON does not contain credentials for the run-image %q, anonymous auth will be used", config.RunImage)
+		}
+
 		creatorArgs = append(creatorArgs, "-run-image", config.RunImage)
 	}
 
@@ -577,21 +591,18 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	containerImage := path.Join(targetImage.ContainerRegistry.Host, targetImage.ContainerImageName)
+	if !dockerKeychain.AuthExistsForImage(containerImage) {
+		log.Entry().Warnf("provided dockerConfigJSON does not contain credentials for the target image %q, anonymous auth will be used", containerImage)
+	}
 	for _, tag := range config.AdditionalTags {
 		target := fmt.Sprintf("%s:%s", containerImage, tag)
-		if !piperutils.ContainsString(creatorArgs, target) {
+		if !slices.Contains(creatorArgs, target) {
 			creatorArgs = append(creatorArgs, "-tag", target)
 		}
 	}
 
 	creatorArgs = append(creatorArgs, fmt.Sprintf("%s:%s", containerImage, targetImage.ContainerImageTag))
-	attr := &syscall.SysProcAttr{
-		Credential: &syscall.Credential{
-			Uid:         uint32(uid),
-			Gid:         uint32(gid),
-			NoSetGroups: true,
-		},
-	}
+	attr := getSysProcAttr(uid, gid)
 
 	err = utils.RunExecutableWithAttrs(creatorPath, attr, creatorArgs...)
 	if err != nil {
@@ -610,7 +621,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 
 	if len(config.PreserveFiles) > 0 {
 		if pathType != buildpacks.PathEnumArchive {
-			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils)
+			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils, true)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
@@ -634,17 +645,4 @@ func expandEnvVars(envVars map[string]any) map[string]any {
 		}
 	}
 	return expandedEnvVars
-}
-
-func createInitialTelemetrySegment(config *cnbBuildOptions, utils cnbutils.BuildUtils) *buildpacks.Segment {
-	telemetrySegment := buildpacks.NewSegment()
-	projectPath, _, _ := config.resolvePath(utils)          // ignore error here, telemetry problems should not fail the build
-	buildTool, _ := getBuildToolFromStageConfig("cnbBuild") // ignore error here, telemetry problems should not fail the build
-
-	return telemetrySegment.WithBindings(config.Bindings).
-		WithTags(config.ContainerImageTag, config.AdditionalTags).
-		WithPath(projectPath).
-		WithEnv(config.BuildEnvVars).
-		WithBuildTool(buildTool).
-		WithBuildpacksFromConfig(config.Buildpacks)
 }

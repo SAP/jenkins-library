@@ -10,6 +10,7 @@ import com.sap.piper.tools.neo.WarAction
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
 
 @Field String STEP_NAME = getClass().getName()
 
@@ -413,7 +414,7 @@ private deployWithBearerToken(def credentialFilePath, Map configuration, Script 
     def myCurl = "curl --fail --silent --show-error --retry 12"
     def token_json = sh(
         script: """#!/bin/bash
-                    ${myCurl} -XPOST -u \"${oauthClientId}:${oauthClientSecret}\" \"${oauthUrl}/apitoken/v1?grant_type=client_credentials"
+                    ${myCurl} -XPOST -u ${q(oauthClientId)}:${q(oauthClientSecret)} ${q(oauthUrl)}/apitoken/v1?grant_type=client_credentials
                 """,
         returnStdout: true
     )
@@ -424,7 +425,7 @@ private deployWithBearerToken(def credentialFilePath, Map configuration, Script 
 
     def deploymentContentResponse = sh(
         script: """#!/bin/bash
-                    ${myCurl} -XPOST -H \"Authorization: Bearer ${token}\" -F file=@\"${deployArchive}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars\"
+                    ${myCurl} -XPOST -H "Authorization: Bearer ${token}" -F file=@${q(deployArchive)} https://slservice.${q(host)}/slservice/v1/oauth/accounts/${q(account)}/mtars
                 """,
         returnStdout: true
     )
@@ -434,7 +435,7 @@ private deployWithBearerToken(def credentialFilePath, Map configuration, Script 
     echo "[${STEP_NAME}] Deployment Id is '${deploymentId}'."
 
     def statusPollScript = """#!/bin/bash
-                                ${myCurl} -XGET -H \"Authorization: Bearer ${token}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars/${deploymentId}\"
+                                ${myCurl} -XGET -H "Authorization: Bearer ${token}" https://slservice.${q(host)}/slservice/v1/oauth/accounts/${q(account)}/mtars/${deploymentId}
                             """
     def statusResponse = sh(script: statusPollScript, returnStdout: true)
     def statusJson = readJSON text: statusResponse

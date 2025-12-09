@@ -26,7 +26,7 @@ import (
 )
 
 func TestGCSIntegrationClient(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	ctx := context.Background()
 	testdataPath, err := filepath.Abs("testdata/TestGCSIntegration")
 	assert.NoError(t, err)
@@ -38,9 +38,9 @@ func TestGCSIntegrationClient(t *testing.T) {
 			ExposedPorts:    []string{"4443/tcp"},
 			WaitingFor:      wait.ForListeningPort("4443/tcp"),
 			Cmd:             []string{"-scheme", "https", "-public-host", "localhost"},
-			BindMounts: map[string]string{
-				testdataPath: "/data",
-			},
+			Mounts: testcontainers.Mounts(
+				testcontainers.BindMount(testdataPath, "/data"),
+			),
 		},
 		Started: true,
 	}
@@ -63,9 +63,9 @@ func TestGCSIntegrationClient(t *testing.T) {
 
 	t.Run("Test list files - success", func(t *testing.T) {
 		bucketID := "sample-bucket"
-		gcsClient, err := gcs.NewClient(gcs.WithClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
+		gcsClient, err := gcs.NewClientLegacy(gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
-		fileNames, err := gcsClient.ListFiles(bucketID)
+		fileNames, err := gcsClient.ListFiles(ctx, bucketID)
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"dir/test_file2.yaml", "test_file.txt"}, fileNames)
 		err = gcsClient.Close()
@@ -74,10 +74,10 @@ func TestGCSIntegrationClient(t *testing.T) {
 
 	t.Run("Test list files in missing bucket", func(t *testing.T) {
 		bucketID := "missing-bucket"
-		gcsClient, err := gcs.NewClient(gcs.WithClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
+		gcsClient, err := gcs.NewClientLegacy(gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		defer gcsClient.Close()
 		assert.NoError(t, err)
-		_, err = gcsClient.ListFiles(bucketID)
+		_, err = gcsClient.ListFiles(ctx, bucketID)
 		assert.Error(t, err, "bucket doesn't exist")
 		err = gcsClient.Close()
 		assert.NoError(t, err)
@@ -85,23 +85,24 @@ func TestGCSIntegrationClient(t *testing.T) {
 
 	t.Run("Test upload & download files - success", func(t *testing.T) {
 		bucketID := "upload-bucket"
+		ctx := context.Background()
 		file1Reader, file1Writer := io.Pipe()
 		file2Reader, file2Writer := io.Pipe()
-		gcsClient, err := gcs.NewClient(gcs.WithOpenFileFunction(openFileMock), gcs.WithCreateFileFunction(getCreateFileMock(file1Writer, file2Writer)),
-			gcs.WithClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
+		gcsClient, err := gcs.NewClientLegacy(gcs.WithOpenFileFunction(openFileMock), gcs.WithCreateFileFunction(getCreateFileMock(file1Writer, file2Writer)),
+			gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
-		err = gcsClient.UploadFile(bucketID, "file1", "test/file1")
+		err = gcsClient.UploadFile(ctx, bucketID, "file1", "test/file1")
 		assert.NoError(t, err)
-		err = gcsClient.UploadFile(bucketID, "folder/file2", "test/folder/file2")
+		err = gcsClient.UploadFile(ctx, bucketID, "folder/file2", "test/folder/file2")
 		assert.NoError(t, err)
-		fileNames, err := gcsClient.ListFiles(bucketID)
+		fileNames, err := gcsClient.ListFiles(ctx, bucketID)
 		assert.NoError(t, err)
 		assert.Equal(t, []string{"placeholder", "test/file1", "test/folder/file2"}, fileNames)
-		go gcsClient.DownloadFile(bucketID, "test/file1", "file1")
+		go gcsClient.DownloadFile(ctx, bucketID, "test/file1", "file1")
 		fileContent, err := io.ReadAll(file1Reader)
 		assert.NoError(t, err)
 		assert.Equal(t, file1Content, string(fileContent))
-		go gcsClient.DownloadFile(bucketID, "test/folder/file2", "file2")
+		go gcsClient.DownloadFile(ctx, bucketID, "test/folder/file2", "file2")
 		fileContent, err = io.ReadAll(file2Reader)
 		assert.NoError(t, err)
 		assert.Equal(t, file2Content, string(fileContent))
@@ -112,22 +113,22 @@ func TestGCSIntegrationClient(t *testing.T) {
 
 	t.Run("Test upload missing file", func(t *testing.T) {
 		bucketID := "upload-bucket"
-		gcsClient, err := gcs.NewClient(gcs.WithOpenFileFunction(openFileMock),
-			gcs.WithClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
+		gcsClient, err := gcs.NewClientLegacy(gcs.WithOpenFileFunction(openFileMock),
+			gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
-		err = gcsClient.UploadFile(bucketID, "file3", "test/file3")
-		assert.Contains(t, err.Error(), "could not open source file")
+		err = gcsClient.UploadFile(ctx, bucketID, "file3", "test/file3")
+		assert.Contains(t, err.Error(), "failed to open source file")
 		err = gcsClient.Close()
 		assert.NoError(t, err)
 	})
 
 	t.Run("Test download missing file", func(t *testing.T) {
 		bucketID := "upload-bucket"
-		gcsClient, err := gcs.NewClient(gcs.WithOpenFileFunction(openFileMock),
-			gcs.WithClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
+		gcsClient, err := gcs.NewClientLegacy(gcs.WithOpenFileFunction(openFileMock),
+			gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
-		err = gcsClient.DownloadFile(bucketID, "test/file3", "file3")
-		assert.Contains(t, err.Error(), "could not open source file")
+		err = gcsClient.DownloadFile(ctx, bucketID, "test/file3", "file3")
+		assert.Contains(t, err.Error(), "failed to open source file")
 		err = gcsClient.Close()
 		assert.NoError(t, err)
 	})
@@ -136,10 +137,10 @@ func TestGCSIntegrationClient(t *testing.T) {
 		bucketID := "upload-bucket"
 		_, file1Writer := io.Pipe()
 		_, file2Writer := io.Pipe()
-		gcsClient, err := gcs.NewClient(gcs.WithOpenFileFunction(openFileMock), gcs.WithCreateFileFunction(getCreateFileMock(file1Writer, file2Writer)),
-			gcs.WithClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
+		gcsClient, err := gcs.NewClientLegacy(gcs.WithOpenFileFunction(openFileMock), gcs.WithCreateFileFunction(getCreateFileMock(file1Writer, file2Writer)),
+			gcs.WithGCSClientOptions(option.WithEndpoint(endpoint), option.WithoutAuthentication(), option.WithHTTPClient(&httpclient)))
 		assert.NoError(t, err)
-		err = gcsClient.DownloadFile(bucketID, "placeholder", "file3")
+		err = gcsClient.DownloadFile(ctx, bucketID, "placeholder", "file3")
 		assert.Contains(t, err.Error(), "could not create target file")
 		err = gcsClient.Close()
 		assert.NoError(t, err)

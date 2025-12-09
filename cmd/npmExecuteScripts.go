@@ -1,16 +1,22 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *npmExecuteScriptsCommonPipelineEnvironment) {
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
+	npmExecutorOptions := npm.ExecutorOptions{
+		DefaultNpmRegistry: config.DefaultNpmRegistry,
+		PnpmVersion:        config.PnpmVersion,
+	}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runNpmExecuteScripts(npmExecutor, &config, commonPipelineEnvironment)
@@ -85,9 +91,11 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
+	buildCoordinates := []versioning.Coordinates{}
+
 	if config.Publish {
 		if len(config.BuildDescriptorList) > 0 {
-			err = npmExecutor.PublishAllPackages(config.BuildDescriptorList, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish)
+			err = npmExecutor.PublishAllPackages(config.BuildDescriptorList, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish, &buildCoordinates)
 			if err != nil {
 				return err
 			}
@@ -97,11 +105,24 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 				return err
 			}
 
-			err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish)
+			err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish, &buildCoordinates)
 			if err != nil {
 				return err
 			}
 		}
+	}
+
+	if config.CreateBuildArtifactsMetadata {
+		if len(buildCoordinates) == 0 {
+			log.Entry().Warnf("unable to identify artifact coordinates for the npm packages published")
+			return nil
+		}
+
+		var buildArtifacts build.BuildArtifacts
+
+		buildArtifacts.Coordinates = buildCoordinates
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.npmBuildArtifacts = string(jsonResult)
 	}
 
 	return nil

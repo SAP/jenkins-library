@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -54,6 +55,8 @@ type kubernetesDeployOptions struct {
 	SetupScript                string                 `json:"setupScript,omitempty"`
 	VerificationScript         string                 `json:"verificationScript,omitempty"`
 	TeardownScript             string                 `json:"teardownScript,omitempty"`
+	InsecureSkipTLSVerify      bool                   `json:"insecureSkipTLSVerify,omitempty"`
+	CACertificate              string                 `json:"CACertificate,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -95,21 +98,36 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.ContainerRegistryUser)
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.KubeToken)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
+			log.RegisterSecret(stepConfig.CACertificate)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -138,6 +156,11 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -146,7 +169,7 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -163,10 +186,23 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			kubernetesDeploy(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -191,7 +227,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
-	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command")
+	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command. It is enabled by default and this can cause race conditions, blocked deletions or lost in-cluster state. If it's not a required behavior, then disable it.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().IntVar(&stepConfig.HelmTestWaitSeconds, "helmTestWaitSeconds", 300, "Number of seconds to wait for any individual Kubernetes operation (like Jobs for hooks). See https://helm.sh/docs/helm/helm_test/#options for further details")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
@@ -211,11 +247,13 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.KubeToken, "kubeToken", os.Getenv("PIPER_kubeToken"), "Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.")
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
-	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", `.pipeline/docker/config.json`, "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
+	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", `.pipeline/docker/config.json`, "Docker registry authentication (config.json) handling:\n\n1. If a Vault secret (default name: docker-config) exists with the required key, its content is copied to:\n   .pipeline/docker/config.json (this path is used as the parameter value).\n2. Usage by deploy tool:\n   - deployTool: kubectl\n     The file is read to create (or reuse) a Kubernetes Secret of type kubernetes.io/dockerconfigjson.\n   - deployTool: helm\n     The base64 content is passed as Helm value secret.dockerconfigjson. Your Helm chart MUST template a Secret using these values.\n3. Helm chart requirement:\n   Provide a template that creates the secret (e.g. templates/secret.yaml) and reference it in workload specs (Deployment/StatefulSet/etc.) via imagePullSecrets so pods can pull images.\n\nExample Helm templates:\n\ntemplates/secret.yaml:\n  {{`{{- if and .Values.secret.enabled (ne .Values.secret.name \\\"\\\") -}}`}}\n  apiVersion: v1\n  kind: Secret\n  metadata:\n    name: {{`{{ .Values.secret.name }}`}}\n  type: kubernetes.io/dockerconfigjson\n  data:\n    .dockerconfigjson: {{`{{ .Values.secret.dockerconfigjson | quote }}`}}\n  {{`{{- end }}`}}\n\ntemplates/deployment.yaml (excerpt):\n  spec:\n    template:\n      spec:\n        imagePullSecrets:\n          - name: {{`{{ .Values.secret.name }}`}}\n\nMore details about Docker credentials: https://docs.docker.com/engine/reference/commandline/login/")
 	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`.")
 	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "HTTP location of setup script")
 	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
 	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
+	cmd.Flags().BoolVar(&stepConfig.InsecureSkipTLSVerify, "insecureSkipTLSVerify", false, "This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. (Please note that for helm deployments this parameter is always set to true) [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)")
+	cmd.Flags().StringVar(&stepConfig.CACertificate, "CACertificate", `ca-certificate`, "Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate' with a subkey called 'CACertificate'. The data needs to be stored in the subkey value). This parameter is only supported for kubectl-based deployments. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.")
 
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("deployTool")
@@ -691,12 +729,34 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_teardownScript"),
 					},
+					{
+						Name:        "insecureSkipTLSVerify",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "CACertificate",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "CACertificateVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "ca-certificate",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   `ca-certificate`,
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
-				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
+				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}

@@ -1,7 +1,9 @@
+import static com.sap.piper.Prerequisites.checkScript
+import static com.sap.piper.BashUtils.quoteAndEscape as q
+
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
-import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 import java.nio.charset.StandardCharsets
 
@@ -27,6 +29,13 @@ void call(Map parameters = [:]) {
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
+            /*
+            Additional logic "?: ''" is necessary to ensure the environment
+            variable is set to an empty string if the value is null
+            Without this, the environment variable would be set to the string "null",
+            causing checks for an empty token in the Go application to fail.
+            */
+            "PIPER_systemTrustToken=${env.PIPER_systemTrustToken ?: ''}",
         ]) {
             String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
             String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
@@ -40,7 +49,7 @@ void call(Map parameters = [:]) {
             // & `legacyPRHandling` & `inferBranchName`
             // writePipelineEnv needs to be called here as owner and repository may come from the pipeline environment
             writePipelineEnv(script: script, piperGoPath: piperGoPath)
-            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
+            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata ${q('.pipeline/tmp/' + METADATA_FILE)}${customDefaultConfig}${customConfigArg}"))
             echo "Step Config: ${stepConfig}"
 
             List environment = []
@@ -65,17 +74,19 @@ void call(Map parameters = [:]) {
                         writePipelineEnv(script: script, piperGoPath: piperGoPath)
                         withEnv(environment) {
                             influxWrapper(script) {
-                                piperExecuteBin.credentialWrapper(config, credentialInfo) {
-                                    if (stepConfig.instance) {
-                                        withSonarQubeEnv(stepConfig.instance) {
-                                            echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
+                                try {
+                                    piperExecuteBin.credentialWrapper(config, credentialInfo) {
+                                        if (stepConfig.instance) {
+                                            withSonarQubeEnv(stepConfig.instance) {
+                                                echo "Instance is deprecated - please use serverUrl parameter to set URL to the Sonar backend."
+                                                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                            }
+                                        } else {
                                             sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                                            jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                         }
-                                    } else {
-                                        sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
                                     }
+                                } finally {
+                                    jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                                 }
                             }
                         }
@@ -133,7 +144,7 @@ private void loadCertificates(Map config) {
             def filename = new File(url).getName()
             filename = URLDecoder.decode(filename, StandardCharsets.UTF_8.name())
             sh "wget ${wgetOptions.join(' ')} ${url}"
-            sh "keytool ${keytoolOptions.join(' ')} -alias '${filename}' -file '${certificateFolder}${filename}'"
+            sh "keytool ${keytoolOptions.join(' ')} -alias ${q(filename)} -file '${certificateFolder}${filename}'"
         }
     }
 }

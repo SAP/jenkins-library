@@ -3,6 +3,7 @@ package splunk
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -110,21 +111,51 @@ func readCommonPipelineEnvironment(filePath string) string {
 }
 
 func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
+	var errorMessage string
+
+	if telemetryData.CustomData.ErrorCode != "0" {
+		if fatalErrorDetail := log.GetFatalErrorDetail(); fatalErrorDetail != nil {
+			var errorDetail map[string]any
+			if err := json.Unmarshal(fatalErrorDetail, &errorDetail); err == nil {
+				var parts []string
+
+				if messageVal, exists := errorDetail["message"]; exists && messageVal != nil {
+					parts = append(parts, fmt.Sprintf("%v", messageVal))
+				}
+
+				if errorVal, exists := errorDetail["error"]; exists && errorVal != nil {
+					parts = append(parts, fmt.Sprintf("%v", errorVal))
+				}
+
+				if len(parts) > 0 {
+					errorMessage = strings.Join(parts, " ")
+				}
+			}
+		}
+	}
 
 	monitoringData := MonitoringData{
-		PipelineUrlHash: telemetryData.PipelineURLHash,
-		BuildUrlHash:    telemetryData.BuildURLHash,
-		StageName:       telemetryData.StageName,
-		StepName:        telemetryData.BaseData.StepName,
-		ExitCode:        telemetryData.CustomData.ErrorCode,
-		Duration:        telemetryData.CustomData.Duration,
-		ErrorCode:       telemetryData.CustomData.ErrorCode,
-		ErrorCategory:   telemetryData.CustomData.ErrorCategory,
-		CorrelationID:   s.correlationID,
-		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
-		Branch:          readCommonPipelineEnvironment("git/branch"),
-		GitOwner:        readCommonPipelineEnvironment("git/organization"),
-		GitRepository:   readCommonPipelineEnvironment("git/repository"),
+		PipelineUrlHash:   telemetryData.PipelineURLHash,
+		BuildUrlHash:      telemetryData.BuildURLHash,
+		Orchestrator:      telemetryData.Orchestrator,
+		TemplateName:      telemetryData.TemplateName,
+		StageTemplateName: telemetryData.StageTemplateName,
+		PiperCommitHash:   telemetryData.PiperCommitHash,
+		StageName:         telemetryData.StageName,
+		StepName:          telemetryData.BaseData.StepName,
+		ExitCode:          telemetryData.CustomData.ErrorCode,
+		Duration:          telemetryData.CustomData.Duration,
+		ErrorCode:         telemetryData.CustomData.ErrorCode,
+		ErrorCategory:     telemetryData.CustomData.ErrorCategory,
+		ErrorMessage:      errorMessage,
+		CorrelationID:     s.correlationID,
+		CommitHash:        readCommonPipelineEnvironment("git/headCommitId"),
+		Branch:            readCommonPipelineEnvironment("git/branch"),
+		GitOwner:          readCommonPipelineEnvironment("git/organization"),
+		GitRepository:     readCommonPipelineEnvironment("git/repository"),
+		BinaryVersion:     telemetryData.BinaryVersion,
+		ActionVersion:     telemetryData.ActionVersion,
+		TemplateVersion:   telemetryData.TemplateVersion,
 	}
 	monitoringJson, err := json.Marshal(monitoringData)
 	if err != nil {

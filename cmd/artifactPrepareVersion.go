@@ -85,6 +85,7 @@ func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
 		Files:   &piperutils.Files{},
 		Client:  &piperhttp.Client{},
 	}
+	utils.Client.SetOptions(piperhttp.ClientOptions{MaxRetries: 3})
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
@@ -114,13 +115,14 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	// Options for artifact
 	artifactOpts := versioning.Options{
-		GlobalSettingsFile:  config.GlobalSettingsFile,
-		M2Path:              config.M2Path,
-		ProjectSettingsFile: config.ProjectSettingsFile,
-		VersionField:        config.CustomVersionField,
-		VersionSection:      config.CustomVersionSection,
-		VersioningScheme:    config.CustomVersioningScheme,
-		VersionSource:       config.DockerVersionSource,
+		GlobalSettingsFile:      config.GlobalSettingsFile,
+		M2Path:                  config.M2Path,
+		ProjectSettingsFile:     config.ProjectSettingsFile,
+		VersionField:            config.CustomVersionField,
+		VersionSection:          config.CustomVersionSection,
+		VersioningScheme:        config.CustomVersioningScheme,
+		VersionSource:           config.DockerVersionSource,
+		CAPVersioningPreference: config.CAPVersioningPreference,
 	}
 
 	var err error
@@ -141,6 +143,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
+	} else if len(version) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("version is empty - please check versioning configuration")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
@@ -204,6 +209,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 		if config.VersioningType == "cloud" {
 			certs, err := certutils.CertificateDownload(config.CustomTLSCertificateLinks, utils)
+			if err != nil {
+				return err
+			}
+
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {
@@ -228,7 +237,13 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
-	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
+
+	gitCommitMessages := strings.Split(gitCommitMessage, "\n")
+	commitMessage := truncateString(gitCommitMessages[0], 50) // Github recommends to keep commit message title less than 50 chars
+
+	commonPipelineEnvironment.git.commitMessage = commitMessage
+
+	log.Entry().Debug("CPE git commitMessage:", commitMessage)
 
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
 	coordinates, err := artifact.GetCoordinates()
@@ -243,6 +258,15 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 
 	return nil
+}
+
+func truncateString(str string, maxLength int) string {
+	chars := []rune(str)
+
+	if len(chars) > maxLength {
+		return string(chars[:maxLength]) + "..."
+	}
+	return str
 }
 
 func openGit() (gitRepository, error) {
@@ -443,7 +467,11 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
+		All:               true,
+		AllowEmptyCommits: true,
+		Author:            &object.Signature{Name: config.CommitUserName, When: t}},
+	)
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}

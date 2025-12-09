@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -19,6 +20,7 @@ type githubPublishReleaseOptions struct {
 	AddClosedIssues       bool     `json:"addClosedIssues,omitempty"`
 	AddDeltaToLastRelease bool     `json:"addDeltaToLastRelease,omitempty"`
 	APIURL                string   `json:"apiUrl,omitempty"`
+	GithubAPITimeout      int      `json:"githubApiTimeout,omitempty"`
 	AssetPath             string   `json:"assetPath,omitempty"`
 	AssetPathList         []string `json:"assetPathList,omitempty"`
 	Commitish             string   `json:"commitish,omitempty"`
@@ -66,15 +68,29 @@ The result looks like
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.Token)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -104,6 +120,11 @@ The result looks like
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -112,7 +133,7 @@ The result looks like
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -129,10 +150,23 @@ The result looks like
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			githubPublishRelease(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -147,6 +181,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.Flags().BoolVar(&stepConfig.AddClosedIssues, "addClosedIssues", false, "If set to `true`, closed issues and merged pull-requests since the last release will added below the `releaseBodyHeader`")
 	cmd.Flags().BoolVar(&stepConfig.AddDeltaToLastRelease, "addDeltaToLastRelease", false, "If set to `true`, a link will be added to the release information that brings up all commits since the last release.")
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
+	cmd.Flags().IntVar(&stepConfig.GithubAPITimeout, "githubApiTimeout", 30, "Set HTTP timeout for GitHub API calls (in seconds)")
 	cmd.Flags().StringVar(&stepConfig.AssetPath, "assetPath", os.Getenv("PIPER_assetPath"), "Path to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringSliceVar(&stepConfig.AssetPathList, "assetPathList", []string{}, "List of paths to a release asset which should be uploaded to the list of release assets.")
 	cmd.Flags().StringVar(&stepConfig.Commitish, "commitish", `master`, "Target git commitish for the release")
@@ -211,6 +246,15 @@ func githubPublishReleaseMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 						Default:     `https://api.github.com`,
+					},
+					{
+						Name:        "githubApiTimeout",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
 					},
 					{
 						Name:        "assetPath",

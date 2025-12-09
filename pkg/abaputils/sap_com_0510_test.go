@@ -368,7 +368,7 @@ func TestGetRepo(t *testing.T) {
 		assert.NoError(t, err)
 		assert.IsType(t, &SAP_COM_0510{}, api.(*SAP_COM_0510), "API has wrong type")
 
-		cloned, activeBranch, errAction := api.GetRepository()
+		cloned, activeBranch, errAction, _ := api.GetRepository()
 		assert.True(t, cloned)
 		assert.Equal(t, "testBranch1", activeBranch)
 		assert.NoError(t, errAction)
@@ -479,5 +479,29 @@ func TestSleepTime(t *testing.T) {
 
 		_, err = api.getSleepTime(12)
 		assert.ErrorContains(t, err, "Exceeded max sleep time")
+	})
+}
+
+func TestTimeConverter(t *testing.T) {
+
+	api := SAP_COM_0510{}
+
+	t.Run("Test example time", func(t *testing.T) {
+		inputDate := "/Date(1585576809000+0000)/"
+		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
+		result := api.ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test Unix time", func(t *testing.T) {
+		inputDate := "/Date(0000000000000+0000)/"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := api.ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
+	})
+	t.Run("Test unexpected format", func(t *testing.T) {
+		inputDate := "/Date(0012300000001+0000)/"
+		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
+		result := api.ConvertTime(inputDate)
+		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
 	})
 }

@@ -28,11 +28,13 @@ type ScanOptions struct {
 	InstallArtifacts bool
 
 	// DefaultNpmRegistry is an optional default registry for NPM.
-	DefaultNpmRegistry string
+	DefaultNpmRegistry        string
+	NpmIncludeDevDependencies bool
 
-	AgentDownloadURL string
-	AgentFileName    string
-	ConfigFilePath   string
+	AgentDownloadURL       string
+	AgentFileName          string
+	ConfigFilePath         string
+	UseGlobalConfiguration bool
 
 	JreDownloadURL string
 
@@ -46,7 +48,8 @@ type ScanOptions struct {
 
 	InstallCommand string
 
-	SkipParentProjectResolution bool
+	SkipParentProjectResolution     bool
+	DisableNpmSubmodulesAggregation bool
 
 	Verbose bool
 }

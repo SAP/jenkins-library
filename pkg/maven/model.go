@@ -3,8 +3,8 @@ package maven
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"path/filepath"
+	"slices"
 )
 
 // Project describes the Maven object model.
@@ -71,7 +71,7 @@ type visitUtils interface {
 // VisitAllMavenModules ...
 func VisitAllMavenModules(path string, utils visitUtils, excludes []string, callback func(info ModuleInfo) error) error {
 	pomXMLPath := filepath.Join(path, "pom.xml")
-	if piperutils.ContainsString(excludes, pomXMLPath) {
+	if slices.Contains(excludes, pomXMLPath) {
 		return nil
 	}
 

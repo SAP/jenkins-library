@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 )
 
 type whitesourceUtilsMock struct {
@@ -729,6 +729,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
 		assert.Equal(t, 0, len(assessedAlerts))
+		assert.Equal(t, 0, influx.whitesource_data.fields.minor_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.major_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.vulnerabilities)
 	})
 
 	t.Run("error - some vulnerabilities", func(t *testing.T) {
@@ -744,6 +747,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		assert.Equal(t, 1, severeVulnerabilities)
 		assert.Equal(t, 2, len(alerts))
 		assert.Equal(t, 0, len(assessedAlerts))
+		assert.Equal(t, 1, influx.whitesource_data.fields.minor_vulnerabilities)
+		assert.Equal(t, 1, influx.whitesource_data.fields.major_vulnerabilities)
+		assert.Equal(t, 2, influx.whitesource_data.fields.vulnerabilities)
 	})
 
 	t.Run("success - assessed vulnerabilities", func(t *testing.T) {
@@ -759,6 +765,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
 		assert.Equal(t, 2, len(assessedAlerts))
+		assert.Equal(t, 0, influx.whitesource_data.fields.minor_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.major_vulnerabilities)
+		assert.Equal(t, 0, influx.whitesource_data.fields.vulnerabilities)
 	})
 
 	t.Run("error - WhiteSource failure", func(t *testing.T) {
@@ -869,5 +878,73 @@ func TestPersistScannedProjects(t *testing.T) {
 		persistScannedProjects(config, scan, &cpe)
 		// assert
 		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
+	})
+}
+
+func TestBuildToolFiles(t *testing.T) {
+	t.Parallel()
+	t.Run("buildTool = dub", func(t *testing.T) {
+		err := validationBuildDescriptorFile("dub", "/home/mta.yaml")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.json'")
+		err = validationBuildDescriptorFile("dub", "/home/dub.json")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = gradle", func(t *testing.T) {
+		err := validationBuildDescriptorFile("gradle", "/home/go.mod")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.properties'")
+		err = validationBuildDescriptorFile("gradle", "/home/gradle.properties")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = golang", func(t *testing.T) {
+		err := validationBuildDescriptorFile("golang", "/home/go.json")
+		assert.ErrorContains(t, err, "buildDescriptorFile must be one of  [\"go.mod\",\"VERSION\", \"version.txt\"]")
+		err = validationBuildDescriptorFile("golang", "/home/go.mod")
+		assert.NoError(t, err)
+		err = validationBuildDescriptorFile("golang", "/home/VERSION")
+		assert.NoError(t, err)
+		err = validationBuildDescriptorFile("golang", "/home/version.txt")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = maven", func(t *testing.T) {
+		err := validationBuildDescriptorFile("maven", "/home/go.mod")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.xml'")
+		err = validationBuildDescriptorFile("maven", "/home/pom.xml")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = mta", func(t *testing.T) {
+		err := validationBuildDescriptorFile("mta", "/home/go.mod")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.yaml'")
+		err = validationBuildDescriptorFile("mta", "/home/mta.yaml")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = npm", func(t *testing.T) {
+		err := validationBuildDescriptorFile("npm", "/home/go.mod")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.json'")
+		err = validationBuildDescriptorFile("npm", "/home/package.json")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = yarn", func(t *testing.T) {
+		err := validationBuildDescriptorFile("yarn", "/home/go.mod")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.json'")
+		err = validationBuildDescriptorFile("yarn", "/home/package.json")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = pip", func(t *testing.T) {
+		err := validationBuildDescriptorFile("pip", "/home/go.mod")
+		assert.ErrorContains(t, err, "buildDescriptorFile must be one of  [\"setup.py\",\"version.txt\", \"VERSION\"]")
+		err = validationBuildDescriptorFile("pip", "/home/setup.py")
+		assert.NoError(t, err)
+		err = validationBuildDescriptorFile("pip", "/home/version.txt")
+		assert.NoError(t, err)
+		err = validationBuildDescriptorFile("pip", "/home/VERSION")
+		assert.NoError(t, err)
+	})
+	t.Run("buildTool = sbt", func(t *testing.T) {
+		err := validationBuildDescriptorFile("sbt", "/home/go.mod")
+		assert.ErrorContains(t, err, "extension of buildDescriptorFile must be in '*.json'")
+		err = validationBuildDescriptorFile("sbt", "/home/sbtDescriptor.json")
+		assert.NoError(t, err)
+		err = validationBuildDescriptorFile("sbt", "/home/build.sbt")
+		assert.NoError(t, err)
 	})
 }

@@ -45,6 +45,9 @@ class commonPipelineEnvironment implements Serializable {
     String githubOrg
     String githubRepo
 
+    // GitHub deployment ID
+    String githubDeploymentId
+
     //stores properties for a pipeline which build an artifact and then bundles it into a container
     private Map appContainerProperties = [:]
 
@@ -59,6 +62,7 @@ class commonPipelineEnvironment implements Serializable {
     String mtarFilePath = null
 
     String abapAddonDescriptor
+
 
     private Map valueMap = [:]
 
@@ -220,6 +224,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
+        [filename: '.pipeline/commonPipelineEnvironment/git/github_deploymentId', property: 'githubDeploymentId'],
     ]
 
     Map getCPEMap(script) {

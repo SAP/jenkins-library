@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -43,10 +44,8 @@ func (p *testStepReports) persist(stepConfig testStepOptions, gcpJsonKeyFilePath
 		{FilePattern: "test-report_*.json", ParamRef: "", StepResultType: ""},
 		{FilePattern: "report1", ParamRef: "", StepResultType: "general"},
 	}
-	envVars := []gcs.EnvVar{
-		{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath, Modified: false},
-	}
-	gcsClient, err := gcs.NewClient(gcs.WithEnvVars(envVars))
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
         	return
@@ -166,15 +165,29 @@ func TestStepCommand() *cobra.Command {
 
 			piperOsCmd.GeneralConfig.GitHubAccessTokens = piperOsCmd.ResolveAccessTokens(piperOsCmd.GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = piperOsCmd.PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 
 			if len(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(piperOsCmd.GeneralConfig.HookConfig.SentryConfig.Dsn, piperOsCmd.GeneralConfig.CorrelationID)
@@ -203,6 +216,11 @@ func TestStepCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -214,7 +232,7 @@ func TestStepCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = piperOsCmd.GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(piperOsCmd.GeneralConfig.CorrelationID,
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -231,10 +249,23 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						piperOsCmd.GeneralConfig.CorrelationID,
+						piperOsCmd.GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(piperOsCmd.GeneralConfig.NoTelemetry, STEP_NAME, piperOsCmd.GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			testStep(stepConfig, &stepTelemetryData, &commonPipelineEnvironment, &influxTest)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
 
@@ -25,9 +26,11 @@ func TestDummyIntegration(t *testing.T) {
 	dir = filepath.Dir(dir)
 
 	req := testcontainers.ContainerRequest{
-		Image:      "node:lts-buster",
-		Cmd:        []string{"tail", "-f"},
-		BindMounts: map[string]string{dir: "/data"},
+		Image: "node:lts-bookworm",
+		Cmd:   []string{"tail", "-f"},
+		Mounts: testcontainers.Mounts(
+			testcontainers.BindMount(dir, "/data"),
+		),
 		//ToDo: we may set up a tmp directory and mount it in addition, e.g. for runtime artifacts ...
 	}
 
@@ -35,7 +38,7 @@ func TestDummyIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	piperOptions := []string{
 		"<piperStep>",
@@ -45,7 +48,7 @@ func TestDummyIntegration(t *testing.T) {
 		"--noTelemetry",
 	}
 
-	code, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
+	code, _, err := testContainer.Exec(ctx, append([]string{"/data/piper"}, piperOptions...))
 	assert.NoError(t, err)
 	assert.Equal(t, 0, code)
 }

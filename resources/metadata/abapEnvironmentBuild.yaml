@@ -203,7 +203,7 @@ spec:
           - STEPS
       - name: certificateNames
         type: "[]string"
-        description: certificates for the backend system, this certificates needs to be stored in .pipeline/trustStore
+        description: "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore"
         mandatory: false
         scope:
           - PARAMETERS
@@ -261,4 +261,4 @@ spec:
           - name: abap/buildValues
   containers:
     - name: cf
-      image: ppiper/cf-cli:v12
+      image: ppiper/cf-cli:latest

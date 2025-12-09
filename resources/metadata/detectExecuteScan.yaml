@@ -1,9 +1,13 @@
 metadata:
   name: detectExecuteScan
-  description: Executes Synopsys Detect scan
+  description: Executes BlackDuck Detect scan
+  errors:
+    - pattern: "FAILURE_POLICY_VIOLATION"
+      message: "BlackDuck Detect found policy violations. Review security policies and fix compliance issues."
+      category: "compliance"
   longDescription: |
-    This step executes [Synopsys Detect](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus) scans.
-    Synopsys Detect command line utlity can be used to run various scans including BlackDuck and Polaris scans. This step allows users to run BlackDuck scans by default.
+    This step executes [BlackDuck Detect](https://documentation.blackduck.com/bundle/detect/page/introduction.html) scans.
+    BlackDuck Detect command line utlity can be used to run various scans including BlackDuck scans. This step allows users to run BlackDuck scans by default.
     Please configure your BlackDuck server Url using the serverUrl parameter and the API token of your user using the apiToken parameter for this step.
 spec:
   inputs:
@@ -16,7 +20,7 @@ spec:
       - name: detectTokenCredentialsId
         aliases:
           - name: apiTokenCredentialsId
-        description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
+        description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the BlackDuck Detect Server.
         type: jenkins
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
@@ -33,7 +37,7 @@ spec:
             deprecated: true
           - name: detect/apiToken
             deprecated: true
-        description: Api token to be used for connectivity with Synopsis Detect server.
+        description: Api token to be used for connectivity with BlackDuck Detect server.
         type: string
         mandatory: true
         secret: true
@@ -55,7 +59,7 @@ spec:
           - STAGES
           - STEPS
       - name: projectName
-        description: Name of the Synopsis Detect (formerly BlackDuck) project.
+        description: Name of the BlackDuck Detect project.
         aliases:
           - name: detect/projectName
         type: string
@@ -65,7 +69,7 @@ spec:
           - STAGES
           - STEPS
       - name: scanners
-        description: List of scanners to be used for Synopsis Detect (formerly BlackDuck) scan.
+        description: List of scanners to be used for BlackDuck Detect scan.
         aliases:
           - name: detect/scanners
         type: "[]string"
@@ -79,7 +83,7 @@ spec:
           - STAGES
           - STEPS
       - name: scanPaths
-        description: List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.
+        description: List of paths which should be scanned by the BlackDuck Detect scan.
         aliases:
           - name: detect/scanPaths
         type: "[]string"
@@ -109,7 +113,7 @@ spec:
           - STAGES
           - STEPS
       - name: scanProperties
-        description: Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fall-properties.html&_LANG=enus)
+        description: Properties passed to the BlackDuck Detect scan. You can find details in the [BlackDuck Detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/basic-properties.html)
         aliases:
           - name: detect/scanProperties
         type: "[]string"
@@ -117,14 +121,14 @@ spec:
           - --blackduck.signature.scanner.memory=4096
           - --detect.timeout=6000
           - --blackduck.trust.cert=true
-          - --logging.level.com.synopsys.integration=DEBUG
+          - --logging.level.detect=DEBUG
           - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: serverUrl
-        description: Server URL to the Synopsis Detect (formerly BlackDuck) Server.
+        description: Server URL to the BlackDuck Detect Server.
         aliases:
           - name: detect/serverUrl
           - name: detectServerUrl
@@ -147,7 +151,7 @@ spec:
         description: Mark the current build as fail based on the policy categories applied.
         longDescription: |
           A list of policies can be provided which will be applied after the scan is completed. These policies if violated will mark the build/scan result as failed.
-          The list of accepted values can be found at [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fproject.html&anchor=fail-on-policy-violation-severities&_LANG=enus)
+          The list of accepted values can be found at [BlackDuck detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/configuration/project.html#fail-on-policy-violation-severities)
         aliases:
           - name: detect/failOn
         type: "[]string"
@@ -204,7 +208,7 @@ spec:
         type: string
         description: "A custom version used along with the uploaded scan results."
         longDescription: |-
-          Defines a custom version for the Detect scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the Detect scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Fortify, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
         scope: [GENERAL, STAGES, STEPS, PARAMETERS]
@@ -257,6 +261,67 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: buildMTA
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for MTA projects building"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: installNPM
+        type: bool
+        default: false
+        description:
+          "Experiment parameter for downloading npm dependencies"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: defaultNpmRegistry
+        type: string
+        description: "URL of the npm registry to use. Defaults to https://registry.npmjs.org/"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        aliases:
+          - name: npm/defaultNpmRegistry
+      - name: buildDescriptorList
+        type: "[]string"
+        description: List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: enableDiagnostics
+        type: bool
+        default: false
+        description:
+          "Parameter to enable diagnostics file generation by detect script"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: generateReportsForEmptyProjects
+        type: bool
+        default: false
+        description:
+          "If enabled, it will generate reports for empty projects. This could be useful to see the compliance reports in Sirius"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: mtaPlatform
+        type: string
+        description: "The platform of the MTA project"
+        default: "CF"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: pomPath
         type: string
         description: Path to the pom file which should be installed including all children.
@@ -267,7 +332,7 @@ spec:
       - name: includedPackageManagers
         description:
           "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
-          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-included-advanced)"
+          For the complete list of possible values for this parameter, please refer [BlackDuck detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/configuration/detector.html#ariaid-title5)"
         aliases:
           - name: detect/includedPackageManagers
         type: "[]string"
@@ -278,7 +343,7 @@ spec:
       - name: excludedPackageManagers
         description:
           "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder
-          For the complete list of possible values for this parameter, please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fdetector.html&_LANG=enus&anchor=detector-types-excluded-advanced)"
+          For the complete list of possible values for this parameter, please refer [BlackDuck detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/configuration/detector.html#ariaid-title4)"
         aliases:
           - name: detect/excludedPackageManagers
         type: "[]string"
@@ -298,7 +363,7 @@ spec:
       - name: detectTools
         description:
           "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included.
-          For the complete list of possible values, Please refer [Synopsys detect documentation](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=properties%2Fconfiguration%2Fpaths.html&_LANG=enus&anchor=detect-tools-included)"
+          For the complete list of possible values, Please refer [BlackDuck detect documentation](https://documentation.blackduck.com/bundle/detect/page/components/tools.html)"
         aliases:
           - name: detect/detectTools
         type: "[]string"
@@ -333,18 +398,9 @@ spec:
       - name: customEnvironmentVariables
         description:
           "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. This includes a list of environment variables defined by
-          Synopsys. The full list can be found [here](https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=configuring%2Fenvvars.html&_LANG=enus)
+          BlackDuck. The full list can be found [here](https://documentation.blackduck.com/bundle/detect/page/configuring/envvars.html)
           This list affects the detect script downloaded while running the scan. Right now only detect7.sh is available for downloading"
         type: "[]string"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: minScanInterval
-        description:
-          "This parameter controls the frequency (in number of hours) at which the signature scan is re-submitted for scan. When set to a
-          value greater than 0, the signature scans are skipped until the specified number of hours has elapsed since the last signature scan."
-        type: int
         scope:
           - PARAMETERS
           - STAGES
@@ -369,9 +425,9 @@ spec:
             name: githubVaultSecretName
       - name: createResultIssue
         type: bool
-        description: Activate creation of a result issue in GitHub.
+        description: Activate creation of result issues in GitHub.
         longDescription: |
-          Whether the step creates a GitHub issue containing the scan results in the originating repo.
+          Whether the step creates a GitHub issues containing the scan results in the originating repo. For each vulnerability a separate issue will be created.
           Since optimized pipelines are headless the creation is implicitly activated for scheduled runs.
         resourceRef:
           - name: commonPipelineEnvironment
@@ -590,6 +646,40 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
+      - name: useDetect9
+        description:
+          "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11"
+        aliases:
+          - name: detect/useDetect9
+            deprecated: true
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+        deprecated: true
+      - name: useDetect10
+        description:
+          "This flag enables the use of the supported version 10 of the Detect script instead of default version 11"
+        aliases:
+          - name: detect/useDetect10
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: containerScan
+        description: "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan"
+        aliases:
+          - name: detect/containerScan
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
   outputs:
     resources:
       - name: influx
@@ -636,7 +726,7 @@ spec:
             type: blackduck-security
   containers:
     - name: openjdk
-      image: openjdk:11
+      image: openjdk:11-ea
       workingDir: /root
       options:
         - name: -u

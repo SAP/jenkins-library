@@ -20,10 +20,12 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	sarif.Version = "2.1.0"
 	var checkmarxRun format.Runs
 	checkmarxRun.ColumnKind = "utf16CodeUnits"
+	checkmarxRun.Results = make([]format.Results, 0)
 	sarif.Runs = append(sarif.Runs, checkmarxRun)
 	rulesArray := []format.SarifRule{}
 
 	baseURL := serverURL + "/results/" + scanMeta.ScanID + "/" + scanMeta.ProjectID
+	projectBaseURL := serverURL + "/projects/" + scanMeta.ProjectID + "/"
 
 	cweIdsForTaxonomies := make(map[int]int) //use a map to avoid duplicates
 	cweCounter := 0
@@ -66,6 +68,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		for k := 0; k < len(r.Data.Nodes); k++ {
 			loc := *new(format.Location)
 			loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			// remove absolute path of file name (coming from JSON format)
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
+				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
+			}
 			loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 			loc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 			loc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -90,6 +96,10 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			threadFlowLocation := *new(format.Locations)
 			tfloc := new(format.Location)
 			tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
+			// remove absolute path of file name (coming from JSON format)
+			if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
+				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
+			}
 			tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 			tfloc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 			tfloc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -226,23 +236,34 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 		if r.VulnerabilityDetails.CweId != 0 {
 			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", r.VulnerabilityDetails.CweId))
 		}
-		rulesArray = append(rulesArray, rule)
+
+		match := false
+		for _, r := range rulesArray {
+			if r.ID == rule.ID {
+				match = true
+				break
+			}
+		}
+		if !match {
+			rulesArray = append(rulesArray, rule)
+		}
 	}
 
 	// Handle driver object
 	log.Entry().Debug("[SARIF] Now handling driver object.")
 	tool := *new(format.Tool)
 	tool.Driver = *new(format.Driver)
-	tool.Driver.Name = "CheckmarxOne SCA"
+	tool.Driver.Name = "Checkmarx One"
 
 	// TODO: a way to fetch/store the version
 	tool.Driver.Version = "1" //strings.Split(cxxml.CheckmarxVersion, "V ")
-	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-68571-viewing-results.html"
+	tool.Driver.InformationUri = "https://checkmarx.com/resource/documents/en/34965-165898-results-details-per-scanner.html"
 	tool.Driver.Rules = rulesArray
 	sarif.Runs[0].Tool = tool
 
 	//handle automationDetails
-	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: fmt.Sprintf("%v/sast", baseURL)} // Use deeplink to pass a maximum of information
+	// This field corresponds to the configuration category in GitHub Security tab, it is meant to be used for monorepos so that each project can have its own findings
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: projectBaseURL}
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
@@ -250,6 +271,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	taxonomy.Name = "CWE"
 	taxonomy.Organization = "MITRE"
 	taxonomy.ShortDescription.Text = "The MITRE Common Weakness Enumeration"
+	taxonomy.Taxa = make([]format.Taxa, 0)
 	for key := range cweIdsForTaxonomies {
 		taxa := *new(format.Taxa)
 		taxa.Id = fmt.Sprintf("%d", key)

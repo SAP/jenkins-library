@@ -1,6 +1,16 @@
 metadata:
   name: whitesourceExecuteScan
   description: Execute a Mend (formerly known as WhiteSource) scan
+  errors:
+    - pattern: "Open Source Software Security vulnerabilities with CVSS score greater or equal to .* detected in project"
+      message: "Security vulnerabilities with high CVSS scores detected. Review and address the identified vulnerabilities to meet security requirements."
+      category: "security"
+    - pattern: "policy violation\\(s\\) found"
+      message: "Policy violations detected in the scan. Review the violations and update dependencies or policies to resolve compliance issues."
+      category: "compliance"
+    - pattern: "running command 'java' failed"
+      message: "Java command execution failed during WhiteSource scan. Verify Java installation, memory settings, and agent configuration."
+      category: "execution"
   longDescription: |-
     With this step [Mend](https://www.mend.io/) (formerly known as Whitesource) security and license compliance scans can be executed and assessed.
     Mend is a Software as a Service offering based on a so called unified agent that locally determines the dependency
@@ -49,7 +59,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
+        default: https://downloads.mend.io/wss-unified-agent.jar
       - name: agentFileName
         type: string
         description: "Locally used name for the Unified Agent jar file after download."
@@ -128,6 +138,15 @@ spec:
           - STAGES
           - STEPS
         default: ./wss-unified-agent.config
+      - name: useGlobalConfiguration
+        type: bool
+        description: "The parameter is applicable for multi-module mend projects. If set to true, the configuration file will be used for all modules. Otherwise each module will require its own configuration file in the module folder."
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
       - name: containerRegistryPassword
         description: "For `buildTool: docker`: Password for container registry access - typically provided by the CI/CD environment."
         type: string
@@ -168,7 +187,7 @@ spec:
         type: string
         description: Custom version of the WhiteSource project used as source.
         longDescription: |-
-          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningmodel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
           The parameter is also used by other scan steps (e.g. Detect, Fortify, Sonar) and thus allows a common custom version across scan tools.
         scope:
@@ -178,7 +197,7 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build. A negative value (like the default of -1) means that the build won't fail."
         scope:
           - PARAMETERS
           - STAGES
@@ -248,14 +267,13 @@ spec:
             deprecated: true
         type: string
         description:
-          "URL used for downloading the Java Runtime Environment (JRE) required to run the
-          WhiteSource Unified Agent."
+          "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent."
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz"
+        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-17.0.13/sapmachine-jre-17.0.13_linux-x64_bin.tar.gz"
       - name: licensingVulnerabilities
         type: bool
         description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
@@ -389,8 +407,7 @@ spec:
           - STEPS
       - name: skipParentProjectResolution
         type: bool
-        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose
-        Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
+        description: "Parameter for multi-module, multi-images projects to skip the parent project resolution for reporing purpose. Could be used if parent project is set as just a placeholder for scan and doesn't contain any dependencies."
         scope:
           - PARAMETERS
           - STAGES
@@ -524,8 +541,9 @@ spec:
       - name: installArtifacts
         type: bool
         description:
-          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
-          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+          "If enabled, all artifacts will be installed to the local Maven repository to ensure availability before running WhiteSource.
+          Currently, this parameter is not honored in whitesourceExecuteScan step, as it is internally managed by UA with the 'runPreStep'.
+          In the future, this parameter will be honored based on the individual build tool."
         scope:
           - GENERAL
           - STEPS
@@ -542,6 +560,26 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
+      - name: npmIncludeDevDependencies
+        type: bool
+        description: "Enable this if you wish to include NPM DEV dependencies in the scan report"
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: false
+        aliases:
+          - name: npm/includeDevDependencies
+      - name: disableNpmSubmodulesAggregation
+        type: bool
+        description: "The default Mend behavior is to aggregate all submodules of NPM project into one project in Mend. This parameter disables this behavior, thus for each submodule a separate project is created."
+        default: false
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -768,7 +806,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:lts-buster
+    - image: node:24-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -784,7 +822,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:lts-buster
+    - image: node:24-bookworm
       workingDir: /home/node
       env: []
       conditions:

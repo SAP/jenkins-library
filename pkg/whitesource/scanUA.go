@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -23,11 +24,26 @@ const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	s.AgentName = "WhiteSource Unified Agent"
-	if config.BuildTool != "mta" {
+
+	switch config.BuildTool {
+	case "mta":
+		return s.ExecuteUAScanForMTA(config, utils)
+	case "npm":
+		if config.DisableNpmSubmodulesAggregation {
+			return s.ExecuteUAScanForMultiModuleNPM(config, utils)
+		} else {
+			return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
+		}
+	default:
 		return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
 	}
 
+}
+
+func (s *Scan) ExecuteUAScanForMTA(config *ScanOptions, utils Utils) error {
 	log.Entry().Infof("Executing WhiteSource UA scan for MTA project")
+
+	log.Entry().Infof("Executing WhiteSource UA scan for Maven part")
 	pomExists, _ := utils.FileExists("pom.xml")
 	if pomExists {
 		mavenConfig := *config
@@ -41,6 +57,13 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 			return fmt.Errorf("mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
 		}
 	}
+
+	log.Entry().Infof("Executing WhiteSource UA scan for NPM part")
+	return s.ExecuteUAScanForMultiModuleNPM(config, utils)
+}
+
+func (s *Scan) ExecuteUAScanForMultiModuleNPM(config *ScanOptions, utils Utils) error {
+	log.Entry().Infof("Executing WhiteSource UA scan for multi-module NPM projects")
 
 	packageJSONFiles, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
@@ -104,7 +127,14 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		}
 	}
 
-	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName)
+	if config.UseGlobalConfiguration {
+		config.ConfigFilePath, err = filepath.Abs(config.ConfigFilePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName, config.Verbose)
 	if err != nil {
 		return err
 	}
@@ -196,7 +226,6 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 			if strings.Contains(err.Error(), "unable to copy content from url to file") || strings.Contains(err.Error(), "returned with response 404 Not Found") || strings.Contains(err.Error(), "returned with response 403 Forbidden") {
 				// retry the download once again
 				log.Entry().Warnf("[Retry] Previous download failed due to %v", err)
-				err = nil // reset error to nil
 				err = utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 			}
 		}
@@ -218,20 +247,24 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 	javaPath := "java"
 	if err != nil {
 		log.Entry().Infof("No Java installation found, downloading JVM from %v", config.JreDownloadURL)
-		err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
-		if err != nil {
-			// we check if the copy error occurs and retry the download
-			// if the copy error did not happen, we rerun the whole download mechanism once
-			if strings.Contains(err.Error(), "unable to copy content from url to file") {
-				// retry the download once again
-				log.Entry().Warnf("Previous Download failed due to %v", err)
-				err = nil
-				err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+		const maxRetries = 3
+		retries := 0
+		for retries < maxRetries {
+			err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+			if err == nil {
+				break
 			}
+			log.Entry().Warnf("Attempt %d: Download failed due to %v", retries+1, err)
+			retries++
+			if retries >= maxRetries {
+				log.Entry().Errorf("Download failed after %d attempts", retries)
+				return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
+			}
+			time.Sleep(1 * time.Second)
 		}
 
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
+			return "", errors.Wrapf(err, "Even after retry failed to download jre from URL '%s'", config.JreDownloadURL)
 		}
 
 		// ToDo: replace tar call with go library call

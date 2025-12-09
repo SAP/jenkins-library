@@ -31,7 +31,7 @@ func (c *httpMockClient) SendRequest(method, url string, body io.Reader, header 
 
 	if c.errorMessageForURL[url] != "" {
 		response.StatusCode = 400
-		return &response, fmt.Errorf(c.errorMessageForURL[url])
+		return &response, fmt.Errorf("%s", c.errorMessageForURL[url])
 	}
 
 	if c.responseBodyForURL[url] != "" {
@@ -95,8 +95,8 @@ func TestGetProject(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
-				"https://my.blackduck.system/api/tokens/authenticate":             authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": projectContent,
+				"https://my.blackduck.system/api/tokens/authenticate":                                        authContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": projectContent,
 			},
 			header: map[string]http.Header{},
 		}
@@ -106,7 +106,7 @@ func TestGetProject(t *testing.T) {
 		assert.Equal(t, "SHC-PiperTest", project.Name)
 		assert.Equal(t, "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions", project.Metadata.Links[0].Href)
 		headerExpected := http.Header{"Authorization": []string{"Bearer bearerTestToken"}, "Accept": {"application/vnd.blackducksoftware.project-detail-4+json"}}
-		assert.Equal(t, headerExpected, myTestClient.header["https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest"])
+		assert.Equal(t, headerExpected, myTestClient.header["https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc"])
 	})
 
 	t.Run("failure - not found", func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestGetProject(t *testing.T) {
 				"https://my.blackduck.system/api/tokens/authenticate": authContent,
 			},
 			errorMessageForURL: map[string]string{
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": "not found",
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": "not found",
 			},
 			header: map[string]http.Header{},
 		}
@@ -128,7 +128,7 @@ func TestGetProject(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate": authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": `{
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": `{
 					"totalCount": 0,
 					"items": []
 				}`,
@@ -143,8 +143,8 @@ func TestGetProject(t *testing.T) {
 	t.Run("failure - unmarshalling", func(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
-				"https://my.blackduck.system/api/tokens/authenticate":             authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": "",
+				"https://my.blackduck.system/api/tokens/authenticate":                                        authContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": "",
 			},
 			header: map[string]http.Header{},
 		}
@@ -159,7 +159,7 @@ func TestGetProjectVersion(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 			},
 			header: map[string]http.Header{},
@@ -179,7 +179,7 @@ func TestGetProjectVersion(t *testing.T) {
 				"https://my.blackduck.system/api/tokens/authenticate": authContent,
 			},
 			errorMessageForURL: map[string]string{
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": "not found",
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": "not found",
 			},
 			header: map[string]http.Header{},
 		}
@@ -191,8 +191,8 @@ func TestGetProjectVersion(t *testing.T) {
 	t.Run("failure - version not found", func(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
-				"https://my.blackduck.system/api/tokens/authenticate":             authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": projectContent,
+				"https://my.blackduck.system/api/tokens/authenticate":                                        authContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": projectContent,
 			},
 			errorMessageForURL: map[string]string{
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": "not found",
@@ -207,8 +207,8 @@ func TestGetProjectVersion(t *testing.T) {
 	t.Run("failure - 0 results", func(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
-				"https://my.blackduck.system/api/tokens/authenticate":             authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": projectContent,
+				"https://my.blackduck.system/api/tokens/authenticate":                                        authContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc": projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": `{
 					"totalCount": 0,
 					"items": []
@@ -225,7 +225,7 @@ func TestGetProjectVersion(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": "",
 			},
 			header: map[string]http.Header{},
@@ -241,7 +241,7 @@ func TestGetVulnerabilities(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components?limit=999&offset=0": `{
 					"totalCount": 1,
@@ -273,7 +273,7 @@ func TestGetVulnerabilities(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                                                                                      authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                                                          projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                                                                               projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                                                                projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components?limit=999&offset=0": `{"totalCount":0,"items":[]}`,
 			},
@@ -289,7 +289,7 @@ func TestGetVulnerabilities(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                                                                                      authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                                                          projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                                                                               projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                                                                projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components?limit=999&offset=0": "",
 			},
@@ -306,7 +306,7 @@ func TestGetComponents(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?limit=999&offset=0": `{
 					"totalCount": 2,
@@ -333,7 +333,7 @@ func TestGetComponents(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?limit=999&offset=0": `{
 					"totalCount": 0,
@@ -351,7 +351,7 @@ func TestGetComponents(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                                                                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                                                 projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?limit=999&offset=0": "",
 			},
@@ -369,7 +369,7 @@ func TestGetComponentsWithLicensePolicyRule(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?filter=policyCategory%3Alicense&limit=999&offset=0": `{
 					"totalCount": 2,
@@ -399,7 +399,7 @@ func TestGetComponentsWithLicensePolicyRule(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?filter=policyCategory%3Alicense&limit=999&offset=0": `{
 					"totalCount": 0,
@@ -417,9 +417,9 @@ func TestGetComponentsWithLicensePolicyRule(t *testing.T) {
 	t.Run("Failure - unmarshalling", func(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
-				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
-				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
+				"https://my.blackduck.system/api/tokens/authenticate":                                                                                                                                       authContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                                                                                                projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                                                                                 projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?filter=policyCategory%3Alicense&limit=999&offset=0": "",
 			},
 			header: map[string]http.Header{},
@@ -436,7 +436,7 @@ func TestGetPolicyStatus(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/policy-status": `{
 					"overallStatus": "IN_VIOLATION",
@@ -468,7 +468,7 @@ func TestGetPolicyStatus(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                                                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                                 projectVersionContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/policy-status": "",
 			},
@@ -486,7 +486,7 @@ func TestGetProjectVersionLink(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
 				"https://my.blackduck.system/api/tokens/authenticate":                                                       authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                           projectContent,
+				"https://my.blackduck.system/api/projects?limit=50&offset=0&q=name%3ASHC-PiperTest&sort=asc":                projectContent,
 				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0": projectVersionContent,
 			},
 			header: map[string]http.Header{},

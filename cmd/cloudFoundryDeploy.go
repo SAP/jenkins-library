@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/yaml"
-	"github.com/elliotchance/orderedmap"
 	"github.com/pkg/errors"
 )
 
@@ -56,10 +53,6 @@ func cfLogout(c command.ExecRunner) error {
 	cf := &cloudfoundry.CFUtils{Exec: c}
 	return cf.Logout()
 }
-
-const defaultSmokeTestScript = `#!/usr/bin/env bash
-# this is simply testing if the application root returns HTTP STATUS_CODE
-curl -so /dev/null -w '%{response_code}' https://$1 | grep $STATUS_CODE`
 
 func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux) {
 	// for command execution use Command
@@ -156,7 +149,7 @@ func validateAppName(appName string) error {
 	}
 	message = append(message, fmt.Sprintf("Please change the name to fit this requirement(s). For more details please visit %s.", docuLink))
 	if fail {
-		return fmt.Errorf(strings.Join(message, " "))
+		return errors.New(strings.Join(message, " "))
 	}
 	return nil
 }
@@ -226,44 +219,33 @@ func handleMTADeployment(config *cloudFoundryDeployOptions, command command.Exec
 }
 
 type deployConfig struct {
-	DeployCommand   string
-	DeployOptions   []string
-	AppName         string
-	ManifestFile    string
-	SmokeTestScript []string
+	DeployCommand string
+	DeployOptions []string
+	AppName       string
+	ManifestFile  string
 }
 
 func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command.ExecRunner) error {
 
-	deployType, err := checkAndUpdateDeployTypeForNotSupportedManifest(config)
-
-	if err != nil {
-		return err
-	}
-
 	var deployCommand string
-	var smokeTestScript []string
 	var deployOptions []string
+	var err error
 
 	// deploy command will be provided by the prepare functions below
-
-	if deployType == "blue-green" {
-		log.Entry().Warn("[WARN] Blue-green deployment type is deprecated for cf native builds " +
-			"and will be completely removed by 01.02.2024" +
+	if config.DeployType == "blue-green" {
+		return fmt.Errorf("Blue-green deployment type is deprecated for cf native builds." +
 			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. " +
 			"Please refer to the Cloud Foundry documentation for further information: " +
-			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html")
-		deployCommand, deployOptions, smokeTestScript, err = prepareBlueGreenCfNativeDeploy(config)
+			"https://docs.cloudfoundry.org/devguide/deploy-apps/rolling-deploy.html." +
+			"Or alternatively, switch to mta build tool. Please refer to mta build tool" +
+			"documentation for further information: https://sap.github.io/cloud-mta-build-tool/configuration/.")
+	} else if config.DeployType == "standard" {
+		deployCommand, deployOptions, err = prepareCfPushCfNativeDeploy(config)
 		if err != nil {
-			return errors.Wrapf(err, "Cannot prepare cf native deployment. DeployType '%s'", deployType)
-		}
-	} else if deployType == "standard" {
-		deployCommand, deployOptions, smokeTestScript, err = prepareCfPushCfNativeDeploy(config)
-		if err != nil {
-			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", deployType)
+			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", config.DeployType)
 		}
 	} else {
-		return fmt.Errorf("Invalid deploy type received: '%s'. Supported values: %v", deployType, []string{"blue-green", "standard"})
+		return fmt.Errorf("Invalid deploy type received: '%s'. Supported value: standard", config.DeployType)
 	}
 
 	appName, err := getAppName(config)
@@ -279,22 +261,18 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 	log.Entry().Infof("cfManifestVariables: '%v'", config.ManifestVariables)
 	log.Entry().Infof("cfManifestVariablesFiles: '%v'", config.ManifestVariablesFiles)
 	log.Entry().Infof("cfdeployDockerImage: '%s'", config.DeployDockerImage)
-	log.Entry().Infof("smokeTestScript: '%s'", config.SmokeTestScript)
 
-	additionalEnvironment := []string{
-		"STATUS_CODE=" + strconv.FormatInt(int64(config.SmokeTestStatusCode), 10),
-	}
+	var additionalEnvironment []string
 
 	if len(config.DockerPassword) > 0 {
-		additionalEnvironment = append(additionalEnvironment, "CF_DOCKER_PASSWORD="+config.DockerPassword)
+		additionalEnvironment = []string{("CF_DOCKER_PASSWORD=" + config.DockerPassword)}
 	}
 
 	myDeployConfig := deployConfig{
-		DeployCommand:   deployCommand,
-		DeployOptions:   deployOptions,
-		AppName:         config.AppName,
-		ManifestFile:    config.Manifest,
-		SmokeTestScript: smokeTestScript,
+		DeployCommand: deployCommand,
+		DeployOptions: deployOptions,
+		AppName:       config.AppName,
+		ManifestFile:  config.Manifest,
 	}
 
 	log.Entry().Infof("DeployConfig: %v", myDeployConfig)
@@ -321,55 +299,19 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 		deployStatement = append(deployStatement, deployConfig.ManifestFile)
 	}
 
-	if len(config.DeployDockerImage) > 0 && config.DeployType != "blue-green" {
+	if len(config.DeployDockerImage) > 0 {
 		deployStatement = append(deployStatement, "--docker-image", config.DeployDockerImage)
 	}
 
-	if len(config.DockerUsername) > 0 && config.DeployType != "blue-green" {
+	if len(config.DockerUsername) > 0 {
 		deployStatement = append(deployStatement, "--docker-username", config.DockerUsername)
-	}
-
-	if len(deployConfig.SmokeTestScript) > 0 {
-		deployStatement = append(deployStatement, deployConfig.SmokeTestScript...)
 	}
 
 	if len(config.CfNativeDeployParameters) > 0 {
 		deployStatement = append(deployStatement, strings.Fields(config.CfNativeDeployParameters)...)
 	}
 
-	stopOldAppIfRunning := func(_cmd command.ExecRunner) error {
-
-		if config.KeepOldInstance && config.DeployType == "blue-green" {
-			oldAppName := deployConfig.AppName + "-old"
-
-			var buff bytes.Buffer
-
-			_cmd.Stdout(&buff)
-
-			defer func() {
-				_cmd.Stdout(log.Writer())
-			}()
-
-			err := _cmd.RunExecutable("cf", "stop", oldAppName)
-
-			if err != nil {
-
-				cfStopLog := buff.String()
-
-				if !strings.Contains(cfStopLog, oldAppName+" not found") {
-					return fmt.Errorf("Could not stop application '%s'. Error: %s", oldAppName, cfStopLog)
-				}
-				log.Entry().Infof("Cannot stop application '%s' since this appliation was not found.", oldAppName)
-
-			} else {
-				log.Entry().Infof("Old application '%s' has been stopped.", oldAppName)
-			}
-		}
-
-		return nil
-	}
-
-	return cfDeploy(config, deployStatement, additionalEnvironment, stopOldAppIfRunning, cmd)
+	return cfDeploy(config, deployStatement, additionalEnvironment, cmd)
 }
 
 func getManifest(name string) (cloudfoundry.Manifest, error) {
@@ -390,9 +332,7 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	if len(config.AppName) > 0 {
 		return config.AppName, nil
 	}
-	if config.DeployType == "blue-green" {
-		return "", fmt.Errorf("Blue-green plugin requires app name to be passed (see https://github.com/bluemixgaragelondon/cf-blue-green-deploy/issues/27)")
-	}
+
 	manifestFile, err := getManifestFileName(config)
 
 	fileExists, err := fileUtils.FileExists(manifestFile)
@@ -436,153 +376,12 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 	return name, nil
 }
 
-func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
-
-	if smokeTestScript == "blueGreenCheckScript.sh" {
-		// what should we do if there is already a script with the given name? Should we really overwrite ...
-		err := fileUtils.FileWrite(smokeTestScript, []byte(defaultSmokeTestScript), 0755)
-		if err != nil {
-			return []string{}, fmt.Errorf("failed to write default smoke-test script: %w", err)
-		}
-		log.Entry().Debugf("smoke test script '%s' has been written.", smokeTestScript)
-	}
-
-	if len(smokeTestScript) > 0 {
-		err := fileUtils.Chmod(smokeTestScript, 0755)
-		if err != nil {
-			return []string{}, fmt.Errorf("failed to make smoke-test script executable: %w", err)
-		}
-		pwd, err := fileUtils.Getwd()
-
-		if err != nil {
-			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
-		}
-
-		return []string{"--smoke-test", filepath.Join(pwd, smokeTestScript)}, nil
-	}
-	return []string{}, nil
-}
-
-func prepareBlueGreenCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []string, []string, error) {
-
-	smokeTest, err := handleSmokeTestScript(config.SmokeTestScript)
-	if err != nil {
-		return "", []string{}, []string{}, err
-	}
-
-	var deployOptions = []string{}
-
-	if !config.KeepOldInstance {
-		deployOptions = append(deployOptions, "--delete-old-apps")
-	}
-
-	manifestFile, err := getManifestFileName(config)
-
-	manifestFileExists, err := fileUtils.FileExists(manifestFile)
-	if err != nil {
-		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot check if file '%s' exists", manifestFile)
-	}
-
-	if !manifestFileExists {
-
-		log.Entry().Infof("Manifest file '%s' does not exist", manifestFile)
-
-	} else {
-
-		manifestVariables, err := toStringInterfaceMap(toParameterMap(config.ManifestVariables))
-		if err != nil {
-			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare manifest variables: '%v'", config.ManifestVariables)
-		}
-
-		manifestVariablesFiles, err := validateManifestVariablesFiles(config.ManifestVariablesFiles)
-		if err != nil {
-			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", config.ManifestVariablesFiles)
-		}
-
-		modified, err := _replaceVariables(manifestFile, manifestVariables, manifestVariablesFiles)
-		if err != nil {
-			return "", []string{}, []string{}, errors.Wrap(err, "Cannot prepare manifest file")
-		}
-
-		if modified {
-			log.Entry().Infof("Manifest file '%s' has been updated (variable substitution)", manifestFile)
-		} else {
-			log.Entry().Infof("Manifest file '%s' has not been updated (no variable substitution)", manifestFile)
-		}
-
-		err = handleLegacyCfManifest(manifestFile)
-		if err != nil {
-			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot handle legacy manifest '%s'", manifestFile)
-		}
-	}
-
-	return "blue-green-deploy", deployOptions, smokeTest, nil
-}
-
-// validateManifestVariablesFiles: in case the only provided file is 'manifest-variables.yml' and this file does not
-// exist we ignore that file. For any other file there is no check if that file exists. In case several files are
-// provided we also do not check for the default file 'manifest-variables.yml'
-func validateManifestVariablesFiles(manifestVariablesFiles []string) ([]string, error) {
-
-	const defaultManifestVariableFileName = "manifest-variables.yml"
-	if len(manifestVariablesFiles) == 1 && manifestVariablesFiles[0] == defaultManifestVariableFileName {
-		// we have only the default file. Most likely this is not configured, but we simply have the default.
-		// In case this file does not exist we ignore that file.
-		exists, err := fileUtils.FileExists(defaultManifestVariableFileName)
-		if err != nil {
-			return []string{}, errors.Wrapf(err, "Cannot check if file '%s' exists", defaultManifestVariableFileName)
-		}
-		if !exists {
-			return []string{}, nil
-		}
-	}
-	return manifestVariablesFiles, nil
-}
-
-func toParameterMap(parameters []string) (*orderedmap.OrderedMap, error) {
-
-	parameterMap := orderedmap.NewOrderedMap()
-
-	for _, p := range parameters {
-		keyVal := strings.Split(p, "=")
-		if len(keyVal) != 2 {
-			return nil, fmt.Errorf("Invalid parameter provided (expected format <key>=<val>: '%s'", p)
-		}
-		parameterMap.Set(keyVal[0], keyVal[1])
-	}
-	return parameterMap, nil
-}
-
-func handleLegacyCfManifest(manifestFile string) error {
-	manifest, err := _getManifest(manifestFile)
-	if err != nil {
-		return err
-	}
-
-	err = manifest.Transform()
-	if err != nil {
-		return err
-	}
-	if manifest.IsModified() {
-
-		err = manifest.WriteManifest()
-
-		if err != nil {
-			return err
-		}
-		log.Entry().Infof("Manifest file '%s' was in legacy format has been transformed and updated.", manifestFile)
-	} else {
-		log.Entry().Debugf("Manifest file '%s' was not in legacy format. No transformation needed, no update performed.", manifestFile)
-	}
-	return nil
-}
-
-func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []string, []string, error) {
+func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []string, error) {
 
 	deployOptions := []string{}
 	varOptions, err := _getVarsOptions(config.ManifestVariables)
 	if err != nil {
-		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
+		return "", []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
 	}
 
 	varFileOptions, err := _getVarsFileOptions(config.ManifestVariablesFiles)
@@ -592,73 +391,14 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 				log.Entry().Warningf("We skip adding not-existing file '%s' as a vars-file to the cf create-service-push call", missingVarFile)
 			}
 		} else {
-			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+			return "", []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
 		}
 	}
 
 	deployOptions = append(deployOptions, varOptions...)
 	deployOptions = append(deployOptions, varFileOptions...)
 
-	return "push", deployOptions, []string{}, nil
-}
-
-func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]interface{}, error) {
-
-	out := map[string]interface{}{}
-
-	if err == nil {
-		for _, key := range in.Keys() {
-			if k, ok := key.(string); ok {
-				val, exists := in.Get(key)
-				if exists {
-					out[k] = val
-				} else {
-					return nil, fmt.Errorf("No entry found for '%v'", key)
-				}
-			} else {
-				return nil, fmt.Errorf("Cannot cast key '%v' to string", key)
-			}
-		}
-	}
-
-	return out, err
-}
-
-func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {
-
-	manifestFile, err := getManifestFileName(config)
-
-	manifestFileExists, err := fileUtils.FileExists(manifestFile)
-	if err != nil {
-		return "", err
-	}
-
-	if config.DeployType == "blue-green" && manifestFileExists {
-
-		manifest, _ := _getManifest(manifestFile)
-
-		apps, err := manifest.GetApplications()
-
-		if err != nil {
-			return "", fmt.Errorf("failed to obtain applications from manifest: %w", err)
-		}
-		if len(apps) > 1 {
-			return "", fmt.Errorf("Your manifest contains more than one application. For blue green deployments your manifest file may contain only one application")
-		}
-
-		hasNoRouteProperty, err := manifest.ApplicationHasProperty(0, "no-route")
-		if err != nil {
-			return "", errors.Wrap(err, "Failed to obtain 'no-route' property from manifest")
-		}
-		if len(apps) == 1 && hasNoRouteProperty {
-
-			const deployTypeStandard = "standard"
-			log.Entry().Warningf("Blue green deployment is not possible for application without route. Using deployment type '%s' instead.", deployTypeStandard)
-			return deployTypeStandard, nil
-		}
-	}
-
-	return config.DeployType, nil
+	return "push", deployOptions, nil
 }
 
 func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command command.ExecRunner) error {
@@ -675,7 +415,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		deployCommand = "bg-deploy"
 
 		const noConfirmFlag = "--no-confirm"
-		if !piperutils.ContainsString(deployParams, noConfirmFlag) {
+		if !slices.Contains(deployParams, noConfirmFlag) {
 			deployParams = append(deployParams, noConfirmFlag)
 		}
 	}
@@ -704,7 +444,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 
 	cfDeployParams = append(cfDeployParams, extFileParams...)
 
-	err := cfDeploy(config, cfDeployParams, nil, nil, command)
+	err := cfDeploy(config, cfDeployParams, nil, command)
 
 	for _, extFile := range extFiles {
 		renameError := fileUtils.FileRename(extFile+".original", extFile)
@@ -831,7 +571,6 @@ func cfDeploy(
 	config *cloudFoundryDeployOptions,
 	cfDeployParams []string,
 	additionalEnvironment []string,
-	postDeployAction func(command command.ExecRunner) error,
 	command command.ExecRunner) error {
 
 	const cfLogFile = "cf.log"
@@ -879,10 +618,6 @@ func cfDeploy(
 		if err != nil {
 			log.Entry().WithError(err).Errorf("Command '%s' failed.", cfDeployParams)
 		}
-	}
-
-	if err == nil && postDeployAction != nil {
-		err = postDeployAction(command)
 	}
 
 	if loginPerformed {

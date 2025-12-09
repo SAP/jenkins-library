@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/format"
@@ -89,12 +90,12 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 			results = append(results, result)
 
 			// append taxonomies
-			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !piperutils.ContainsString(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
+			if len(v.VulnerabilityWithRemediation.CweID) > 0 && !slices.Contains(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID) {
 				cweIdsForTaxonomies = append(cweIdsForTaxonomies, v.VulnerabilityWithRemediation.CweID)
 			}
 
 			// only create rule on new CVE
-			if !piperutils.ContainsString(collectedRules, result.RuleID) {
+			if !slices.Contains(collectedRules, result.RuleID) {
 				collectedRules = append(collectedRules, result.RuleID)
 
 				// set information about BlackDuck project
@@ -159,7 +160,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 		Driver: format.Driver{
 			Name:           "Black Duck",
 			Version:        "unknown",
-			InformationUri: "https://community.synopsys.com/s/document-item?bundleId=integrations-detect&topicId=introduction.html&_LANG=enus",
+			InformationUri: "https://documentation.blackduck.com/bundle/detect/page/introduction.html",
 			Rules:          rules,
 		},
 	}
@@ -249,7 +250,7 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write SARIF file")
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "Blackduck Detect Vulnerability SARIF file", Target: sarifReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Detect Vulnerability SARIF file", Target: sarifReportPath})
 
 	return reportPaths, nil
 }

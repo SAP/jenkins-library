@@ -2,20 +2,22 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/python"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 const (
-	PyBomFilename           = "bom-pip.xml"
-	stepName                = "pythonBuild"
-	cycloneDxPackageVersion = "cyclonedx-bom==3.11.0"
-	cycloneDxSchemaVersion  = "1.4"
+	cycloneDxVersion       = "6.1.1"
+	cycloneDxSchemaVersion = "1.4"
+	stepName               = "pythonBuild"
 )
 
 type pythonBuildUtils interface {
@@ -32,7 +34,7 @@ type pythonBuildUtilsBundle struct {
 func newPythonBuildUtils() pythonBuildUtils {
 	utils := pythonBuildUtilsBundle{
 		Command: &command.Command{
-			StepName: "pythonBuild",
+			StepName: stepName,
 		},
 		Files: &piperutils.Files{},
 	}
@@ -52,33 +54,71 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-
-	pipInstallFlags := []string{"install", "--upgrade"}
-	virutalEnvironmentPathMap := make(map[string]string)
-
-	err := createVirtualEnvironment(utils, config, virutalEnvironmentPathMap)
-	if err != nil {
+	if exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirtualEnvironmentName); err != nil {
 		return err
+	} else {
+		log.DeferExitHandler(exitHandler)
+		defer exitHandler()
 	}
 
-	err = buildExecute(config, utils, pipInstallFlags, virutalEnvironmentPathMap)
+	// check project descriptor
+	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
 	if err != nil {
-		return fmt.Errorf("Python build failed with error: %w", err)
+		return fmt.Errorf("failed to determine build descriptor file: %w", err)
 	}
 
-	if config.CreateBOM {
-		if err := runBOMCreationForPy(utils, pipInstallFlags, virutalEnvironmentPathMap, config); err != nil {
-			return fmt.Errorf("BOM creation failed: %w", err)
+	if strings.HasSuffix(buildDescriptorFilePath, "pyproject.toml") {
+		// handle pyproject.toml file
+		workDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		utils.AppendEnv([]string{
+			fmt.Sprintf("VIRTUAL_ENV=%s", filepath.Join(workDir, config.VirtualEnvironmentName)),
+		})
+		if err := python.BuildWithPyProjectToml(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+			return fmt.Errorf("failed to build python project: %w", err)
+		}
+	} else {
+		// handle legacy setup.py file
+		if err := python.BuildWithSetupPy(utils.RunExecutable, config.VirtualEnvironmentName, config.BuildFlags, config.SetupFlags); err != nil {
+			return fmt.Errorf("failed to build python project: %w", err)
 		}
 	}
 
-	log.Entry().Debugf("creating build settings information...")
-
-	dockerImage, err := GetDockerImageValue(stepName)
-	if err != nil {
-		return err
+	if config.CreateBOM {
+		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
+			return fmt.Errorf("failed to create BOM: %w", err)
+		}
 	}
 
+	if info, err := createBuildSettingsInfo(config); err != nil {
+		return fmt.Errorf("failed to create build settings info: %v", err)
+	} else {
+		commonPipelineEnvironment.custom.buildSettingsInfo = info
+	}
+
+	if config.Publish {
+		if err := python.PublishPackage(
+			utils.RunExecutable,
+			config.VirtualEnvironmentName,
+			config.TargetRepositoryURL,
+			config.TargetRepositoryUser,
+			config.TargetRepositoryPassword,
+		); err != nil {
+			return fmt.Errorf("failed to publish: %w", err)
+		}
+	}
+	return nil
+}
+
+// TODO: extract to common place
+func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
+	log.Entry().Debugf("creating build settings information...")
+	dockerImage, err := GetDockerImageValue(stepName)
+	if err != nil {
+		return "", err
+	}
 	pythonConfig := buildsettings.BuildOptions{
 		CreateBOM:         config.CreateBOM,
 		Publish:           config.Publish,
@@ -89,85 +129,20 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+	return buildSettingsInfo, nil
+}
 
-	if config.Publish {
-		if err := publishWithTwine(config, utils, pipInstallFlags, virutalEnvironmentPathMap); err != nil {
-			return fmt.Errorf("failed to publish: %w", err)
+func searchDescriptor(supported []string, existsFunc func(string) (bool, error)) (string, error) {
+	var descriptor string
+	for _, f := range supported {
+		exists, _ := existsFunc(f)
+		if exists {
+			descriptor = f
+			break
 		}
 	}
-
-	err = removeVirtualEnvironment(utils, config)
-	if err != nil {
-		return err
+	if len(descriptor) == 0 {
+		return "", fmt.Errorf("no build descriptor available, supported: %v", supported)
 	}
-
-	return nil
-}
-
-func buildExecute(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-
-	var flags []string
-	flags = append(flags, config.BuildFlags...)
-	flags = append(flags, "setup.py", "sdist", "bdist_wheel")
-
-	log.Entry().Info("starting building python project:")
-	err := utils.RunExecutable(virutalEnvironmentPathMap["python"], flags...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func createVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions, virutalEnvironmentPathMap map[string]string) error {
-	virtualEnvironmentFlags := []string{"-m", "venv", config.VirutalEnvironmentName}
-	err := utils.RunExecutable("python3", virtualEnvironmentFlags...)
-	if err != nil {
-		return err
-	}
-	err = utils.RunExecutable("bash", "-c", "source "+filepath.Join(config.VirutalEnvironmentName, "bin", "activate"))
-	if err != nil {
-		return err
-	}
-	virutalEnvironmentPathMap["pip"] = filepath.Join(config.VirutalEnvironmentName, "bin", "pip")
-	// venv will create symlinks to python3 inside the container
-	virutalEnvironmentPathMap["python"] = "python"
-	virutalEnvironmentPathMap["deactivate"] = filepath.Join(config.VirutalEnvironmentName, "bin", "deactivate")
-
-	return nil
-}
-
-func removeVirtualEnvironment(utils pythonBuildUtils, config *pythonBuildOptions) error {
-	err := utils.RemoveAll(config.VirutalEnvironmentName)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func runBOMCreationForPy(utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string, config *pythonBuildOptions) error {
-	pipInstallFlags = append(pipInstallFlags, cycloneDxPackageVersion)
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
-		return err
-	}
-	virutalEnvironmentPathMap["cyclonedx"] = filepath.Join(config.VirutalEnvironmentName, "bin", "cyclonedx-py")
-
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["cyclonedx"], "--e", "--output", PyBomFilename, "--format", "xml", "--schema-version", cycloneDxSchemaVersion); err != nil {
-		return err
-	}
-	return nil
-}
-
-func publishWithTwine(config *pythonBuildOptions, utils pythonBuildUtils, pipInstallFlags []string, virutalEnvironmentPathMap map[string]string) error {
-	pipInstallFlags = append(pipInstallFlags, "twine")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["pip"], pipInstallFlags...); err != nil {
-		return err
-	}
-	virutalEnvironmentPathMap["twine"] = filepath.Join(config.VirutalEnvironmentName, "bin", "twine")
-	if err := utils.RunExecutable(virutalEnvironmentPathMap["twine"], "upload", "--username", config.TargetRepositoryUser,
-		"--password", config.TargetRepositoryPassword, "--repository-url", config.TargetRepositoryURL, "--disable-progress-bar",
-		"dist/*"); err != nil {
-		return err
-	}
-	return nil
+	return descriptor, nil
 }

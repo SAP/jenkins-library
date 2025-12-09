@@ -17,6 +17,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
+const automaticdTTLThreshold = 18 * 24 * time.Hour // Threshold for automaticd service to rotate secrets
+
 type vaultRotateSecretIDUtils interface {
 	GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration, error)
 	GetAppRoleName() (string, error)
@@ -41,20 +43,22 @@ func (v vaultRotateSecretIDUtilsBundle) UpdateSecretInStore(config *vaultRotateS
 
 func vaultRotateSecretId(config vaultRotateSecretIdOptions, telemetryData *telemetry.CustomData) {
 
-	vaultConfig := &vault.Config{
+	vaultConfig := &vault.ClientConfig{
 		Config: &api.Config{
 			Address: config.VaultServerURL,
 		},
 		Namespace: config.VaultNamespace,
+		RoleID:    GeneralConfig.VaultRoleID,
+		SecretID:  GeneralConfig.VaultRoleSecretID,
 	}
-	client, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
+	client, err := vault.NewClient(vaultConfig)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("could not create Vault client")
 	}
 	defer client.MustRevokeToken()
 
 	utils := vaultRotateSecretIDUtilsBundle{
-		Client:     &client,
+		Client:     client,
 		config:     &config,
 		updateFunc: writeVaultSecretIDToStore,
 	}
@@ -75,35 +79,52 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 	}
 
 	ttl, err := utils.GetAppRoleSecretIDTtl(GeneralConfig.VaultRoleSecretID, roleName)
-
 	if err != nil {
 		log.Entry().WithError(err).Warn("Could not fetch secret ID TTL. Secret ID rotation failed!")
 		return nil
 	}
 
-	log.Entry().Debugf("Your secret ID is about to expire in %.0f", ttl.Round(time.Hour*24).Hours()/24)
+	if ttl == 0 {
+		log.Entry().Warn("Secret ID expired")
+	} else {
+		log.Entry().Infof("Your secret ID is about to expire in %.0f days", ttl.Round(time.Hour*24).Hours()/24)
+	}
 
 	if ttl > time.Duration(config.DaysBeforeExpiry)*24*time.Hour {
+		log.Entry().Info("Secret ID TTL valid.")
 		return nil
 	}
 
-	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
+	// Check if the secret store is ADO and apply the TTL condition
+	if config.SecretStore == "ado" {
+		if ttl < automaticdTTLThreshold {
+			// Secret TTL is less than 18 days but greater than or equal to the configured days before expiry
+			log.Entry().Warn("automaticd service did not update Vault secrets. Attempting to update the secret with PAT.")
+			if config.AdoPersonalAccessToken == "" {
+				log.Entry().Warn("ADO Personal Access Token is required but not provided. Secret ID rotation cannot proceed for Azure DevOps.")
+				return fmt.Errorf("ADO Personal Access Token is missing")
+			}
+		}
+	}
 
+	log.Entry().Info("Rotating secret ID...")
+
+	newSecretID, err := utils.GenerateNewAppRoleSecret(GeneralConfig.VaultRoleSecretID, roleName)
 	if err != nil || newSecretID == "" {
-		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation faield!")
+		log.Entry().WithError(err).Warn("Generating a new secret ID failed. Secret ID rotation failed!")
 		return nil
 	}
 
 	if err = utils.UpdateSecretInStore(config, newSecretID); err != nil {
-		log.Entry().WithError(err).Warnf("Could not write secret back to secret store %s", config.SecretStore)
-		return err
+		return fmt.Errorf("could not write secret back to secret store %s: %w", config.SecretStore, err)
 	}
+
 	log.Entry().Infof("Secret has been successfully updated in secret store %s", config.SecretStore)
 	return nil
-
 }
 
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
+
 	switch config.SecretStore {
 	case "jenkins":
 		ctx := context.Background()
@@ -138,26 +159,22 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 
 		ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: GitHub client not created: %v", err)
-			return err
+			return fmt.Errorf("could not create GitHub client: %w", err)
 		}
 
 		publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, config.Owner, config.Repository)
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: repository's public key not retrieved: %v", err)
-			return err
+			return fmt.Errorf("could not retrieve repository's public key: %w", err)
 		}
 
 		encryptedSecret, err := piperGithub.CreateEncryptedSecret(config.VaultAppRoleSecretTokenCredentialsID, secretID, publicKey)
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: secret encryption failed: %v", err)
-			return err
+			return fmt.Errorf("could not encrypt secret ID: %w", err)
 		}
 
 		_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, config.Owner, config.Repository, encryptedSecret)
 		if err != nil {
-			log.Entry().Warnf("Could not write secret ID back to GitHub Actions: submission to GitHub failed: %v", err)
-			return err
+			return fmt.Errorf("could not write secret ID back to GitHub Actions: submission to GitHub failed: %w", err)
 		}
 	default:
 		return fmt.Errorf("error: invalid secret store: %s", config.SecretStore)

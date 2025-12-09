@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"os"
 
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )

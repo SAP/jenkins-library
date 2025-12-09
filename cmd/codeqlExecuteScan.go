@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
-	"time"
+
+	"github.com/google/shlex"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type codeqlExecuteScanUtils interface {
@@ -35,11 +35,6 @@ type codeqlExecuteScanUtilsBundle struct {
 	*piperhttp.Client
 }
 
-const (
-	sarifUploadComplete = "complete"
-	sarifUploadFailed   = "failed"
-)
-
 func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 	utils := codeqlExecuteScanUtilsBundle{
 		Command: &command.Command{},
@@ -53,7 +48,6 @@ func newCodeqlExecuteScanUtils() codeqlExecuteScanUtils {
 }
 
 func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, influx *codeqlExecuteScanInflux) {
-
 	utils := newCodeqlExecuteScanUtils()
 
 	influx.step_data.fields.codeql = false
@@ -67,12 +61,33 @@ func codeqlExecuteScan(config codeqlExecuteScanOptions, telemetryData *telemetry
 	influx.step_data.fields.codeql = true
 }
 
-func codeqlQuery(cmd []string, codeqlQuery string) []string {
-	if len(codeqlQuery) > 0 {
-		cmd = append(cmd, codeqlQuery)
+func appendCodeqlQuerySuite(utils codeqlExecuteScanUtils, cmd []string, querySuite, transformString string) []string {
+	if len(querySuite) > 0 {
+		if len(transformString) > 0 {
+			querySuite = transformQuerySuite(utils, querySuite, transformString)
+			if len(querySuite) == 0 {
+				return cmd
+			}
+		}
+		cmd = append(cmd, querySuite)
 	}
 
 	return cmd
+}
+
+func transformQuerySuite(utils codeqlExecuteScanUtils, querySuite, transformString string) string {
+	var bufferOut, bufferErr bytes.Buffer
+	utils.Stdout(&bufferOut)
+	defer utils.Stdout(log.Writer())
+	utils.Stderr(&bufferErr)
+	defer utils.Stderr(log.Writer())
+	if err := utils.RunExecutable("sh", []string{"-c", fmt.Sprintf("echo %s | sed -E \"%s\"", querySuite, transformString)}...); err != nil {
+		log.Entry().WithError(err).Error("failed to transform querySuite")
+		e := bufferErr.String()
+		log.Entry().Error(e)
+		return querySuite
+	}
+	return strings.TrimSpace(bufferOut.String())
 }
 
 func execute(utils codeqlExecuteScanUtils, cmd []string, isVerbose bool) error {
@@ -100,81 +115,6 @@ func getLangFromBuildTool(buildTool string) string {
 	}
 }
 
-func getGitRepoInfo(repoUri string, repoInfo *codeql.RepoInfo) error {
-	if repoUri == "" {
-		return errors.New("repository param is not set or it cannot be auto populated")
-	}
-
-	pat := regexp.MustCompile(`^(https:\/\/|git@)([\S]+:[\S]+@)?([^\/:]+)[\/:]([^\/:]+\/[\S]+)$`)
-	matches := pat.FindAllStringSubmatch(repoUri, -1)
-	if len(matches) > 0 {
-		match := matches[0]
-		repoInfo.ServerUrl = "https://" + match[3]
-		repoData := strings.Split(strings.TrimSuffix(match[4], ".git"), "/")
-		if len(repoData) != 2 {
-			return fmt.Errorf("Invalid repository %s", repoUri)
-		}
-
-		repoInfo.Owner = repoData[0]
-		repoInfo.Repo = repoData[1]
-		return nil
-	}
-
-	return fmt.Errorf("Invalid repository %s", repoUri)
-}
-
-func initGitInfo(config *codeqlExecuteScanOptions) (codeql.RepoInfo, error) {
-	var repoInfo codeql.RepoInfo
-	err := getGitRepoInfo(config.Repository, &repoInfo)
-	if err != nil {
-		log.Entry().Error(err)
-	}
-
-	repoInfo.Ref = config.AnalyzedRef
-	repoInfo.CommitId = config.CommitID
-
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().Warn("No orchestrator found. We assume piper is running locally.")
-	} else {
-		if repoInfo.Ref == "" {
-			repoInfo.Ref = provider.GitReference()
-		}
-
-		if repoInfo.CommitId == "" || repoInfo.CommitId == "NA" {
-			repoInfo.CommitId = provider.CommitSHA()
-		}
-
-		if repoInfo.ServerUrl == "" {
-			err = getGitRepoInfo(provider.RepoURL(), &repoInfo)
-			if err != nil {
-				log.Entry().Error(err)
-			}
-		}
-	}
-	if len(config.TargetGithubRepoURL) > 0 {
-		log.Entry().Infof("Checking target GitHub repo URL: %s", config.TargetGithubRepoURL)
-		if strings.Contains(repoInfo.ServerUrl, "github") {
-			log.Entry().Errorf("TargetGithubRepoURL should not be set as the source repo is on github.")
-			return repoInfo, errors.New("TargetGithubRepoURL should not be set as the source repo is on github.")
-		}
-		err := getGitRepoInfo(config.TargetGithubRepoURL, &repoInfo)
-		if err != nil {
-			log.Entry().Error(err)
-			return repoInfo, err
-		}
-		if len(config.TargetGithubBranchName) > 0 {
-			log.Entry().Infof("Target GitHub branch name: %s", config.TargetGithubBranchName)
-			repoInfo.Ref = config.TargetGithubBranchName
-			if len(strings.Split(config.TargetGithubBranchName, "/")) < 3 {
-				repoInfo.Ref = "refs/heads/" + config.TargetGithubBranchName
-			}
-		}
-	}
-
-	return repoInfo, nil
-}
-
 func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 	if len(config.GithubToken) > 0 {
 		return true, config.GithubToken
@@ -188,10 +128,328 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 	return false, ""
 }
 
-func uploadResults(config *codeqlExecuteScanOptions, repoInfo codeql.RepoInfo, token string, utils codeqlExecuteScanUtils) (string, error) {
-	cmd := []string{"github", "upload-results", "--sarif=" + filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
+func printCodeqlImageVersion() {
+	codeqlVersion, err := os.ReadFile("/etc/image-version")
+	if err != nil {
+		log.Entry().Infof("CodeQL image version: unknown")
+	} else {
+		log.Entry().Infof("CodeQL image version: %s", string(codeqlVersion))
+	}
+}
 
-	if config.GithubToken != "" {
+func prepareCodeQLConfigFile(config *codeqlExecuteScanOptions) error {
+	pathsToScan := codeql.ParsePaths(config.Paths)
+	pathsToIgnore := codeql.ParsePaths(config.PathsIgnore)
+
+	codeQLExecName := "codeql"
+	codeQLPath, err := codeql.Which(codeQLExecName)
+	if err != nil {
+		return fmt.Errorf("could not locate codeql executable %w", err)
+	}
+	location, fileName := path.Split(codeQLPath)
+	if fileName != codeQLExecName {
+		return fmt.Errorf("could not find codeql executable in path: %s", codeQLPath)
+	}
+	defaultConfigLocation := path.Join(location, "default-codeql-config.yml")
+	err = codeql.AppendCodeQLPaths(defaultConfigLocation, pathsToScan, pathsToIgnore)
+	if err != nil {
+		return fmt.Errorf("append paths and paths ignore to the default config: %w", err)
+	}
+	return nil
+}
+
+func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
+	printCodeqlImageVersion()
+
+	var reports []piperutils.Path
+
+	err := prepareCodeQLConfigFile(config)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to prepare codeql config file")
+		return reports, err
+	}
+
+	dbCreateCustomFlags := codeql.ParseCustomFlags(config.DatabaseCreateFlags)
+	isMultiLang, err := runDatabaseCreate(config, dbCreateCustomFlags, utils)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to create codeql database")
+		return reports, err
+	}
+
+	err = os.MkdirAll(filepath.Join(config.ModulePath, "target"), os.ModePerm)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to create output directory for reports")
+		return reports, err
+	}
+
+	dbAnalyzeCustomFlags := codeql.ParseCustomFlags(config.DatabaseAnalyzeFlags)
+	scanReports, sarifFiles, err := runDatabaseAnalyze(config, dbAnalyzeCustomFlags, utils, isMultiLang)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to analyze codeql database")
+		return reports, err
+	}
+	reports = append(reports, scanReports...)
+
+	if len(config.CustomCommand) > 0 {
+		err = runCustomCommand(utils, config.CustomCommand)
+		if err != nil {
+			return reports, err
+		}
+	}
+
+	repoInfo, err := codeql.GetRepoInfo(config.Repository, config.AnalyzedRef, config.CommitID,
+		config.TargetGithubRepoURL, config.TargetGithubBranchName)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to get repository info")
+		return reports, err
+	}
+
+	if len(config.TargetGithubRepoURL) > 0 {
+		err = uploadProjectToGitHub(config, repoInfo)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to upload project to Github")
+			return reports, err
+		}
+	}
+
+	var scanResults []codeql.CodeqlFindings
+	if !config.UploadResults {
+		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
+	} else {
+		log.Entry().Infof("The sarif results will be uploaded to the repository %s", repoInfo.FullUrl)
+
+		hasToken, token := getToken(config)
+		if !hasToken {
+			return reports, fmt.Errorf("failed running upload-results as githubToken was not specified")
+		}
+
+		err = uploadSarifResults(config, token, repoInfo, sarifFiles, utils)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to upload sarif results")
+			return reports, err
+		}
+
+		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
+		scanResults, err = codeqlScanAuditInstance.GetVulnerabilities(repoInfo.AnalyzedRef)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get vulnerabilities")
+			return reports, err
+		}
+
+		codeqlAudit := codeql.CodeqlAudit{
+			ToolName:               "codeql",
+			RepositoryUrl:          repoInfo.FullUrl,
+			CodeScanningLink:       repoInfo.ScanUrl,
+			RepositoryReferenceUrl: repoInfo.FullRef,
+			QuerySuite:             config.QuerySuite,
+			ScanResults:            scanResults,
+		}
+		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to write json compliance report")
+			return reports, err
+		}
+		reports = append(reports, paths...)
+
+		if config.CheckForCompliance {
+			err = checkForCompliance(scanResults, config, repoInfo)
+			if err != nil {
+				return reports, err
+			}
+		}
+	}
+
+	addDataToInfluxDB(repoInfo, config.QuerySuite, scanResults, influx)
+
+	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, config.ModulePath)
+	if err != nil {
+		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
+	} else {
+		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
+	}
+
+	return reports, nil
+}
+
+func runDatabaseCreate(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) (bool, error) {
+	isMultiLang, cmd, err := prepareCmdForDatabaseCreate(customFlags, config, utils)
+	if err != nil {
+		log.Entry().Error("failed to prepare command for codeql database create")
+		return isMultiLang, err
+	}
+	if err = execute(utils, cmd, GeneralConfig.Verbose); err != nil {
+		log.Entry().Error("failed running command codeql database create")
+		return isMultiLang, err
+	}
+	return isMultiLang, nil
+}
+
+func runDatabaseAnalyze(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils, isMultiLang bool) ([]piperutils.Path, []string, error) {
+	var reports []piperutils.Path
+	var sarifFiles []string
+
+	if !isMultiLang {
+		sarifReport, sarifPath, err := executeAnalysis("sarif-latest", "codeqlReport.sarif", customFlags, config, utils, config.Database, "")
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, sarifReport...)
+		if sarifPath != "" {
+			sarifFiles = append(sarifFiles, sarifPath)
+		}
+
+		csvReport, _, err := executeAnalysis("csv", "codeqlReport.csv", customFlags, config, utils, config.Database, "")
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, csvReport...)
+		return reports, sarifFiles, nil
+	}
+
+	languages := getLanguageList(config)
+	for _, lang := range languages {
+		lang = strings.TrimSpace(lang)
+		if lang == "" {
+			continue
+		}
+		dbPath := filepath.Join(config.Database, lang)
+
+		sarifOut := fmt.Sprintf("%s.sarif", lang)
+		localFlags := cloneFlags(customFlags)
+		if !codeql.IsFlagSetByUser(localFlags, []string{"--sarif-category"}) {
+			localFlags["--sarif-category"] = fmt.Sprintf("--sarif-category=%s", lang)
+		}
+
+		sarifReport, sarifPath, err := executeAnalysis("sarif-latest", sarifOut, localFlags, config, utils, dbPath, lang)
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, sarifReport...)
+		if sarifPath != "" {
+			sarifFiles = append(sarifFiles, sarifPath)
+		}
+
+		csvOut := fmt.Sprintf("%s.csv", lang)
+		csvReport, _, err := executeAnalysis("csv", csvOut, customFlags, config, utils, dbPath, lang)
+		if err != nil {
+			return nil, nil, err
+		}
+		reports = append(reports, csvReport...)
+	}
+
+	return reports, sarifFiles, nil
+}
+
+func runGithubUploadResults(repoInfo *codeql.RepoInfo, token string, sarifPath string, utils codeqlExecuteScanUtils) (string, error) {
+	cmd := prepareCmdForUploadResults(repoInfo, token, sarifPath)
+
+	var bufferOut, bufferErr bytes.Buffer
+	utils.Stdout(&bufferOut)
+	defer utils.Stdout(log.Writer())
+	utils.Stderr(&bufferErr)
+	defer utils.Stderr(log.Writer())
+
+	if err := execute(utils, cmd, GeneralConfig.Verbose); err != nil {
+		e := bufferErr.String()
+		log.Entry().Error(e)
+		if strings.Contains(e, "Unauthorized") {
+			log.Entry().Error("Either your Github Token is invalid or you use both Vault and Jenkins credentials where your Vault credentials are invalid, to use your Jenkins credentials try setting 'skipVault:true'")
+		}
+		return "", err
+	}
+
+	url := strings.TrimSpace(bufferOut.String())
+	return url, nil
+}
+
+func executeAnalysis(format, reportPath string, customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils, databasePath string, langForLog string) ([]piperutils.Path, string, error) {
+	moduleTargetPath := filepath.Join(config.ModulePath, "target")
+	report := filepath.Join(moduleTargetPath, reportPath)
+	cmd, err := prepareCmdForDatabaseAnalyze(utils, customFlags, config, format, report, databasePath)
+	if err != nil {
+		if langForLog == "" {
+			log.Entry().Errorf("failed to prepare command for codeql database analyze (format=%s)", format)
+		} else {
+			log.Entry().Errorf("failed to prepare command for codeql database analyze (format=%s, lang=%s)", format, langForLog)
+		}
+		return nil, "", err
+	}
+	if err = execute(utils, cmd, GeneralConfig.Verbose); err != nil {
+		if langForLog == "" {
+			log.Entry().Errorf("failed running command codeql database analyze for %s generation", format)
+		} else {
+			log.Entry().Errorf("failed running command codeql database analyze for %s generation (lang=%s)", format, langForLog)
+		}
+		return nil, "", err
+	}
+	return []piperutils.Path{
+			{Target: report},
+		}, func() string {
+			if strings.HasPrefix(format, "sarif") {
+				return report
+			}
+			return ""
+		}(), nil
+}
+
+func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) (bool, []string, error) {
+	cmd := []string{"database", "create", config.Database}
+	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--overwrite", "--no-overwrite"}, []string{"--overwrite"}, customFlags)
+	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--source-root", "-s"}, []string{"--source-root", "."}, customFlags)
+	cmd = codeql.AppendFlagIfNotSetByUser(cmd, []string{"--working-dir"}, []string{"--working-dir", config.ModulePath}, customFlags)
+
+	isMultiLang := false
+	if !codeql.IsFlagSetByUser(customFlags, []string{"--language", "-l"}) {
+		language := getLangFromBuildTool(config.BuildTool)
+		if len(language) == 0 && len(config.Language) == 0 {
+			if config.BuildTool == "custom" {
+				return false, nil, fmt.Errorf("as the buildTool is custom. please specify the language parameter")
+			} else {
+				return false, nil, fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
+			}
+		}
+		if len(language) > 0 {
+			cmd = append(cmd, "--language="+language)
+		} else {
+			if strings.Contains(config.Language, ",") { // coma separation used to specify multiple languages
+				isMultiLang = true
+				cmd = append(cmd, "--db-cluster")
+			}
+			cmd = append(cmd, "--language="+config.Language)
+		}
+	}
+
+	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
+
+	if len(config.BuildCommand) > 0 && !codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
+		buildCmd := config.BuildCommand
+		buildCmd = buildCmd + getMavenSettings(buildCmd, config, utils)
+		cmd = append(cmd, "--command="+buildCmd)
+	}
+
+	if codeql.IsFlagSetByUser(customFlags, []string{"--command", "-c"}) {
+		updateCmdFlag(config, customFlags, utils)
+	}
+	cmd = codeql.AppendCustomFlags(cmd, customFlags)
+
+	return isMultiLang, cmd, nil
+}
+
+func prepareCmdForDatabaseAnalyze(utils codeqlExecuteScanUtils, customFlags map[string]string, config *codeqlExecuteScanOptions, format, reportPath, databasePath string) ([]string, error) {
+	cmd := []string{"database", "analyze", "--format=" + format, "--output=" + reportPath, databasePath}
+	cmd = codeql.AppendThreadsAndRam(cmd, config.Threads, config.Ram, customFlags)
+	cmd = codeql.AppendCustomFlags(cmd, customFlags)
+	cmd = appendCodeqlQuerySuite(utils, cmd, config.QuerySuite, config.TransformQuerySuite)
+	return cmd, nil
+}
+
+func prepareCmdForUploadResults(repoInfo *codeql.RepoInfo, token string, sarifPath string) []string {
+	cmd := []string{"github", "upload-results", "--sarif=" + sarifPath}
+
+	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
+	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
+
+	if token != "" {
 		cmd = append(cmd, "-a="+token)
 	}
 
@@ -203,234 +461,101 @@ func uploadResults(config *codeqlExecuteScanOptions, repoInfo codeql.RepoInfo, t
 		cmd = append(cmd, "--github-url="+repoInfo.ServerUrl)
 	}
 
-	if repoInfo.Repo != "" {
+	if repoInfo.Repo != "" && repoInfo.Owner != "" {
 		cmd = append(cmd, "--repository="+(repoInfo.Owner+"/"+repoInfo.Repo))
 	}
 
-	if repoInfo.Ref != "" {
-		cmd = append(cmd, "--ref="+repoInfo.Ref)
+	if repoInfo.AnalyzedRef != "" {
+		cmd = append(cmd, "--ref="+repoInfo.AnalyzedRef)
 	}
-
-	//if no git params are passed(commitId, reference, serverUrl, repository), then codeql tries to auto populate it based on git information of the checkout repository.
-	//It also depends on the orchestrator. Some orchestrator keep git information and some not.
-
-	var bufferOut, bufferErr bytes.Buffer
-	utils.Stdout(&bufferOut)
-	defer utils.Stdout(log.Writer())
-	utils.Stderr(&bufferErr)
-	defer utils.Stderr(log.Writer())
-
-	err := execute(utils, cmd, GeneralConfig.Verbose)
-	if err != nil {
-		e := bufferErr.String()
-		log.Entry().Error(e)
-		if strings.Contains(e, "Unauthorized") {
-			log.Entry().Error("Either your Github Token is invalid or you use both Vault and Jenkins credentials where your Vault credentials are invalid, to use your Jenkins credentials try setting 'skipVault:true'")
-		}
-		log.Entry().Error("failed to upload sarif results")
-		return "", err
-	}
-
-	url := bufferOut.String()
-	return strings.TrimSpace(url), nil
+	return cmd
 }
 
-func waitSarifUploaded(config *codeqlExecuteScanOptions, codeqlSarifUploader codeql.CodeqlSarifUploader) error {
-	maxRetries := config.SarifCheckMaxRetries
-	retryInterval := time.Duration(config.SarifCheckRetryInterval) * time.Second
+func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo *codeql.RepoInfo, sarifFiles []string, utils codeqlExecuteScanUtils) error {
+	// fallback
+	if len(sarifFiles) == 0 {
+		sarifFiles = []string{filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")}
+	}
 
-	log.Entry().Info("waiting for the SARIF to upload")
-	i := 1
-	for {
-		sarifStatus, err := codeqlSarifUploader.GetSarifStatus()
+	for _, sarifPath := range sarifFiles {
+		sarifUrl, err := runGithubUploadResults(repoInfo, token, sarifPath, utils)
 		if err != nil {
 			return err
 		}
-		log.Entry().Infof("the SARIF processing status: %s", sarifStatus.ProcessingStatus)
-		if sarifStatus.ProcessingStatus == sarifUploadComplete {
-			return nil
-		}
-		if sarifStatus.ProcessingStatus == sarifUploadFailed {
-			for e := range sarifStatus.Errors {
-				log.Entry().Error(e)
-			}
-			return errors.New("failed to upload sarif file")
-		}
-		if i <= maxRetries {
-			log.Entry().Infof("still waiting for the SARIF to upload: retrying in %d seconds... (retry %d/%d)", config.SarifCheckRetryInterval, i, maxRetries)
-			time.Sleep(retryInterval)
-			i++
-			continue
-		}
-		return errors.New("failed to check sarif uploading status: max retries reached")
-	}
-}
 
-func runCodeqlExecuteScan(config *codeqlExecuteScanOptions, telemetryData *telemetry.CustomData, utils codeqlExecuteScanUtils, influx *codeqlExecuteScanInflux) ([]piperutils.Path, error) {
-	codeqlVersion, err := os.ReadFile("/etc/image-version")
-	if err != nil {
-		log.Entry().Infof("CodeQL image version: unknown")
-	} else {
-		log.Entry().Infof("CodeQL image version: %s", string(codeqlVersion))
-	}
-
-	var reports []piperutils.Path
-	cmd := []string{"database", "create", config.Database, "--overwrite", "--source-root", ".", "--working-dir", config.ModulePath}
-
-	language := getLangFromBuildTool(config.BuildTool)
-
-	if len(language) == 0 && len(config.Language) == 0 {
-		if config.BuildTool == "custom" {
-			return reports, fmt.Errorf("as the buildTool is custom. please specify the language parameter")
-		} else {
-			return reports, fmt.Errorf("the step could not recognize the specified buildTool %s. please specify valid buildtool", config.BuildTool)
-		}
-	}
-	if len(language) > 0 {
-		cmd = append(cmd, "--language="+language)
-	} else {
-		cmd = append(cmd, "--language="+config.Language)
-	}
-
-	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
-
-	if len(config.BuildCommand) > 0 {
-		buildCmd := config.BuildCommand
-		buildCmd = buildCmd + getMavenSettings(config, utils)
-		cmd = append(cmd, "--command="+buildCmd)
-	}
-
-	err = execute(utils, cmd, GeneralConfig.Verbose)
-	if err != nil {
-		log.Entry().Error("failed running command codeql database create")
-		return reports, err
-	}
-
-	err = os.MkdirAll(filepath.Join(config.ModulePath, "target"), os.ModePerm)
-	if err != nil {
-		return reports, fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=sarif-latest", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")), config.Database)
-	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
-	cmd = codeqlQuery(cmd, config.QuerySuite)
-	err = execute(utils, cmd, GeneralConfig.Verbose)
-	if err != nil {
-		log.Entry().Error("failed running command codeql database analyze for sarif generation")
-		return reports, err
-	}
-
-	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.sarif")})
-
-	cmd = nil
-	cmd = append(cmd, "database", "analyze", "--format=csv", fmt.Sprintf("--output=%v", filepath.Join(config.ModulePath, "target", "codeqlReport.csv")), config.Database)
-	cmd = append(cmd, getRamAndThreadsFromConfig(config)...)
-	cmd = codeqlQuery(cmd, config.QuerySuite)
-	err = execute(utils, cmd, GeneralConfig.Verbose)
-	if err != nil {
-		log.Entry().Error("failed running command codeql database analyze for csv generation")
-		return reports, err
-	}
-
-	reports = append(reports, piperutils.Path{Target: filepath.Join(config.ModulePath, "target", "codeqlReport.csv")})
-
-	repoInfo, err := initGitInfo(config)
-	if err != nil {
-		return reports, err
-	}
-	repoUrl := fmt.Sprintf("%s/%s/%s", repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo)
-	repoReference, err := codeql.BuildRepoReference(repoUrl, repoInfo.Ref)
-	repoCodeqlScanUrl := fmt.Sprintf("%s/security/code-scanning?query=is:open+ref:%s", repoUrl, repoInfo.Ref)
-
-	if len(config.TargetGithubRepoURL) > 0 {
-		log.Entry().Infof("DB sources for %s will be uploaded to target GitHub repo: %s", config.Repository, repoUrl)
-		hasToken, token := getToken(config)
-		if !hasToken {
-			return reports, errors.New("failed running upload db sources to GitHub as githubToken was not specified")
-		}
-		repoUploader, err := codeql.NewGitUploaderInstance(
-			token,
-			repoInfo.Ref,
-			config.Database,
-			repoInfo.CommitId,
-			config.Repository,
-			config.TargetGithubRepoURL,
-		)
-		if err != nil {
-			return reports, err
-		}
-		targetCommitId, err := repoUploader.UploadProjectToGithub()
-		if err != nil {
-			return reports, errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
-		}
-		repoInfo.CommitId = targetCommitId
-		log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")
-	}
-
-	var scanResults []codeql.CodeqlFindings
-
-	if !config.UploadResults {
-		log.Entry().Warn("The sarif results will not be uploaded to the repository and compliance report will not be generated as uploadResults is set to false.")
-	} else {
-		log.Entry().Infof("The sarif results will be uploaded to the repository %s", repoUrl)
-		hasToken, token := getToken(config)
-		if !hasToken {
-			return reports, errors.New("failed running upload-results as githubToken was not specified")
-		}
-
-		sarifUrl, err := uploadResults(config, repoInfo, token, utils)
-		if err != nil {
-			return reports, err
-		}
 		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
-		err = waitSarifUploaded(config, &codeqlSarifUploader)
-		if err != nil {
-			return reports, errors.Wrap(err, "failed to upload sarif")
+		if err := codeql.WaitSarifUploaded(config.SarifCheckMaxRetries, config.SarifCheckRetryInterval, &codeqlSarifUploader); err != nil {
+			return errors.Wrapf(err, "failed to upload sarif %s", sarifPath)
 		}
+	}
+	return nil
+}
 
-		codeqlScanAuditInstance := codeql.NewCodeqlScanAuditInstance(repoInfo.ServerUrl, repoInfo.Owner, repoInfo.Repo, token, []string{})
-		scanResults, err = codeqlScanAuditInstance.GetVulnerabilities(repoInfo.Ref)
-		if err != nil {
-			return reports, errors.Wrap(err, "failed to get scan results")
-		}
+func uploadProjectToGitHub(config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo) error {
+	log.Entry().Infof("DB sources for %s will be uploaded to target GitHub repo: %s", config.Repository, repoInfo.FullUrl)
 
-		codeqlAudit := codeql.CodeqlAudit{ToolName: "codeql", RepositoryUrl: repoUrl, CodeScanningLink: repoCodeqlScanUrl, RepositoryReferenceUrl: repoReference, QuerySuite: config.QuerySuite, ScanResults: scanResults}
-		paths, err := codeql.WriteJSONReport(codeqlAudit, config.ModulePath)
-		if err != nil {
-			return reports, errors.Wrap(err, "failed to write json compliance report")
-		}
-		reports = append(reports, paths...)
+	hasToken, token := getToken(config)
+	if !hasToken {
+		return fmt.Errorf("failed running upload db sources to GitHub as githubToken was not specified")
+	}
+	repoUploader, err := codeql.NewGitUploaderInstance(
+		token,
+		repoInfo.AnalyzedRef,
+		config.Database,
+		repoInfo.CommitId,
+		config.Repository,
+		config.TargetGithubRepoURL,
+	)
+	if err != nil {
+		log.Entry().WithError(err).Error("failed to create github uploader")
+		return err
+	}
+	targetCommitId, err := repoUploader.UploadProjectToGithub()
+	if err != nil {
+		return errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
+	}
+	repoInfo.CommitId = targetCommitId
+	log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")
 
-		if config.CheckForCompliance {
-			for _, scanResult := range scanResults {
-				if scanResult.ClassificationName == codeql.AuditAll {
-					unaudited := scanResult.Total - scanResult.Audited
-					if unaudited > config.VulnerabilityThresholdTotal {
-						msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v", repoUrl, repoInfo.Ref, unaudited, config.VulnerabilityThresholdTotal)
-						return reports, errors.Errorf(msg)
-					}
-				}
+	return nil
+}
+
+func runCustomCommand(utils codeqlExecuteScanUtils, command string) error {
+	log.Entry().Infof("custom command will be run: %s", command)
+	cmd, err := shlex.Split(command)
+	if err != nil {
+		log.Entry().WithError(err).Errorf("failed to parse custom command %s", command)
+		return err
+	}
+	log.Entry().Infof("Parsed command '%s' with %d arguments: ['%s']", cmd[0], len(cmd[1:]), strings.Join(cmd[1:], "', '"))
+
+	err = utils.RunExecutable(cmd[0], cmd[1:]...)
+	if err != nil {
+		log.Entry().WithError(err).Errorf("failed to run command %s", command)
+		return err
+	}
+	log.Entry().Info("Success.")
+	return nil
+}
+
+func checkForCompliance(scanResults []codeql.CodeqlFindings, config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo) error {
+	for _, scanResult := range scanResults {
+		if scanResult.ClassificationName == codeql.AuditAll {
+			unaudited := scanResult.Total - scanResult.Audited
+			if unaudited > config.VulnerabilityThresholdTotal {
+				msg := fmt.Sprintf("Your repository %v with ref %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v",
+					repoInfo.FullUrl, repoInfo.AnalyzedRef, unaudited, config.VulnerabilityThresholdTotal)
+				return errors.New(msg)
 			}
 		}
 	}
-
-	addDataToInfluxDB(repoUrl, repoReference, repoCodeqlScanUrl, config.QuerySuite, scanResults, influx)
-
-	toolRecordFileName, err := codeql.CreateAndPersistToolRecord(utils, repoInfo, repoReference, repoUrl, config.ModulePath)
-	if err != nil {
-		log.Entry().Warning("TR_CODEQL: Failed to create toolrecord file ...", err)
-	} else {
-		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
-	}
-
-	return reports, nil
+	return nil
 }
 
-func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
-	influx.codeql_data.fields.repositoryURL = repoUrl
-	influx.codeql_data.fields.repositoryReferenceURL = repoRef
-	influx.codeql_data.fields.codeScanningLink = repoScanUrl
+func addDataToInfluxDB(repoInfo *codeql.RepoInfo, querySuite string, scanResults []codeql.CodeqlFindings, influx *codeqlExecuteScanInflux) {
+	influx.codeql_data.fields.repositoryURL = repoInfo.FullUrl
+	influx.codeql_data.fields.repositoryReferenceURL = repoInfo.FullRef
+	influx.codeql_data.fields.codeScanningLink = repoInfo.ScanUrl
 	influx.codeql_data.fields.querySuite = querySuite
 
 	for _, sr := range scanResults {
@@ -445,28 +570,61 @@ func addDataToInfluxDB(repoUrl, repoRef, repoScanUrl, querySuite string, scanRes
 	}
 }
 
-func getRamAndThreadsFromConfig(config *codeqlExecuteScanOptions) []string {
-	params := make([]string, 0, 2)
-	if len(config.Threads) > 0 {
-		params = append(params, "--threads="+config.Threads)
-	}
-	if len(config.Ram) > 0 {
-		params = append(params, "--ram="+config.Ram)
-	}
-	return params
-}
-
-func getMavenSettings(config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
+func getMavenSettings(buildCmd string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) string {
 	params := ""
-	if len(config.BuildCommand) > 0 && config.BuildTool == "maven" && !strings.Contains(config.BuildCommand, "--global-settings") && !strings.Contains(config.BuildCommand, "--settings") {
+	if len(buildCmd) > 0 && config.BuildTool == "maven" && !strings.Contains(buildCmd, "--global-settings") && !strings.Contains(buildCmd, "--settings") {
 		mvnParams, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 		if err != nil {
 			log.Entry().Error("failed to download and get maven parameters: ", err)
 			return params
 		}
 		for i := 1; i < len(mvnParams); i += 2 {
-			params = fmt.Sprintf("%s %s=%s", params, mvnParams[i-1], mvnParams[i])
+			params = fmt.Sprintf("%s \"%s=%s\"", params, mvnParams[i-1], mvnParams[i])
 		}
 	}
 	return params
+}
+
+func updateCmdFlag(config *codeqlExecuteScanOptions, customFlags map[string]string, utils codeqlExecuteScanUtils) {
+	var buildCmd string
+	if customFlags["--command"] != "" {
+		buildCmd = customFlags["--command"]
+	} else {
+		buildCmd = customFlags["-c"]
+	}
+	buildCmd += getMavenSettings(buildCmd, config, utils)
+	customFlags["--command"] = buildCmd
+	delete(customFlags, "-c")
+}
+
+func getLanguageList(config *codeqlExecuteScanOptions) []string {
+	// prefer explicit config.Language if present; otherwise derive from build tool
+	if strings.Contains(config.Language, ",") {
+		parts := strings.Split(config.Language, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				out = append(out, p)
+			}
+		}
+		return out
+	}
+	if config.Language != "" {
+		return []string{strings.TrimSpace(config.Language)}
+	}
+	// fall back to inferred language (single)
+	inferred := getLangFromBuildTool(config.BuildTool)
+	if inferred != "" {
+		return []string{inferred}
+	}
+	return nil
+}
+
+func cloneFlags(src map[string]string) map[string]string {
+	dst := make(map[string]string, len(src))
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
 }

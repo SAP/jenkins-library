@@ -7,17 +7,19 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // Coordinates to address the artifact coordinates like groupId, artifactId, version and packaging
 type Coordinates struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
+	GroupID    string `json:"groupId"`
+	ArtifactID string `json:"artifactId"`
+	Version    string `json:"version"`
+	Packaging  string `json:"packaging"`
+	BuildPath  string `json:"buildPath"`
+	URL        string `json:"url"`
+	PURL       string `json:"purl"`
 }
 
 // Artifact defines the versioning operations for various build tools
@@ -30,16 +32,17 @@ type Artifact interface {
 
 // Options define build tool specific settings in order to properly retrieve e.g. the version / coordinates of an artifact
 type Options struct {
-	ProjectSettingsFile  string
-	DockerImage          string
-	GlobalSettingsFile   string
-	M2Path               string
-	Defines              []string
-	VersionSource        string
-	VersionSection       string
-	VersionField         string
-	VersioningScheme     string
-	HelmUpdateAppVersion bool
+	ProjectSettingsFile     string
+	DockerImage             string
+	GlobalSettingsFile      string
+	M2Path                  string
+	Defines                 []string
+	VersionSource           string
+	VersionSection          string
+	VersionField            string
+	VersioningScheme        string
+	HelmUpdateAppVersion    bool
+	CAPVersioningPreference string
 }
 
 // Utils defines the versioning operations for various build tools
@@ -75,6 +78,12 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	if fileExists == nil {
 		fileExists = piperutils.FileExists
 	}
+
+	// CAPVersioningPreference can only be 'maven' or 'npm'. Verification done on artifactPrepareVersion.yaml level
+	if buildTool == "CAP" {
+		buildTool = opts.CAPVersioningPreference
+	}
+
 	switch buildTool {
 	case "custom":
 		var err error
@@ -164,14 +173,24 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"setup.py", "version.txt", "VERSION"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{TomlBuildDescriptor, "setup.py", "version.txt", "VERSION"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
 		}
-		artifact = &Pip{
-			path:       buildDescriptorFilePath,
-			fileExists: fileExists,
+		switch buildDescriptorFilePath {
+		case TomlBuildDescriptor:
+			artifact = &Toml{
+				Pip: Pip{
+					path:       buildDescriptorFilePath,
+					fileExists: fileExists,
+				},
+			}
+		default:
+			artifact = &Pip{
+				path:       buildDescriptorFilePath,
+				fileExists: fileExists,
+			}
 		}
 	case "sbt":
 		if len(buildDescriptorFilePath) == 0 {

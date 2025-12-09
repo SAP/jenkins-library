@@ -5,8 +5,8 @@ metadata:
     This step switches between branches of a git repository (Software Component) on a SAP BTP ABAP Environment system.
     Please provide either of the following options:
 
-    * The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+    * The host and credentials the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0948](https://help.sap.com/docs/sap-btp-abap-environment/abap-environment/api-for-managing-software-components-61f4d47af1394b1c8ad684b71d3ad6a0?locale=en-US).
+    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0948.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
 spec:
@@ -21,7 +21,7 @@ spec:
     params:
       - name: username
         type: string
-        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948
         scope:
           - PARAMETERS
           - STAGES
@@ -34,7 +34,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0948
         scope:
           - PARAMETERS
           - STAGES
@@ -75,6 +75,18 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: logOutput
+        type: string
+        description: Specifies how the clone logs from the Manage Software Components App are displayed or saved
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        possibleValues:
+          - ZIP
+          - STANDARD
+        default: STANDARD
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API Enpoint
@@ -127,6 +139,15 @@ spec:
           - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
           - name: cfServiceKeyName
+      - name: certificateNames
+        type: "[]string"
+        description: "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore"
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   containers:
     - name: cf
-      image: ppiper/cf-cli:v12
+      image: ppiper/cf-cli:latest

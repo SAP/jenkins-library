@@ -9,6 +9,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
+const (
+	vaultBadge       = "![Vault](https://img.shields.io/badge/-Vault-lightgrey)"
+	jenkinsOnlyBadge = "![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)"
+	secretBadge      = "![Secret](https://img.shields.io/badge/-Secret-yellowgreen)"
+	systemTrustBadge = "![System Trust](https://img.shields.io/badge/-System%20Trust-lightblue)"
+	deprecatedBadge  = "![deprecated](https://img.shields.io/badge/-deprecated-red)"
+)
+
+var jenkinsParams = []string{"containerCommand", "containerName", "containerShell", "dockerVolumeBind", "dockerWorkspace", "sidecarReadyCommand", "sidecarWorkspace", "stashContent"}
+
 // Replaces the Parameters placeholder with the content from the yaml
 func createParametersSection(stepData *config.StepData) string {
 
@@ -85,19 +95,18 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 	}
 
 	if paramName == "script" {
-		return checkParameterInfo("[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) reference to Jenkins main pipeline script", true, executionEnvironment)
+		return checkParameterInfo(fmt.Sprintf("%s reference to Jenkins main pipeline script", jenkinsOnlyBadge), true, executionEnvironment)
 	}
 
 	// handle non-step parameters (e.g. Jenkins-specific parameters as well as execution environment parameters)
-	jenkinsParams := []string{"containerCommand", "containerName", "containerShell", "dockerVolumeBind", "dockerWorkspace", "sidecarReadyCommand", "sidecarWorkspace", "stashContent"}
 	if !contains(stepParameterNames, paramName) {
 		for _, secret := range stepData.Spec.Inputs.Secrets {
 			if paramName == secret.Name && secret.Type == "jenkins" {
-				return checkParameterInfo("[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))", true, executionEnvironment)
+				return checkParameterInfo(fmt.Sprintf("%s id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))", jenkinsOnlyBadge), true, executionEnvironment)
 			}
 		}
 		if contains(jenkinsParams, paramName) {
-			return checkParameterInfo("[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)", false, executionEnvironment)
+			return checkParameterInfo(fmt.Sprintf("%s", jenkinsOnlyBadge), false, executionEnvironment)
 		}
 		return checkParameterInfo("", false, executionEnvironment)
 	}
@@ -107,14 +116,19 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData, execution
 		if paramName == param.Name {
 			furtherInfo := ""
 			if param.DeprecationMessage != "" {
-				furtherInfo += "![deprecated](https://img.shields.io/badge/-deprecated-red)"
+				furtherInfo += fmt.Sprintf("%s", deprecatedBadge)
 			}
 			if param.Secret {
-				secretInfo := "[![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](#) pass via ENV or Jenkins credentials"
-				if param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil {
-					secretInfo = " [![Vault](https://img.shields.io/badge/-Vault-lightgrey)](#) [![Secret](https://img.shields.io/badge/-Secret-yellowgreen)](/) pass via ENV, Vault or Jenkins credentials"
+				secretInfo := fmt.Sprintf("%s pass via ENV or Jenkins credentials", secretBadge)
 
+				isVaultSecret := param.GetReference("vaultSecret") != nil || param.GetReference("vaultSecretFile") != nil
+				isSystemTrustSecret := param.GetReference(config.RefTypeSystemTrustSecret) != nil
+				if isVaultSecret && isSystemTrustSecret {
+					secretInfo = fmt.Sprintf(" %s %s %s pass via ENV, Vault, System Trust or Jenkins credentials", vaultBadge, systemTrustBadge, secretBadge)
+				} else if isVaultSecret {
+					secretInfo = fmt.Sprintf(" %s %s pass via ENV, Vault or Jenkins credentials", vaultBadge, secretBadge)
 				}
+
 				for _, res := range param.ResourceRef {
 					if res.Type == "secret" {
 						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, strings.ToLower(res.Name))
@@ -148,7 +162,7 @@ func createParameterDetails(stepData *config.StepData) string {
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		details += fmt.Sprintf("#### %v\n\n", param.Name)
 
-		if !contains(stepParameterNames, param.Name) {
+		if !contains(stepParameterNames, param.Name) && contains(jenkinsParams, param.Name) {
 			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
 		}
 
@@ -187,7 +201,7 @@ func createParameterDetails(stepData *config.StepData) string {
 	for _, secret := range stepData.Spec.Inputs.Secrets {
 		details += fmt.Sprintf("#### %v\n\n", secret.Name)
 
-		if !contains(stepParameterNames, secret.Name) {
+		if !contains(stepParameterNames, secret.Name) && contains(jenkinsParams, secret.Name) {
 			details += "**Jenkins-specific:** Used for proper environment setup. See *[using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n"
 		}
 
@@ -329,21 +343,37 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 			continue
 		}
 
-		resourceDetails = addVaultResourceDetails(resource, resourceDetails)
+		if resource.Type == "vaultSecret" || resource.Type == "vaultSecretFile" {
+			resourceDetails = addVaultResourceDetails(resource, resourceDetails)
+			continue
+		}
+		if resource.Type == config.RefTypeSystemTrustSecret {
+			resourceDetails = addSystemTrustResourceDetails(resource, resourceDetails)
+		}
 	}
 
 	return resourceDetails
 }
 
 func addVaultResourceDetails(resource config.ResourceReference, resourceDetails string) string {
-	if resource.Type == "vaultSecret" || resource.Type == "vaultSecretFile" {
-		resourceDetails += "<br/>Vault paths: <br />"
-		resourceDetails += "<ul>"
-		for _, rootPath := range config.VaultRootPaths {
-			resourceDetails += fmt.Sprintf("<li>`%s`</li>", path.Join(rootPath, resource.Default))
-		}
-		resourceDetails += "</ul>"
+	resourceDetails += "<br/>Vault resource:<br />"
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;default value: `%v`<br />", resource.Default)
+	resourceDetails += "<br/>Vault paths: <br />"
+	resourceDetails += "<ul>"
+	for _, rootPath := range config.VaultRootPaths {
+		resourceDetails += fmt.Sprintf("<li>`%s`</li>", path.Join(rootPath, resource.Default))
 	}
+	resourceDetails += "</ul>"
+
+	return resourceDetails
+}
+
+func addSystemTrustResourceDetails(resource config.ResourceReference, resourceDetails string) string {
+	resourceDetails += "<br/>System Trust resource:<br />"
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;name: `%v`<br />", resource.Name)
+	resourceDetails += fmt.Sprintf("&nbsp;&nbsp;value: `%v`<br />", resource.Default)
+
 	return resourceDetails
 }
 

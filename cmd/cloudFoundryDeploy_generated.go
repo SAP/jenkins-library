@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -42,8 +43,6 @@ type cloudFoundryDeployOptions struct {
 	MtaPath                  string                 `json:"mtaPath,omitempty"`
 	Org                      string                 `json:"org,omitempty"`
 	Password                 string                 `json:"password,omitempty"`
-	SmokeTestScript          string                 `json:"smokeTestScript,omitempty"`
-	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty"`
 	Space                    string                 `json:"space,omitempty"`
 	Username                 string                 `json:"username,omitempty"`
 }
@@ -114,7 +113,15 @@ func CloudFoundryDeployCommand() *cobra.Command {
 	var createCloudFoundryDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Deploys an application to Cloud Foundry",
-		Long:  `Deploys an application to a test or production space within Cloud Foundry.`,
+		Long: `Deploys an application to a test or production space within Cloud Foundry.
+This step supports two deployment types:
+
+* in a standard way
+* in a zero-downtime manner using a [blue-green deployment approach](https://martinfowler.com/bliki/BlueGreenDeployment.html)
+
+The step achieves this via following deploy tools
+* [cf CLI](https://docs.cloudfoundry.org/cf-cli/) - used as default for Non MTA apps
+* [MTA CF CLI Plugin](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin) - used as default for MTA apps`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -122,15 +129,29 @@ func CloudFoundryDeployCommand() *cobra.Command {
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.DockerPassword)
 			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
@@ -163,6 +184,11 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -172,7 +198,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -189,10 +215,23 @@ func CloudFoundryDeployCommand() *cobra.Command {
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			cloudFoundryDeploy(stepConfig, &stepTelemetryData, &influx)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -211,15 +250,15 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
 	cmd.Flags().StringVar(&stepConfig.CfNativeDeployParameters, "cfNativeDeployParameters", os.Getenv("PIPER_cfNativeDeployParameters"), "Additional parameters passed to cf native deployment command")
 	cmd.Flags().StringVar(&stepConfig.CfPluginHome, "cfPluginHome", os.Getenv("PIPER_cfPluginHome"), "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
-	cmd.Flags().StringVar(&stepConfig.DeployDockerImage, "deployDockerImage", os.Getenv("PIPER_deployDockerImage"), "Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker]. If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html] for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.")
-	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", os.Getenv("PIPER_deployTool"), "Defines the tool which should be used for deployment.")
+	cmd.Flags().StringVar(&stepConfig.DeployDockerImage, "deployDockerImage", os.Getenv("PIPER_deployDockerImage"), "Docker image deployments are supported [via manifest file in general](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker). If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See [cf CLI documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html)x`x` for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance.")
+	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", os.Getenv("PIPER_deployTool"), "Defines the tool which should be used for deployment. Mandatory if `buildTool` is not found in pipeline environment")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact. If provided, `deployTool` is automatically derived from it. For MTA projects, `deployTool` defaults to `mtaDeployPlugin`. For other projects `cf_native` will be used.")
-	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment. If 'cf_native' as deployTool and 'blue-green' as deployType is used in combination, your manifest.yaml may only contain one application. If this application has the option 'no-route' active the deployType will be changed to 'standard'.")
+	cmd.Flags().StringVar(&stepConfig.DeployType, "deployType", `standard`, "Defines the type of deployment -`standard` or `blue-green` deployment. For mta build tool, possible values are `standard`, `blue-green` or `bg-deploy`. For cf native build tools, possible value is `standard`. To eliminate system downtime, an alternative is to pass '--strategy rolling' to the parameter `cfNativeDeployParameters`.")
 	cmd.Flags().StringVar(&stepConfig.DockerPassword, "dockerPassword", os.Getenv("PIPER_dockerPassword"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the password to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerUsername, "dockerUsername", os.Getenv("PIPER_dockerUsername"), "If the specified image in `deployDockerImage` is contained in a Docker registry, which requires authorization, this defines the username to be used.")
-	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "In case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space.")
+	cmd.Flags().BoolVar(&stepConfig.KeepOldInstance, "keepOldInstance", false, "If this option is set to true the old instance will remain stopped in the Cloud Foundry space.\"")
 	cmd.Flags().StringVar(&stepConfig.LoginParameters, "loginParameters", os.Getenv("PIPER_loginParameters"), "Addition command line options for cf login command. No escaping/quoting is performed. Not recommended for productive environments.")
-	cmd.Flags().StringVar(&stepConfig.Manifest, "manifest", os.Getenv("PIPER_manifest"), "Defines the manifest to be used for deployment to Cloud Foundry.")
+	cmd.Flags().StringVar(&stepConfig.Manifest, "manifest", os.Getenv("PIPER_manifest"), "Defines the manifest file name to be used for deployment to Cloud Foundry. Defaults to `manifest.yml`")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariables, "manifestVariables", []string{}, "Defines a list of variables in the form `key=value` which are used for variable substitution within the file given by manifest.")
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{`manifest-variables.yml`}, "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win.")
 	cmd.Flags().StringVar(&stepConfig.MtaDeployParameters, "mtaDeployParameters", `-f`, "Additional parameters passed to mta deployment command")
@@ -228,8 +267,6 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
-	cmd.Flags().StringVar(&stepConfig.SmokeTestScript, "smokeTestScript", `blueGreenCheckScript.sh`, "Allows to specify a script which performs a check during blue-green deployment. The script gets the FQDN as parameter and returns `exit code 0` in case check returned `smokeTestStatusCode`. More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use). Currently this option is only considered for deployTool `cf_native`.")
-	cmd.Flags().IntVar(&stepConfig.SmokeTestStatusCode, "smokeTestStatusCode", 200, "Expected status code returned by the check.")
 	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name used for deployment")
 
@@ -515,24 +552,6 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name:        "smokeTestScript",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `blueGreenCheckScript.sh`,
-					},
-					{
-						Name:        "smokeTestStatusCode",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "int",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     200,
-					},
-					{
 						Name:        "space",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
@@ -565,7 +584,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cfDeploy", Image: "ppiper/cf-cli:latest"},
+				{Name: "cfDeploy", Image: "ppiper/cf-cli:latest", Options: []config.Option{{Name: "--ulimit", Value: "stack=67108864:67108864"}, {Name: "--ulimit", Value: "nofile=65536:65536"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

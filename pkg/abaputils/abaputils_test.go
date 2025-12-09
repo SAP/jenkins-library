@@ -45,7 +45,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
 		//given
@@ -268,27 +268,6 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.Equal(t, "", abapKey.URL)
 
 		assert.EqualError(t, err, "Parsing the service key failed for all supported formats. Service key is empty")
-	})
-}
-
-func TestTimeConverter(t *testing.T) {
-	t.Run("Test example time", func(t *testing.T) {
-		inputDate := "/Date(1585576809000+0000)/"
-		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
-		result := ConvertTime(inputDate)
-		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	})
-	t.Run("Test Unix time", func(t *testing.T) {
-		inputDate := "/Date(0000000000000+0000)/"
-		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
-		result := ConvertTime(inputDate)
-		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	})
-	t.Run("Test unexpected format", func(t *testing.T) {
-		inputDate := "/Date(0012300000001+0000)/"
-		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
-		result := ConvertTime(inputDate)
-		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
 	})
 }
 

@@ -19,8 +19,11 @@ spec:
           - PARAMETERS
         secret: true
         resourceRef:
-          - name: azureCredentialsId
-            type: secret
+          - type: vaultSecret
+            name: azureDevOpsVaultSecretName
+            default: azure-dev-ops
+          - type: secret
+            name: azureCredentialsId
       - name: filePath
         resourceRef:
           - name: commonPipelineEnvironment

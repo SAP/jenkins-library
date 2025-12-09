@@ -43,6 +43,7 @@ type Client struct {
 	doLogResponseBodyOnDebug  bool
 	useDefaultTransport       bool
 	trustedCerts              []string
+	certificates              []tls.Certificate // contains one or more certificate chains to present to the other side of the connection (client-authentication)
 	fileUtils                 piperutils.FileUtils
 	httpClient                *http.Client
 }
@@ -68,7 +69,8 @@ type ClientOptions struct {
 	DoLogRequestBodyOnDebug   bool
 	DoLogResponseBodyOnDebug  bool
 	UseDefaultTransport       bool
-	TrustedCerts              []string
+	TrustedCerts              []string          // defines the set of root certificate authorities that clients use when verifying server certificates
+	Certificates              []tls.Certificate // contains one or more certificate chains to present to the other side of the connection (client-authentication)
 }
 
 // TransportWrapper is a wrapper for central round trip capabilities
@@ -261,6 +263,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.cookieJar = options.CookieJar
 	c.trustedCerts = options.TrustedCerts
 	c.fileUtils = &piperutils.Files{}
+	c.certificates = options.Certificates
 }
 
 // SetFileUtils can be used to overwrite the default file utils
@@ -291,6 +294,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 			TLSHandshakeTimeout:   c.transportTimeout,
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: c.transportSkipVerification,
+				Certificates:       c.certificates,
 			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
@@ -304,7 +308,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 		log.Entry().Debug("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tsl config", err)
+			log.Entry().Infof("adding certs for tls config failed : %v, continuing with the existing tls config", err)
 		}
 	} else {
 		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
@@ -312,9 +316,7 @@ func (c *Client) initializeHttpClient() *http.Client {
 
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
-		localLogger := log.Entry()
-		localLogger.Level = logrus.DebugLevel
-		retryClient.Logger = localLogger
+		retryClient.Logger = c.logger
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
 		retryClient.RetryMax = c.maxRetries
@@ -397,12 +399,13 @@ func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
 	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
-	if t.doLogRequestBodyOnDebug && req.Body != nil {
+	if t.doLogRequestBodyOnDebug && req.Header.Get("Content-Type") == "application/octet-stream" {
+		// skip logging byte content as it's useless
+	} else if t.doLogRequestBodyOnDebug && req.Body != nil {
 		var buf bytes.Buffer
 		tee := io.TeeReader(req.Body, &buf)
 		log.Entry().Debugf("body: %v", transformBody(tee))
 		req.Body = io.NopCloser(bytes.NewReader(buf.Bytes()))
-		log.Entry().Debugf("body: %v", transformBody(tee))
 	}
 	log.Entry().Debug("--------------------------------")
 }
@@ -430,7 +433,7 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 func transformHeaders(header http.Header) http.Header {
 	var h http.Header = map[string][]string{}
 	for name, value := range header {
-		if name == "Authorization" || name == "X-Pendo-Integration-Key" {
+		if name == "Authorization" {
 			for _, v := range value {
 				// The format of the Authorization header value is: <type> <cred>.
 				// We don't register the full string since only the part after
@@ -550,6 +553,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
 				RootCAs:            rootCAs,
+				Certificates:       c.certificates,
 			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,

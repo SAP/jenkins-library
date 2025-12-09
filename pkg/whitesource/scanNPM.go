@@ -66,6 +66,7 @@ func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils Utils, devD
 		setValueAndLogChange(npmConfig, "projectName", config.ProjectName)
 	}
 	setValueAndLogChange(npmConfig, "devDep", devDep)
+	setValueAndLogChange(npmConfig, "includeDevDependencies", config.NpmIncludeDevDependencies)
 	setValueAndLogChange(npmConfig, "ignoreNpmLsErrors", ignoreLsErrors)
 
 	jsonBuffer, err := json.Marshal(npmConfig)

@@ -2,6 +2,7 @@ package checkmarxOne
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -291,6 +292,50 @@ func TestGetApplicationByName(t *testing.T) {
 		myTestClient.errorExp = true
 
 		_, err := sys.GetApplicationsByName("test", 10)
+		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
+	})
+}
+
+func TestUpdateProject(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne_test")
+	opts := piperHttp.ClientOptions{}
+
+	requestJson := `{ "id": "702ba12b-ae61-48c0-9b6a-09b17666be32",
+		"name": "test-apr24-piper",
+		"tags": {
+			"\"key1\"": "\"value1\"",
+			"\"keywithoutvalue\"": "\"\""
+		},
+		"criticality": 3,
+		"mainBranch": "",
+		"privatePackage": false
+	}`
+	var project Project
+	_ = json.Unmarshal([]byte(requestJson), &project)
+
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: ``, httpStatusCode: 204}
+		serverURL := "https://cx1.server.com"
+		sys := SystemInstance{serverURL: serverURL, iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		err := sys.UpdateProject(&project)
+		assert.NoError(t, err, "Error occurred but none expected")
+		assert.Equal(t, serverURL+"/api/projects/"+project.ProjectID, myTestClient.urlCalled, "Called url incorrect")
+		assert.Equal(t, "PUT", myTestClient.httpMethod, "HTTP method incorrect")
+		var body Project
+		_ = json.Unmarshal([]byte(myTestClient.requestBody), &body)
+		assert.Equal(t, project, body, "Request body incorrect")
+
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{httpStatusCode: 403}
+		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		err := sys.UpdateProject(&project)
 		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
 	})
 }

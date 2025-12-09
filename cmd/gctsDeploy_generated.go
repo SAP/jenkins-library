@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -34,7 +35,7 @@ type gctsDeployOptions struct {
 	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
 }
 
-// GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
+// GctsDeployCommand Deploys a Git repository to a local repository and then to an ABAP system
 func GctsDeployCommand() *cobra.Command {
 	const STEP_NAME = "gctsDeploy"
 
@@ -47,11 +48,11 @@ func GctsDeployCommand() *cobra.Command {
 
 	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploys a Git Repository to a local Repository and then to an ABAP System",
+		Short: "Deploys a Git repository to a local repository and then to an ABAP system",
 		Long: `This step deploys a remote Git repository to a local repository on an ABAP system and imports the content in the ABAP database.
 If the repository does not yet exist in the system, this step also creates it.
 If the repository already exists on the ABAP system, this step executes the remaining actions of the step, depending on the parameters provided for the step.
-These actions include, for example, deploy a specific commit to the ABAP system, or deploy the current commit of a specific branch.
+These actions include, for example, deploy a specific commit of the default branch or roll back to the previous commit, if import errors occur .
 You can use this step for gCTS as of SAP S/4HANA 2020.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -60,15 +61,29 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
-			path, _ := os.Getwd()
+			path, err := os.Getwd()
+			if err != nil {
+				return err
+			}
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
+			// Set step error patterns for improved error detection
+			stepErrors := make([]log.StepError, len(metadata.Metadata.Errors))
+			for i, err := range metadata.Metadata.Errors {
+				stepErrors[i] = log.StepError{
+					Pattern:  err.Pattern,
+					Message:  err.Message,
+					Category: err.Category,
+				}
+			}
+			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -99,6 +114,11 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
+			vaultClient := config.GlobalVaultClient()
+			if vaultClient != nil {
+				defer vaultClient.MustRevokeToken()
+			}
+
 			stepTelemetryData := telemetry.CustomData{}
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
@@ -107,7 +127,7 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
 				stepTelemetryData.PiperCommitHash = GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
-				telemetryClient.Send()
+				telemetryClient.LogStepTelemetryData()
 				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 					splunkClient.Initialize(GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.SplunkConfig.Dsn,
@@ -124,10 +144,23 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					err := gcp.NewGcpPubsubClient(
+						vaultClient,
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
+					}
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
-			telemetryClient.Initialize(GeneralConfig.NoTelemetry, STEP_NAME, GeneralConfig.HookConfig.PendoConfig.Token)
+			telemetryClient.Initialize(STEP_NAME)
 			gctsDeploy(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -150,7 +183,7 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.")
 	cmd.Flags().StringVar(&stepConfig.Type, "type", `GIT`, "Type of the used source code management tool")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.")
-	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed. Possible values are `CRNTCOMMIT` (current commit - Default) and `LASTACTION` (last repository action). The default option deploys all objects that existed in the repository when the commit was created. `LASTACTION` only deploys the object difference of the last action in the repository.")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed (imported). Only use this parameter for specific use cases, for example, when import errors occurred. Possible values are `CRNTCOMMIT` (current commit of the local repository) and `LASTACTION` (last action that occurred in the local repository). The `CRNTCOMMIT` option deploys the complete list of objects that existed in the local repository at the point in time when the commit was created. Note that this deploy scope doesn't only comprise the changed objects of the commit itself. `LASTACTION` only deploys the object difference between the `From Commit` and the `To Commit` of the last action in the repository.")
 	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
@@ -169,7 +202,7 @@ func gctsDeployMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gctsDeploy",
 			Aliases:     []config.Alias{},
-			Description: "Deploys a Git Repository to a local Repository and then to an ABAP System",
+			Description: "Deploys a Git repository to a local repository and then to an ABAP system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

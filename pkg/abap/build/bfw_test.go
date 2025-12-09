@@ -171,8 +171,8 @@ func TestPoll(t *testing.T) {
 	t.Run("Poll timeout", func(t *testing.T) {
 		//arrange
 		build.BuildID = "AKO22FYOFYPOXHOBVKXUTX3A3Q"
-		conn.MaxRuntime = time.Duration(1 * time.Microsecond)
-		conn.PollingInterval = time.Duration(1 * time.Microsecond)
+		conn.MaxRuntime = time.Duration(10 * time.Millisecond)
+		conn.PollingInterval = time.Duration(5 * time.Millisecond)
 		mc := NewMockClient()
 		mc.AddData(buildGet1)
 		mc.AddData(buildGet1)
@@ -193,7 +193,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("No error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = successful
+		build.ResultState = Successful
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -210,7 +210,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState aborted => Error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = aborted
+		build.ResultState = Aborted
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -219,7 +219,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState erroneous => Error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = erroneous
+		build.ResultState = Erroneous
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -228,7 +228,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState warning, treatWarningsAsError false => No error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = warning
+		build.ResultState = Warning
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
 		//assert
@@ -237,7 +237,7 @@ func TestEvaluteIfBuildSuccessful(t *testing.T) {
 	t.Run("ResultState warning, treatWarningsAsError true => error", func(t *testing.T) {
 		//arrange
 		build.RunState = Finished
-		build.ResultState = warning
+		build.ResultState = Warning
 		treatWarningsAsError = true
 		//act
 		err := build.EvaluteIfBuildSuccessful(treatWarningsAsError)
@@ -431,5 +431,80 @@ func TestPublishDownloadedResults(t *testing.T) {
 		err := build.PublishDownloadedResults("MyStep", filenames, &files)
 		//assert
 		assert.Error(t, err)
+	})
+}
+
+func TestDetermineFailureCause(t *testing.T) {
+	build := Build{
+		Tasks: []task{
+			{
+				TaskID:      0,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Build successfully initialized",
+					},
+					{
+						Msgty:   loginfo,
+						Logline: "2 Plugins will be executed",
+					},
+				},
+			},
+			{
+				TaskID:      1,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Plugin 1 did something",
+					},
+				},
+			},
+			{
+				TaskID:      2,
+				ResultState: Successful,
+				Logs: []logStruct{
+					{
+						Msgty:   loginfo,
+						Logline: "Plugin 2 did something",
+					},
+				},
+			},
+		},
+	}
+
+	t.Run("TestSuccess", func(t *testing.T) {
+		//act
+		cause, err := build.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Equal(t, "", cause)
+	})
+	t.Run("TestErronous", func(t *testing.T) {
+		//arrange
+		errorMessage := "Error: something went wrong, contact your admin :-P"
+		errorBuild := Build{}
+		errorBuild.Tasks = append(errorBuild.Tasks, build.Tasks[0], task{}, build.Tasks[2])
+		errorBuild.Tasks[1].ResultState = Erroneous
+		errorBuild.Tasks[1].Logs = append(errorBuild.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: errorMessage})
+		//act
+		cause, err := errorBuild.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Contains(t, cause, errorMessage)
+	})
+	t.Run("TestAborting", func(t *testing.T) {
+		//arrange
+		abortMessage := "Aborting: something went wrong, contact your admin :-P"
+		abortBuild := Build{}
+		abortBuild.Tasks = append(abortBuild.Tasks, build.Tasks[0], build.Tasks[1], task{})
+		abortBuild.Tasks[2].ResultState = Aborted
+		abortBuild.Tasks[2].Logs = append(abortBuild.Tasks[1].Logs, logStruct{Msgty: logerror, Logline: abortMessage})
+		//act
+		cause, err := abortBuild.DetermineFailureCause()
+		//assert
+		assert.NoError(t, err)
+		assert.Contains(t, cause, abortMessage)
 	})
 }

@@ -1,0 +1,10 @@
+{
+  "name": "module2",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo 'Module2 test'"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  }
+}

@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/docker/cli/cli/config"
@@ -49,7 +50,7 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 
 	var targetConfig *configfile.ConfigFile
 	if exists, _ := utils.FileExists(targetPath); !exists {
-		log.Entry().Warnf("target dockerConfigJSON file %q does not exist, creating a new one", sourcePath)
+		log.Entry().Infof("target dockerConfigJSON file %q does not exist, creating a new one", sourcePath)
 		targetConfig = configfile.New(targetPath)
 	} else {
 		targetReader, err := utils.Open(targetPath)
@@ -306,7 +307,7 @@ func ImageListWithFilePath(imageName string, excludes []string, trimDir string, 
 		// ToDo: needs rework
 		// dockerfilePath = strings.ReplaceAll(dockerfilePath, cwd, ".")
 
-		if piperutils.ContainsString(excludes, dockerfilePath) {
+		if slices.Contains(excludes, dockerfilePath) {
 			log.Entry().Infof("Discard %v since it is in the exclude list %v", dockerfilePath, excludes)
 			continue
 		}

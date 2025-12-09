@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -26,14 +27,23 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *t
 		Client:        &piperhttp.Client{},
 		PollIntervall: 5 * time.Second,
 	}
+
+	var reports []piperutils.Path
+	logOutputManager := abaputils.LogOutputManager{
+		LogOutput:    config.LogOutput,
+		PiperStep:    "clone",
+		FileNameStep: "clone",
+		StepReports:  reports,
+	}
+
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager)
+	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &apiManager, &logOutputManager)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface) error {
+func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, apiManager abaputils.SoftwareComponentApiManagerInterface, logOutputManager *abaputils.LogOutputManager) error {
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
 
@@ -42,7 +52,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		return errors.Wrap(errConfig, "The provided configuration is not allowed")
 	}
 
-	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories}, false)
+	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories, ByogUsername: config.ByogUsername, ByogPassword: config.ByogPassword, ByogAuthMethod: config.ByogAuthMethod}, false)
 	if errGetRepos != nil {
 		return errors.Wrap(errGetRepos, "Could not read repositories")
 	}
@@ -52,21 +62,26 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	if errorGetInfo != nil {
 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
+	connectionDetails.CertificateNames = config.CertificateNames
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
+
 	for _, repo := range repositories {
 
-		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com)
+		cloneError := cloneSingleRepo(apiManager, connectionDetails, repo, config, com, logOutputManager)
 		if cloneError != nil {
 			return cloneError
 		}
 	}
+	// Persist log archive
+	abaputils.PersistArchiveLogsForPiperStep(logOutputManager)
+
 	abaputils.AddDefaultDashedLine(1)
 	log.Entry().Info("All repositories were cloned successfully")
 	return nil
 }
 
-func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication) error {
+func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, connectionDetails abaputils.ConnectionDetailsHTTP, repo abaputils.Repository, config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, logOutputManager *abaputils.LogOutputManager) error {
 
 	// New API instance for each request
 	// Triggering the Clone of the repository into the ABAP Environment system
@@ -84,20 +99,24 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 	log.Entry().Info("Start cloning " + logString)
 	abaputils.AddDefaultDashedLine(1)
 
-	alreadyCloned, activeBranch, errCheckCloned := api.GetRepository()
+	alreadyCloned, activeBranch, errCheckCloned, isByog := api.GetRepository()
 	if errCheckCloned != nil {
-		return errors.Wrapf(errCheckCloned, errorString)
+		return errors.Wrap(errCheckCloned, errorString)
 	}
 
 	if !alreadyCloned {
+		if isByog {
+			api.UpdateRepoWithBYOGCredentials(config.ByogAuthMethod, config.ByogUsername, config.ByogPassword)
+		}
 		errClone := api.Clone()
 		if errClone != nil {
-			return errors.Wrapf(errClone, errorString)
+			return errors.Wrap(errClone, errorString)
 		}
-
-		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+		// set correct filename for archive file
+		logOutputManager.FileNameStep = "clone"
+		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, errorString)
+			return errors.Wrap(errorPollEntity, errorString)
 		}
 		if status == "E" {
 			return errors.New("Clone of " + logString + " failed on the ABAP System")
@@ -105,18 +124,18 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		log.Entry().Info("The " + logString + " was cloned successfully")
 	} else {
 		abaputils.AddDefaultDashedLine(2)
-		log.Entry().Infof("%s", "The repository / software component has already been cloned on the ABAP Environment system ")
-		log.Entry().Infof("%s", "If required, a `checkout branch`, and a `pull` will be performed instead")
+		log.Entry().Info("The repository / software component has already been cloned on the ABAP Environment system ")
+		log.Entry().Info("If required, a `checkout branch`, and a `pull` will be performed instead")
 		abaputils.AddDefaultDashedLine(2)
 		var returnedError error
 		if repo.Branch != "" && !(activeBranch == repo.Branch) {
-			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager)
+			returnedError = runAbapEnvironmentCheckoutBranch(getCheckoutOptions(config, repo), com, apiManager, logOutputManager)
 			abaputils.AddDefaultDashedLine(2)
 			if returnedError != nil {
 				return returnedError
 			}
 		}
-		returnedError = runAbapEnvironmentPullGitRepo(getPullOptions(config, repo), com, apiManager)
+		returnedError = runAbapEnvironmentPullGitRepo(getPullOptions(config, repo), com, apiManager, logOutputManager)
 		return returnedError
 	}
 	return nil
@@ -150,6 +169,7 @@ func getPullOptions(config *abapEnvironmentCloneGitRepoOptions, repo abaputils.R
 		CfServiceInstance: config.CfServiceInstance,
 		CfServiceKeyName:  config.CfServiceKeyName,
 		CfSpace:           config.CfSpace,
+		LogOutput:         config.LogOutput,
 	}
 	return &pullOptions
 }
@@ -185,5 +205,8 @@ func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.Ab
 	subOptions.Host = config.Host
 	subOptions.Password = config.Password
 	subOptions.Username = config.Username
+	subOptions.ByogUsername = config.ByogUsername
+	subOptions.ByogPassword = config.ByogPassword
+	subOptions.ByogAuthMethod = config.ByogAuthMethod
 	return subOptions
 }

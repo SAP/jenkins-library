@@ -24,14 +24,14 @@ type GeneralConfigOptions struct {
 	CorrelationID        string
 	CustomConfig         string
 	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig        []string //ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	DefaultConfig        []string // ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	IgnoreCustomDefaults bool
 	ParametersJSON       string
 	EnvRootPath          string
 	NoTelemetry          bool
 	StageName            string
 	StepConfigJSON       string
-	StepMetadata         string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
+	StepMetadata         string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	StepName             string
 	Verbose              bool
 	LogFormat            string
@@ -41,6 +41,7 @@ type GeneralConfigOptions struct {
 	VaultServerURL       string
 	VaultNamespace       string
 	VaultPath            string
+	SystemTrustToken     string
 	HookConfig           HookConfiguration
 	MetaDataResolver     func() map[string]config.StepData
 	GCPJsonKeyFilePath   string
@@ -51,9 +52,19 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
-	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
-	PendoConfig  PendoConfiguration  `json:"pendo,omitempty"`
+	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
+	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
+	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
+	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
+	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
+}
+
+type GCPPubSubConfiguration struct {
+	Enabled          bool   `json:"enabled"`
+	ProjectNumber    string `json:"projectNumber,omitempty"`
+	IdentityPool     string `json:"identityPool,omitempty"`
+	IdentityProvider string `json:"identityProvider,omitempty"`
+	Topic            string `json:"topic,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
@@ -72,8 +83,15 @@ type SplunkConfiguration struct {
 	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
 }
 
-type PendoConfiguration struct {
-	Token string `json:"token,omitempty"`
+// OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
+type OIDCConfiguration struct {
+	RoleID string `json:",roleID,omitempty"`
+}
+
+type SystemTrustConfiguration struct {
+	ServerURL           string `json:"baseURL,omitempty"`
+	TokenEndPoint       string `json:"tokenEndPoint,omitempty"`
+	TokenQueryParamName string `json:"tokenQueryParamName,omitempty"`
 }
 
 var rootCmd = &cobra.Command{
@@ -92,6 +110,7 @@ var GeneralConfig GeneralConfigOptions
 func Execute() {
 	log.Entry().Infof("Version %s", GitCommit)
 
+	rootCmd.AddCommand(GcpPublishEventCommand())
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(DefaultsCommand())
@@ -123,6 +142,7 @@ func Execute() {
 	rootCmd.AddCommand(CheckmarxOneExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(CodeqlExecuteScanCommand())
+	rootCmd.AddCommand(ContrastExecuteScanCommand())
 	rootCmd.AddCommand(CredentialdiggerScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
@@ -136,6 +156,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentRunATCCheckCommand())
 	rootCmd.AddCommand(NpmExecuteScriptsCommand())
 	rootCmd.AddCommand(NpmExecuteLintCommand())
+	rootCmd.AddCommand(NpmExecuteTestsCommand())
 	rootCmd.AddCommand(GctsCreateRepositoryCommand())
 	rootCmd.AddCommand(GctsExecuteABAPQualityChecksCommand())
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
@@ -153,6 +174,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitPublishTargetVectorCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
@@ -233,7 +255,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.EnvRootPath, "envRootPath", ".pipeline", "Root path to Piper pipeline shared environments")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StageName, "stageName", "", "Name of the stage for which configuration should be included")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.StepConfigJSON, "stepConfigJSON", os.Getenv("PIPER_stepConfigJSON"), "Step configuration in JSON format")
-	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
+	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", true, "Deprecated flag. Has no effect. Please don't use it.")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.LogFormat, "logFormat", "default", "Log format to use. Options: default, timestamp, plain, full.")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The Vault server which should be used to fetch credentials")
@@ -243,7 +265,6 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSFolderPath, "gcsFolderPath", "", "GCS folder path. One of the components of GCS target folder")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSBucketId, "gcsBucketId", "", "Bucket name for Google Cloud Storage")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCSSubFolder, "gcsSubFolder", "", "Used to logically separate results of the same step result type")
-
 }
 
 // ResolveAccessTokens reads a list of tokens in format host:token passed via command line
@@ -327,7 +348,6 @@ func initStageName(outputToLog bool) {
 
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
 func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
-
 	log.SetFormatter(GeneralConfig.LogFormat)
 
 	initStageName(true)
@@ -360,6 +380,9 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 
+	GeneralConfig.SystemTrustToken = os.Getenv("PIPER_systemTrustToken")
+	myConfig.SetSystemTrustToken(GeneralConfig.SystemTrustToken)
+
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
 		stepConfig = config.GetStepConfigWithJSON(flagValues, GeneralConfig.StepConfigJSON, filters)
@@ -369,7 +392,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		// use config & defaults
 		var customConfig io.ReadCloser
 		var err error
-		//accept that config file and defaults cannot be loaded since both are not mandatory here
+		// accept that config file and defaults cannot be loaded since both are not mandatory here
 		{
 			projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 			if exists, err := piperutils.FileExists(projectConfigFile); exists {
@@ -591,7 +614,6 @@ func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
 }
 
 func getProjectConfigFile(name string) string {
-
 	var altName string
 	if ext := filepath.Ext(name); ext == ".yml" {
 		altName = fmt.Sprintf("%v.yaml", strings.TrimSuffix(name, ext))

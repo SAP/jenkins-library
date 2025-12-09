@@ -98,12 +98,8 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 		javaToolOptions := fmt.Sprintf("-Dhttp.proxyHost=%v -Dhttp.proxyPort=%v", host, port)
 		os.Setenv("JAVA_TOOL_OPTIONS", javaToolOptions)
 
-		apiClient.SetOptions(piperhttp.ClientOptions{TransportProxy: transportProxy, TransportSkipVerification: true})
+		apiClient.SetOptions(piperhttp.ClientOptions{TransportProxy: transportProxy})
 		log.Entry().Infof("HTTP client instructed to use %v proxy", proxy)
-
-	} else {
-		//TODO: implement certificate handling
-		apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 	}
 
 	sonar = sonarSettings{
@@ -252,23 +248,24 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(serverUrl, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
-	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
+	var categories = make([]SonarUtils.Severity, 0)
+	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.critical_issues, err = issueService.GetNumberOfCriticalIssues()
+	influx.sonarqube_data.fields.critical_issues, err = issueService.GetNumberOfCriticalIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.major_issues, err = issueService.GetNumberOfMajorIssues()
+	influx.sonarqube_data.fields.major_issues, err = issueService.GetNumberOfMajorIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.minor_issues, err = issueService.GetNumberOfMinorIssues()
+	influx.sonarqube_data.fields.minor_issues, err = issueService.GetNumberOfMinorIssues(&categories)
 	if err != nil {
 		return err
 	}
-	influx.sonarqube_data.fields.info_issues, err = issueService.GetNumberOfInfoIssues()
+	influx.sonarqube_data.fields.info_issues, err = issueService.GetNumberOfInfoIssues(&categories)
 	if err != nil {
 		return err
 	}
@@ -280,6 +277,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		ChangeID:     config.ChangeID,
 		BranchName:   config.BranchName,
 		Organization: config.Organization,
+		Errors:       categories[:],
 		NumberOfIssues: SonarUtils.Issues{
 			Blocker:  influx.sonarqube_data.fields.blocker_issues,
 			Critical: influx.sonarqube_data.fields.critical_issues,
@@ -415,13 +413,23 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 	return nil
 }
 
+func addSonarScannerOpts(opts string) {
+	tmpOpts := os.Getenv("SONAR_SCANNER_OPTS")
+	if len(tmpOpts) > 0 {
+		log.Entry().Debug("SONAR_SCANNER_OPTS already set. Appending to existing value: " + tmpOpts)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + tmpOpts + " " + opts)
+	} else {
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + opts)
+	}
+}
+
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
 	truststorePath := filepath.Join(getWorkingDir(), ".certificates")
 	truststoreFile := filepath.Join(truststorePath, "cacerts")
 
 	if exists, _ := fileUtilsExists(truststoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		addSonarScannerOpts(keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else if len(certificateList) > 0 {
 		// create download temp dir
@@ -443,7 +451,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
-				return errors.Wrapf(err, "Download of TLS certificate failed")
+				return errors.Wrap(err, "Download of TLS certificate failed")
 			}
 			// add certificate to keystore
 			if err := keytool.ImportCert(runner, truststoreFile, target); err != nil {
@@ -451,7 +459,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 				// return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=" + keytool.GetMavenOpts(truststoreFile))
+		addSonarScannerOpts(keytool.GetMavenOpts(truststoreFile))
 		log.Entry().WithField("trust store", truststoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")

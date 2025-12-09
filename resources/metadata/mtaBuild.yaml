@@ -1,11 +1,20 @@
 metadata:
   name: mtaBuild
   description: Performs an mta build
+  errors:
+    - pattern: "cannot find symbol"
+      message: "Java compilation failed due to missing symbol. Check imports and dependencies."
+      category: "compilation"
+    - pattern: "has been compiled by a more recent version of the Java Runtime.*class file version"
+      message: "Java version incompatibility. Update Java runtime or use compatible dependency versions."
+      category: "version"
   longDescription: |
     Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
-    ### build with depedencies from a private repository
-    1. For maven related settings refer [maven build dependencies](./mavenBuild.md#build-with-depedencies-from-a-private-repository)
-    2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-depedencies-from-a-private-repository)
+
+    ### build with dependencies from a private repository
+
+    1. For Maven related settings refer [Maven build dependencies](./mavenBuild.md#build-with-dependencies-from-a-private-repository)
+    2. For NPM related settings refer [NPM build dependencies](./npmExecuteScripts.md#build-with-private-dependencies-from-a-repository)
 spec:
   inputs:
     params:
@@ -168,11 +177,9 @@ spec:
             param: custom/mavenRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - name: mtaDeploymentRepositoryPasswordId
-            type: secret
           - type: vaultSecretFile
             name: mtaDeploymentRepositoryPasswordFileVaultSecretName
-            default: mta-deployment-repository-passowrd
+            default: mta-deployment-repository-password
       - name: mtaDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which which mtar artifacts will be publised
@@ -236,6 +243,22 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: enableSetTimestamp
+        type: bool
+        description: Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: true
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
@@ -245,6 +268,7 @@ spec:
           - name: custom/mtaBuildToolDesc
           - name: custom/mtarPublishedUrl
           - name: custom/buildSettingsInfo
+          - name: custom/mtaBuildArtifacts
       - name: reports
         type: reports
         params:
@@ -255,4 +279,4 @@ spec:
           - filePattern: "**/jacoco.xml"
             type: jacoco-coverage
   containers:
-    - image: devxci/mbtci-java11-node14
+    - image: devxci/mbtci-java21-node22

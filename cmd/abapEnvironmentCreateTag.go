@@ -40,6 +40,7 @@ func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, com ab
 	if errorGetInfo != nil {
 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
+	connectionDetails.CertificateNames = config.CertificateNames
 
 	backlog, errorPrepare := prepareBacklog(config)
 	if errorPrepare != nil {
@@ -61,7 +62,7 @@ func createTags(backlog []abaputils.CreateTagBacklog, con abaputils.ConnectionDe
 
 	if errorOccurred {
 		message := "At least one tag has not been created"
-		log.Entry().Errorf(message)
+		log.Entry().Error(message)
 		return errors.New(message)
 	}
 	return nil
@@ -93,10 +94,17 @@ func createSingleTag(item abaputils.CreateTagBacklog, index int, con abaputils.C
 
 	createTagError := api.CreateTag(item.Tags[index])
 	if createTagError != nil {
-		return errors.Wrapf(err, "Creation of Tag failed on the ABAP system")
+		return errors.Wrap(err, "Creation of Tag failed on the ABAP system")
 	}
 
-	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall())
+	logOutputManager := abaputils.LogOutputManager{
+		LogOutput:    "STANDARD",
+		PiperStep:    "createTag",
+		FileNameStep: "createTag",
+		StepReports:  nil,
+	}
+
+	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), &logOutputManager)
 
 	if errorPollEntity == nil && status == "S" {
 		log.Entry().Info("Created tag " + item.Tags[index].TagName + " for repository " + item.RepositoryName + " with commitID " + item.CommitID)

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +20,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -51,7 +52,7 @@ gradle.allprojects {
 `
 
 type pullRequestService interface {
-	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
+	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.ListOptions) ([]*github.PullRequest, *github.Response, error)
 }
 
 type fortifyUtils interface {
@@ -211,7 +212,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 		prID, prAuthor := determinePullRequestMerge(config)
 		if prID != "0" {
 			log.Entry().Debugf("Determined PR ID '%v' for merge check", prID)
-			if len(prAuthor) > 0 && !piperutils.ContainsString(config.Assignees, prAuthor) {
+			if len(prAuthor) > 0 && !slices.Contains(config.Assignees, prAuthor) {
 				log.Entry().Debugf("Determined PR Author '%v' for result assignment", prAuthor)
 				config.Assignees = append(config.Assignees, prAuthor)
 			} else {
@@ -280,7 +281,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
 	if err != nil {
-		return reports, errors.Wrapf(err, "failed to scan project")
+		return reports, errors.Wrap(err, "failed to scan project")
 	}
 
 	var message string
@@ -784,7 +785,7 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	// redirect stdout and create cp file from command output
 	outfile, err := os.Create(file)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to create classpath file")
+		return "", errors.Wrap(err, "failed to create classpath file")
 	}
 	defer outfile.Close()
 	utils.Stdout(outfile)
@@ -1140,8 +1141,7 @@ func determinePullRequestMerge(config fortifyExecuteScanOptions) (string, string
 func determinePullRequestMergeGithub(ctx context.Context, config fortifyExecuteScanOptions, pullRequestServiceInstance pullRequestService) (string, string, error) {
 	number := "0"
 	author := ""
-	options := github.PullRequestListOptions{State: "closed", Sort: "updated", Direction: "desc"}
-	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &options)
+	prList, _, err := pullRequestServiceInstance.ListPullRequestsWithCommit(ctx, config.Owner, config.Repository, config.CommitID, &github.ListOptions{})
 	if err == nil && prList != nil && len(prList) > 0 {
 		number = fmt.Sprintf("%v", prList[0].GetNumber())
 		if prList[0].GetUser() != nil {

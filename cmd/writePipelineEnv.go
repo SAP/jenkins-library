@@ -2,26 +2,28 @@ package cmd
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/sha256"
-	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/config"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/encryption"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/spf13/cobra"
 )
 
 // WritePipelineEnv Serializes the commonPipelineEnvironment JSON to disk
+// Can be used in two modes:
+// 1. JSON serialization: processes JSON input from stdin or PIPER_pipelineEnv environment variable
+// 2. Direct value: writes a single key-value pair using the --value flag (format: key=value)
 func WritePipelineEnv() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
 	var encryptedCPE bool
+	var directValue string
 	metadata := artifactPrepareVersionMetadata()
 
 	writePipelineEnv := &cobra.Command{
@@ -42,6 +44,13 @@ func WritePipelineEnv() *cobra.Command {
 		},
 
 		Run: func(cmd *cobra.Command, args []string) {
+			if directValue != "" {
+				err := writeDirectValue(directValue)
+				if err != nil {
+					log.Entry().Fatalf("error when writing direct value: %v", err)
+				}
+				return
+			}
 			err := runWritePipelineEnv(stepConfig.Password, encryptedCPE)
 			if err != nil {
 				log.Entry().Fatalf("error when writing common Pipeline environment: %v", err)
@@ -50,85 +59,98 @@ func WritePipelineEnv() *cobra.Command {
 	}
 
 	writePipelineEnv.Flags().BoolVar(&encryptedCPE, "encryptedCPE", false, "Bool to use encryption in CPE")
+	writePipelineEnv.Flags().StringVar(&directValue, "value", "", "Key-value pair to write directly (format: key=value)")
 	return writePipelineEnv
 }
 
 func runWritePipelineEnv(stepConfigPassword string, encryptedCPE bool) error {
-	var err error
-	pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv")
-	inBytes := []byte(pipelineEnv)
-	if !ok {
-		var err error
-		inBytes, err = io.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
+	inBytes, err := readInput()
+	if err != nil {
+		return fmt.Errorf("failed to read input: %w", err)
 	}
 	if len(inBytes) == 0 {
 		return nil
 	}
 
-	// try to decrypt
 	if encryptedCPE {
-		log.Entry().Debug("trying to decrypt CPE")
-		if stepConfigPassword == "" {
-			return fmt.Errorf("empty stepConfigPassword")
-		}
-
-		inBytes, err = decrypt([]byte(stepConfigPassword), inBytes)
-		if err != nil {
-			log.Entry().Fatal(err)
+		if inBytes, err = handleEncryption(stepConfigPassword, inBytes); err != nil {
+			return err
 		}
 	}
 
+	commonPipelineEnv, err := parseInput(inBytes)
+	if err != nil {
+		return fmt.Errorf("failed to parse input: %w", err)
+	}
+
+	if _, err := writeOutput(commonPipelineEnv); err != nil {
+		return fmt.Errorf("failed to write output: %w", err)
+	}
+
+	return nil
+}
+
+func readInput() ([]byte, error) {
+	if pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv"); ok {
+		return []byte(pipelineEnv), nil
+	}
+	return io.ReadAll(os.Stdin)
+}
+
+func handleEncryption(password string, data []byte) ([]byte, error) {
+	if password == "" {
+		return nil, fmt.Errorf("encryption enabled but password is empty")
+	}
+	log.Entry().Debug("decrypting CPE data")
+	return encryption.Decrypt([]byte(password), data)
+}
+
+func parseInput(data []byte) (piperenv.CPEMap, error) {
 	commonPipelineEnv := piperenv.CPEMap{}
-	decoder := json.NewDecoder(bytes.NewReader(inBytes))
-	decoder.UseNumber()
-	err = decoder.Decode(&commonPipelineEnv)
-	if err != nil {
-		return err
-	}
 
+	// Clean invalid UTF-8 sequences that can cause JSON parsing errors
+	cleanData := piperenv.CleanJSONData(data)
+
+	decoder := json.NewDecoder(bytes.NewReader(cleanData))
+	decoder.UseNumber()
+	if err := decoder.Decode(&commonPipelineEnv); err != nil {
+		return nil, err
+	}
+	return commonPipelineEnv, nil
+}
+
+func writeOutput(commonPipelineEnv piperenv.CPEMap) (int, error) {
 	rootPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-	err = commonPipelineEnv.WriteToDisk(rootPath)
-	if err != nil {
-		return err
+	if err := commonPipelineEnv.WriteToDisk(rootPath); err != nil {
+		return 0, err
 	}
 
 	writtenBytes, err := json.MarshalIndent(commonPipelineEnv, "", "\t")
 	if err != nil {
-		return err
+		return 0, err
 	}
-	_, err = os.Stdout.Write(writtenBytes)
-	if err != nil {
-		return err
-	}
-	return nil
+	return os.Stdout.Write(writtenBytes)
 }
 
-func decrypt(secret, base64CipherText []byte) ([]byte, error) {
-	// decode from base64
-	cipherText, err := b64.StdEncoding.DecodeString(string(base64CipherText))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode from base64: %v", err)
+// writeDirectValue writes a single value to a file in the commonPipelineEnvironment directory
+// The key-value pair should be in the format "key=value"
+// The key will be used as the file name and the value as its content
+func writeDirectValue(keyValue string) error {
+	parts := strings.SplitN(keyValue, "=", 2)
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid key-value format. Expected 'key=value', got '%s'", keyValue)
 	}
 
-	// use SHA256 as key
-	key := sha256.Sum256(secret)
-	block, err := aes.NewCipher(key[:])
-	if err != nil {
-		return nil, fmt.Errorf("failed to create new cipher: %v", err)
+	key := parts[0]
+	value := parts[1]
+
+	rootPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+	filePath := filepath.Join(rootPath, key)
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %v", err)
 	}
 
-	if len(cipherText) < aes.BlockSize {
-		return nil, fmt.Errorf("invalid ciphertext block size")
-	}
-
-	iv := cipherText[:aes.BlockSize]
-	cipherText = cipherText[aes.BlockSize:]
-
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(cipherText, cipherText)
-
-	return cipherText, nil
+	return os.WriteFile(filePath, []byte(value), 0644)
 }

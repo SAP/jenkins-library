@@ -27,9 +27,12 @@ const configFileName = "wss-unified-agent.config"
 // ConfigOptions contains a list of config options (ConfigOption)
 type ConfigOptions []ConfigOption
 
+// Needed parameters from UAConfiguration to print in verbose=true
+var parametersForLog = []string{"docker.excludeBaseImage", "docker.dockerfilePath"}
+
 // RewriteUAConfigurationFile updates the user's Unified Agent configuration with configuration which should be enforced or just eases the overall configuration
 // It then returns the path to the file containing the updated configuration
-func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string) (string, error) {
+func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string, verbose bool) (string, error) {
 
 	uaContent, err := utils.FileRead(s.ConfigFilePath)
 	uaConfig, propErr := properties.Load(uaContent, properties.UTF8)
@@ -46,6 +49,18 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 	newConfigMap := cOptions.updateConfig(&uaConfigMap)
 	newConfig := properties.LoadMap(newConfigMap)
+
+	if verbose {
+		var printLog string
+		for _, p := range parametersForLog {
+			if val, ok := newConfigMap[p]; ok {
+				printLog += fmt.Sprintf("%s:%s ", p, val)
+			}
+		}
+		if len(printLog) > 0 {
+			log.Entry().Debugf("ScanUA configuration: %s", printLog)
+		}
+	}
 
 	now := time.Now().Format("20060102150405")
 
@@ -138,7 +153,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 		{Name: "forceUpdate", Value: true, Force: true},
 		{Name: "offline", Value: false, Force: true},
 		{Name: "resolveAllDependencies", Value: false, Force: false},
-		{Name: "failErrorLevel", Value: "ALL", Force: true},
+		{Name: "failErrorLevel", Value: "ALL", Force: false},
 		{Name: "case.sensitive.glob", Value: false},
 		{Name: "followSymbolicLinks", Value: true},
 	}...)
@@ -184,7 +199,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "gradle.resolveDependencies", Value: true, Force: true},
 			{Name: "gradle.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "gradle.aggregateModules", Value: false, Force: true},
+			{Name: "gradle.aggregateModules", Value: false, Force: false},
 			{Name: "gradle.runAssembleCommand", Value: true},
 			{Name: "gradle.runPreStep", Value: true},
 			{Name: "gradle.preferredEnvironment", Value: "wrapper"},
@@ -265,6 +280,21 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Append: true})
 		}
 
+	}
+	if config.BuildTool == "npm" {
+		if len(config.BuildDescriptorExcludeList) > 0 {
+			var excludePaths []string
+			for _, buildDescriptor := range config.BuildDescriptorExcludeList {
+				if strings.HasSuffix(buildDescriptor, "pom.xml") {
+					continue
+				}
+				modulePath, _ := filepath.Split(buildDescriptor)
+				excludePaths = append(excludePaths, modulePath)
+			}
+			*c = append(*c, ConfigOption{Name: "npm.ignoreDirectoryPatterns", Value: strings.Join(excludePaths, ",")})
+		}
+
+		*c = append(*c, ConfigOption{Name: "npm.includeDevDependencies", Value: config.NpmIncludeDevDependencies, Force: false})
 	}
 
 	if config.BuildTool == "docker" {

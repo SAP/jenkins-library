@@ -3,9 +3,12 @@ package cmd
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,12 +21,13 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/pkg/errors"
 )
 
@@ -73,20 +77,36 @@ func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry
 
 func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux, cx1sh *checkmarxOneExecuteScanHelper) error {
 	err := error(nil)
-	cx1sh.Project, err = cx1sh.GetProjectByName()
-	if err != nil && err.Error() != "project not found" {
-		return fmt.Errorf("failed to get project: %s", err)
+	if len(cx1sh.config.ProjectID) == 0 {
+		cx1sh.Project, err = cx1sh.GetProjectByName()
+		if err != nil && err.Error() != "project not found" {
+			return fmt.Errorf("failed to get project: %s", err)
+		}
+	} else {
+		cx1sh.Project, err = cx1sh.GetProjectByID(cx1sh.config.ProjectID)
+		if err != nil {
+			return fmt.Errorf("failed to get project by ID: %s", err)
+		}
 	}
 
-	cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
-	if err != nil {
-		log.Entry().WithError(err).Warnf("failed to get group")
+	if len(config.GroupName) > 0 {
+		cx1sh.Group, err = cx1sh.GetGroup() // used when creating a project and when generating a SARIF report
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to get group")
+		}
 	}
 
 	if cx1sh.Project == nil {
-		cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
-		if err != nil {
-			log.Entry().WithError(err).Warnf("Failed to get application - will attempt to create the project on the Tenant level")
+		if len(config.ApplicationID) > 0 {
+			cx1sh.App, err = cx1sh.GetApplicationByID(config.ApplicationID)
+			if err != nil {
+				return fmt.Errorf("failed to get application by ID: %v", err)
+			}
+		} else if len(config.ApplicationName) > 0 {
+			cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
+			if err != nil {
+				return fmt.Errorf("failed to get application: %v", err)
+			}
 		}
 		cx1sh.Project, err = cx1sh.CreateProject() // requires groups, repoUrl, mainBranch, origin, tags, criticality
 		if err != nil {
@@ -112,7 +132,21 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to set preset: %s", err)
 	}
 
-	scans, err := cx1sh.GetLastScans(10)
+	// update project's tags
+	if (len(config.ProjectTags)) > 0 {
+		err = cx1sh.UpdateProjectTags()
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to tags the project: %s", err)
+		}
+	}
+
+	fullScanCycle, err := strconv.Atoi(cx1sh.config.FullScanCycle)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", cx1sh.config.FullScanCycle)
+	}
+	branch, isPR, baseBranch := cx1sh.GetScanBranch()
+	scans, err := cx1sh.GetLastScans(fullScanCycle+1, branch)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("failed to get last 10 scans")
 	}
@@ -136,13 +170,13 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
-	incremental, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
+	incremental, fullScanExists, contiguousIncrScansCurrentBranch, err := cx1sh.IncrementalOrFull(scans) // requires: scan list
 	if err != nil {
 		return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
 	}
 
 	if config.Incremental {
-		log.Entry().Warnf("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
+		log.Entry().Info("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
 	}
 
 	zipFile, err := cx1sh.ZipFiles()
@@ -156,7 +190,38 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	// TODO : The step structure should allow to enable different scanners: SAST, KICKS, SCA
-	scan, err := cx1sh.CreateScanRequest(incremental, uploadLink)
+	var scan *checkmarxOne.Scan
+	// user requested an incremental scan on a branch, and the project has a Primary Branch set, not in PR context and no full scan on the branch
+	if config.Incremental && !isPR && !fullScanExists && cx1sh.Project.MainBranch != "" && cx1sh.Project.MainBranch != branch {
+		scansMainBranch, err := cx1sh.GetLastScans(fullScanCycle+1, cx1sh.Project.MainBranch)
+		if err != nil {
+			return fmt.Errorf("failed to get scans from primary branch %v: %s", cx1sh.Project.MainBranch, err)
+		}
+		// We check if the main branch is eligible for an incremental scan
+		incrementalMainBranch, _, contiguousIncrScansMainBranch, err := cx1sh.IncrementalOrFull(scansMainBranch)
+		if err != nil {
+			return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
+		}
+		log.Entry().Debugf("Main branch %v incremental scan eligibility: %t", cx1sh.Project.MainBranch, incrementalMainBranch)
+		if contiguousIncrScansMainBranch+contiguousIncrScansCurrentBranch+1 >= fullScanCycle { // contiguous incremental scans on main branch and current branch must not exceed fullScanCycle
+			incrementalMainBranch = false
+		}
+		log.Entry().Debugf("Main branch + current branch incremental scan eligibility: %t", incrementalMainBranch)
+		scan, err = cx1sh.CreateScanRequest(incrementalMainBranch, uploadLink, cx1sh.Project.MainBranch) // this will create a full scan on the current branch if the main branch is not eligible for an incremental scan
+	} else if config.Incremental && isPR && len(baseBranch) > 0 && baseBranch != "n/a" { // running in a PR context, and we have a base branch for the incremental scan
+		// in a PR context we always want to do an incremental scan
+		// The scan will be based on the PR's target branch (baseBranch) if there is no full scan on the PR branch
+		if fullScanExists {
+			log.Entry().Debugf("A full scan exists on the PR branch %v, so the incremental scan will be based on it", branch)
+			scan, err = cx1sh.CreateScanRequest(true, uploadLink, "")
+		} else {
+			log.Entry().Debugf("There is no full scan on the PR branch %v, so the incremental scan will be based on branch %v", branch, baseBranch)
+			scan, err = cx1sh.CreateScanRequest(true, uploadLink, baseBranch)
+		}
+	} else {
+		scan, err = cx1sh.CreateScanRequest(incremental, uploadLink, "")
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to create scan: %s", err)
 	}
@@ -271,7 +336,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	if c.App != nil {
 		project, err = c.sys.CreateProjectInApplication(c.config.ProjectName, c.App.ApplicationID, groupIDs)
 	} else {
-		project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
+		// don't allow creation of project at tenant level
+		return nil, fmt.Errorf("No application found in config, project cannot be created")
+		//project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
 	}
 
 	if err != nil {
@@ -296,6 +363,23 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	}
 
 	return &project, nil
+}
+
+func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
+	if len(c.config.ProjectTags) > 0 {
+		tags := make(map[string]string, 0)
+		err := json.Unmarshal([]byte(c.config.ProjectTags), &tags)
+		if err != nil {
+			log.Entry().Infof("Failed to parse the project tags: %v", c.config.ProjectTags)
+			return err
+		}
+		// merge new tags to the existing ones
+		maps.Copy(c.Project.Tags, tags)
+
+		return c.sys.UpdateProject(c.Project)
+	}
+
+	return nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
@@ -355,31 +439,54 @@ func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int) ([]checkmarxOne.Scan, error) {
-	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, count, []string{"Completed"})
+func (c *checkmarxOneExecuteScanHelper) GetLastScans(count int, branch string) ([]checkmarxOne.Scan, error) {
+	scans, err := c.sys.GetLastScansByStatus(c.Project.ProjectID, branch, count, []string{"Completed"})
 	if err != nil {
 		return []checkmarxOne.Scan{}, fmt.Errorf("Failed to get last %d Completed scans for project %v: %s", count, c.Project.ProjectID, err)
 	}
 	return scans, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.Scan) (bool, error) {
+func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.Scan) (bool, bool, int, error) {
 	incremental := c.config.Incremental
+	fullScanExists := false
 	fullScanCycle, err := strconv.Atoi(c.config.FullScanCycle)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return false, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
+		return false, false, 0, fmt.Errorf("invalid configuration value for fullScanCycle %v, must be a positive int", c.config.FullScanCycle)
 	}
 
-	coherentIncrementalScans := c.getNumCoherentIncrementalScans(scans)
+	if len(scans) == 0 {
+		return false, false, 0, nil // no scans exist, so we need to do a full scan
+	}
+
+	var scanIds []string
+	for _, scan := range scans {
+		scanIds = append(scanIds, scan.ScanID)
+	}
+
+	scanMetadatas, err := c.sys.GetScanMetadatas(scanIds)
+	if err != nil {
+		return false, false, 0, errors.Wrapf(err, "failed to fetch metadata for scans")
+	}
+
+	contiguousIncrementalScans := 0
+	for _, scanMetadata := range scanMetadatas {
+		if scanMetadata.IsIncremental {
+			contiguousIncrementalScans++
+		} else {
+			fullScanExists = true
+			break
+		}
+	}
 
 	if c.config.IsOptimizedAndScheduled {
 		incremental = false
-	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (coherentIncrementalScans+1) >= fullScanCycle {
+	} else if incremental && c.config.FullScansScheduled && fullScanCycle > 0 && (contiguousIncrementalScans+1) >= fullScanCycle {
 		incremental = false
 	}
 
-	return incremental, nil
+	return incremental, fullScanExists, contiguousIncrementalScans, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
@@ -404,33 +511,77 @@ func (c *checkmarxOneExecuteScanHelper) UploadScanContent(zipFile *os.File) (str
 	return uploadUri, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string) (*checkmarxOne.Scan, error) {
+func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
+	branch := c.config.Branch
+	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		log.Entry().Warn("Could not identify orchestrator")
+	}
+	if len(branch) == 0 && len(c.config.GitBranch) > 0 && c.config.GitBranch != "n/a" {
+		branch = c.config.GitBranch
+	} else if len(branch) == 0 && (len(c.config.GitBranch) == 0 || c.config.GitBranch == "n/a") { // use the branch from the orchestrator by default
+		cicdBranch := cicdOrch.Branch()
+		if cicdBranch != "n/a" {
+			branch = cicdBranch
+		} else {
+			log.Entry().Info("Could not retrieve branch name from orchestrator")
+		}
+	}
+	if len(c.config.PullRequestName) > 0 {
+		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, branch)
+	} else if cicdOrch.IsPullRequest() && cicdOrch.PullRequestConfig().Branch != "n/a" {
+		branch = fmt.Sprintf("PR%v-%v", cicdOrch.PullRequestConfig().Key, cicdOrch.PullRequestConfig().Branch)
+	}
+
+	if branch == "" {
+		branch = ".unknown"
+		log.Entry().Info("No branch name found, using the cxone default '.unknown' as branch name")
+	}
+
+	baseBranch := cicdOrch.PullRequestConfig().Base
+	isPR := cicdOrch.IsPullRequest()
+	log.Entry().Debugf("CxOne scan branch was automatically set to : %v", branch)
+	return branch, isPR, baseBranch
+}
+
+func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string, baseBranch string) (*checkmarxOne.Scan, error) {
+	sastConfigString := ""
 	sastConfig := checkmarxOne.ScanConfiguration{}
 	sastConfig.ScanType = "sast"
 
 	sastConfig.Values = make(map[string]string, 0)
 	sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
 	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
-	sastConfigString := fmt.Sprintf("incremental %v, preset %v", strconv.FormatBool(incremental), c.config.Preset)
+	if incremental && len(baseBranch) > 0 {           // base the incremental scan on the specified base branch
+		sastConfig.Values["baseBranch"] = baseBranch
+		sastConfigString = fmt.Sprintf("baseBranch: %v, ", baseBranch)
+	}
+	sastConfigString = fmt.Sprintf("%vincremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.Preset)
 
 	if len(c.config.LanguageMode) > 0 {
 		sastConfig.Values["languageMode"] = c.config.LanguageMode
 		sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
 	}
 
-	branch := c.config.Branch
-	if len(c.config.PullRequestName) > 0 {
-		branch = fmt.Sprintf("%v-%v", c.config.PullRequestName, c.config.Branch)
-	}
+	branch, _, _ := c.GetScanBranch()
 
 	sastConfigString = fmt.Sprintf("Cx1 Branch name %v, ", branch) + sastConfigString
 
 	log.Entry().Infof("Will run a scan with the following configuration: %v", sastConfigString)
 
 	configs := []checkmarxOne.ScanConfiguration{sastConfig}
-	// add more engines
 
-	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs)
+	// add scan's tags
+	tags := make(map[string]string, 0)
+	if len(c.config.ScanTags) > 0 {
+		err := json.Unmarshal([]byte(c.config.ScanTags), &tags)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to parse the scan tags: %v", c.config.ScanTags)
+		}
+	}
+
+	// add more engines
+	scan, err := c.sys.ScanProjectZip(c.Project.ProjectID, uploadLink, branch, configs, tags)
 
 	if err != nil {
 		return nil, fmt.Errorf("Failed to run scan on project %v: %s", c.Project.Name, err)
@@ -489,10 +640,162 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 	return nil
 }
 
+func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
+	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		return fmt.Errorf("Failed to get orchestrator config provider: %s", err)
+	}
+	isPullRequest := cicdOrch.IsPullRequest()
+	pullRequestId := cicdOrch.PullRequestConfig().Key
+	var owner, repository string
+	if len(c.config.Repository) == 0 || len(c.config.Owner) == 0 {
+		log.Entry().Debug("No repository or owner configured, trying to get it from orchestrator")
+		repoUrl := cicdOrch.RepoURL()
+		if repoUrl != "n/a" {
+			parsedURL, err := url.Parse(repoUrl)
+			if err != nil {
+				return fmt.Errorf("failed to parse repository URL %s: %s", repoUrl, err)
+			}
+			pathParts := strings.Split(strings.TrimSuffix(parsedURL.Path, ".git"), "/")
+			if len(pathParts) >= 2 {
+				if len(c.config.Owner) == 0 {
+					owner = pathParts[len(pathParts)-2]
+				}
+				if len(c.config.Repository) == 0 {
+					repository = pathParts[len(pathParts)-1]
+				}
+				log.Entry().Debugf("Found repository %s and owner %s from orchestrator", repository, owner)
+			} else {
+				return fmt.Errorf("failed to extract owner and repository from URL %s", repoUrl)
+			}
+		} else {
+			log.Entry().Debug("Could not retrieve repository URL from orchestrator")
+		}
+	} else {
+		owner = c.config.Owner
+		repository = c.config.Repository
+		log.Entry().Debug("Using Owner and Repository from configuration: " + owner + "/" + repository)
+	}
+	log.Entry().Debugf("Parameters for PR summary: ScanSummaryInPullRequest: %t, isPullRequest: %t, pullRequestId: %s, PullRequestName: %s, GithubAPIURL: %s, GithubToken: %s, Owner: %s, Repository: %s", c.config.ScanSummaryInPullRequest, isPullRequest, pullRequestId, c.config.PullRequestName, c.config.GithubAPIURL, c.config.GithubToken, owner, repository)
+	if c.config.ScanSummaryInPullRequest && isPullRequest && pullRequestId != "n/a" && len(c.config.GithubToken) > 0 && len(c.config.GithubAPIURL) > 0 && len(owner) > 0 && len(repository) > 0 {
+		ghIssues := c.utils.GetIssueService()
+		log.Entry().Debugf("Creating/updating GitHub issue with check results with PR: %s, GithubAPIURL: %s, Owner: %s, Repository: %s", c.config.PullRequestName, c.config.GithubAPIURL, owner, repository)
+		scanReportOverview := checkmarxOne.CreateJSONHeaderReport(detailedResults)
+		var criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, criticalComplianceCheckString, highComplianceCheckString, mediumComplianceCheckString, lowComplianceCheckString string
+		for _, finding := range *scanReportOverview.Findings {
+			switch finding.ClassificationName {
+			case "Critical":
+				// TODO: check if config threshold unit is percent or absolute number
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdCritical)/100.0)*float64(finding.Total))) {
+					criticalComplianceCheckString = ":x:"
+				} else {
+					criticalComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					criticalSeverityString = fmt.Sprintf("%s %d (%d confirmed)", criticalComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					criticalSeverityString = fmt.Sprintf("%s %d", criticalComplianceCheckString, finding.Total-*finding.Audited)
+				}
+			case "High":
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdHigh)/100.0)*float64(finding.Total))) {
+					highComplianceCheckString = ":x:"
+				} else {
+					highComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					highSeverityString = fmt.Sprintf("%s %d (%d confirmed)", highComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					highSeverityString = fmt.Sprintf("%s %d", highComplianceCheckString, finding.Total-*finding.Audited)
+				}
+			case "Medium":
+				if *finding.Audited < int(math.Ceil((float64(c.config.VulnerabilityThresholdMedium)/100.0)*float64(finding.Total))) {
+					mediumComplianceCheckString = ":x:"
+				} else {
+					mediumComplianceCheckString = ":white_check_mark:"
+				}
+				if finding.Confirmed > 0 {
+					mediumSeverityString = fmt.Sprintf("%s %d (%d confirmed)", mediumComplianceCheckString, finding.Total-*finding.Audited, finding.Confirmed)
+				} else {
+					mediumSeverityString = fmt.Sprintf("%s %d", mediumComplianceCheckString, finding.Total-*finding.Audited)
+				}
+			case "Low":
+				if finding.LowPerQuery != nil {
+					for _, lowFinding := range *finding.LowPerQuery {
+						if c.config.VulnerabilityThresholdLowPerQuery {
+							confirmedLowString := ""
+							if lowFinding.Confirmed > 0 {
+								confirmedLowString = fmt.Sprintf(", of which %d confirmed", lowFinding.Confirmed)
+							}
+							lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowFinding.Total)*float64(c.config.VulnerabilityThresholdLow)/100.0)), c.config.VulnerabilityThresholdLowPerQueryMax)
+							if lowFinding.Audited < lowAuditedRequiredPerQuery {
+								lowComplianceCheckString = ":x:"
+							} else {
+								lowComplianceCheckString = ":white_check_mark:"
+							}
+							lowSeverityString = fmt.Sprintf("%s%s %d %s (%d audited / %d required%s) <br>", lowSeverityString, lowComplianceCheckString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName, lowFinding.Audited, lowAuditedRequiredPerQuery, confirmedLowString)
+						} else {
+							lowSeverityString = fmt.Sprintf("%s%s %d %s<br>", lowSeverityString, lowComplianceCheckString, lowFinding.Total-lowFinding.Audited, lowFinding.QueryName)
+						}
+					}
+				}
+			}
+		}
+		var scanIcon string
+		if insecure {
+			scanIcon = ":x:"
+		} else {
+			scanIcon = ":white_check_mark:"
+		}
+		comment := &github.IssueComment{
+			Body: github.Ptr(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
+# %s Checkmarx %s scan completed 
+**Project**: %s
+**ScanId**: %s
+**Preset**: %s
+Severity | Number of unaudited findings
+--- | ---
+:bangbang: Critical | %s
+:red_circle: High | %s
+:orange_circle: Medium | %s
+:yellow_circle: Low | %s
+
+[Go to the scan results](%s)
+		`, scanIcon, strings.ToLower(scanReportOverview.ScanType), c.Project.Name, scanReportOverview.ScanID, scanReportOverview.Preset, criticalSeverityString, highSeverityString, mediumSeverityString, lowSeverityString, scanReportOverview.DeepLink)),
+		}
+		pullRequestNumber, err := strconv.Atoi(pullRequestId)
+		if err != nil {
+			return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
+		}
+		// Check if comment already exists, delete old one to avoid multiple comments
+		// search for watermark <!-- Piper CxOne Scan Summary -->
+		comments, _, err := ghIssues.ListComments(c.ctx, owner, repository, pullRequestNumber, &github.IssueListCommentsOptions{})
+		if err != nil {
+			log.Entry().Errorf("failed to list GitHub issue comments: %s", err)
+		} else {
+			for _, existingComment := range comments {
+				if strings.Contains(*existingComment.Body, "<!-- Piper CxOne Scan Summary -->") {
+					_, err := ghIssues.DeleteComment(c.ctx, owner, repository, existingComment.GetID())
+					if err != nil {
+						log.Entry().Errorf("failed to delete old GitHub issue comment: %s", err)
+					}
+					log.Entry().Infof("Deleted old GitHub issue comment for project %v", c.Project.Name)
+					break
+				}
+			}
+		}
+		_, _, err = ghIssues.CreateComment(c.ctx, owner, repository, pullRequestNumber, comment)
+		if err != nil {
+			return fmt.Errorf("failed to create GitHub issue comment: %s", err)
+		}
+		log.Entry().Infof("Created GitHub issue comment for project %v", c.Project.Name)
+	} else {
+		log.Entry().Debug("Skipping GitHub issue comment creation, no pull request or GitHub configuration provided")
+	}
+	return nil
+}
+
 func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]interface{}) error {
-
 	links := []piperutils.Path{{Target: (*detailedResults)["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
-
 	insecure := false
 	var insecureResults []string
 	var neutralResults []string
@@ -500,6 +803,14 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 	if c.config.VulnerabilityThresholdEnabled {
 		insecure, insecureResults, neutralResults = c.enforceThresholds(detailedResults)
 		scanReport := checkmarxOne.CreateCustomReport(detailedResults, insecureResults, neutralResults)
+
+		// Create scan summary comment in PR
+		if c.config.ScanSummaryInPullRequest {
+			err := c.PostScanSummaryInPullRequest(detailedResults, insecure)
+			if err != nil {
+				log.Entry().Errorf("failed to post scan summary in pull request: %s", err)
+			}
+		}
 
 		if insecure && c.config.CreateResultIssue && len(c.config.GithubToken) > 0 && len(c.config.GithubAPIURL) > 0 && len(c.config.Owner) > 0 && len(c.config.Repository) > 0 {
 			log.Entry().Debug("Creating/updating GitHub issue with check results")
@@ -762,8 +1073,9 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 	}
 
 	resultMap["Preset"] = scanmeta.PresetName
-	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, scan.Branch)
+	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, url.QueryEscape(scan.Branch))
 	resultMap["ReportCreationTime"] = time.Now().String()
+	resultMap["Critical"] = map[string]int{}
 	resultMap["High"] = map[string]int{}
 	resultMap["Medium"] = map[string]int{}
 	resultMap["Low"] = map[string]int{}
@@ -773,6 +1085,8 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 		for _, result := range *results {
 			key := "Information"
 			switch result.Severity {
+			case "CRITICAL":
+				key = "Critical"
 			case "HIGH":
 				key = "High"
 			case "MEDIUM":
@@ -861,6 +1175,7 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 
 func (c *checkmarxOneExecuteScanHelper) zipWorkspaceFiles(filterPattern string, utils checkmarxOneExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
+	log.Entry().Infof("Zipping files using filter: %v", filterPattern)
 	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
@@ -902,12 +1217,15 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return nil
 		}
 
+		fileName := strings.TrimPrefix(path, baseDir)
 		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
 		if err != nil || noMatch {
+			if noMatch {
+				log.Entry().Debugf("Excluded %s", fileName)
+			}
 			return err
 		}
 
-		fileName := strings.TrimPrefix(path, baseDir)
 		writer, err := archive.Create(fileName)
 		if err != nil {
 			return err
@@ -919,6 +1237,9 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		}
 		defer file.Close()
 		_, err = io.Copy(writer, file)
+		if err == nil {
+			log.Entry().Debugf("Zipped %s", fileName)
+		}
 		fileCount++
 		return err
 	})
@@ -953,22 +1274,44 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 		return false, nil
 	}
 
+	// Check if it is matched by at least one include pattern
+	includeMatch := false
 	for _, pattern := range patterns {
-		negative := false
+		if strings.HasPrefix(pattern, "!") {
+			continue
+		}
+		match, err := utils.PathMatch(pattern, path)
+		if err != nil {
+			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
+		}
+		if match {
+			includeMatch = true
+			break
+		}
+	}
+
+	if !includeMatch {
+		return true, nil // if there is no include pattern matching, the file is necessarily excluded
+	}
+
+	// Check if it is matched by at least one exclude pattern
+	for _, pattern := range patterns {
 		if strings.HasPrefix(pattern, "!") {
 			pattern = strings.TrimLeft(pattern, "!")
-			negative = true
+		} else {
+			continue
 		}
 		match, err := utils.PathMatch(pattern, path)
 		if err != nil {
 			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
 		}
 
-		if match {
-			return negative, nil
+		if match { // match with an exclude pattern, the file is excluded
+			return true, nil
 		}
 	}
-	return true, nil
+
+	return false, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]interface{}) (string, error) {
@@ -1003,42 +1346,61 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	insecureResults := []string{}
 	insecure := false
 
+	cxCriticalThreshold := c.config.VulnerabilityThresholdCritical
 	cxHighThreshold := c.config.VulnerabilityThresholdHigh
 	cxMediumThreshold := c.config.VulnerabilityThresholdMedium
 	cxLowThreshold := c.config.VulnerabilityThresholdLow
 	cxLowThresholdPerQuery := c.config.VulnerabilityThresholdLowPerQuery
 	cxLowThresholdPerQueryMax := c.config.VulnerabilityThresholdLowPerQueryMax
-	highValue := (*results)["High"].(map[string]int)["NotFalsePositive"]
-	mediumValue := (*results)["Medium"].(map[string]int)["NotFalsePositive"]
-	lowValue := (*results)["Low"].(map[string]int)["NotFalsePositive"]
+	// findings are audited if they are in state Confirmed, Urgent or NotExploitable
+	criticalValue := (*results)["Critical"].(map[string]int)["ToVerify"] + (*results)["Critical"].(map[string]int)["ProposedNotExploitable"]
+	confirmedCriticalValue := (*results)["Critical"].(map[string]int)["Confirmed"] + (*results)["Critical"].(map[string]int)["Urgent"]
+	highValue := (*results)["High"].(map[string]int)["ToVerify"] + (*results)["High"].(map[string]int)["ProposedNotExploitable"]
+	confirmedHighValue := (*results)["High"].(map[string]int)["Confirmed"] + (*results)["High"].(map[string]int)["Urgent"]
+	mediumValue := (*results)["Medium"].(map[string]int)["ToVerify"] + (*results)["Medium"].(map[string]int)["ProposedNotExploitable"]
+	confirmedMediumValue := (*results)["Medium"].(map[string]int)["Confirmed"] + (*results)["Medium"].(map[string]int)["Urgent"]
+	lowValue := (*results)["Low"].(map[string]int)["ToVerify"] + (*results)["Low"].(map[string]int)["ProposedNotExploitable"]
+	confirmedLowValue := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["Urgent"]
 	var unit string
+	criticalViolation := ""
 	highViolation := ""
 	mediumViolation := ""
 	lowViolation := ""
 	if c.config.VulnerabilityThresholdUnit == "percentage" {
 		unit = "%"
-		highAudited := (*results)["High"].(map[string]int)["Issues"] - (*results)["High"].(map[string]int)["NotFalsePositive"]
+		criticalAudited := (*results)["Critical"].(map[string]int)["NotExploitable"] + (*results)["Critical"].(map[string]int)["Confirmed"] + (*results)["Critical"].(map[string]int)["Urgent"]
+		criticalOverall := (*results)["Critical"].(map[string]int)["Issues"]
+		if criticalOverall == 0 {
+			criticalAudited = 1
+			criticalOverall = 1
+		}
+		highAudited := (*results)["High"].(map[string]int)["NotExploitable"] + (*results)["High"].(map[string]int)["Confirmed"] + (*results)["High"].(map[string]int)["Urgent"]
 		highOverall := (*results)["High"].(map[string]int)["Issues"]
 		if highOverall == 0 {
 			highAudited = 1
 			highOverall = 1
 		}
-		mediumAudited := (*results)["Medium"].(map[string]int)["Issues"] - (*results)["Medium"].(map[string]int)["NotFalsePositive"]
+		mediumAudited := (*results)["Medium"].(map[string]int)["NotExploitable"] + (*results)["Medium"].(map[string]int)["Confirmed"] + (*results)["Medium"].(map[string]int)["Urgent"]
 		mediumOverall := (*results)["Medium"].(map[string]int)["Issues"]
 		if mediumOverall == 0 {
 			mediumAudited = 1
 			mediumOverall = 1
 		}
-		lowAudited := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["NotExploitable"]
+		lowAudited := (*results)["Low"].(map[string]int)["Confirmed"] + (*results)["Low"].(map[string]int)["NotExploitable"] + (*results)["Low"].(map[string]int)["Urgent"]
 		lowOverall := (*results)["Low"].(map[string]int)["Issues"]
 		if lowOverall == 0 {
 			lowAudited = 1
 			lowOverall = 1
 		}
+		criticalValue = int(float32(criticalAudited) / float32(criticalOverall) * 100.0)
 		highValue = int(float32(highAudited) / float32(highOverall) * 100.0)
 		mediumValue = int(float32(mediumAudited) / float32(mediumOverall) * 100.0)
 		lowValue = int(float32(lowAudited) / float32(lowOverall) * 100.0)
 
+		if criticalValue < cxCriticalThreshold {
+			insecure = true
+			criticalViolation = fmt.Sprintf("<-- %v %v deviation", cxCriticalThreshold-criticalValue, unit)
+		}
 		if highValue < cxHighThreshold {
 			insecure = true
 			highViolation = fmt.Sprintf("<-- %v %v deviation", cxHighThreshold-highValue, unit)
@@ -1053,9 +1415,9 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 				lowPerQueryMap := (*results)["LowPerQuery"].(map[string]map[string]int)
 
 				for lowQuery, resultsLowQuery := range lowPerQueryMap {
-					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
+					lowAuditedPerQuery := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"] + resultsLowQuery["Urgent"]
 					lowOverallPerQuery := resultsLowQuery["Issues"]
-					lowAuditedRequiredPerQuery := int(math.Ceil(float64(lowOverallPerQuery) * float64(cxLowThreshold) / 100.0))
+					lowAuditedRequiredPerQuery := min(int(math.Ceil(float64(lowOverallPerQuery)*float64(cxLowThreshold)/100.0)), cxLowThresholdPerQueryMax)
 					if lowAuditedPerQuery < lowAuditedRequiredPerQuery && lowAuditedPerQuery < cxLowThresholdPerQueryMax {
 						insecure = true
 						msgSeperator := "|"
@@ -1076,6 +1438,10 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	}
 	if c.config.VulnerabilityThresholdUnit == "absolute" {
 		unit = " findings"
+		if criticalValue > cxCriticalThreshold {
+			insecure = true
+			criticalViolation = fmt.Sprintf("<-- %v%v deviation", criticalValue-cxCriticalThreshold, unit)
+		}
 		if highValue > cxHighThreshold {
 			insecure = true
 			highViolation = fmt.Sprintf("<-- %v%v deviation", highValue-cxHighThreshold, unit)
@@ -1090,9 +1456,31 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 		}
 	}
 
-	highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
-	mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
-	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+	var confirmedCriticalString, confirmedHighString, confirmedMediumString, confirmedLowString string
+	if confirmedCriticalValue > 0 {
+		confirmedCriticalString = fmt.Sprintf(" (of which %v confirmed)", confirmedCriticalValue)
+	}
+	if confirmedHighValue > 0 {
+		confirmedHighString = fmt.Sprintf(" (of which %v confirmed)", confirmedHighValue)
+	}
+	if confirmedMediumValue > 0 {
+		confirmedMediumString = fmt.Sprintf(" (of which %v confirmed)", confirmedMediumValue)
+	}
+	if confirmedLowValue > 0 {
+		confirmedLowString = fmt.Sprintf(" (of which %v confirmed)", confirmedLowValue)
+	}
+	criticalText := fmt.Sprintf("Critical %v%v %v %v", criticalValue, unit, confirmedCriticalString, criticalViolation)
+	highText := fmt.Sprintf("High %v%v %v %v", highValue, unit, confirmedHighString, highViolation)
+	mediumText := fmt.Sprintf("Medium %v%v %v %v", mediumValue, unit, confirmedMediumString, mediumViolation)
+	lowText := fmt.Sprintf("Low %v%v %v %v", lowValue, unit, confirmedLowString, lowViolation)
+	log.Entry().Info("Result auditing status per severity:")
+	if len(criticalViolation) > 0 {
+		insecureResults = append(insecureResults, criticalText)
+		log.Entry().Error(criticalText)
+	} else {
+		neutralResults = append(neutralResults, criticalText)
+		log.Entry().Info(criticalText)
+	}
 	if len(highViolation) > 0 {
 		insecureResults = append(insecureResults, highText)
 		log.Entry().Error(highText)
@@ -1119,6 +1507,13 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 }
 
 func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]interface{}) {
+	c.influx.checkmarxOne_data.fields.critical_issues = (*results)["Critical"].(map[string]int)["Issues"]
+	c.influx.checkmarxOne_data.fields.critical_not_false_postive = (*results)["Critical"].(map[string]int)["NotFalsePositive"]
+	c.influx.checkmarxOne_data.fields.critical_not_exploitable = (*results)["Critical"].(map[string]int)["NotExploitable"]
+	c.influx.checkmarxOne_data.fields.critical_confirmed = (*results)["Critical"].(map[string]int)["Confirmed"]
+	c.influx.checkmarxOne_data.fields.critical_urgent = (*results)["Critical"].(map[string]int)["Urgent"]
+	c.influx.checkmarxOne_data.fields.critical_proposed_not_exploitable = (*results)["Critical"].(map[string]int)["ProposedNotExploitable"]
+	c.influx.checkmarxOne_data.fields.critical_to_verify = (*results)["Critical"].(map[string]int)["ToVerify"]
 
 	c.influx.checkmarxOne_data.fields.high_issues = (*results)["High"].(map[string]int)["Issues"]
 	c.influx.checkmarxOne_data.fields.high_not_false_postive = (*results)["High"].(map[string]int)["NotFalsePositive"]
