@@ -1,0 +1,46 @@
+package cmd
+
+import (
+	"github.com/SAP/jenkins-library/pkg/btp"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
+)
+
+func newBtpDeleteServiceUtils() btp.BTPUtils {
+	e := &btp.Executor{}
+	btpUtils := btp.NewBTPUtils(e)
+	return *btpUtils
+}
+
+func btpDeleteService(config btpDeleteServiceOptions, telemetryData *telemetry.CustomData) {
+	btpUtils := newBtpDeleteServiceUtils()
+
+	err := runBtpDeleteService(&config, telemetryData, btpUtils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runBtpDeleteService(config *btpDeleteServiceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
+	btpConfig := btp.DeleteServiceInstanceOptions{
+		Url:          config.Url,
+		Subdomain:    config.Subdomain,
+		Subaccount:   config.Subaccount,
+		User:         config.User,
+		Password:     config.Password,
+		Tenant:       config.Tenant,
+		InstanceName: config.ServiceInstanceName,
+		Timeout:      config.Timeout,
+		PollInterval: config.PollInterval,
+	}
+
+	err := utils.DeleteServiceInstance(btpConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete BTP service instance")
+	}
+
+	log.Entry().Info("Service deletion completed successfully")
+
+	return nil
+}
