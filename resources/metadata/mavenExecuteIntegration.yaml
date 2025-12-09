@@ -56,7 +56,7 @@ spec:
         type: bool
         description:
           "If enabled, it will use the Maven reactor to build all modules that the integration-tests module depends on.
-          This flag is mutually exclusive with installArtifacts."
+          Only if installArtifacts is set to true."
         scope:
           - GENERAL
           - STEPS
