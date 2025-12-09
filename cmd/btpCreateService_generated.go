@@ -325,7 +325,7 @@ func btpCreateServiceMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "btp", Image: "ppiper/btp-cli:latest"},
+				{Name: "btp", Image: "ppiper/cf-cli:latest"},
 			},
 		},
 	}

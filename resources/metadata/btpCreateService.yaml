@@ -160,4 +160,4 @@ spec:
             param: password
   containers:
     - name: btp
-      image: ppiper/btp-cli:latest
+      image: ppiper/cf-cli:latest
