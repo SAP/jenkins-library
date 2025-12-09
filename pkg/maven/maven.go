@@ -132,7 +132,7 @@ func InstallModuleWithReactor(moduleName string, options *EvaluateOptions, utils
 
 	mavenOptionsInstall := ExecuteOptions{
 		Goals:               []string{"install"},
-		Flags:               []string{"-pl", moduleName},
+		Flags:               []string{"-pl", moduleName, "-am"},
 		Defines:             defines,
 		M2Path:              options.M2Path,
 		ProjectSettingsFile: options.ProjectSettingsFile,
