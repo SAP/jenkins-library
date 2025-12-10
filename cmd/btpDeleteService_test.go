@@ -50,10 +50,10 @@ func TestRunBtpDeleteService(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", "https://api.endpoint.com", "--subdomain", "testSubdomain", "--user", "testUser", "--password", "testPassword"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", "testServiceInstance", "--subaccount", "testSubaccount", "--confirm"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},
@@ -95,10 +95,10 @@ func TestRunBtpDeleteService(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", "https://api.endpoint.com", "--subdomain", "testSubdomain", "--user", "testUser", "--password", "testPassword", "--idp", "testTenant"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Tenant}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", "testServiceInstance", "--subaccount", "testSubaccount", "--confirm"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},
