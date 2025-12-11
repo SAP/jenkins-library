@@ -485,15 +485,15 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		if shouldExclude(path, config.ExcludeFiles) {
 			continue
 		}
-		if s.Worktree == git.Deleted {
-			if _, err := worktree.Remove(path); err != nil {
-				log.Entry().Errorf("failed to stage deletion of %s: %v", path, err)
-			}
-			continue
-		}
-		if _, err := worktree.Add(path); err != nil {
-			log.Entry().Errorf("failed to stage %s", path)
-		}
+		//if s.Worktree == git.Deleted {
+		//	if _, err := worktree.Remove(path); err != nil {
+		//		log.Entry().Errorf("failed to stage deletion of %s: %v", path, err)
+		//	}
+		//	continue
+		//}
+		//if _, err := worktree.Add(path); err != nil {
+		//	log.Entry().Errorf("failed to stage %s", path)
+		//}
 	}
 
 	log.Entry().Info("committing changes")
