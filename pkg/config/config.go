@@ -206,7 +206,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General, metadata)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps, metadata)
-		stepConfig.mixIn(def.Stages[stageName], filters.Steps, metadata)
+		stepConfig.mixIn(def.Stages[stageName], filters.Stages, metadata)
 		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
 		reportingConfig, err := cloneConfig(&def)
 		if err != nil {
