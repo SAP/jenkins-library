@@ -45,8 +45,7 @@ type gitRepository interface {
 type gitWorktree interface {
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
-	Add(path string) (plumbing.Hash, error)
-	Remove(path string) (plumbing.Hash, error)
+	AddWithOptions(opts *git.AddOptions) error
 	Status() (git.Status, error)
 }
 
@@ -485,15 +484,9 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		if shouldExclude(path, config.ExcludeFiles) {
 			continue
 		}
-		//if s.Worktree == git.Deleted {
-		//	if _, err := worktree.Remove(path); err != nil {
-		//		log.Entry().Errorf("failed to stage deletion of %s: %v", path, err)
-		//	}
-		//	continue
-		//}
-		//if _, err := worktree.Add(path); err != nil {
-		//	log.Entry().Errorf("failed to stage %s", path)
-		//}
+		if err := worktree.AddWithOptions(&git.AddOptions{All: false, Path: path}); err != nil {
+			log.Entry().Errorf("failed to stage %s", path)
+		}
 	}
 
 	log.Entry().Info("committing changes")
