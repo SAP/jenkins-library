@@ -468,24 +468,15 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	return commitID, nil
 }
 
-//func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
-//	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
-//		All:               true,
-//		AllowEmptyCommits: true,
-//		Author:            &object.Signature{Name: config.CommitUserName, When: t}},
-//	)
-//	if err != nil {
-//		return commit, errors.Wrap(err, "failed to commit new version")
-//	}
-//	return commit, nil
-//}
-
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
+	log.Entry().Info("checking commit status")
 	st, err := worktree.Status()
 	if err != nil {
+		log.Entry().Info("error checking commit status")
 		return plumbing.ZeroHash, errors.Wrap(err, "failed to read worktree status")
 	}
 
+	log.Entry().Info("ranging through commit status")
 	for path, s := range st {
 		if s.Worktree == git.Unmodified && s.Staging == git.Unmodified {
 			continue
@@ -498,6 +489,7 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		}
 	}
 
+	log.Entry().Info("committing changes")
 	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
 		All:               false,
 		AllowEmptyCommits: true,
