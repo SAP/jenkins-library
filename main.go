@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run pkg/generator/step-metadata.go --metadataDir=./resources/metadata/ --targetDir=./cmd/
+//go:generate go run cmd/step-metadata/step-metadata.go --metadataDir=./resources/metadata/ --targetDir=./cmd/
 
 import (
 	"github.com/SAP/jenkins-library/cmd"

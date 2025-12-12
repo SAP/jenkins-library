@@ -10,7 +10,7 @@ import (
 func appendContextParameters(stepData *config.StepData) {
 	contextParameterNames := stepData.GetContextParameterFilters().All
 	if len(contextParameterNames) > 0 {
-		contextDetailsPath := "pkg/generator/helper/piper-context-defaults.yaml"
+		contextDetailsPath := "pkg/generator/piper-context-defaults.yaml"
 
 		contextDetails := config.StepData{}
 		readContextInformation(contextDetailsPath, &contextDetails)
