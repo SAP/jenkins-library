@@ -6,6 +6,11 @@
     "labels": [
         "dependencies"
     ],
+    ignorePaths: [
+        "integration/testdata/**",
+        "**/node_modules/**", 
+        "**/bower_components/**"
+    ],
     "packageRules": [
         {
             "description": "Create PRs to roll back Go module if the current version is not found in the registry.",
