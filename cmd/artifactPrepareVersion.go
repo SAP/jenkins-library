@@ -486,7 +486,7 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		if shouldExclude(path, config.ExcludeFiles) {
 			continue
 		}
-		if err := worktree.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		if err := worktree.AddWithOptions(&git.AddOptions{All: false, Path: path, SkipStatus: true}); err != nil {
 			log.Entry().Errorf("failed to stage %s", path)
 		}
 	}
