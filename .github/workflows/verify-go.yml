@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
       - name: 🏗 Set up Golang ${{ env.DEFAULT_GOLANG }}
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.DEFAULT_GOLANG }}
       - name: 🏗 Cache Golang packages
@@ -43,7 +43,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24.0'
       - name: Cache Golang Packages
@@ -63,7 +63,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24.0'
       - name: checkout
@@ -78,7 +78,7 @@ jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24.0'
       - name: Cache Golang Packages
@@ -98,7 +98,7 @@ jobs:
   dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.24.0'
       - name: Cache Golang Packages
