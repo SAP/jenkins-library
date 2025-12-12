@@ -469,6 +469,8 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 }
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
+	//hasExcludedPaths := len(config.ExcludeFiles) > 0
+	//if hasExcludedPaths {
 	log.Entry().Info("checking commit status")
 	st, err := worktree.Status()
 	if err != nil {
@@ -484,13 +486,16 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		if shouldExclude(path, config.ExcludeFiles) {
 			continue
 		}
-		if err := worktree.AddWithOptions(&git.AddOptions{All: false, Glob: path}); err != nil {
+		if err := worktree.AddWithOptions(&git.AddOptions{All: true}); err != nil {
 			log.Entry().Errorf("failed to stage %s", path)
 		}
 	}
+	//}
 
 	log.Entry().Info("committing changes")
+	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
 	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
+		//All:               !hasExcludedPaths,
 		All:               false,
 		AllowEmptyCommits: true,
 		Author:            &object.Signature{Name: config.CommitUserName, When: t},
