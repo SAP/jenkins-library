@@ -1,15 +1,15 @@
 //go:build unit
-// +build unit
 
 package gcs
 
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func Test_retryWithLogging(t *testing.T) {
