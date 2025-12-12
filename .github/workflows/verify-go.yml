@@ -35,7 +35,7 @@ jobs:
         id: unit-test
         run: go run gotest.tools/gotestsum@latest --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile cover.out -tags=unit ./...
       - name: 🔎 Analyse code
-        uses: SonarSource/sonarqube-scan-action@v6
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
