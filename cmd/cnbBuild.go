@@ -138,18 +138,12 @@ func isBuilder(utils cnbutils.BuildUtils) error {
 	return nil
 }
 
-func isZip(path string) bool {
+func verifyZip(path string) error {
 	r, err := zip.OpenReader(path)
-
-	switch {
-	case err == nil:
+	if err == nil {
 		_ = r.Close()
-		return true
-	case err == zip.ErrFormat:
-		return false
-	default:
-		return false
 	}
+	return err
 }
 
 func cleanDir(dir string, utils cnbutils.BuildUtils) error {
@@ -169,13 +163,14 @@ func cleanDir(dir string, utils cnbutils.BuildUtils) error {
 }
 
 func extractZip(source, target string) error {
-	if !isZip(source) {
+	err := verifyZip(source)
+	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.New("application path must be a directory or zip")
+		return errors.Wrapf(err, "'%s' is not a valid archive", source)
 	}
 
 	log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
-	_, err := piperutils.Unzip(source, target)
+	_, err = piperutils.Unzip(source, target)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
@@ -354,6 +349,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		}
 		// images produces with cnb have sboms
 		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger,go-module-binary-cataloger,apk-db-cataloger,dpkg-db-cataloger,rpm-db-cataloger")
+		syftScanner.AddArgument("--exclude=**/paketo-buildpacks_npm-install/launch-modules/*.spdx.*")
 		err = syftScanner.ScanImages(filepath.Dir(config.DockerConfigJSON), utils, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)

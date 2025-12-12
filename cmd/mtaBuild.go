@@ -323,7 +323,7 @@ func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCo
 }
 
 func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment, mtarPath string) error {
-	mtarDir := filepath.Dir(mtarPath)
+	component := piperutils.GetComponent(filepath.Join(filepath.Dir(mtarPath), "sbom-gen/bom-mta.xml"))
 	buildArtifacts := build.BuildArtifacts{
 		Coordinates: []versioning.Coordinates{
 			{
@@ -333,7 +333,7 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 				Packaging:  "mtar",
 				BuildPath:  getSourcePath(config),
 				URL:        config.MtaDeploymentRepositoryURL,
-				PURL:       piperutils.GetPurl(filepath.Join(mtarDir, "sbom-gen/bom-mta.xml")),
+				PURL:       component.Purl,
 			},
 		},
 	}

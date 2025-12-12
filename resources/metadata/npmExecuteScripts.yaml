@@ -254,4 +254,4 @@ spec:
             type: cucumber
   containers:
     - name: node
-      image: node:22-bookworm
+      image: node:24-bookworm
