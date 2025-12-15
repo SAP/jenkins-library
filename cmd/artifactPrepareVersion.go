@@ -471,14 +471,14 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
 	hasExcludedPaths := len(config.ExcludeFiles) > 0
 	if hasExcludedPaths {
-		log.Entry().Info("checking commit status")
+		log.Entry().Debug("checking commit status")
 		st, err := worktree.Status()
 		if err != nil {
 			log.Entry().Info("error checking commit status")
 			return plumbing.ZeroHash, errors.Wrap(err, "failed to read worktree status")
 		}
 
-		log.Entry().Info("ranging through commit status")
+		log.Entry().Debug("ranging through commit status")
 		for path, s := range st {
 			if s.Worktree == git.Unmodified && s.Staging == git.Unmodified {
 				continue
@@ -492,7 +492,7 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		}
 	}
 
-	log.Entry().Info("committing new version changes")
+	log.Entry().Debug("committing new version changes")
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
 	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
 		All:               !hasExcludedPaths,
