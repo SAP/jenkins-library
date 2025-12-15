@@ -492,7 +492,7 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		}
 	}
 
-	log.Entry().Info("committing changes")
+	log.Entry().Info("committing new version changes")
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
 	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
 		All:               !hasExcludedPaths,
