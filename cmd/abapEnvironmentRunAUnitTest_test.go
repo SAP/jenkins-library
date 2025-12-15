@@ -511,7 +511,7 @@ func TestParseAUnitResult(t *testing.T) {
 		assert.EqualError(t, err, "Evaluation of the ABAP Unit Results indicate failed or errornous test cases")
 	})
 
-	t.Run("succes case: Evaluate Result indicating no errors", func(t *testing.T) {
+	t.Run("success case: Evaluate Result indicating no errors", func(t *testing.T) {
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
 		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false, true)
