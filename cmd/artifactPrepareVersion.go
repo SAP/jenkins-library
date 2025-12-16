@@ -474,7 +474,7 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 		log.Entry().Debug("checking commit status")
 		st, err := worktree.Status()
 		if err != nil {
-			log.Entry().Info("error checking commit status")
+			log.Entry().Debug("error checking commit status")
 			return plumbing.ZeroHash, errors.Wrap(err, "failed to read worktree status")
 		}
 
