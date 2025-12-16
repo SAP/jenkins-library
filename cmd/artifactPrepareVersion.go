@@ -506,7 +506,7 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 }
 
 func shouldExclude(path string, excludes []string) bool {
-	log.Entry().Infof("checking excludes the following paths: %s", excludes)
+	log.Entry().Debugf("checking excludes the following paths: %s", excludes)
 	for _, ex := range excludes {
 		if path == ex {
 			return true
