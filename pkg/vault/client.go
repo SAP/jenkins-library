@@ -178,6 +178,17 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 	vaultApiClient.SetMaxRetryWait(time.Second * 90)
 	vaultApiClient.SetMaxRetries(3)
 	vaultApiClient.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		// Log all vault responses at debug level for visibility
+		if resp != nil {
+			logMsg := fmt.Sprintf("Vault response %s", resp.Status)
+			if err != nil {
+				logMsg += fmt.Sprintf(" (err: %v)", err)
+			}
+			log.Entry().Debugln(logMsg)
+		} else {
+			log.Entry().Debugf("Vault response: no HTTP response (err: %v)", err)
+		}
+
 		isEOF := false
 		if err != nil && strings.Contains(err.Error(), "EOF") {
 			log.Entry().Debugln("isEOF is true")
@@ -188,9 +199,13 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 
 		if err != nil || err == io.EOF || isEOF || retry {
 			if resp != nil {
-				log.Entry().Infoln("Retrying vault request... Response: ", resp.Status, resp.StatusCode, err)
+				logMsg := fmt.Sprintf("Retrying vault request... %s", resp.Status)
+				if err != nil {
+					logMsg += fmt.Sprintf(" (err: %v)", err)
+				}
+				log.Entry().Info(logMsg)
 			} else {
-				log.Entry().Infoln("Retrying vault request... Error: ", err)
+				log.Entry().Infof("Retrying vault request... (err: %v)", err)
 			}
 			return true, nil
 		}
