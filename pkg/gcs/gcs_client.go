@@ -44,32 +44,6 @@ func NewClient(keyFile, token string, opts ...clientOptions) (Client, error) {
 		opt(client)
 	}
 
-	// For all steps other than sapCumulusUpload, we need to keep the old behavior
-	// where keyFile takes precedence over token
-	gcs, err := initGcsClientLegacy(context.Background(), keyFile, token, client.gcsOptions...)
-	if err != nil {
-		return nil, err
-	}
-
-	client.gcs = *gcs
-	return client, nil
-}
-
-// NewClientST initializes the Google Cloud Storage client with the provided options
-/** TODO: When all steps start using the new behavior (token precedence over keyFile),
-  we need to remove the legacy (initGcsClientLegacy) function and rename this one to NewClient */
-func NewClientST(keyFile, token string, opts ...clientOptions) (Client, error) {
-	client := &gcsClient{
-		openFile:   openFileFromFS,
-		createFile: createFileOnFS,
-	}
-
-	// Apply options
-	for _, opt := range opts {
-		opt(client)
-	}
-
-	// This uses token precedence over keyFile
 	gcs, err := initGcsClient(context.Background(), keyFile, token, client.gcsOptions...)
 	if err != nil {
 		return nil, err
