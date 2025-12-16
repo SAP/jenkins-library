@@ -46,12 +46,13 @@ func initGcsClient(ctx context.Context, keyFile, token string, opts ...option.Cl
 	}
 }
 
-func initWithKeyFile(ctx context.Context, keyFile string, opts ...option.ClientOption) (*storage.Client, error) {
-	o := append([]option.ClientOption{option.WithCredentialsFile(keyFile)}, opts...)
-	return storage.NewClient(ctx, o...)
-}
-
-func initWithToken(ctx context.Context, token string, opts ...option.ClientOption) (*storage.Client, error) {
-	o := append([]option.ClientOption{option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))}, opts...)
-	return storage.NewClient(ctx, o...)
-}
+var (
+	initWithKeyFile = func(ctx context.Context, keyFile string, opts ...option.ClientOption) (*storage.Client, error) {
+		o := append([]option.ClientOption{option.WithCredentialsFile(keyFile)}, opts...)
+		return storage.NewClient(ctx, o...)
+	}
+	initWithToken = func(ctx context.Context, token string, opts ...option.ClientOption) (*storage.Client, error) {
+		o := append([]option.ClientOption{option.WithTokenSource(oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))}, opts...)
+		return storage.NewClient(ctx, o...)
+	}
+)
