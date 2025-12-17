@@ -126,9 +126,9 @@ func TestPiperLogFormatter_Format(t *testing.T) {
 			name:      "GHA mask secret",
 			logFormat: logFormatGitHubActions,
 			level:     logrus.InfoLevel,
-			msg:       "My password is secret123",
+			msg:       "My secret is secret123",
 			fields:    logrus.Fields{},
-			want:      "My password is ****\n",
+			want:      "My secret is ****\n",
 		},
 		// --- Default format ---
 		{
