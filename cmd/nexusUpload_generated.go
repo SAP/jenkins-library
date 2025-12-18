@@ -165,6 +165,11 @@ If an image for mavenExecute is configured, and npm packages are to be published
 					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
+					} else {
+						log.Entry().Debug("event publish succeeded")
+						log.Entry().Debugf("  with topic %s", GeneralConfig.HookConfig.GCPPubSubConfig.Topic)
+						log.Entry().Debugf("  with data %s", string(telemetryClient.GetData()))
+						log.Entry().Debugf("  with data %s", string(telemetryClient.GetDataBytes()))
 					}
 				}
 			}
