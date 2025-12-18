@@ -1,7 +1,6 @@
 //go:build unit
-// +build unit
 
-package helper
+package generator
 
 import (
 	"fmt"
