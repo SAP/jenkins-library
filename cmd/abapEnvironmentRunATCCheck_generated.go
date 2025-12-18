@@ -17,19 +17,20 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcConfig          string `json:"atcConfig,omitempty"`
-	Repositories       string `json:"repositories,omitempty"`
-	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
-	CfOrg              string `json:"cfOrg,omitempty"`
-	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
-	CfSpace            string `json:"cfSpace,omitempty"`
-	Username           string `json:"username,omitempty"`
-	Password           string `json:"password,omitempty"`
-	Host               string `json:"host,omitempty"`
-	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
-	GenerateHTML       bool   `json:"generateHTML,omitempty"`
-	FailOnSeverity     string `json:"failOnSeverity,omitempty"`
+	AtcConfig          string   `json:"atcConfig,omitempty"`
+	Repositories       string   `json:"repositories,omitempty"`
+	CfAPIEndpoint      string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg              string   `json:"cfOrg,omitempty"`
+	CfServiceInstance  string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string   `json:"cfServiceKeyName,omitempty"`
+	CfSpace            string   `json:"cfSpace,omitempty"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	Host               string   `json:"host,omitempty"`
+	AtcResultsFileName string   `json:"atcResultsFileName,omitempty"`
+	GenerateHTML       bool     `json:"generateHTML,omitempty"`
+	FailOnSeverity     string   `json:"failOnSeverity,omitempty"`
+	CertificateNames   []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -185,6 +186,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 	cmd.Flags().StringVar(&stepConfig.FailOnSeverity, "failOnSeverity", os.Getenv("PIPER_failOnSeverity"), "Specifies the severity level, for which the ATC step should fail if at least one message with this severity (or \"higher\") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -332,6 +334,15 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_failOnSeverity"),
+					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

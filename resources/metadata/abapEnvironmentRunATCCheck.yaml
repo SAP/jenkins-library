@@ -154,6 +154,15 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
+      - name: certificateNames
+        type: "[]string"
+        description: "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore"
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   containers:
     - name: cf
       image: ppiper/cf-cli:latest
