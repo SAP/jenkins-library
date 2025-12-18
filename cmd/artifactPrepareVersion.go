@@ -6,6 +6,7 @@ import (
 	"io"
 	netHttp "net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -44,6 +45,8 @@ type gitRepository interface {
 type gitWorktree interface {
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
+	AddWithOptions(opts *git.AddOptions) error
+	Status() (git.Status, error)
 }
 
 func getGitWorktree(repository gitRepository) (gitWorktree, error) {
@@ -466,16 +469,55 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 }
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
+	hasExcludedPaths := len(config.ExcludeFiles) > 0
+	if hasExcludedPaths {
+		log.Entry().Debug("checking commit status")
+		st, err := worktree.Status()
+		if err != nil {
+			log.Entry().Debug("error checking commit status")
+			return plumbing.ZeroHash, errors.Wrap(err, "failed to read worktree status")
+		}
+
+		log.Entry().Debug("ranging through commit status")
+		for path, s := range st {
+			if s.Worktree == git.Unmodified && s.Staging == git.Unmodified {
+				continue
+			}
+			if shouldExclude(path, config.ExcludeFiles) {
+				continue
+			}
+			if err := worktree.AddWithOptions(&git.AddOptions{All: false, Path: path}); err != nil {
+				log.Entry().Errorf("failed to stage %s", path)
+			}
+		}
+	}
+
+	log.Entry().Debug("committing new version changes")
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
 	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{
-		All:               true,
+		All:               !hasExcludedPaths,
 		AllowEmptyCommits: true,
-		Author:            &object.Signature{Name: config.CommitUserName, When: t}},
-	)
+		Author:            &object.Signature{Name: config.CommitUserName, When: t},
+	})
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}
 	return commit, nil
+}
+
+func shouldExclude(path string, excludes []string) bool {
+	log.Entry().Debugf("checking excludes the following paths: %s", excludes)
+	for _, ex := range excludes {
+		if path == ex {
+			return true
+		}
+		if ok, err := filepath.Match(ex, path); err != nil {
+			log.Entry().Warnf("Invalid exclusion pattern %s: %v", ex, err)
+		} else if ok {
+			return true
+		}
+	}
+	return false
 }
 
 func originUrls(repository gitRepository) []string {
