@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -178,7 +179,8 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		goPath := os.Getenv("GOPATH")
 		golangciLintDir := filepath.Join(goPath, "bin")
 
-		if err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL); err != nil {
+		lintVersion, err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL)
+		if err != nil {
 			return err
 		}
 
@@ -189,7 +191,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"additionalParams": "",
 		}
 
-		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
+		if err := runGolangciLint(config, utils, golangciLintDir, config.FailOnLintingError, lintSettings, lintVersion); err != nil {
 			return err
 		}
 	}
@@ -265,7 +267,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			}
 
 			artifactVersion, err = artifact.GetVersion()
-
 			if err != nil {
 				return err
 			}
@@ -417,36 +418,55 @@ func reportGolangTestCoverage(config *golangBuildOptions, utils golangBuildUtils
 	return nil
 }
 
-func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintURL string) error {
+func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintURL string) (string, error) {
 	archiveName := "golangci-lint.tar.gz"
 	err := utils.DownloadFile(golangciLintURL, archiveName, nil, nil)
 	if err != nil {
-		return fmt.Errorf("failed to download golangci-lint: %w", err)
+		return "", fmt.Errorf("failed to download golangci-lint: %w", err)
 	}
 
 	err = utils.Untar(archiveName, golangciLintDir, 1)
 	if err != nil {
-		return fmt.Errorf("failed to install golangci-lint: %w", err)
+		return "", fmt.Errorf("failed to install golangci-lint: %w", err)
 	}
 
-	return nil
+	// Extract version from URL using regex (e.g., "v2.6.2" from "/download/v2.6.2/")
+	version := ""
+	versionRegex := regexp.MustCompile(`/download/(v\d+\.\d+\.\d+)/`)
+	matches := versionRegex.FindStringSubmatch(golangciLintURL)
+	if len(matches) > 1 {
+		version = matches[1]
+	}
+
+	return version, nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string) error {
+func runGolangciLint(config *golangBuildOptions, utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string, version string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
-	var outputBuffer bytes.Buffer
-	utils.Stdout(&outputBuffer)
-	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
-	if err != nil && utils.GetExitCode() != 1 {
-		return fmt.Errorf("running golangci-lint failed: %w", err)
-	}
+	// keep backward compatibility for older versions
+	if strings.HasPrefix(version, "v1") {
+		var outputBuffer bytes.Buffer
+		utils.Stdout(&outputBuffer)
+		err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+		if err != nil && utils.GetExitCode() != 1 {
+			return fmt.Errorf("running golangci-lint failed: %w", err)
+		}
 
-	log.Entry().Infof("lint report: \n%s", outputBuffer.String())
-	log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
-	err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
-	if err != nil {
-		return fmt.Errorf("writing golangci-lint report failed: %w", err)
+		log.Entry().Infof("lint report: \n%s", outputBuffer.String())
+		log.Entry().Infof("writing lint report to %s", lintSettings["reportOutputPath"])
+		err = utils.FileWrite(lintSettings["reportOutputPath"], outputBuffer.Bytes(), 0o644)
+		if err != nil {
+			return fmt.Errorf("writing golangci-lint report failed: %w", err)
+		}
+	} else {
+		// support golangci-lint v2 and later
+		args := []string{"run"}
+		args = append(args, config.GolangciLintArgs...)
+		err := utils.RunExecutable(binaryPath, args...)
+		if err != nil && utils.GetExitCode() != 1 {
+			return fmt.Errorf("running golangci-lint failed: %w", err)
+		}
 	}
 
 	if utils.GetExitCode() == 1 && failOnError {
