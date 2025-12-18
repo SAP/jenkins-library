@@ -140,7 +140,6 @@ In case a file is uploaded that is already contained in the storage, it will be 
 					} else {
 						log.Entry().Debug("event publish succeeded")
 						log.Entry().Debugf("  with topic %s", GeneralConfig.HookConfig.GCPPubSubConfig.Topic)
-						log.Entry().Debugf("  with data %s", string(telemetryClient.GetData()))
 						log.Entry().Debugf("  with data %s", string(telemetryClient.GetDataBytes()))
 					}
 				}

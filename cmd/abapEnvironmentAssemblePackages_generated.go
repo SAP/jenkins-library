@@ -188,7 +188,6 @@ Refer to [Software Assembly Integration (SAP_COM_0582)](https://help.sap.com/vie
 					} else {
 						log.Entry().Debug("event publish succeeded")
 						log.Entry().Debugf("  with topic %s", GeneralConfig.HookConfig.GCPPubSubConfig.Topic)
-						log.Entry().Debugf("  with data %s", string(telemetryClient.GetData()))
 						log.Entry().Debugf("  with data %s", string(telemetryClient.GetDataBytes()))
 					}
 				}

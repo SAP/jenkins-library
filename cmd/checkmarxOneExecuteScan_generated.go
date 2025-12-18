@@ -384,7 +384,6 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 					} else {
 						log.Entry().Debug("event publish succeeded")
 						log.Entry().Debugf("  with topic %s", GeneralConfig.HookConfig.GCPPubSubConfig.Topic)
-						log.Entry().Debugf("  with data %s", string(telemetryClient.GetData()))
 						log.Entry().Debugf("  with data %s", string(telemetryClient.GetDataBytes()))
 					}
 				}

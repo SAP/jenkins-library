@@ -158,7 +158,6 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 					} else {
 						log.Entry().Debug("event publish succeeded")
 						log.Entry().Debugf("  with topic %s", GeneralConfig.HookConfig.GCPPubSubConfig.Topic)
-						log.Entry().Debugf("  with data %s", string(telemetryClient.GetData()))
 						log.Entry().Debugf("  with data %s", string(telemetryClient.GetDataBytes()))
 					}
 				}

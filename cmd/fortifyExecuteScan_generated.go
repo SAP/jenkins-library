@@ -328,7 +328,6 @@ Besides triggering a scan the step verifies the results after they have been upl
 					} else {
 						log.Entry().Debug("event publish succeeded")
 						log.Entry().Debugf("  with topic %s", GeneralConfig.HookConfig.GCPPubSubConfig.Topic)
-						log.Entry().Debugf("  with data %s", string(telemetryClient.GetData()))
 						log.Entry().Debugf("  with data %s", string(telemetryClient.GetDataBytes()))
 					}
 				}
