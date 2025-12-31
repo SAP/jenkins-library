@@ -15,7 +15,7 @@ jobs:
           # required by Log4brains to work correctly (needs the whole Git history)
           fetch-depth: 0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "14"
       - name: Install Log4brains And Build ADRs
