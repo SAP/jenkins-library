@@ -76,7 +76,11 @@ func TestGetBom(t *testing.T) {
 
 			if tt.errorContains != "" {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), tt.errorContains)
+				if tt.errorContains == "no such file or directory" {
+					assert.True(t, os.IsNotExist(err))
+				} else {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expectedBom.Metadata.Component.Purl, bom.Metadata.Component.Purl)

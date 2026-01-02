@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -300,17 +299,12 @@ func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 	defer r.Close()
 
 	for _, f := range r.File {
-		fName := f.Name
+		// normalize zip entry and input dirs to use forward slashes for comparison
+		fName := filepath.ToSlash(f.Name)
+		srcDirNorm := filepath.ToSlash(srcDir)
+		dbDirNorm := filepath.ToSlash(dbDir)
 
-		if runtime.GOOS == "windows" {
-			fNameSplit := strings.Split(fName, "/")
-			if len(fNameSplit) == 0 {
-				continue
-			}
-			fNameSplit[0] = strings.Replace(fNameSplit[0], "_", ":", 1)
-			fName = strings.Join(fNameSplit, fmt.Sprintf("%c", os.PathSeparator))
-		}
-		if !strings.Contains(fName, srcDir) || strings.Contains(fName, dbDir) {
+		if !strings.Contains(fName, srcDirNorm) || strings.Contains(fName, dbDirNorm) {
 			continue
 		}
 
@@ -319,7 +313,9 @@ func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 			return err
 		}
 
-		fName = strings.TrimPrefix(fName, srcDir)
+		// remove the srcDir prefix (in slash form) and convert back to OS-specific paths
+		fName = strings.TrimPrefix(fName, srcDirNorm)
+		fName = filepath.FromSlash(fName)
 		fpath := filepath.Join(targetDir, fName)
 		if f.FileInfo().IsDir() {
 			os.MkdirAll(fpath, os.ModePerm)
