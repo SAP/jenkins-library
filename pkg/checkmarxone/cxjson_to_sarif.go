@@ -123,6 +123,11 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 
 		// classify into audit groups
 		switch r.Severity {
+		case "CRITICAL":
+			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
+			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
+			props.ToolSeverityIndex = 4
+			break
 		case "HIGH":
 			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_1_DESC
 			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_1_INDEX
@@ -138,7 +143,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_2_INDEX
 			props.ToolSeverityIndex = 1
 			break
-		case "INFORMATION":
+		case "INFO":
 			props.AuditRequirement = format.AUDIT_REQUIREMENT_GROUP_3_DESC
 			props.AuditRequirementIndex = format.AUDIT_REQUIREMENT_GROUP_3_INDEX
 			props.ToolSeverityIndex = 0
@@ -221,7 +226,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			}
 		}
 		switch r.Severity {
-		case "INFORMATION":
+		case "INFO":
 			rule.Properties.SecuritySeverity = "0.0"
 		case "LOW":
 			rule.Properties.SecuritySeverity = "2.0"
@@ -229,6 +234,8 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 			rule.Properties.SecuritySeverity = "5.0"
 		case "HIGH":
 			rule.Properties.SecuritySeverity = "7.0"
+		case "CRITICAL":
+			rule.Properties.SecuritySeverity = "10.0"
 		default:
 			rule.Properties.SecuritySeverity = "10.0"
 		}

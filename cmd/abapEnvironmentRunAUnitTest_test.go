@@ -371,7 +371,7 @@ objectset:
 }
 
 func TestTriggerAUnitrun(t *testing.T) {
-	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
+	t.Run("success case: test parsing example yaml config", func(t *testing.T) {
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
 			AUnitResultsFileName: "aUnitResults.xml",
@@ -425,7 +425,7 @@ objectset:
 		}
 	})
 
-	t.Run("succes case: test parsing example yaml config", func(t *testing.T) {
+	t.Run("success case: test parsing example yaml config", func(t *testing.T) {
 		config := abapEnvironmentRunAUnitTestOptions{
 			AUnitConfig:          "aUnitConfig.yml",
 			AUnitResultsFileName: "aUnitResults.xml",
@@ -483,14 +483,14 @@ objectset:
 func TestParseAUnitResult(t *testing.T) {
 	t.Parallel()
 
-	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
+	t.Run("success case: test parsing example XML result", func(t *testing.T) {
 		bodyString := `<?xml version="1.0" encoding="utf-8"?><testsuites title="My AUnit run" system="TST" client="100" executedBy="TESTUSER" time="000.000" timestamp="2021-01-01T00:00:00Z" failures="2" errors="2" skipped="0" asserts="0" tests="2"><testsuite name="" tests="2" failures="2" errors="0" skipped="0" asserts="0" package="testpackage" timestamp="2021-01-01T00:00:00ZZ" time="0.000" hostname="test"><testcase classname="test" name="execute" time="0.000" asserts="2"><failure message="testMessage1" type="Assert Failure">Test1</failure><failure message="testMessage2" type="Assert Failure">Test2</failure></testcase></testsuite></testsuites>`
 		body := []byte(bodyString)
 		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false, false)
 		assert.Equal(t, nil, err)
 	})
 
-	t.Run("succes case: test parsing empty AUnit run XML result", func(t *testing.T) {
+	t.Run("success case: test parsing empty AUnit run XML result", func(t *testing.T) {
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
 		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false, false)
@@ -511,7 +511,7 @@ func TestParseAUnitResult(t *testing.T) {
 		assert.EqualError(t, err, "Evaluation of the ABAP Unit Results indicate failed or errornous test cases")
 	})
 
-	t.Run("succes case: Evaluate Result indicating no errors", func(t *testing.T) {
+	t.Run("success case: Evaluate Result indicating no errors", func(t *testing.T) {
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>`
 		body := []byte(bodyString)
 		err := persistAUnitResult(&mock.FilesMock{}, body, "AUnitResults.xml", false, true)
