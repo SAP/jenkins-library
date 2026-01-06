@@ -646,11 +646,11 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
-      - name: useDetect8
+      - name: useDetect9
         description:
-          "DEPRECATED: This flag enables the use of the supported version 8 of the Detect script instead of default version 10"
+          "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11"
         aliases:
-          - name: detect/useDetect8
+          - name: detect/useDetect9
             deprecated: true
         type: bool
         scope:
@@ -659,11 +659,11 @@ spec:
           - STEPS
         default: false
         deprecated: true
-      - name: useDetect9
+      - name: useDetect10
         description:
-          "This flag enables the use of the supported version 9 of the Detect script instead of default version 10"
+          "This flag enables the use of the supported version 10 of the Detect script instead of default version 11"
         aliases:
-          - name: detect/useDetect9
+          - name: detect/useDetect10
         type: bool
         scope:
           - PARAMETERS
@@ -726,7 +726,7 @@ spec:
             type: blackduck-security
   containers:
     - name: openjdk
-      image: openjdk:11
+      image: openjdk:11-ea
       workingDir: /root
       options:
         - name: -u

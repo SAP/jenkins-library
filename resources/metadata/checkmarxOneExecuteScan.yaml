@@ -120,7 +120,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
       - name: incremental
         type: bool
         description: Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`
@@ -306,6 +306,20 @@ spec:
       - name: applicationName
         type: string
         description: The full name of the Checkmarx One application to which the newly created projects will be assigned
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: applicationId
+        type: string
+        description: The ID of the Checkmarx One application to which the newly created projects will be assigned. This parameter will take precedence over applicationName if both are provided.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectId
+        type: string
+        description: The ID of the checkmarxOne project to scan into. This parameter will take precedence over projectName if both are provided.
         scope:
           - PARAMETERS
           - STAGES

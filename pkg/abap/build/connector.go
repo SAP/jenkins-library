@@ -76,10 +76,10 @@ func (conn *Connector) GetToken(appendum string) error {
 	log.RegisterSecret(token)
 
 	for _, cookie := range response.Header.Values("Set-Cookie") {
-		if strings.HasPrefix(cookie, "SAP_SESSIONID_") {
-			//  SAP_SESSIONID_SID_123=YiWizhmMljBNOkKxJkG-flmT9wWfetHwifb6Fj5zqUI%3d; path=/; secure; HttpOnly
-			id := cookie[strings.Index(cookie, "=")+1 : strings.Index(cookie, "; ")]
-			log.RegisterSecret(id)
+		if strings.HasPrefix(cookie, "SAP_SESSIONID_") || strings.HasPrefix(cookie, "sap-XSRF_") {
+			nameValuePair, _, _ := strings.Cut(cookie, "; ")
+			_, cookieValue, _ := strings.Cut(nameValuePair, "=")
+			log.RegisterSecret(cookieValue)
 		}
 	}
 

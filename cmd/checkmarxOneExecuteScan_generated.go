@@ -52,6 +52,8 @@ type checkmarxOneExecuteScanOptions struct {
 	SourceEncoding                       string   `json:"sourceEncoding,omitempty"`
 	GroupName                            string   `json:"groupName,omitempty"`
 	ApplicationName                      string   `json:"applicationName,omitempty"`
+	ApplicationID                        string   `json:"applicationId,omitempty"`
+	ProjectID                            string   `json:"projectId,omitempty"`
 	ClientID                             string   `json:"clientId,omitempty"`
 	VerifyOnly                           bool     `json:"verifyOnly,omitempty"`
 	VulnerabilityThresholdEnabled        bool     `json:"vulnerabilityThresholdEnabled,omitempty"`
@@ -404,7 +406,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
-	cmd.Flags().BoolVar(&stepConfig.ScanSummaryInPullRequest, "scanSummaryInPullRequest", false, "Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.")
+	cmd.Flags().BoolVar(&stepConfig.ScanSummaryInPullRequest, "scanSummaryInPullRequest", true, "Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.GitBranch, "gitBranch", os.Getenv("PIPER_gitBranch"), "Set the GitHub repository branch.")
@@ -425,6 +427,8 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().StringVar(&stepConfig.SourceEncoding, "sourceEncoding", `1`, "The source encoding to be used, if not set explicitly the project's default will be used  [Not yet supported]")
 	cmd.Flags().StringVar(&stepConfig.GroupName, "groupName", os.Getenv("PIPER_groupName"), "The full name of the group to which the newly created projects will be assigned")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The full name of the Checkmarx One application to which the newly created projects will be assigned")
+	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "The ID of the Checkmarx One application to which the newly created projects will be assigned. This parameter will take precedence over applicationName if both are provided.")
+	cmd.Flags().StringVar(&stepConfig.ProjectID, "projectId", os.Getenv("PIPER_projectId"), "The ID of the checkmarxOne project to scan into. This parameter will take precedence over projectName if both are provided.")
 	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", os.Getenv("PIPER_clientId"), "The username to authenticate")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().BoolVar(&stepConfig.VulnerabilityThresholdEnabled, "vulnerabilityThresholdEnabled", true, "Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded")
@@ -572,7 +576,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     true,
 					},
 					{
 						Name:        "incremental",
@@ -792,6 +796,24 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_applicationName"),
+					},
+					{
+						Name:        "applicationId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationId"),
+					},
+					{
+						Name:        "projectId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_projectId"),
 					},
 					{
 						Name: "clientId",

@@ -79,5 +79,5 @@ spec:
         mandatory: false
   containers:
     - name: shell
-      image: node:lts-bookworm
+      image: node:24-bookworm
       workingDir: /home/node

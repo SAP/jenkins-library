@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1" serialNumber="urn:uuid:test-npm-bom">
+  <metadata>
+    <timestamp>2025-10-31T10:30:00Z</timestamp>
+    <component type="application">
+      <name>test-npm-app</name>
+      <version>1.0.0</version>
+      <purl>pkg:npm/test-npm-app@1.0.0</purl>
+      <description>Test NPM BOM</description>
+    </component>
+  </metadata>
+  <components>
+    <component type="library">
+      <name>express</name>
+      <version>4.18.2</version>
+      <purl>pkg:npm/express@4.18.2</purl>
+    </component>
+  </components>
+</bom>

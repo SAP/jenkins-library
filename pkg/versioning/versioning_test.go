@@ -217,8 +217,10 @@ func TestGetArtifact(t *testing.T) {
 	})
 
 	t.Run("pip", func(t *testing.T) {
-		fileExists = func(string) (bool, error) { return true, nil }
-		pip, err := GetArtifact("pip", "", &Options{}, nil)
+		utils := newVersioningMockUtils()
+		utils.FilesMock.AddFile("setup.py", []byte(""))
+		fileExists = utils.FilesMock.FileExists
+		pip, err := GetArtifact("pip", "", &Options{}, utils)
 
 		assert.NoError(t, err)
 
@@ -232,7 +234,7 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("pip", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [setup.py version.txt VERSION]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [pyproject.toml setup.py version.txt VERSION]")
 	})
 
 	t.Run("sbt", func(t *testing.T) {

@@ -77,9 +77,16 @@ func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry
 
 func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux, cx1sh *checkmarxOneExecuteScanHelper) error {
 	err := error(nil)
-	cx1sh.Project, err = cx1sh.GetProjectByName()
-	if err != nil && err.Error() != "project not found" {
-		return fmt.Errorf("failed to get project: %s", err)
+	if len(cx1sh.config.ProjectID) == 0 {
+		cx1sh.Project, err = cx1sh.GetProjectByName()
+		if err != nil && err.Error() != "project not found" {
+			return fmt.Errorf("failed to get project: %s", err)
+		}
+	} else {
+		cx1sh.Project, err = cx1sh.GetProjectByID(cx1sh.config.ProjectID)
+		if err != nil {
+			return fmt.Errorf("failed to get project by ID: %s", err)
+		}
 	}
 
 	if len(config.GroupName) > 0 {
@@ -90,7 +97,12 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 	}
 
 	if cx1sh.Project == nil {
-		if len(config.ApplicationName) > 0 {
+		if len(config.ApplicationID) > 0 {
+			cx1sh.App, err = cx1sh.GetApplicationByID(config.ApplicationID)
+			if err != nil {
+				return fmt.Errorf("failed to get application by ID: %v", err)
+			}
+		} else if len(config.ApplicationName) > 0 {
 			cx1sh.App, err = cx1sh.GetApplication() // read application name from piper config (optional) and get ID from CxONE API
 			if err != nil {
 				return fmt.Errorf("failed to get application: %v", err)
@@ -324,7 +336,9 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	if c.App != nil {
 		project, err = c.sys.CreateProjectInApplication(c.config.ProjectName, c.App.ApplicationID, groupIDs)
 	} else {
-		project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
+		// don't allow creation of project at tenant level
+		return nil, fmt.Errorf("No application found in config, project cannot be created")
+		//project, err = c.sys.CreateProject(c.config.ProjectName, groupIDs)
 	}
 
 	if err != nil {
@@ -733,7 +747,8 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 			scanIcon = ":white_check_mark:"
 		}
 		comment := &github.IssueComment{
-			Body: github.Ptr(fmt.Sprintf(`# %s Checkmarx %s scan completed 
+			Body: github.Ptr(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
+# %s Checkmarx %s scan completed 
 **Project**: %s
 **ScanId**: %s
 **Preset**: %s
@@ -750,6 +765,23 @@ Severity | Number of unaudited findings
 		pullRequestNumber, err := strconv.Atoi(pullRequestId)
 		if err != nil {
 			return fmt.Errorf("failed to parse int from pull request name %s: %s", c.config.PullRequestName, err)
+		}
+		// Check if comment already exists, delete old one to avoid multiple comments
+		// search for watermark <!-- Piper CxOne Scan Summary -->
+		comments, _, err := ghIssues.ListComments(c.ctx, owner, repository, pullRequestNumber, &github.IssueListCommentsOptions{})
+		if err != nil {
+			log.Entry().Errorf("failed to list GitHub issue comments: %s", err)
+		} else {
+			for _, existingComment := range comments {
+				if strings.Contains(*existingComment.Body, "<!-- Piper CxOne Scan Summary -->") {
+					_, err := ghIssues.DeleteComment(c.ctx, owner, repository, existingComment.GetID())
+					if err != nil {
+						log.Entry().Errorf("failed to delete old GitHub issue comment: %s", err)
+					}
+					log.Entry().Infof("Deleted old GitHub issue comment for project %v", c.Project.Name)
+					break
+				}
+			}
 		}
 		_, _, err = ghIssues.CreateComment(c.ctx, owner, repository, pullRequestNumber, comment)
 		if err != nil {
