@@ -24,15 +24,15 @@ func btpDeleteServiceBinding(config btpDeleteServiceBindingOptions, telemetryDat
 
 func runBtpDeleteServiceBinding(config *btpDeleteServiceBindingOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.DeleteServiceBindingOptions{
-		Url:          config.Url,
-		Subdomain:    config.Subdomain,
-		Subaccount:   config.Subaccount,
-		User:         config.User,
-		Password:     config.Password,
-		Tenant:       config.Tenant,
-		BindingName:  config.ServiceBindingName,
-		Timeout:      config.Timeout,
-		PollInterval: config.PollInterval,
+		Url:              config.Url,
+		Subdomain:        config.Subdomain,
+		Subaccount:       config.Subaccount,
+		User:             config.User,
+		Password:         config.Password,
+		IdentityProvider: config.Idp,
+		BindingName:      config.ServiceBindingName,
+		Timeout:          config.Timeout,
+		PollInterval:     config.PollInterval,
 	}
 
 	err := utils.DeleteServiceBinding(btpConfig)

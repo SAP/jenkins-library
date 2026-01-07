@@ -24,17 +24,17 @@ func btpCreateServiceBinding(config btpCreateServiceBindingOptions, telemetryDat
 
 func runBtpCreateServiceBinding(config *btpCreateServiceBindingOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.CreateServiceBindingOptions{
-		Url:             config.Url,
-		Subdomain:       config.Subdomain,
-		Subaccount:      config.Subaccount,
-		User:            config.User,
-		Password:        config.Password,
-		Tenant:          config.Tenant,
-		Parameters:      config.CreateServiceConfig,
-		Timeout:         config.Timeout,
-		PollInterval:    config.PollInterval,
-		ServiceInstance: config.ServiceInstanceName,
-		BindingName:     config.ServiceBindingName,
+		Url:              config.Url,
+		Subdomain:        config.Subdomain,
+		Subaccount:       config.Subaccount,
+		User:             config.User,
+		Password:         config.Password,
+		IdentityProvider: config.Idp,
+		Parameters:       config.CreateServiceConfig,
+		Timeout:          config.Timeout,
+		PollInterval:     config.PollInterval,
+		ServiceInstance:  config.ServiceInstanceName,
+		BindingName:      config.ServiceBindingName,
 	}
 
 	_, err := utils.CreateServiceBinding(btpConfig)

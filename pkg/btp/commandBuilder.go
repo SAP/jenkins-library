@@ -183,13 +183,13 @@ func (b *BTPCommandBuilder) WithFormat(format string) *BTPCommandBuilder {
 
 // Method to activate verbose mode
 func (b *BTPCommandBuilder) WithVerbose() *BTPCommandBuilder {
-	b.params = append(b.params, "--verbose")
+	b.params = append(b.params, "--verbose", "true")
 	return b
 }
 
 // Specific method for --idp parameter
-func (b *BTPCommandBuilder) WithTenant(tenantID string) *BTPCommandBuilder {
-	b.params = append(b.params, "--idp", tenantID)
+func (b *BTPCommandBuilder) WithIdentityProvider(idProvider string) *BTPCommandBuilder {
+	b.params = append(b.params, "--idp", idProvider)
 	return b
 }
 

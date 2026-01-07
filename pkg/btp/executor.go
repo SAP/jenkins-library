@@ -58,6 +58,8 @@ func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 		if check {
 			fmt.Println("Command execution completed successfully!")
 			return nil
+		} else {
+			fmt.Println("Command not yet completed, checking again...")
 		}
 	}
 

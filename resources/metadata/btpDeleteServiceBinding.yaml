@@ -9,6 +9,8 @@ spec:
       - name: btpCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.
         type: jenkins
+        aliases:
+          - name: btp/credentialsId
     params:
       - name: url
         type: string
@@ -33,9 +35,9 @@ spec:
         mandatory: true
         aliases:
           - name: btp/subdomain
-      - name: tenant
+      - name: idp
         type: string
-        description: BTP tenant (optional)
+        description: BTP idp (optional)
         scope:
           - PARAMETERS
           - STAGES
@@ -43,7 +45,7 @@ spec:
           - GENERAL
         mandatory: false
         aliases:
-          - name: btp/tenant
+          - name: btp/idp
       - name: subaccount
         type: string
         description: BTP subaccount where the service instance will be deleted

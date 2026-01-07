@@ -23,11 +23,11 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -57,13 +57,13 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
-				Url:         options.Url,
-				Subdomain:   options.Subdomain,
-				User:        options.User,
-				Password:    options.Password,
-				Tenant:      options.Tenant,
-				Subaccount:  options.Subaccount,
-				BindingName: options.BindingName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				BindingName:      options.BindingName,
 			})
 		},
 	})
@@ -100,11 +100,11 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -161,11 +161,11 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -191,13 +191,13 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceBindingDeleted(btp, GetServiceBindingOptions{
-				Url:         options.Url,
-				Subdomain:   options.Subdomain,
-				User:        options.User,
-				Password:    options.Password,
-				Tenant:      options.Tenant,
-				Subaccount:  options.Subaccount,
-				BindingName: options.BindingName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				BindingName:      options.BindingName,
 			})
 		},
 	})
@@ -232,11 +232,11 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -270,13 +270,13 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceInstanceCreated(btp, GetServiceInstanceOptions{
-				Url:          options.Url,
-				Subdomain:    options.Subdomain,
-				User:         options.User,
-				Password:     options.Password,
-				Tenant:       options.Tenant,
-				Subaccount:   options.Subaccount,
-				InstanceName: options.InstanceName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				InstanceName:     options.InstanceName,
 			})
 		},
 	})
@@ -313,11 +313,11 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -372,11 +372,11 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -403,13 +403,13 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceInstanceDeleted(btp, GetServiceInstanceOptions{
-				Url:          options.Url,
-				Subdomain:    options.Subdomain,
-				User:         options.User,
-				Password:     options.Password,
-				Tenant:       options.Tenant,
-				Subaccount:   options.Subaccount,
-				InstanceName: options.InstanceName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				InstanceName:     options.InstanceName,
 			})
 		},
 	})
@@ -443,74 +443,74 @@ func GetJSON(value string) (string, error) {
 }
 
 type CreateServiceBindingOptions struct {
-	Url             string
-	Subdomain       string
-	Subaccount      string
-	ServiceInstance string
-	BindingName     string
-	Parameters      string
-	User            string
-	Password        string
-	Tenant          string
-	Timeout         int
-	PollInterval    int
+	Url              string
+	Subdomain        string
+	Subaccount       string
+	ServiceInstance  string
+	BindingName      string
+	Parameters       string
+	User             string
+	Password         string
+	IdentityProvider string
+	Timeout          int
+	PollInterval     int
 }
 
 type GetServiceBindingOptions struct {
-	Url         string
-	Subdomain   string
-	Subaccount  string
-	BindingName string
-	User        string
-	Password    string
-	Tenant      string
+	Url              string
+	Subdomain        string
+	Subaccount       string
+	BindingName      string
+	User             string
+	Password         string
+	IdentityProvider string
 }
 
 type DeleteServiceBindingOptions struct {
-	Url          string
-	Subdomain    string
-	Subaccount   string
-	BindingName  string
-	User         string
-	Password     string
-	Tenant       string
-	Timeout      int
-	PollInterval int
+	Url              string
+	Subdomain        string
+	Subaccount       string
+	BindingName      string
+	User             string
+	Password         string
+	IdentityProvider string
+	Timeout          int
+	PollInterval     int
 }
 
 type CreateServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	PlanName     string
-	OfferingName string
-	InstanceName string
-	Parameters   string
-	Timeout      int
-	PollInterval int
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
+	Subaccount       string
+	PlanName         string
+	OfferingName     string
+	InstanceName     string
+	Parameters       string
+	Timeout          int
+	PollInterval     int
 }
 
 type GetServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	InstanceName string
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
+	Subaccount       string
+	InstanceName     string
 }
 
 type DeleteServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	InstanceName string
-	Timeout      int
-	PollInterval int
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
+	Subaccount       string
+	InstanceName     string
+	Timeout          int
+	PollInterval     int
 }

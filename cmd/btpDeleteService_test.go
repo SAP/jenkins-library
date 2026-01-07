@@ -17,7 +17,7 @@ func TestRunBtpDeleteService(t *testing.T) {
 
 	var telemetryData telemetry.CustomData
 
-	t.Run("Delete service: no tenant", func(t *testing.T) {
+	t.Run("Delete service: no identity provider", func(t *testing.T) {
 		defer btpMockCleanup(m)
 
 		utils := btp.NewBTPUtils(m)
@@ -80,7 +80,7 @@ func TestRunBtpDeleteService(t *testing.T) {
 		config := btpDeleteServiceOptions{
 			Url:                 "https://api.endpoint.com",
 			Subdomain:           "testSubdomain",
-			Tenant:              "testTenant",
+			Idp:                 "testIdentityProvider",
 			Subaccount:          "testSubaccount",
 			ServiceInstanceName: InstanceName,
 			Timeout:             60,
@@ -95,7 +95,7 @@ func TestRunBtpDeleteService(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Tenant}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[1])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},

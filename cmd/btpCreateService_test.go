@@ -23,7 +23,7 @@ func TestRunBtpCreateService(t *testing.T) {
 
 	var telemetryData telemetry.CustomData
 
-	t.Run("Create service: no tenant", func(t *testing.T) {
+	t.Run("Create service: no identity provider", func(t *testing.T) {
 		defer btpMockCleanup(m)
 
 		utils := btp.NewBTPUtils(m)
@@ -87,7 +87,7 @@ func TestRunBtpCreateService(t *testing.T) {
 		config := btpCreateServiceOptions{
 			Url:                 "https://api.endpoint.com",
 			Subdomain:           "testSubdomain",
-			Tenant:              "testTenant",
+			Idp:                 "testIdentityProvider",
 			Subaccount:          "testSubaccount",
 			PlanName:            "testPlan",
 			OfferingName:        "testOffering",
@@ -105,7 +105,7 @@ func TestRunBtpCreateService(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Tenant}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[1])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.CreateServiceConfig, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},

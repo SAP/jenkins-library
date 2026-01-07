@@ -24,18 +24,18 @@ func btpCreateService(config btpCreateServiceOptions, telemetryData *telemetry.C
 
 func runBtpCreateService(config *btpCreateServiceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.CreateServiceInstanceOptions{
-		Url:          config.Url,
-		Subdomain:    config.Subdomain,
-		Subaccount:   config.Subaccount,
-		User:         config.User,
-		Password:     config.Password,
-		Tenant:       config.Tenant,
-		PlanName:     config.PlanName,
-		OfferingName: config.OfferingName,
-		InstanceName: config.ServiceInstanceName,
-		Parameters:   config.CreateServiceConfig,
-		Timeout:      config.Timeout,
-		PollInterval: config.PollInterval,
+		Url:              config.Url,
+		Subdomain:        config.Subdomain,
+		Subaccount:       config.Subaccount,
+		User:             config.User,
+		Password:         config.Password,
+		IdentityProvider: config.Idp,
+		PlanName:         config.PlanName,
+		OfferingName:     config.OfferingName,
+		InstanceName:     config.ServiceInstanceName,
+		Parameters:       config.CreateServiceConfig,
+		Timeout:          config.Timeout,
+		PollInterval:     config.PollInterval,
 	}
 
 	_, err := utils.CreateServiceInstance(btpConfig)

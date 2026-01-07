@@ -19,7 +19,7 @@ import (
 type btpDeleteServiceBindingOptions struct {
 	Url                string `json:"url,omitempty"`
 	Subdomain          string `json:"subdomain,omitempty"`
-	Tenant             string `json:"tenant,omitempty"`
+	Idp                string `json:"idp,omitempty"`
 	Subaccount         string `json:"subaccount,omitempty"`
 	ServiceBindingName string `json:"ServiceBindingName,omitempty"`
 	Timeout            int    `json:"timeout,omitempty"`
@@ -163,7 +163,7 @@ func BtpDeleteServiceBindingCommand() *cobra.Command {
 func addBtpDeleteServiceBindingFlags(cmd *cobra.Command, stepConfig *btpDeleteServiceBindingOptions) {
 	cmd.Flags().StringVar(&stepConfig.Url, "url", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain")
-	cmd.Flags().StringVar(&stepConfig.Tenant, "tenant", os.Getenv("PIPER_tenant"), "BTP tenant (optional)")
+	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (optional)")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be deleted")
 	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "ServiceBindingName", os.Getenv("PIPER_ServiceBindingName"), "Name of the service binding to create")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for deletion operation")
@@ -190,7 +190,7 @@ func btpDeleteServiceBindingMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins"},
+					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -212,13 +212,13 @@ func btpDeleteServiceBindingMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_subdomain"),
 					},
 					{
-						Name:        "tenant",
+						Name:        "idp",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "btp/tenant"}},
-						Default:     os.Getenv("PIPER_tenant"),
+						Aliases:     []config.Alias{{Name: "btp/idp"}},
+						Default:     os.Getenv("PIPER_idp"),
 					},
 					{
 						Name:        "subaccount",

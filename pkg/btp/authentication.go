@@ -36,13 +36,13 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		WithUser(options.User).
 		WithPassword(options.Password)
 
-	if options.Tenant != "" {
-		builder = builder.WithTenant(options.Tenant)
+	if options.IdentityProvider != "" {
+		builder = builder.WithIdentityProvider(options.IdentityProvider)
 	}
 
 	btpLoginScript, _ := builder.Build()
 
-	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("Tenant", options.Tenant)
+	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("IdentityProvider", options.IdentityProvider)
 
 	err := btp.Exec.Run(btpLoginScript)
 
@@ -107,11 +107,11 @@ type BTPUtils struct {
 }
 
 type LoginOptions struct {
-	Url       string
-	Subdomain string
-	User      string
-	Password  string
-	Tenant    string
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
 }
 
 type ConfigOptions struct {

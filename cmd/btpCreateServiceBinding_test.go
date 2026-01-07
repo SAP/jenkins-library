@@ -19,7 +19,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 
 	var telemetryData telemetry.CustomData
 
-	t.Run("Create service binding: no tenant", func(t *testing.T) {
+	t.Run("Create service binding: no identity provider", func(t *testing.T) {
 		defer btpMockCleanup(m)
 
 		utils := btp.NewBTPUtils(m)
@@ -82,7 +82,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		config := btpCreateServiceBindingOptions{
 			Url:                 "https://api.endpoint.com",
 			Subdomain:           "testSubdomain",
-			Tenant:              "testTenant",
+			Idp:                 "testIdentityProvider",
 			Subaccount:          "testSubaccount",
 			ServiceInstanceName: InstanceName,
 			ServiceBindingName:  BindingName,
@@ -99,7 +99,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Tenant}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[1])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/binding", "--name", config.ServiceBindingName, "--instance-name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.CreateServiceConfig}},
