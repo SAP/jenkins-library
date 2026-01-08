@@ -28,10 +28,11 @@ func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) 
 	_, err := btp.GetServiceInstance(options)
 
 	if err == nil {
-		fmt.Println("Instance still exists...")
+		fmt.Println("Service Instance still exists...")
 		return false
 	}
 
+	fmt.Println("Service Instance deleted!")
 	return true
 }
 
@@ -58,9 +59,10 @@ func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) bo
 	_, err := btp.GetServiceBinding(options)
 
 	if err == nil {
-		fmt.Println("Binding still exists")
+		fmt.Println("Service Binding still exists")
 		return false
 	}
 
+	fmt.Println("Service Binding deleted!")
 	return true
 }
