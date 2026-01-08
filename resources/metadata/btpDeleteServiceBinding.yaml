@@ -57,7 +57,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/subaccount
-      - name: ServiceBindingName
+      - name: serviceBindingName
         type: string
         description: Name of the service binding to create
         scope:
@@ -77,7 +77,7 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
-        default: 3600
+        default: 600
         aliases:
           - name: btp/timeout
       - name: pollInterval
@@ -89,7 +89,7 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
-        default: 600
+        default: 60
         aliases:
           - name: btp/pollInterval
       - name: user

@@ -21,7 +21,7 @@ type btpDeleteServiceBindingOptions struct {
 	Subdomain          string `json:"subdomain,omitempty"`
 	Idp                string `json:"idp,omitempty"`
 	Subaccount         string `json:"subaccount,omitempty"`
-	ServiceBindingName string `json:"ServiceBindingName,omitempty"`
+	ServiceBindingName string `json:"serviceBindingName,omitempty"`
 	Timeout            int    `json:"timeout,omitempty"`
 	PollInterval       int    `json:"pollInterval,omitempty"`
 	User               string `json:"user,omitempty"`
@@ -165,16 +165,16 @@ func addBtpDeleteServiceBindingFlags(cmd *cobra.Command, stepConfig *btpDeleteSe
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (optional)")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be deleted")
-	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "ServiceBindingName", os.Getenv("PIPER_ServiceBindingName"), "Name of the service binding to create")
-	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for deletion operation")
-	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 600, "Poll interval in seconds for checking instance readiness")
+	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "Name of the service binding to create")
+	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 600, "Timeout in seconds for deletion operation")
+	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 60, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
 	cmd.MarkFlagRequired("url")
 	cmd.MarkFlagRequired("subdomain")
 	cmd.MarkFlagRequired("subaccount")
-	cmd.MarkFlagRequired("ServiceBindingName")
+	cmd.MarkFlagRequired("serviceBindingName")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -230,13 +230,13 @@ func btpDeleteServiceBindingMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_subaccount"),
 					},
 					{
-						Name:        "ServiceBindingName",
+						Name:        "serviceBindingName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
-						Default:     os.Getenv("PIPER_ServiceBindingName"),
+						Default:     os.Getenv("PIPER_serviceBindingName"),
 					},
 					{
 						Name:        "timeout",
@@ -245,7 +245,7 @@ func btpDeleteServiceBindingMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/timeout"}},
-						Default:     3600,
+						Default:     600,
 					},
 					{
 						Name:        "pollInterval",
@@ -254,7 +254,7 @@ func btpDeleteServiceBindingMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/pollInterval"}},
-						Default:     600,
+						Default:     60,
 					},
 					{
 						Name: "user",
