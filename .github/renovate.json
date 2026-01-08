@@ -1,29 +1,43 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
-        "config:base"
+        "config:recommended"
     ],
     "labels": [
         "dependencies"
     ],
+    "ignorePaths": [
+        "test/resources/**",
+        "integration/testdata/**",
+        "**/node_modules/**",
+        "**/bower_components/**"
+    ],
     "packageRules": [
         {
             "description": "Create PRs to roll back Go module if the current version is not found in the registry.",
-            "matchManagers": ["gomod"],
+            "matchManagers": [
+                "gomod"
+            ],
             "rollbackPrs": true,
-            "matchPaths": [
+            "matchFileNames": [
                 "!integration/testdata/**",
                 "!test/resources/**"
             ]
         },
         {
             "description": "Automerge patch version updates for Go modules (except versions 0.x as they could have breaking changes)",
-            "matchManagers": ["gomod"],
-            "matchUpdateTypes": ["patch"],
+            "matchManagers": [
+                "gomod"
+            ],
+            "matchUpdateTypes": [
+                "patch"
+            ],
             "matchCurrentVersion": "!/^(v?0)/",
             "automerge": true,
-            "addLabels": ["renovate-automerge"],
-            "matchPaths": [
+            "addLabels": [
+                "renovate-automerge"
+            ],
+            "matchFileNames": [
                 "!integration/testdata/**",
                 "!test/resources/**"
             ]
@@ -34,10 +48,10 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "cmd\/golangBuild.go"
+                "cmd/golangBuild.go"
             ],
             "matchStrings": [
-                "\"github.com\/CycloneDX\/(?<depName>cyclonedx-gomod)\/cmd\/cyclonedx-gomod@v(?<currentValue>[^\"]+)\""
+                "\"github.com/CycloneDX/(?<depName>cyclonedx-gomod)/cmd/cyclonedx-gomod@v(?<currentValue>[^\"]+)\""
             ],
             "depTypeTemplate": "dependencies",
             "datasourceTemplate": "github-releases",
@@ -49,7 +63,7 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "cmd\/gradleExecuteBuild.go"
+                "cmd/gradleExecuteBuild.go"
             ],
             "matchStrings": [
                 "\"org.cyclonedx:(?<depName>cyclonedx-gradle-plugin):(?<currentValue>[^\"\n]+)\""
@@ -64,7 +78,7 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "cmd\/mavenBuild.go"
+                "cmd/mavenBuild.go"
             ],
             "matchStrings": [
                 "\"org.cyclonedx:(?<depName>cyclonedx-maven-plugin):(?<currentValue>[^\"]+)\""
@@ -79,7 +93,7 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "integration\/testdata\/TestGradleIntegration\/java-project-with-bom-plugin\/build.gradle"
+                "integration/testdata/TestGradleIntegration/java-project-with-bom-plugin/build.gradle"
             ],
             "matchStrings": [
                 "id \"(?<depName>org.cyclonedx.bom)\" version \"(?<currentValue>.*)\""
@@ -94,10 +108,10 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
-                "integration\/integration_golang_test.go"
+                "integration/integration_golang_test.go"
             ],
             "matchStrings": [
-                "\"github.com\/CycloneDX\/(?<depName>cyclonedx-gomod)\/cmd\/cyclonedx-gomod@v(?<currentValue>[^\"]+)\""
+                "\"github.com/CycloneDX/(?<depName>cyclonedx-gomod)/cmd/cyclonedx-gomod@v(?<currentValue>[^\"]+)\""
             ],
             "depTypeTemplate": "dependencies",
             "datasourceTemplate": "github-releases",
