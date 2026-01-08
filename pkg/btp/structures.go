@@ -3,10 +3,11 @@ package btp
 import "time"
 
 type RunSyncOptions struct {
-	CmdScript      []string
-	TimeoutSeconds int
-	PollInterval   int
-	CheckFunc      func() bool // Function to check the command status
+	CmdScript              []string
+	TimeoutSeconds         int
+	PollInterval           int
+	CheckFunc              func() bool // Function to check the command status
+	IgnoreErrorOnFirstCall bool        // Whether to ignore error on the first call before polling
 }
 
 type ServiceInstanceData struct {

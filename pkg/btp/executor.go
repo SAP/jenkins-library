@@ -38,8 +38,8 @@ func (e *Executor) Run(cmdScript []string) (err error) {
 func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 	err = e.Run(opts.CmdScript)
 
-	if err != nil {
-		return fmt.Errorf("Failed to execute BTP CLI: %w", err)
+	if err != nil && !opts.IgnoreErrorOnFirstCall {
+		return fmt.Errorf("Failed to execute BTP CLI (Sync): %w", err)
 	}
 
 	// Poll to check completion

@@ -66,6 +66,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 				BindingName:      options.BindingName,
 			})
 		},
+		IgnoreErrorOnFirstCall: true,
 	})
 
 	if err != nil {
