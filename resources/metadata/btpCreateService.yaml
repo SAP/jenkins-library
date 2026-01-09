@@ -110,7 +110,7 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
-        default: 3600
+        default: 7200
         aliases:
           - name: btp/timeout
       - name: pollInterval
@@ -122,7 +122,7 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
-        default: 600
+        default: 30
         aliases:
           - name: btp/pollInterval
       - name: user

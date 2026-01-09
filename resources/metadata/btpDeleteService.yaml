@@ -89,7 +89,7 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
-        default: 300
+        default: 30
         aliases:
           - name: btp/pollInterval
       - name: user
