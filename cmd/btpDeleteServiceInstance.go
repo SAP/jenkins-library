@@ -7,22 +7,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newBtpDeleteServiceUtils() btp.BTPUtils {
+func newBtpDeleteServiceInstanceUtils() btp.BTPUtils {
 	e := &btp.Executor{}
 	btpUtils := btp.NewBTPUtils(e)
 	return *btpUtils
 }
 
-func btpDeleteService(config btpDeleteServiceOptions, telemetryData *telemetry.CustomData) {
-	btpUtils := newBtpDeleteServiceUtils()
+func btpDeleteServiceInstance(config btpDeleteServiceInstanceOptions, telemetryData *telemetry.CustomData) {
+	btpUtils := newBtpDeleteServiceInstanceUtils()
 
-	err := runBtpDeleteService(&config, telemetryData, btpUtils)
+	err := runBtpDeleteServiceInstance(&config, telemetryData, btpUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runBtpDeleteService(config *btpDeleteServiceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
+func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.DeleteServiceInstanceOptions{
 		Url:              config.Url,
 		Subdomain:        config.Subdomain,

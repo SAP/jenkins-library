@@ -7,22 +7,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newBtpCreateServiceUtils() btp.BTPUtils {
+func newBtpCreateServiceInstanceUtils() btp.BTPUtils {
 	e := &btp.Executor{}
 	btpUtils := btp.NewBTPUtils(e)
 	return *btpUtils
 }
 
-func btpCreateService(config btpCreateServiceOptions, telemetryData *telemetry.CustomData) {
-	btpUtils := newBtpCreateServiceUtils()
+func btpCreateServiceInstance(config btpCreateServiceInstanceOptions, telemetryData *telemetry.CustomData) {
+	btpUtils := newBtpCreateServiceInstanceUtils()
 
-	err := runBtpCreateService(&config, telemetryData, btpUtils)
+	err := runBtpCreateServiceInstance(&config, telemetryData, btpUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runBtpCreateService(config *btpCreateServiceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
+func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.CreateServiceInstanceOptions{
 		Url:              config.Url,
 		Subdomain:        config.Subdomain,

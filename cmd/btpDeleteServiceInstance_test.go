@@ -10,42 +10,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func btpMockCleanup(m *btp.BtpExecutorMock) {
-	m.ShouldFailOnCommand = map[string]error{}
-	m.StdoutReturn = map[string]string{}
-	m.Calls = []btp.BtpExecCall{}
-}
-
-func TestRunBtpCreateService(t *testing.T) {
+func TestRunBtpDeleteServiceInstance(t *testing.T) {
 	InstanceName := "testServiceInstance"
 	m := &btp.BtpExecutorMock{}
 	m.Stdout(new(bytes.Buffer))
 
 	var telemetryData telemetry.CustomData
 
-	t.Run("Create service: no identity provider", func(t *testing.T) {
+	t.Run("Delete service: no identity provider", func(t *testing.T) {
 		defer btpMockCleanup(m)
 
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp login .*": "Authentication successful",
-			"btp get services/instance": fmt.Sprintf(`
+		}
+		m.ShouldFailOnCommand = map[string]error{
+			"btp get services/instance": fmt.Errorf(`
 				{
-					"id": "xxx",
-					"name": "%s",
-					"ready": true
-				}`, InstanceName),
+				"error": "BadRequest",
+				"description": "Could not find such instance"
+				}`),
 		}
 
 		// init
-		config := btpCreateServiceOptions{
+		config := btpDeleteServiceInstanceOptions{
 			Url:                 "https://api.endpoint.com",
 			Subdomain:           "testSubdomain",
 			Subaccount:          "testSubaccount",
-			PlanName:            "testPlan",
-			OfferingName:        "testOffering",
 			ServiceInstanceName: InstanceName,
-			CreateServiceConfig: "testCreateServiceConfig",
 			Timeout:             60,
 			PollInterval:        5,
 			User:                "testUser",
@@ -53,7 +45,7 @@ func TestRunBtpCreateService(t *testing.T) {
 		}
 
 		// test
-		err := runBtpCreateService(&config, &telemetryData, *utils)
+		err := runBtpDeleteServiceInstance(&config, &telemetryData, *utils)
 
 		// assert
 		if assert.NoError(t, err) {
@@ -61,7 +53,7 @@ func TestRunBtpCreateService(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.CreateServiceConfig, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},
@@ -69,30 +61,28 @@ func TestRunBtpCreateService(t *testing.T) {
 		}
 	})
 
-	t.Run("Create service: full parameters", func(t *testing.T) {
+	t.Run("Delete service: full parameters", func(t *testing.T) {
 		defer btpMockCleanup(m)
 
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp login .*": "Authentication successful",
-			"btp get services/instance": fmt.Sprintf(`
+		}
+		m.ShouldFailOnCommand = map[string]error{
+			"btp get services/instance": fmt.Errorf(`
 				{
-					"id": "xxx",
-					"name": "%s",
-					"ready": true
-				}`, InstanceName),
+				"error": "BadRequest",
+				"description": "Could not find such instance"
+				}`),
 		}
 
 		// init
-		config := btpCreateServiceOptions{
+		config := btpDeleteServiceInstanceOptions{
 			Url:                 "https://api.endpoint.com",
 			Subdomain:           "testSubdomain",
 			Idp:                 "testIdentityProvider",
 			Subaccount:          "testSubaccount",
-			PlanName:            "testPlan",
-			OfferingName:        "testOffering",
 			ServiceInstanceName: InstanceName,
-			CreateServiceConfig: "testCreateServiceConfig",
 			Timeout:             60,
 			PollInterval:        5,
 			User:                "testUser",
@@ -100,7 +90,7 @@ func TestRunBtpCreateService(t *testing.T) {
 		}
 
 		// test
-		err := runBtpCreateService(&config, &telemetryData, *utils)
+		err := runBtpDeleteServiceInstance(&config, &telemetryData, *utils)
 
 		// assert
 		if assert.NoError(t, err) {
@@ -108,7 +98,7 @@ func TestRunBtpCreateService(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.CreateServiceConfig, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},

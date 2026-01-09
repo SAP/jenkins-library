@@ -230,9 +230,9 @@ func Execute() {
 	rootCmd.AddCommand(AscAppUploadCommand())
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
-	rootCmd.AddCommand(BtpCreateServiceCommand())
+	rootCmd.AddCommand(BtpCreateServiceInstanceCommand())
 	rootCmd.AddCommand(BtpCreateServiceBindingCommand())
-	rootCmd.AddCommand(BtpDeleteServiceCommand())
+	rootCmd.AddCommand(BtpDeleteServiceInstanceCommand())
 	rootCmd.AddCommand(BtpDeleteServiceBindingCommand())
 
 	addRootFlags(rootCmd)

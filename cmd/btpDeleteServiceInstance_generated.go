@@ -16,36 +16,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type btpCreateServiceOptions struct {
+type btpDeleteServiceInstanceOptions struct {
 	Url                 string `json:"url,omitempty"`
 	Subdomain           string `json:"subdomain,omitempty"`
 	Idp                 string `json:"idp,omitempty"`
 	Subaccount          string `json:"subaccount,omitempty"`
-	PlanName            string `json:"planName,omitempty"`
-	OfferingName        string `json:"offeringName,omitempty"`
 	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
-	CreateServiceConfig string `json:"createServiceConfig,omitempty"`
 	Timeout             int    `json:"timeout,omitempty"`
 	PollInterval        int    `json:"pollInterval,omitempty"`
 	User                string `json:"user,omitempty"`
 	Password            string `json:"password,omitempty"`
 }
 
-// BtpCreateServiceCommand Creates a service instance in BTP
-func BtpCreateServiceCommand() *cobra.Command {
-	const STEP_NAME = "btpCreateService"
+// BtpDeleteServiceInstanceCommand Delete a service instance in BTP
+func BtpDeleteServiceInstanceCommand() *cobra.Command {
+	const STEP_NAME = "btpDeleteServiceInstance"
 
-	metadata := btpCreateServiceMetadata()
-	var stepConfig btpCreateServiceOptions
+	metadata := btpDeleteServiceInstanceMetadata()
+	var stepConfig btpDeleteServiceInstanceOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createBtpCreateServiceCmd = &cobra.Command{
+	var createBtpDeleteServiceInstanceCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Creates a service instance in BTP",
-		Long:  `Creates a service instance in SAP Business Technology Platform (BTP).`,
+		Short: "Delete a service instance in BTP",
+		Long:  `Delete a service instance in SAP Business Technology Platform (BTP).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -153,26 +150,23 @@ func BtpCreateServiceCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(STEP_NAME)
-			btpCreateService(stepConfig, &stepTelemetryData)
+			btpDeleteServiceInstance(stepConfig, &stepTelemetryData)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addBtpCreateServiceFlags(createBtpCreateServiceCmd, &stepConfig)
-	return createBtpCreateServiceCmd
+	addBtpDeleteServiceInstanceFlags(createBtpDeleteServiceInstanceCmd, &stepConfig)
+	return createBtpDeleteServiceInstanceCmd
 }
 
-func addBtpCreateServiceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceOptions) {
+func addBtpDeleteServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpDeleteServiceInstanceOptions) {
 	cmd.Flags().StringVar(&stepConfig.Url, "url", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (optional)")
-	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
-	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
-	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
-	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
-	cmd.Flags().StringVar(&stepConfig.CreateServiceConfig, "createServiceConfig", os.Getenv("PIPER_createServiceConfig"), "Path to JSON file or JSON in-line string for a Service creation")
-	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 7200, "Timeout in seconds for creation/polling")
+	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be deleted")
+	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to delete")
+	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for deletion operation")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
@@ -180,21 +174,18 @@ func addBtpCreateServiceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceOp
 	cmd.MarkFlagRequired("url")
 	cmd.MarkFlagRequired("subdomain")
 	cmd.MarkFlagRequired("subaccount")
-	cmd.MarkFlagRequired("planName")
-	cmd.MarkFlagRequired("offeringName")
 	cmd.MarkFlagRequired("serviceInstanceName")
-	cmd.MarkFlagRequired("createServiceConfig")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
 
 // retrieve step metadata
-func btpCreateServiceMetadata() config.StepData {
+func btpDeleteServiceInstanceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "btpCreateService",
+			Name:        "btpDeleteServiceInstance",
 			Aliases:     []config.Alias{},
-			Description: "Creates a service instance in BTP",
+			Description: "Delete a service instance in BTP",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -239,24 +230,6 @@ func btpCreateServiceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_subaccount"),
 					},
 					{
-						Name:        "planName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "btp/planName"}},
-						Default:     os.Getenv("PIPER_planName"),
-					},
-					{
-						Name:        "offeringName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "btp/offeringName"}},
-						Default:     os.Getenv("PIPER_offeringName"),
-					},
-					{
 						Name:        "serviceInstanceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
@@ -266,22 +239,13 @@ func btpCreateServiceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_serviceInstanceName"),
 					},
 					{
-						Name:        "createServiceConfig",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "btp/parameters"}},
-						Default:     os.Getenv("PIPER_createServiceConfig"),
-					},
-					{
 						Name:        "timeout",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/timeout"}},
-						Default:     7200,
+						Default:     3600,
 					},
 					{
 						Name:        "pollInterval",
@@ -325,7 +289,7 @@ func btpCreateServiceMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "btp", Image: "ppiper/cf-cli:latest"},
+				{Name: "btp", Image: "ppiper/cf-cli:latest", WorkingDir: "/home/piper"},
 			},
 		},
 	}

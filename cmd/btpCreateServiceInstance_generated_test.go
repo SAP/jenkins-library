@@ -9,12 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBtpDeleteServiceCommand(t *testing.T) {
+func TestBtpCreateServiceInstanceCommand(t *testing.T) {
 	t.Parallel()
 
-	testCmd := BtpDeleteServiceCommand()
+	testCmd := BtpCreateServiceInstanceCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "btpDeleteService", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "btpCreateServiceInstance", testCmd.Use, "command name incorrect")
 
 }
