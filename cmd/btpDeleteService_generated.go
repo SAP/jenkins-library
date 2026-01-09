@@ -167,7 +167,7 @@ func addBtpDeleteServiceFlags(cmd *cobra.Command, stepConfig *btpDeleteServiceOp
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be deleted")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to delete")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for deletion operation")
-	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 300, "Poll interval in seconds for checking instance readiness")
+	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
@@ -254,7 +254,7 @@ func btpDeleteServiceMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/pollInterval"}},
-						Default:     300,
+						Default:     30,
 					},
 					{
 						Name: "user",

@@ -172,8 +172,8 @@ func addBtpCreateServiceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceOp
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
 	cmd.Flags().StringVar(&stepConfig.CreateServiceConfig, "createServiceConfig", os.Getenv("PIPER_createServiceConfig"), "Path to JSON file or JSON in-line string for a Service creation")
-	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for creation/polling")
-	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 600, "Poll interval in seconds for checking instance readiness")
+	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 7200, "Timeout in seconds for creation/polling")
+	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
@@ -281,7 +281,7 @@ func btpCreateServiceMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/timeout"}},
-						Default:     3600,
+						Default:     7200,
 					},
 					{
 						Name:        "pollInterval",
@@ -290,7 +290,7 @@ func btpCreateServiceMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/pollInterval"}},
-						Default:     600,
+						Default:     30,
 					},
 					{
 						Name: "user",

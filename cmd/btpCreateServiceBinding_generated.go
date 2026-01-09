@@ -171,7 +171,7 @@ func addBtpCreateServiceBindingFlags(cmd *cobra.Command, stepConfig *btpCreateSe
 	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "Name of the service binding to create")
 	cmd.Flags().StringVar(&stepConfig.CreateServiceBindingConfig, "createServiceBindingConfig", os.Getenv("PIPER_createServiceBindingConfig"), "Path to JSON file or JSON in-line string for a Service binding creation")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 600, "Timeout in seconds for creation/polling")
-	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 60, "Poll interval in seconds for checking instance readiness")
+	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 5, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
@@ -278,7 +278,7 @@ func btpCreateServiceBindingMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/pollInterval"}},
-						Default:     60,
+						Default:     5,
 					},
 					{
 						Name: "user",
