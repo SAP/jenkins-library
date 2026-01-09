@@ -26,7 +26,7 @@ spec:
         default: "https://cli.btp.cloud.sap"
       - name: subdomain
         type: string
-        description: BTP subdomain
+        description: BTP subdomain (Global Account). It will be used during login.
         scope:
           - PARAMETERS
           - STAGES
@@ -37,7 +37,7 @@ spec:
           - name: btp/subdomain
       - name: idp
         type: string
-        description: BTP idp (optional)
+        description: BTP idp (Identity Provider) (optional)
         scope:
           - PARAMETERS
           - STAGES
