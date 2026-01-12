@@ -45,7 +45,7 @@ func TestRunBtpCreateService(t *testing.T) {
 			PlanName:            "testPlan",
 			OfferingName:        "testOffering",
 			ServiceInstanceName: InstanceName,
-			CreateServiceConfig: "testCreateServiceConfig",
+			Parameters:          "testCreateServiceConfig.json",
 			Timeout:             60,
 			PollInterval:        5,
 			User:                "testUser",
@@ -61,7 +61,7 @@ func TestRunBtpCreateService(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.CreateServiceConfig, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},
@@ -92,7 +92,7 @@ func TestRunBtpCreateService(t *testing.T) {
 			PlanName:            "testPlan",
 			OfferingName:        "testOffering",
 			ServiceInstanceName: InstanceName,
-			CreateServiceConfig: "testCreateServiceConfig",
+			Parameters:          "testCreateServiceConfig.json",
 			Timeout:             60,
 			PollInterval:        5,
 			User:                "testUser",
@@ -108,7 +108,7 @@ func TestRunBtpCreateService(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.CreateServiceConfig, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},

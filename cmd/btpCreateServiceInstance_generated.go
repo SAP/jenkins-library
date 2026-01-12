@@ -24,7 +24,7 @@ type btpCreateServiceInstanceOptions struct {
 	PlanName            string `json:"planName,omitempty"`
 	OfferingName        string `json:"offeringName,omitempty"`
 	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
-	CreateServiceConfig string `json:"createServiceConfig,omitempty"`
+	Parameters          string `json:"parameters,omitempty"`
 	Timeout             int    `json:"timeout,omitempty"`
 	PollInterval        int    `json:"pollInterval,omitempty"`
 	User                string `json:"user,omitempty"`
@@ -166,12 +166,12 @@ func BtpCreateServiceInstanceCommand() *cobra.Command {
 func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceInstanceOptions) {
 	cmd.Flags().StringVar(&stepConfig.Url, "url", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain (Global Account). It will be used during login.")
-	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional)")
+	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
-	cmd.Flags().StringVar(&stepConfig.CreateServiceConfig, "createServiceConfig", os.Getenv("PIPER_createServiceConfig"), "Path to JSON file or JSON in-line string for a Service creation")
+	cmd.Flags().StringVar(&stepConfig.Parameters, "parameters", os.Getenv("PIPER_parameters"), "Path to JSON file or JSON in-line string for a Service creation")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 7200, "Timeout in seconds for creation/polling")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
@@ -183,7 +183,7 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
 	cmd.MarkFlagRequired("serviceInstanceName")
-	cmd.MarkFlagRequired("createServiceConfig")
+	cmd.MarkFlagRequired("parameters")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -266,13 +266,13 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_serviceInstanceName"),
 					},
 					{
-						Name:        "createServiceConfig",
+						Name:        "parameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/parameters"}},
-						Default:     os.Getenv("PIPER_createServiceConfig"),
+						Default:     os.Getenv("PIPER_parameters"),
 					},
 					{
 						Name:        "timeout",

@@ -33,7 +33,7 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 		PlanName:         config.PlanName,
 		OfferingName:     config.OfferingName,
 		InstanceName:     config.ServiceInstanceName,
-		Parameters:       config.CreateServiceConfig,
+		Parameters:       config.Parameters,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
 	}

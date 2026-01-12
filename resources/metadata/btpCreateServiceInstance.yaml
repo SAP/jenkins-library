@@ -37,7 +37,7 @@ spec:
           - name: btp/subdomain
       - name: idp
         type: string
-        description: BTP idp (Identity Provider) (optional)
+        description: BTP idp (Identity Provider) (optional). It will be used during login.
         scope:
           - PARAMETERS
           - STAGES
@@ -90,7 +90,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/instanceName
-      - name: createServiceConfig
+      - name: parameters
         type: string
         description: Path to JSON file or JSON in-line string for a Service creation
         scope:

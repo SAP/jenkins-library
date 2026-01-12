@@ -17,17 +17,17 @@ import (
 )
 
 type btpCreateServiceBindingOptions struct {
-	Url                        string `json:"url,omitempty"`
-	Subdomain                  string `json:"subdomain,omitempty"`
-	Idp                        string `json:"idp,omitempty"`
-	Subaccount                 string `json:"subaccount,omitempty"`
-	ServiceInstanceName        string `json:"serviceInstanceName,omitempty"`
-	ServiceBindingName         string `json:"serviceBindingName,omitempty"`
-	CreateServiceBindingConfig string `json:"createServiceBindingConfig,omitempty"`
-	Timeout                    int    `json:"timeout,omitempty"`
-	PollInterval               int    `json:"pollInterval,omitempty"`
-	User                       string `json:"user,omitempty"`
-	Password                   string `json:"password,omitempty"`
+	Url                 string `json:"url,omitempty"`
+	Subdomain           string `json:"subdomain,omitempty"`
+	Idp                 string `json:"idp,omitempty"`
+	Subaccount          string `json:"subaccount,omitempty"`
+	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
+	ServiceBindingName  string `json:"serviceBindingName,omitempty"`
+	Parameters          string `json:"parameters,omitempty"`
+	Timeout             int    `json:"timeout,omitempty"`
+	PollInterval        int    `json:"pollInterval,omitempty"`
+	User                string `json:"user,omitempty"`
+	Password            string `json:"password,omitempty"`
 }
 
 // BtpCreateServiceBindingCommand Creates a service binding in BTP
@@ -165,11 +165,11 @@ func BtpCreateServiceBindingCommand() *cobra.Command {
 func addBtpCreateServiceBindingFlags(cmd *cobra.Command, stepConfig *btpCreateServiceBindingOptions) {
 	cmd.Flags().StringVar(&stepConfig.Url, "url", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain (Global Account). It will be used during login.")
-	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional)")
+	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
 	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "Name of the service binding to create")
-	cmd.Flags().StringVar(&stepConfig.CreateServiceBindingConfig, "createServiceBindingConfig", os.Getenv("PIPER_createServiceBindingConfig"), "Path to JSON file or JSON in-line string for a Service binding creation")
+	cmd.Flags().StringVar(&stepConfig.Parameters, "parameters", os.Getenv("PIPER_parameters"), "Path to JSON file or JSON in-line string for a Service binding creation")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 600, "Timeout in seconds for creation/polling")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 5, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
@@ -180,7 +180,7 @@ func addBtpCreateServiceBindingFlags(cmd *cobra.Command, stepConfig *btpCreateSe
 	cmd.MarkFlagRequired("subaccount")
 	cmd.MarkFlagRequired("serviceInstanceName")
 	cmd.MarkFlagRequired("serviceBindingName")
-	cmd.MarkFlagRequired("createServiceBindingConfig")
+	cmd.MarkFlagRequired("parameters")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -254,13 +254,13 @@ func btpCreateServiceBindingMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_serviceBindingName"),
 					},
 					{
-						Name:        "createServiceBindingConfig",
+						Name:        "parameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/parameters"}},
-						Default:     os.Getenv("PIPER_createServiceBindingConfig"),
+						Default:     os.Getenv("PIPER_parameters"),
 					},
 					{
 						Name:        "timeout",

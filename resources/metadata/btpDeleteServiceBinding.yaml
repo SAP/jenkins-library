@@ -37,7 +37,7 @@ spec:
           - name: btp/subdomain
       - name: idp
         type: string
-        description: BTP idp (Identity Provider) (optional)
+        description: BTP idp (Identity Provider) (optional). It will be used during login.
         scope:
           - PARAMETERS
           - STAGES

@@ -30,7 +30,7 @@ func runBtpCreateServiceBinding(config *btpCreateServiceBindingOptions, telemetr
 		User:             config.User,
 		Password:         config.Password,
 		IdentityProvider: config.Idp,
-		Parameters:       config.CreateServiceBindingConfig,
+		Parameters:       config.Parameters,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
 		ServiceInstance:  config.ServiceInstanceName,
