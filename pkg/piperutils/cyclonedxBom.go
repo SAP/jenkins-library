@@ -63,8 +63,8 @@ func GetComponent(bomFilePath string) BomComponent {
 	return bom.Metadata.Component
 }
 
-// GetBomVersion extracts the CycloneDX schema version from the BOM
-func GetBomVersion(bomFilePath string) (string, error) {
+// GetBomSchemaVersion extracts the CycloneDX schema version from the BOM
+func GetBomSchemaVersion(bomFilePath string) (string, error) {
 	bom, err := GetBom(bomFilePath)
 	if err != nil {
 		return "", err
