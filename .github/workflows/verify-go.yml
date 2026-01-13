@@ -8,26 +8,37 @@ on:
     branches:
       - master
 
+env:
+  DEFAULT_GOLANG: '1.24.0'
+
 jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
-      - uses: actions/setup-go@v5
+      - name: 🏗 Set up Golang ${{ env.DEFAULT_GOLANG }}
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.24.0'
-      - name: Cache Golang Packages
+          go-version: ${{ env.DEFAULT_GOLANG }}
+      - name: 🏗 Cache Golang packages
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
           restore-keys: |
             ${{ runner.os }}-golang-
-      - name: checkout
+      - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
-      - name: unit-test
+        with:
+          fetch-depth: 0
+      - name: 🚀 Run tests
         id: unit-test
-        run: go test -tags=unit ./... -coverprofile cover.out
+        run: go run gotest.tools/gotestsum@latest --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile cover.out -tags=unit ./...
+      - name: 🔎 Analyse code
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
   format:
     runs-on: ubuntu-latest

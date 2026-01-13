@@ -1,6 +1,13 @@
 metadata:
   name: sonarExecuteScan
   description: Executes the Sonar scanner
+  errors:
+    - pattern: "QUALITY GATE STATUS: FAILED"
+      message: "SonarQube quality gate failed. Review code quality issues and fix them to meet quality standards."
+      category: "quality"
+    - pattern: "Error during parsing of generic test execution report"
+      message: "Test execution report parsing failed. Verify test report format matches SonarQube expectations."
+      category: "configuration"
   longDescription: "The step executes the [sonar-scanner](https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner/)
     cli command to scan the defined sources and publish the results to a SonarQube instance. Check [source repository](https://github.com/SonarSource/sonar-scanner-cli) for more details."
 spec:
@@ -76,7 +83,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.1.0.4889-linux-x64.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.2.0.5079-linux-x64.zip"
         scope:
           - PARAMETERS
           - STAGES

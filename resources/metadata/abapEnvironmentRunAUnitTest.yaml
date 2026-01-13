@@ -145,6 +145,15 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
+      - name: evaluateResults
+        type: bool
+        description: Evaluation will parse the result file and fail the step execution in case of unsuccessful (error/failure) ABAP Unit test cases
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
   containers:
     - name: cf
       image: ppiper/cf-cli:latest

@@ -265,7 +265,7 @@ spec:
         aliases:
           - name: force
         type: bool
-        description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command"
+        description: "Adds `--force` flag to a helm resource update command or to a kubectl replace command. It is enabled by default and this can cause race conditions, blocked deletions or lost in-cluster state. If it's not a required behavior, then disable it."
         mandatory: false
         scope:
           - PARAMETERS
@@ -479,7 +479,40 @@ spec:
           - STEPS
       - name: dockerConfigJSON
         type: string
-        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        description: |-
+          Docker registry authentication (config.json) handling:
+
+          1. If a Vault secret (default name: docker-config) exists with the required key, its content is copied to:
+             .pipeline/docker/config.json (this path is used as the parameter value).
+          2. Usage by deploy tool:
+             - deployTool: kubectl
+               The file is read to create (or reuse) a Kubernetes Secret of type kubernetes.io/dockerconfigjson.
+             - deployTool: helm
+               The base64 content is passed as Helm value secret.dockerconfigjson. Your Helm chart MUST template a Secret using these values.
+          3. Helm chart requirement:
+             Provide a template that creates the secret (e.g. templates/secret.yaml) and reference it in workload specs (Deployment/StatefulSet/etc.) via imagePullSecrets so pods can pull images.
+
+          Example Helm templates:
+
+          templates/secret.yaml:
+            {{`{{- if and .Values.secret.enabled (ne .Values.secret.name \"\") -}}`}}
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: {{`{{ .Values.secret.name }}`}}
+            type: kubernetes.io/dockerconfigjson
+            data:
+              .dockerconfigjson: {{`{{ .Values.secret.dockerconfigjson | quote }}`}}
+            {{`{{- end }}`}}
+
+          templates/deployment.yaml (excerpt):
+            spec:
+              template:
+                spec:
+                  imagePullSecrets:
+                    - name: {{`{{ .Values.secret.name }}`}}
+
+          More details about Docker credentials: https://docs.docker.com/engine/reference/commandline/login/
         scope:
           - PARAMETERS
           - STAGES
@@ -539,6 +572,29 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: insecureSkipTLSVerify
+        type: bool
+        description: This disables TLS certificate verification, allowing connections even with self-signed or untrusted certificates. (Please note that for helm deployments this parameter is always set to true) [More details](https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/7a8b58c048d04a668d29eda41675a454/277e6afa4fee41618d2e61bc6b3f2423.html)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: CACertificate
+        type: string
+        description: Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate' with a subkey called 'CACertificate'. The data needs to be stored in the subkey value). This parameter is only supported for kubectl-based deployments. If provided, secure connections will be established using this certificate when 'insecureSkipTLSVerify' is false.
+        longDescription: |
+          Vault path to the Kubernetes CA certificate (Please note that the certificate contents must be stored as a Vault secret named 'ca-certificate' with a subkey called 'CACertificate'. The data needs to be stored in the subkey value)). This parameter is only supported for kubectl-based deployments. If provided, secure connections for kubectl deployments will be established using this certificate when 'insecureSkipTLSVerify' is false.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        default: ca-certificate
+        resourceRef:
+          - type: vaultSecretFile
+            name: CACertificateVaultSecretName
+            default: ca-certificate
   containers:
     - image: dtzar/helm-kubectl:3
       workingDir: /config

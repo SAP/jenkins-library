@@ -115,6 +115,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
+		config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
 		err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 		if err != nil {
 			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
@@ -263,8 +264,20 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	}
 
 	kubeParams := []string{
-		"--insecure-skip-tls-verify=true",
 		fmt.Sprintf("--namespace=%v", config.Namespace),
+	}
+
+	log.Entry().Debugf("Running kubectl with InsecureSkipTLSVerify: %v", config.InsecureSkipTLSVerify)
+
+	// Add CA certificate if provided
+	if len(config.CACertificate) > 0 && !config.InsecureSkipTLSVerify {
+		kubeParams = append(kubeParams, fmt.Sprintf("--certificate-authority=%v", config.CACertificate))
+		log.Entry().Debugf("Running kubectl with CACertificate: %v", config.CACertificate)
+	}
+
+	kubeParams = append(kubeParams, "--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify))
+	if config.InsecureSkipTLSVerify {
+		log.Entry().Warn("Skipping TLS verification check. Please note that this action poses security concerns.")
 	}
 
 	if len(config.KubeConfig) > 0 {
@@ -525,7 +538,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		config.ContainerRegistrySecret,
 		fmt.Sprintf("--from-file=.dockerconfigjson=%v", targetPath),
 		"--type=kubernetes.io/dockerconfigjson",
-		"--insecure-skip-tls-verify=true",
+		"--insecure-skip-tls-verify=" + strconv.FormatBool(config.InsecureSkipTLSVerify),
 		"--dry-run=client",
 		"--output=json",
 	}

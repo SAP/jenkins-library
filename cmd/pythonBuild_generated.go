@@ -27,7 +27,7 @@ type pythonBuildOptions struct {
 	TargetRepositoryUser     string   `json:"targetRepositoryUser,omitempty"`
 	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
-	VirutalEnvironmentName   string   `json:"virutalEnvironmentName,omitempty"`
+	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
 	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
 }
 
@@ -74,17 +74,18 @@ func PythonBuildCommand() *cobra.Command {
 	var createPythonBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Step builds a python project",
-		Long: `Step build python project using the setup.py manifest and builds a wheel and tarball artifact . please note that currently python build only supports setup.py
+		Long: `This step will build a python project.
+It will prioritize ` + "`" + `pyproject.toml` + "`" + ` file but can also be used with a ` + "`" + `setup.py` + "`" + ` manifest and builds a wheel and tarball artifact.
 
-### build with depedencies from a private repository
-if your build has dependencies from a private repository you can include the standard requirements.txt into the source code with ` + "`" + `--extra-index-url` + "`" + ` as the first line
+### Build with depedencies from a private repository
+
+If your build has dependencies from a private repository you can include the standard ` + "`" + `requirements.txt` + "`" + ` into the source code with ` + "`" + `--extra-index-url` + "`" + ` as the first line
 
 ` + "`" + `` + "`" + `` + "`" + `
 --extra-index-url https://${PIPER_VAULTCREDENTIAL_USERNAME}:${PIPER_VAULTCREDENTIAL_PASSWORD}@<privateRepoUrl>/simple
 ` + "`" + `` + "`" + `` + "`" + `
-` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD` + "`" + ` are the username and password for the private repository
-and are exposed are environment variables that must be present in the environment where the Piper step runs or alternatively can be created using :
-[vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials)`,
+
+The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" + `PIPER_VAULTCREDENTIAL_PASSWORD` + "`" + ` are the username and password environemtn variables for the private repository must be present in the environment where the Piper step runs or alternatively can be created using [vault general purpose credentials](../infrastructure/vault.md#using-vault-for-general-purpose-and-test-credentials).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -205,14 +206,14 @@ and are exposed are environment variables that must be present in the environmen
 
 func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags passed to python binary.")
-	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py.")
+	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py / build module.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
-	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
-	cmd.Flags().StringVar(&stepConfig.VirutalEnvironmentName, "virutalEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.")
+	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
 
 }
@@ -321,12 +322,12 @@ func pythonBuildMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
 					},
 					{
-						Name:        "virutalEnvironmentName",
+						Name:        "virtualEnvironmentName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "virutalEnvironmentName", Deprecated: true}},
 						Default:     `piperBuild-env`,
 					},
 					{
@@ -341,7 +342,7 @@ func pythonBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3.9"},
+				{Name: "python", Image: "python:3.11"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

@@ -133,7 +133,7 @@ spec:
             type: end-to-end-test
   containers:
     - name: node
-      image: node:lts-bookworm
+      image: node:24-bookworm
       env:
         - name: BASE_URL
           value: ${{params.baseUrl}}

@@ -306,7 +306,6 @@ func TestUpdateProject(t *testing.T) {
 			"\"key1\"": "\"value1\"",
 			"\"keywithoutvalue\"": "\"\""
 		},
-		"groups": [],
 		"criticality": 3,
 		"mainBranch": "",
 		"privatePackage": false
