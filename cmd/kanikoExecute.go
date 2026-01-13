@@ -467,11 +467,15 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 
 	for _, file := range files {
 		parentComponentName := piperutils.GetName(file)
-		parentComponentVersion := piperutils.GetVersion(file)
+		parentComponentVersion, err := piperutils.GetBomVersion(file)
+		if err != nil {
+			log.Entry().Warnf("unable to get bom version from sbom file %s, hence not creating build artifact metadata for :%s", file, err)
+			return nil
+		}
 
 		// syft sbom do not contain purl for the parent component
 		// this is problem since the way we tie back promoted artifact to build
-		// is only via the sbom parent componen , untill the time https://github.com/anchore/syft/issues/1408
+		// is only via the sbom parent component , until the time https://github.com/anchore/syft/issues/1408
 		// is fixed we are generating a purl and inserting it into the sbom
 		constructedPurl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", parentComponentName, parentComponentVersion), nil)
 		if err != nil {
