@@ -299,10 +299,39 @@ func (g *githubActionsConfigProvider) fetchJobs() error {
 		return fmt.Errorf("no jobs found in response")
 	}
 
-	g.jobs = convertJobs(jobs.Jobs)
+	filteredJobs := filterGPPJobs(jobs.Jobs)
+	g.jobs = convertJobs(filteredJobs)
 	g.jobsFetched = true
 
 	return nil
+}
+
+// filterGPPJobs returns only the jobs associated with GPP stages, excluding unrelated ones.
+// This is necessary because fetching jobs for a workflow run triggered by a pull request
+// also includes extra PR check jobs that are not part of the GPP pipeline.
+func filterGPPJobs(jobs []*github.WorkflowJob) []*github.WorkflowJob {
+	// These names are job names defined in the GPP Stage workflows (e.g. build.yml)
+	gppStages := []string{
+		"Init",
+		"Build",
+		"Integration",
+		"Acceptance",
+		"Performance",
+		"Promote",
+		"Release",
+		"Post",
+	}
+
+	filteredJobs := make([]*github.WorkflowJob, 0, len(gppStages))
+	for _, stage := range gppStages {
+		for _, j := range jobs {
+			if strings.HasSuffix(j.GetName(), "/ "+stage) {
+				filteredJobs = append(filteredJobs, j)
+			}
+		}
+	}
+
+	return filteredJobs
 }
 
 func convertJobs(jobs []*github.WorkflowJob) []job {
