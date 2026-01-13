@@ -172,8 +172,8 @@ func getParamMetadataByName(params []config.StepParameters, name string) *config
 	return nil
 }
 
-// prepareConfig is minimized and adapted version of PrepareConfig from cmd/piper.go
-func prepareConfig(stepFlags map[string]any, metadata *config.StepData, stepName string) (map[string]interface{}, error) {
+// prepareConfig is minimized and adapted version of PrepareConfig() from cmd/piper.go
+func prepareConfig(stepFlags map[string]any, metadata *config.StepData, stepName string) (map[string]any, error) {
 	var customConfig io.ReadCloser
 	{
 		projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
