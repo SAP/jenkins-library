@@ -1,6 +1,13 @@
 metadata:
   name: checkmarxOneExecuteScan
   description: checkmarxOne is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.
+  errors:
+    - pattern: "project .* not compliant"
+      message: "Project failed compliance checks. Triage security findings in Checkmarx One and fix issues to meet compliance requirements."
+      category: "compliance"
+    - pattern: "No APIKey or client_id/client_secret provided"
+      message: "Authentication failed. Verify APIKey or client credentials are properly configured."
+      category: "authentication"
   longDescription: |-
     checkmarxOne is a Static Application Security Testing (SAST) platform to analyze i.e. Java or TypeScript, Swift, Golang, Ruby code,
     and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
@@ -106,6 +113,14 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: scanSummaryInPullRequest
+        description: Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
       - name: incremental
         type: bool
         description: Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`
@@ -291,6 +306,20 @@ spec:
       - name: applicationName
         type: string
         description: The full name of the Checkmarx One application to which the newly created projects will be assigned
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: applicationId
+        type: string
+        description: The ID of the Checkmarx One application to which the newly created projects will be assigned. This parameter will take precedence over applicationName if both are provided.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: projectId
+        type: string
+        description: The ID of the checkmarxOne project to scan into. This parameter will take precedence over projectName if both are provided.
         scope:
           - PARAMETERS
           - STAGES

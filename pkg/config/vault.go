@@ -192,7 +192,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client Va
 		}
 	}
 	if secretValue == nil {
-		log.Entry().Info("The secret could not be resolved from Vault. Please check if the secret is available via configured paths.")
+		log.Entry().WithField("parameter", param.Name).Info("Secret not found in Vault at configured paths.")
 	}
 }
 

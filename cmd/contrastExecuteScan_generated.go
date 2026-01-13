@@ -81,7 +81,7 @@ func ContrastExecuteScanCommand() *cobra.Command {
 	var createContrastExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step evaluates if the audit requirements for Contrast Assess have been fulfilled.",
-		Long:  `This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess. For further information on the tool, please consult the [documentation](https://github.wdf.sap.corp/pages/Security-Testing/doc/contrast/introduction/).`,
+		Long:  `This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -209,7 +209,7 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().StringVar(&stepConfig.OrganizationID, "organizationId", os.Getenv("PIPER_organizationId"), "Organization UUID. It's the first UUID in most navigation URLs.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "Application UUID. It's the Last UUID of application View URL")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threshold for maximum number of allowed vulnerabilities.")
-	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", false, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
+	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", true, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 
 	cmd.MarkFlagRequired("userApiKey")
 	cmd.MarkFlagRequired("serviceKey")
@@ -343,12 +343,9 @@ func contrastExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     true,
 					},
 				},
-			},
-			Containers: []config.Container{
-				{},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

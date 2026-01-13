@@ -22,6 +22,15 @@ metadata:
     - pattern: "ERR_PNPM_FETCH_401"
       message: "PNPM authentication failed. Check your credentials or token."
       category: "authentication"
+    - pattern: "npm error ERESOLVE"
+      message: "NPM dependency resolution failed. Review peer dependency conflicts."
+      category: "dependency"
+    - pattern: "npm error EINTEGRITY"
+      message: "Package integrity check failed. Clear npm cache and retry installation."
+      category: "dependency"
+    - pattern: "npm error code ENOENT.*package.json"
+      message: "Package.json file not found. Ensure package.json exists in the correct directory. For multi-module projects, check if buildDescriptorList and buildDescriptorExcludeList are correct."
+      category: "configuration"
   longDescription: >
     ### Lock file detection:
 
@@ -42,8 +51,14 @@ metadata:
     One can use `buildDescriptorList` or `buildDescriptorExcludeList` (more details below) to override the default behaviour.<br/>
 
     ### pnpm multi-module support:
+
     pnpm multi-module projects are supported when each package has its own `pnpm-lock.yaml` file.
     Workspace-based pnpm projects are not yet supported.
+
+    ### pnpm and running tests.
+
+    When pnpm is installed, it is placed in `./tmp/node_modules/.bin/pnpm`, and some dependency files under `./tmp/` may include test files. If your test runner uses a broad glob pattern (such as `**/*.test.js`), it might unintentionally pick up test files from `./tmp/**`. To avoid this, exclude `./tmp/**` from your test execution patterns.
+    For best results, use more specific glob patterns for running tests, such as `src/**/*.test.js`, to ensure only your intended test files are executed.
 
     ### Build with private dependencies from a repository
 
@@ -239,4 +254,4 @@ spec:
             type: cucumber
   containers:
     - name: node
-      image: node:lts-bookworm
+      image: node:24-bookworm

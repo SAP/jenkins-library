@@ -2,7 +2,7 @@ metadata:
   name: contrastExecuteScan
   description: This step evaluates if the audit requirements for Contrast Assess have been fulfilled.
   longDescription: |-
-    This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess. For further information on the tool, please consult the [documentation](https://github.wdf.sap.corp/pages/Security-Testing/doc/contrast/introduction/).
+    This step evaluates if the audit requirements for Contrast Assess have been fulfilled after the execution of security tests by Contrast Assess.
 spec:
   inputs:
     secrets:
@@ -105,13 +105,11 @@ spec:
       - name: checkForCompliance
         description: "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error."
         type: bool
-        default: false
+        default: true
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-  containers:
-    - image: ""
   outputs:
     resources:
       - name: reports
