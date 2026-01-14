@@ -464,13 +464,18 @@ func transformCookies(cookies []*http.Cookie) string {
 	return result
 }
 
+const maxLogBodyLength = 2 * 1024
+
 func transformBody(body io.Reader) string {
 	if body == nil {
 		return ""
 	}
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(body)
-	return buf.String()
+
+	data, _ := io.ReadAll(body)
+	if len(data) > maxLogBodyLength {
+		return string(data[:maxLogBodyLength]) + "...(truncated)"
+	}
+	return string(data)
 }
 
 func (c *Client) createRequest(method, url string, body io.Reader, header *http.Header, cookies []*http.Cookie) (*http.Request, error) {
