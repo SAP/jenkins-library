@@ -81,7 +81,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithPassword("pass").
 			WithFormat("json").
 			WithVerbose().
-			WithTenant("tenant-1")
+			WithIdentityProvider("idProvider-1")
 
 		cmd, err := builder.Build()
 
@@ -109,7 +109,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 		assert.Contains(t, cmdString, "--password pass")
 		assert.Contains(t, cmdString, "--format json")
 		assert.Contains(t, cmdString, "--verbose")
-		assert.Contains(t, cmdString, "--idp tenant-1")
+		assert.Contains(t, cmdString, "--idp idProvider-1")
 	})
 
 	t.Run("reset clears all fields", func(t *testing.T) {

@@ -2,11 +2,11 @@ package btp
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (string, error) {
@@ -14,31 +14,52 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		btp.Exec = &Executor{}
 	}
 
-	if options.Subdomain == "" ||
-		options.BindingName == "" ||
-		options.Parameters == "" ||
-		options.Timeout == 0 ||
-		options.PollInterval == 0 {
-		return "", fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the Subdomain, BindingName, Parameters, Timeout and PollInterval"))
-	}
-
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceBindingBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceBindingBytes)
 
 	// we are logged in --> create service binding
+	parametersCheck := options.Subaccount == "" ||
+		options.BindingName == "" ||
+		options.Parameters == "" ||
+		options.Timeout == 0 ||
+		options.PollInterval == 0
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.BindingName == "" {
+			missingParams = append(missingParams, "BindingName")
+		}
+		if options.Parameters == "" {
+			missingParams = append(missingParams, "Parameters")
+		}
+		if options.Timeout == 0 {
+			missingParams = append(missingParams, "Timeout")
+		}
+		if options.PollInterval == 0 {
+			missingParams = append(missingParams, "PollInterval")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return "", fmt.Errorf("Failed to create service binding: %w", errors.New(errorMsg))
+	}
+
 	log.Entry().WithField("subaccount", options.Subaccount).
 		WithField("name", options.BindingName).
 		WithField("parameter", options.Parameters)
@@ -57,15 +78,16 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
-				Url:         options.Url,
-				Subdomain:   options.Subdomain,
-				User:        options.User,
-				Password:    options.Password,
-				Tenant:      options.Tenant,
-				Subaccount:  options.Subaccount,
-				BindingName: options.BindingName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				BindingName:      options.BindingName,
 			})
 		},
+		IgnoreErrorOnFirstCall: true,
 	})
 
 	if err != nil {
@@ -78,7 +100,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service binding JSON failed")
 	}
 
 	err = btp.Logout()
@@ -100,22 +122,39 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	}
 
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceBindingBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceBindingBytes)
 
 	// we are logged in --> read service binding
+	parametersCheck := options.Subaccount == "" ||
+		options.BindingName == ""
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.BindingName == "" {
+			missingParams = append(missingParams, "BindingName")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return "", fmt.Errorf("Failed to read service binding: %w", errors.New(errorMsg))
+	}
+
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
 
 	builder := NewBTPCommandBuilder().
@@ -137,12 +176,12 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service binding JSON failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceBindingJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceBindingJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceBindingJSON, nil
@@ -153,30 +192,38 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		btp.Exec = &Executor{}
 	}
 
-	if options.Subaccount == "" ||
-		options.BindingName == "" ||
-		options.Timeout == 0 ||
-		options.PollInterval == 0 {
-		return fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the Subdomain, BindingName, Timeout and PollInterval"))
-	}
-
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return fmt.Errorf("Login to BTP failed: %w", err)
+		return errors.Wrap(err, "Login to BTP failed")
 	}
-	var serviceBindingBytes bytes.Buffer
-	btp.Exec.Stdout(&serviceBindingBytes)
 
 	// we are logged in --> delete service binding
+	parametersCheck := options.Subaccount == "" ||
+		options.BindingName == ""
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.BindingName == "" {
+			missingParams = append(missingParams, "BindingName")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return fmt.Errorf("Failed to delete service binding: %w", errors.New(errorMsg))
+	}
+
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
 
 	btpDeleteBindingScript, _ := NewBTPCommandBuilder().
@@ -191,13 +238,13 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceBindingDeleted(btp, GetServiceBindingOptions{
-				Url:         options.Url,
-				Subdomain:   options.Subdomain,
-				User:        options.User,
-				Password:    options.Password,
-				Tenant:      options.Tenant,
-				Subaccount:  options.Subaccount,
-				BindingName: options.BindingName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				BindingName:      options.BindingName,
 			})
 		},
 	})
@@ -221,33 +268,60 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		btp.Exec = &Executor{}
 	}
 
-	if options.Subaccount == "" ||
-		options.PlanName == "" ||
-		options.OfferingName == "" ||
-		options.InstanceName == "" ||
-		options.Parameters == "" ||
-		options.Timeout == 0 ||
-		options.PollInterval == 0 {
-		return "", fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the Subaccount, PlanName, OfferingName, InstanceName, Parameters, Timeout and PollInterval"))
-	}
-
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceInstanceBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceInstanceBytes)
 
 	// we are logged in --> create service instance
+	parametersCheck := options.Subaccount == "" ||
+		options.PlanName == "" ||
+		options.OfferingName == "" ||
+		options.InstanceName == "" ||
+		options.Parameters == "" ||
+		options.Timeout == 0 ||
+		options.PollInterval == 0
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.PlanName == "" {
+			missingParams = append(missingParams, "PlanName")
+		}
+		if options.OfferingName == "" {
+			missingParams = append(missingParams, "OfferingName")
+		}
+		if options.InstanceName == "" {
+			missingParams = append(missingParams, "InstanceName")
+		}
+		if options.Parameters == "" {
+			missingParams = append(missingParams, "Parameters")
+		}
+		if options.Timeout == 0 {
+			missingParams = append(missingParams, "Timeout")
+		}
+		if options.PollInterval == 0 {
+			missingParams = append(missingParams, "PollInterval")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return "", fmt.Errorf("Failed to create service instance: %w", errors.New(errorMsg))
+	}
+
 	log.Entry().WithField("subaccount", options.Subaccount).
 		WithField("planName", options.PlanName).
 		WithField("offeringName", options.OfferingName).
@@ -260,7 +334,8 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		WithName(options.InstanceName).
 		WithSubAccount(options.Subaccount).
 		WithParameters(options.Parameters).
-		WithPlanName(options.PlanName).WithOfferingName(options.OfferingName).
+		WithPlanName(options.PlanName).
+		WithOfferingName(options.OfferingName).
 		Build()
 
 	err = btp.Exec.RunSync(RunSyncOptions{
@@ -269,13 +344,13 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceInstanceCreated(btp, GetServiceInstanceOptions{
-				Url:          options.Url,
-				Subdomain:    options.Subdomain,
-				User:         options.User,
-				Password:     options.Password,
-				Tenant:       options.Tenant,
-				Subaccount:   options.Subaccount,
-				InstanceName: options.InstanceName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				InstanceName:     options.InstanceName,
 			})
 		},
 	})
@@ -290,12 +365,12 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service instance JSON failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceInstanceJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceInstanceJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceInstanceJSON, nil
@@ -306,28 +381,40 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 		btp.Exec = &Executor{}
 	}
 
-	if options.Subaccount == "" ||
-		options.InstanceName == "" {
-		return "", fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the Subaccount, and InstanceName"))
-	}
-
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", fmt.Errorf("Login to BTP failed: %w", err)
+		return "", errors.Wrap(err, "Login to BTP failed")
 	}
 	var serviceInstanceBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceInstanceBytes)
 
 	// we are logged in --> read service instance
+	parametersCheck := options.Subaccount == "" ||
+		options.InstanceName == ""
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.InstanceName == "" {
+			missingParams = append(missingParams, "InstanceName")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return "", fmt.Errorf("Failed to retrieve service instance: %w", errors.New(errorMsg))
+	}
+
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
 
 	builder := NewBTPCommandBuilder().
@@ -349,12 +436,12 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Parsing service instance JSON failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceInstanceJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceInstanceJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceInstanceJSON, nil
@@ -365,17 +452,12 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		btp.Exec = &Executor{}
 	}
 
-	if options.Subaccount == "" ||
-		options.InstanceName == "" {
-		return fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the Subaccount, and InstanceName"))
-	}
-
 	loginOptions := LoginOptions{
-		Url:       options.Url,
-		Subdomain: options.Subdomain,
-		User:      options.User,
-		Password:  options.Password,
-		Tenant:    options.Tenant,
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
 	}
 	err := btp.Login(loginOptions)
 
@@ -383,10 +465,25 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		// error while trying to run btp login
 		return fmt.Errorf("Login to BTP failed: %w", err)
 	}
-	var serviceInstanceBytes bytes.Buffer
-	btp.Exec.Stdout(&serviceInstanceBytes)
 
 	// we are logged in --> delete service instance
+	parametersCheck := options.Subaccount == "" ||
+		options.InstanceName == ""
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.InstanceName == "" {
+			missingParams = append(missingParams, "InstanceName")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return fmt.Errorf("Failed to delete service instance: %w", errors.New(errorMsg))
+	}
+
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
 
 	btpGetServiceScript, _ := NewBTPCommandBuilder().
@@ -402,13 +499,13 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		PollInterval:   options.PollInterval,
 		CheckFunc: func() bool {
 			return IsServiceInstanceDeleted(btp, GetServiceInstanceOptions{
-				Url:          options.Url,
-				Subdomain:    options.Subdomain,
-				User:         options.User,
-				Password:     options.Password,
-				Tenant:       options.Tenant,
-				Subaccount:   options.Subaccount,
-				InstanceName: options.InstanceName,
+				Url:              options.Url,
+				Subdomain:        options.Subdomain,
+				User:             options.User,
+				Password:         options.Password,
+				IdentityProvider: options.IdentityProvider,
+				Subaccount:       options.Subaccount,
+				InstanceName:     options.InstanceName,
 			})
 		},
 	})
@@ -442,74 +539,74 @@ func GetJSON(value string) (string, error) {
 }
 
 type CreateServiceBindingOptions struct {
-	Url             string
-	Subdomain       string
-	Subaccount      string
-	ServiceInstance string
-	BindingName     string
-	Parameters      string
-	User            string
-	Password        string
-	Tenant          string
-	Timeout         int
-	PollInterval    int
+	Url              string
+	Subdomain        string
+	Subaccount       string
+	ServiceInstance  string
+	BindingName      string
+	Parameters       string
+	User             string
+	Password         string
+	IdentityProvider string
+	Timeout          int
+	PollInterval     int
 }
 
 type GetServiceBindingOptions struct {
-	Url         string
-	Subdomain   string
-	Subaccount  string
-	BindingName string
-	User        string
-	Password    string
-	Tenant      string
+	Url              string
+	Subdomain        string
+	Subaccount       string
+	BindingName      string
+	User             string
+	Password         string
+	IdentityProvider string
 }
 
 type DeleteServiceBindingOptions struct {
-	Url          string
-	Subdomain    string
-	Subaccount   string
-	BindingName  string
-	User         string
-	Password     string
-	Tenant       string
-	Timeout      int
-	PollInterval int
+	Url              string
+	Subdomain        string
+	Subaccount       string
+	BindingName      string
+	User             string
+	Password         string
+	IdentityProvider string
+	Timeout          int
+	PollInterval     int
 }
 
 type CreateServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	PlanName     string
-	OfferingName string
-	InstanceName string
-	Parameters   string
-	Timeout      int
-	PollInterval int
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
+	Subaccount       string
+	PlanName         string
+	OfferingName     string
+	InstanceName     string
+	Parameters       string
+	Timeout          int
+	PollInterval     int
 }
 
 type GetServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	InstanceName string
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
+	Subaccount       string
+	InstanceName     string
 }
 
 type DeleteServiceInstanceOptions struct {
-	Url          string
-	Subdomain    string
-	User         string
-	Password     string
-	Tenant       string
-	Subaccount   string
-	InstanceName string
-	Timeout      int
-	PollInterval int
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
+	Subaccount       string
+	InstanceName     string
+	Timeout          int
+	PollInterval     int
 }
