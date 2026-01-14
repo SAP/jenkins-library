@@ -202,7 +202,7 @@ func (b *BTPCommandBuilder) Build() ([]string, error) {
 	cmdList := []string{"btp"}
 	// Add [OPTIONS]
 	// Add format and verbose
-	cmdList = append(cmdList, "--format", "json", "--verbose")
+	cmdList = append(cmdList, "--format", "json")
 
 	cmdList = append(cmdList, b.options...)
 	cmdList = append(cmdList, b.action)
