@@ -315,6 +315,96 @@ func TestUnzip(t *testing.T) {
 		}
 		checkExistedFiles(t, targetDir, targetFilenames)
 	})
+
+	t.Run("file under size limit extracts successfully", func(t *testing.T) {
+		targetDir, err := os.MkdirTemp("", "tmp_target")
+		if err != nil {
+			panic(err)
+		}
+		defer os.RemoveAll(targetDir)
+		sourceDir, err := os.MkdirTemp("", "tmp_source")
+		if err != nil {
+			panic(err)
+		}
+		defer os.RemoveAll(sourceDir)
+		zipPath := filepath.Join(sourceDir, "src.zip")
+
+		// Create a file that's 10MB (well under the 100MB limit)
+		filename := "large_but_valid_file.txt"
+		err = createZIPWithLargeFile(zipPath, filepath.Join(sourceDir, filename), 10*1024*1024) // 10MB
+		if err != nil {
+			panic(err)
+		}
+
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, "codeqlDB"))
+
+		// Verify the file was extracted
+		extractedFile := filepath.Join(targetDir, filename)
+		_, err = os.Stat(extractedFile)
+		assert.NoError(t, err, "File under size limit should be extracted successfully")
+	})
+
+	t.Run("file exceeding size limit is rejected", func(t *testing.T) {
+		targetDir, err := os.MkdirTemp("", "tmp_target")
+		if err != nil {
+			panic(err)
+		}
+		defer os.RemoveAll(targetDir)
+		sourceDir, err := os.MkdirTemp("", "tmp_source")
+		if err != nil {
+			panic(err)
+		}
+		defer os.RemoveAll(sourceDir)
+		zipPath := filepath.Join(sourceDir, "src.zip")
+
+		// Create a file that exceeds the 100MB limit
+		filename := "too_large_file.txt"
+		err = createZIPWithLargeFile(zipPath, filepath.Join(sourceDir, filename), 101*1024*1024) // 101MB
+		if err != nil {
+			panic(err)
+		}
+
+		err = unzip(zipPath, targetDir, sourceDir, "codeqlDB")
+		assert.Error(t, err, "Files exceeding size limit should be rejected")
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "exceeds maximum allowed size", "Error should mention size limit")
+			assert.Contains(t, err.Error(), filename, "Error should mention the specific file")
+
+			// Verify the file was NOT extracted
+			extractedFile := filepath.Join(targetDir, filename)
+			_, statErr := os.Stat(extractedFile)
+			assert.Error(t, statErr, "File exceeding size limit should not be extracted")
+		}
+	})
+
+	t.Run("file exactly at size limit extracts successfully", func(t *testing.T) {
+		targetDir, err := os.MkdirTemp("", "tmp_target")
+		if err != nil {
+			panic(err)
+		}
+		defer os.RemoveAll(targetDir)
+		sourceDir, err := os.MkdirTemp("", "tmp_source")
+		if err != nil {
+			panic(err)
+		}
+		defer os.RemoveAll(sourceDir)
+		zipPath := filepath.Join(sourceDir, "src.zip")
+
+		// Create a file exactly at the 100MB limit
+		filename := "exactly_limit_file.txt"
+		err = createZIPWithLargeFile(zipPath, filepath.Join(sourceDir, filename), MaxFileSize) // Exactly 100MB
+		if err != nil {
+			panic(err)
+		}
+
+		assert.NoError(t, unzip(zipPath, targetDir, sourceDir, "codeqlDB"))
+
+		// Verify the file was extracted
+		extractedFile := filepath.Join(targetDir, filename)
+		stat, err := os.Stat(extractedFile)
+		assert.NoError(t, err, "File at exactly the size limit should be extracted successfully")
+		assert.Equal(t, int64(MaxFileSize), stat.Size(), "Extracted file should have correct size")
+	})
 }
 
 func TestGetSourceLocationPrefix(t *testing.T) {
@@ -385,6 +475,40 @@ func createZIP(zipPath string, filenames []string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func createZIPWithLargeFile(zipPath string, filename string, sizeInBytes int64) error {
+	archive, err := os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+
+	zipWriter := zip.NewWriter(archive)
+	defer zipWriter.Close()
+
+	writer, err := zipWriter.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	// Create a large content by repeating a pattern
+	pattern := "0123456789abcdefghijklmnopqrstuvwxyz\n" // 37 bytes
+	bytesWritten := int64(0)
+	for bytesWritten < sizeInBytes {
+		remainingBytes := sizeInBytes - bytesWritten
+		contentToWrite := pattern
+		if remainingBytes < int64(len(pattern)) {
+			contentToWrite = pattern[:remainingBytes]
+		}
+		n, err := writer.Write([]byte(contentToWrite))
+		if err != nil {
+			return err
+		}
+		bytesWritten += int64(n)
+	}
+
 	return nil
 }
 
