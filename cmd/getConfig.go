@@ -226,6 +226,18 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 			flagValues = config.AvailableFlagValues(cmd, &paramFilter)
 		}
 
+		// add vault credentials so that configuration can be fetched from vault
+		if GeneralConfig.VaultRoleID == "" {
+			GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultAppRoleID")
+		}
+		if GeneralConfig.VaultRoleSecretID == "" {
+			GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultAppRoleSecretID")
+		}
+		if GeneralConfig.VaultToken == "" {
+			GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
+		}
+		myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
+
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
