@@ -145,17 +145,20 @@ func TestGitHubActionsConfigProvider_fetchRunData(t *testing.T) {
 func TestGitHubActionsConfigProvider_fetchJobs(t *testing.T) {
 	// data
 	respJson := map[string]interface{}{"jobs": []map[string]interface{}{{
-		"id":       111,
-		"name":     "Piper / Init",
-		"html_url": "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/111",
+		"id":        111,
+		"name":      "Piper / Init",
+		"html_url":  "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/111",
+		"runner_id": 12345,
 	}, {
-		"id":       222,
-		"name":     "Piper / Build",
-		"html_url": "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/222",
+		"id":        222,
+		"name":      "Piper / Build",
+		"html_url":  "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/222",
+		"runner_id": 12345,
 	}, {
-		"id":       333,
-		"name":     "Piper / Acceptance",
-		"html_url": "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/333",
+		"id":        333,
+		"name":      "Piper / Acceptance",
+		"html_url":  "https://github.com/SAP/jenkins-library/actions/runs/11111/jobs/333",
+		"runner_id": 12345,
 	},
 	}}
 	wantJobs := []job{{
