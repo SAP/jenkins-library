@@ -311,14 +311,10 @@ func (g *githubActionsConfigProvider) fetchJobs() error {
 // also includes extra PR check jobs.
 // This also filters out skipped jobs.
 func filterJobs(jobs []*github.WorkflowJob) []*github.WorkflowJob {
-	filteredJobs := make([]*github.WorkflowJob, 0, len(jobs))
-	for _, j := range jobs {
-		if j.GetRunnerID() != 0 {
-			filteredJobs = append(filteredJobs, j)
-		}
-	}
-
-	return filteredJobs
+	filtered := slices.Clone(jobs)
+	return slices.DeleteFunc(filtered, func(j *github.WorkflowJob) bool {
+		return j.GetRunnerID() == 0
+	})
 }
 
 func convertJobs(jobs []*github.WorkflowJob) []job {
