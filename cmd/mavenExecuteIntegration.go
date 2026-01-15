@@ -55,25 +55,14 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		}
 	}
 
-	var targetPomPath string
-	var flags []string
-
-	if config.UseReactorForMultiModuleBuild {
-		targetPomPath = "pom.xml"
-		flags = []string{"-pl", "integration-tests"}
-	} else {
-		targetPomPath = integrationTestsPomPath
-		flags = []string{}
-	}
-
 	mavenOptions := maven.ExecuteOptions{
-		PomPath:             targetPomPath,
+		PomPath:             integrationTestsPomPath,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		Goals:               []string{"org.jacoco:jacoco-maven-plugin:prepare-agent", config.Goal},
 		Defines:             []string{retryDefine, forkCountDefine},
-		Flags:               flags,
+		Flags:               []string{},
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
