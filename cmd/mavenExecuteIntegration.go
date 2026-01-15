@@ -26,6 +26,10 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
 	}
 
+	if config.InstallArtifacts && config.InstallWithReactor {
+		return fmt.Errorf("parameters 'installArtifacts' and 'installWithReactor' are mutually exclusive")
+	}
+
 	if err := validateForkCount(config.ForkCount); err != nil {
 		return err
 	}
@@ -33,9 +37,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
 	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
 
-	if config.InstallArtifacts && config.InstallWithReactor {
-		return fmt.Errorf("parameters 'installArtifacts' and 'installWithReactor' are mutually exclusive")
-	} else if config.InstallWithReactor {
+	if config.InstallWithReactor {
 		err := maven.InstallModuleWithReactor("integration-tests", &maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
