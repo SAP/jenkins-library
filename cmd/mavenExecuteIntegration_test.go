@@ -62,6 +62,23 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
 }
 
+func TestMutualExclusivityOfInstallFlags(t *testing.T) {
+	t.Parallel()
+	utils := newMavenIntegrationTestsUtilsBundle()
+	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
+
+	config := mavenExecuteIntegrationOptions{
+		InstallArtifacts:   true,
+		InstallWithReactor: true,
+	}
+
+	err := runMavenExecuteIntegration(&config, utils)
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "parameters 'installArtifacts' and 'installWithReactor' are mutually exclusive")
+	}
+}
+
 func TestInvalidForkCountParam(t *testing.T) {
 	t.Parallel()
 	// init
