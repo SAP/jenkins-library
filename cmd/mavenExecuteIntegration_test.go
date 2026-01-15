@@ -48,7 +48,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 		t.Fatalf("Error %s", err)
 	}
 
-	expectedParameters1 := []string{
+	expectedTestExecutionParameters := []string{
 		"--file",
 		filepath.Join(".", "integration-tests", "pom.xml"),
 		"-Dsurefire.rerunFailingTestsCount=2",
@@ -59,7 +59,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 		"post-integration-test",
 	}
 
-	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
+	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedTestExecutionParameters}, utils.ExecMockRunner.Calls[0])
 }
 
 func TestHappyPathIntegrationTestsWithReactorInstall(t *testing.T) {
@@ -79,7 +79,7 @@ func TestHappyPathIntegrationTestsWithReactorInstall(t *testing.T) {
 		t.Fatalf("Error %s", err)
 	}
 
-	expectedParameters1 := []string{
+	expectedInstallParameters := []string{
 		"-pl",
 		"integration-tests",
 		"-am",
@@ -89,7 +89,7 @@ func TestHappyPathIntegrationTestsWithReactorInstall(t *testing.T) {
 		"install",
 	}
 
-	expectedParameters2 := []string{
+	expectedTestExecutionParameters := []string{
 		"--file",
 		filepath.Join(".", "integration-tests", "pom.xml"),
 		"-Dsurefire.rerunFailingTestsCount=2",
@@ -100,8 +100,8 @@ func TestHappyPathIntegrationTestsWithReactorInstall(t *testing.T) {
 		"post-integration-test",
 	}
 
-	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
-	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.ExecMockRunner.Calls[1])
+	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedInstallParameters}, utils.ExecMockRunner.Calls[0])
+	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedTestExecutionParameters}, utils.ExecMockRunner.Calls[1])
 }
 
 func TestMutualExclusivityOfInstallFlags(t *testing.T) {
