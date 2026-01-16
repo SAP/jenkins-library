@@ -1,16 +1,17 @@
 package gcs
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
+	"cloud.google.com/go/storage"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"io"
-	"os"
-	"path/filepath"
 )
 
 // Client is an interface to mock gcsClient
