@@ -25,6 +25,7 @@ type mavenExecuteIntegrationOptions struct {
 	ForkCount                   string `json:"forkCount,omitempty"`
 	Goal                        string `json:"goal,omitempty"`
 	InstallArtifacts            bool   `json:"installArtifacts,omitempty"`
+	InstallWithReactor          bool   `json:"installWithReactor,omitempty"`
 	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
 	M2Path                      string `json:"m2Path,omitempty"`
@@ -205,7 +206,8 @@ func addMavenExecuteIntegrationFlags(cmd *cobra.Command, stepConfig *mavenExecut
 	cmd.Flags().IntVar(&stepConfig.Retry, "retry", 1, "The number of times that integration tests will be retried before failing the step. Note: This will consume more time for the step execution.")
 	cmd.Flags().StringVar(&stepConfig.ForkCount, "forkCount", `1C`, "The number of JVM processes that are spawned to run the tests in parallel in case of using a maven based project structure. For more details visit the Surefire documentation at https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#forkCount.")
 	cmd.Flags().StringVar(&stepConfig.Goal, "goal", `test`, "The name of the Maven goal to execute.")
-	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", true, "If enabled, it will install all artifacts to the local maven repository to make them available before running the tests. This is required if the integration test module has dependencies to other modules in the repository and they were not installed before.")
+	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", true, "If enabled, it will install all artifacts from all modules to the local maven repository. This is required if the `integration-tests` module has dependencies on other modules in the same repository which have not yet been installed. Artifacts are installed using the `install:install-file` goal which expects the artifacts to be already available. If you'd like to build the artifacts on the spot, you might want to use `installWithReactor instead. Mutually exclusive with `installWithReactor`.")
+	cmd.Flags().BoolVar(&stepConfig.InstallWithReactor, "installWithReactor", false, "If enabled, it will use the Maven reactor to build and install the `integration-tests` module and all of its dependencies. Artifacts are installed using the `install` goal which builds the artifacts on the spot if required. If you already have the artifacts available, you might want to use `installArtifacts` instead. Mutually exclusive with `installArtifacts`.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -259,6 +261,15 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     true,
+					},
+					{
+						Name:        "installWithReactor",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "projectSettingsFile",
