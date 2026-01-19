@@ -28,8 +28,8 @@ func TestRunBtpCreateService(t *testing.T) {
 
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
-			"btp login .*": "Authentication successful",
-			"btp get services/instance": fmt.Sprintf(`
+			"btp .* login .+": "Authentication successful",
+			"btp .* get services/instance": fmt.Sprintf(`
 				{
 					"id": "xxx",
 					"name": "%s",
@@ -58,13 +58,13 @@ func TestRunBtpCreateService(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
+				m.Calls[0])
+			assert.Equal(t,
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
-				m.Calls[2])
-			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
 		}
 	})
@@ -74,8 +74,8 @@ func TestRunBtpCreateService(t *testing.T) {
 
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
-			"btp login .*": "Authentication successful",
-			"btp get services/instance": fmt.Sprintf(`
+			"btp .* login .+": "Authentication successful",
+			"btp .* get services/instance": fmt.Sprintf(`
 				{
 					"id": "xxx",
 					"name": "%s",
@@ -105,13 +105,13 @@ func TestRunBtpCreateService(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
+				m.Calls[0])
+			assert.Equal(t,
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
 				m.Calls[1])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters, "--plan-name", config.PlanName, "--offering-name", config.OfferingName}},
-				m.Calls[2])
-			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"logout"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
 		}
 	})
