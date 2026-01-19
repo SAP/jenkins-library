@@ -2,12 +2,13 @@ package btp
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 func (b *BtpExecutorMock) Stdin(in io.Reader) {
@@ -32,24 +33,23 @@ func (b *BtpExecutorMock) Run(cmdScript []string) (err error) {
 func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 	err := b.Run(opts.CmdScript)
 	if err != nil {
-		return fmt.Errorf("Initial command execution failed: %w", err)
+		return errors.Wrap(err, "Initial command execution failed")
 	}
 
-	fmt.Printf("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
-
-	fmt.Println("Checking command completion...")
+	log.Entry().Infof("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
+	log.Entry().Info("Checking command completion...")
 
 	// Simulate polling
 	check := opts.CheckFunc()
 
-	if check {
-		fmt.Println("Command execution completed successfully!")
+	if check.successful && check.done {
+		log.Entry().Info("Command execution completed successfully!")
 		return nil
 	} else {
-		fmt.Println("Command not yet completed, checking again...")
+		log.Entry().Info("Command not yet completed, checking again...")
 	}
 
-	return fmt.Errorf("Command did not complete within the timeout period")
+	return errors.New("Command did not complete within the timeout period")
 }
 
 // Processes command results based on predefined mock data.
