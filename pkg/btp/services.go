@@ -2,7 +2,6 @@ package btp
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -27,8 +26,6 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		// error while trying to run btp login
 		return "", errors.Wrap(err, "Login to BTP failed")
 	}
-	var serviceBindingBytes bytes.Buffer
-	btp.Exec.Stdout(&serviceBindingBytes)
 
 	// we are logged in --> create service binding
 	parametersCheck := options.Subaccount == "" ||
@@ -57,7 +54,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", fmt.Errorf("Failed to create service binding: %w", errors.New(errorMsg))
+		return "", errors.Wrap(errors.New(errorMsg), "Failed to create service binding")
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).
@@ -76,7 +73,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		CmdScript:      btpCreateBindingScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
-		CheckFunc: func() bool {
+		CheckFunc: func() CheckResponse {
 			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
 				Url:              options.Url,
 				Subdomain:        options.Subdomain,
@@ -93,11 +90,11 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	if err != nil {
 		// error while getting service binding
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Creation of service binding failed: %w", err)
+		return "", errors.Wrapf(err, "Creation of service binding failed for binding : %s", options.BindingName)
 	}
 
 	// parse and return service binding
-	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
+	serviceBindingJSON, err := GetJSON(btp.Exec.GetStdoutValue())
 
 	if err != nil {
 		return "", errors.Wrap(err, "Parsing service binding JSON failed")
@@ -105,7 +102,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceBindingJSON, fmt.Errorf("Logout of BTP failed: %w", err)
+		return serviceBindingJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceBindingJSON, nil
@@ -114,11 +111,6 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string, error) {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
-	}
-
-	if options.Subaccount == "" ||
-		options.BindingName == "" {
-		return "", fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the Subaccount, and BindingName"))
 	}
 
 	loginOptions := LoginOptions{
@@ -138,6 +130,29 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	btp.Exec.Stdout(&serviceBindingBytes)
 
 	// we are logged in --> read service binding
+	res, err := btp.RunGetServiceBinding(options)
+
+	if err != nil {
+		// error while getting service binding
+		return res, errors.Wrap(err, "Retrieving service binding failed")
+	}
+
+	err = btp.Logout()
+	if err != nil {
+		return res, errors.Wrap(err, "Logout of BTP failed")
+	}
+
+	return res, nil
+}
+
+func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (string, error) {
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
+	}
+
+	var serviceBindingBytes bytes.Buffer
+	btp.Exec.Stdout(&serviceBindingBytes)
+
 	parametersCheck := options.Subaccount == "" ||
 		options.BindingName == ""
 
@@ -152,7 +167,7 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", fmt.Errorf("Failed to read service binding: %w", errors.New(errorMsg))
+		return "", errors.Wrap(errors.New(errorMsg), "Failed to read service binding")
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
@@ -164,12 +179,12 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 		WithName(options.BindingName)
 
 	btpGetBindingScript, _ := builder.Build()
-	err = btp.Exec.Run(btpGetBindingScript)
+	err := btp.Exec.Run(btpGetBindingScript)
 
 	if err != nil {
 		// error while getting service binding
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Retrieve service binding failed: %w", err)
+		return "", errors.Wrapf(err, "Retrieve service binding %v failed", options.BindingName)
 	}
 
 	// parse and return service binding
@@ -177,11 +192,6 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 
 	if err != nil {
 		return "", errors.Wrap(err, "Parsing service binding JSON failed")
-	}
-
-	err = btp.Logout()
-	if err != nil {
-		return serviceBindingJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceBindingJSON, nil
@@ -221,7 +231,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return fmt.Errorf("Failed to delete service binding: %w", errors.New(errorMsg))
+		return errors.Wrap(errors.New(errorMsg), "Failed to delete service binding")
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
@@ -236,7 +246,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		CmdScript:      btpDeleteBindingScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
-		CheckFunc: func() bool {
+		CheckFunc: func() CheckResponse {
 			return IsServiceBindingDeleted(btp, GetServiceBindingOptions{
 				Url:              options.Url,
 				Subdomain:        options.Subdomain,
@@ -252,12 +262,12 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 	if err != nil {
 		// error while getting service binding
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("Error occurred while deleting the Service-Binding: %w", err)
+		return errors.Wrapf(err, "Failed to delete Service-Binding: %v", options.BindingName)
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return fmt.Errorf("Logout of BTP failed: %w", err)
+		return errors.Wrapf(err, "Logout of BTP failed")
 	}
 
 	return nil
@@ -281,8 +291,6 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		// error while trying to run btp login
 		return "", errors.Wrap(err, "Login to BTP failed")
 	}
-	var serviceInstanceBytes bytes.Buffer
-	btp.Exec.Stdout(&serviceInstanceBytes)
 
 	// we are logged in --> create service instance
 	parametersCheck := options.Subaccount == "" ||
@@ -319,7 +327,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", fmt.Errorf("Failed to create service instance: %w", errors.New(errorMsg))
+		return "", errors.Wrap(errors.New(errorMsg), "Failed to create service instance")
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).
@@ -342,7 +350,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		CmdScript:      btpCreateInstanceScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
-		CheckFunc: func() bool {
+		CheckFunc: func() CheckResponse {
 			return IsServiceInstanceCreated(btp, GetServiceInstanceOptions{
 				Url:              options.Url,
 				Subdomain:        options.Subdomain,
@@ -358,11 +366,11 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	if err != nil {
 		// error while getting service instance
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Creation of service instance failed: %w", err)
+		return "", errors.Wrapf(err, "Creation of service instance failed")
 	}
 
 	// parse and return service instance
-	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
+	serviceInstanceJSON, err := GetJSON(btp.Exec.GetStdoutValue())
 
 	if err != nil {
 		return "", errors.Wrap(err, "Parsing service instance JSON failed")
@@ -394,10 +402,30 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 		// error while trying to run btp login
 		return "", errors.Wrap(err, "Login to BTP failed")
 	}
+
+	// we are logged in --> read service instance
+	res, err := btp.RunGetServiceInstance(options)
+
+	if err != nil {
+		return res, errors.Wrap(err, "Retieving service instance failed")
+	}
+
+	err = btp.Logout()
+	if err != nil {
+		return res, errors.Wrap(err, "Logout of BTP failed")
+	}
+
+	return res, nil
+}
+
+func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (string, error) {
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
+	}
+
 	var serviceInstanceBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceInstanceBytes)
 
-	// we are logged in --> read service instance
 	parametersCheck := options.Subaccount == "" ||
 		options.InstanceName == ""
 
@@ -412,7 +440,7 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", fmt.Errorf("Failed to retrieve service instance: %w", errors.New(errorMsg))
+		return "", errors.Wrap(errors.New(errorMsg), "Failed to retrieve service instance")
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
@@ -424,12 +452,12 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 		WithSubAccount(options.Subaccount)
 
 	btpGetServiceScript, _ := builder.Build()
-	err = btp.Exec.Run(btpGetServiceScript)
+	err := btp.Exec.Run(btpGetServiceScript)
 
 	if err != nil {
 		// error while getting service instance
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", fmt.Errorf("Retrieve service instance failed: %w", err)
+		return "", errors.Wrapf(err, "Retrieve service instance failed")
 	}
 
 	// parse and return service instance
@@ -437,11 +465,6 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 
 	if err != nil {
 		return "", errors.Wrap(err, "Parsing service instance JSON failed")
-	}
-
-	err = btp.Logout()
-	if err != nil {
-		return serviceInstanceJSON, errors.Wrap(err, "Logout of BTP failed")
 	}
 
 	return serviceInstanceJSON, nil
@@ -463,7 +486,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return fmt.Errorf("Login to BTP failed: %w", err)
+		return errors.Wrapf(err, "Login to BTP failed")
 	}
 
 	// we are logged in --> delete service instance
@@ -481,7 +504,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return fmt.Errorf("Failed to delete service instance: %w", errors.New(errorMsg))
+		return errors.Wrap(errors.New(errorMsg), "Failed to delete service instance")
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
@@ -497,7 +520,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		CmdScript:      btpGetServiceScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
-		CheckFunc: func() bool {
+		CheckFunc: func() CheckResponse {
 			return IsServiceInstanceDeleted(btp, GetServiceInstanceOptions{
 				Url:              options.Url,
 				Subdomain:        options.Subdomain,
@@ -513,12 +536,12 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 	if err != nil {
 		// error while deleting service instance
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("Checking if Service-Instance was deleted failed: %w", err)
+		return errors.Wrapf(err, "Checking if Service-Instance was deleted failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return fmt.Errorf("Logout of BTP failed: %w", err)
+		return errors.Wrapf(err, "Logout of BTP failed")
 	}
 
 	return nil

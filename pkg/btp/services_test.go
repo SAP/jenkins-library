@@ -26,8 +26,8 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/binding": fmt.Sprintf(`
+				"btp .* login .+": "Authentication successful",
+				"btp .* get services/binding .+": fmt.Sprintf(`
 				{
 				"id": "xxxx",
 				"name": "%s",
@@ -68,8 +68,8 @@ func TestBTPGetServiceBinding(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/binding": fmt.Sprintf(`
+				"btp .* login .*": "Authentication successful",
+				"btp .* get services/binding .+": fmt.Sprintf(`
 				{
 				"id": "xxxx",
 				"name": "%s",
@@ -112,10 +112,10 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
+				"btp .* login .+": "Authentication successful",
 			},
 			ShouldFailOnCommand: map[string]error{
-				"btp delete services/binding": fmt.Errorf(`
+				"btp .* delete services/binding .+": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such binding"
@@ -152,10 +152,10 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
+				"btp .* login .+": "Authentication successful",
 			},
 			ShouldFailOnCommand: map[string]error{
-				"btp get services/binding": fmt.Errorf(`
+				"btp .* get services/binding .+": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such binding"
@@ -198,8 +198,8 @@ func TestBTPCreateServiceInstance(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/instance": fmt.Sprintf(`
+				"btp .* login .+": "Authentication successful",
+				"btp .* get services/instance .+": fmt.Sprintf(`
 				{
 					"id": "xxx",
 					"name": "%s",
@@ -240,8 +240,8 @@ func TestBTPGetServiceInstance(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
-				"btp get services/instance": fmt.Sprintf(`
+				"btp .* login .+": "Authentication successful",
+				"btp .* get services/instance .+": fmt.Sprintf(`
 				{
 				"id": "xxx",
 				"name": "%s",
@@ -284,10 +284,10 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
+				"btp .* login .+": "Authentication successful",
 			},
 			ShouldFailOnCommand: map[string]error{
-				"btp delete services/instance": fmt.Errorf(`
+				"btp .* delete services/instance .+": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such instance"
@@ -324,10 +324,10 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*": "Authentication successful",
+				"btp .* login .+": "Authentication successful",
 			},
 			ShouldFailOnCommand: map[string]error{
-				"btp get services/instance": fmt.Errorf(`
+				"btp .* get services/instance .+": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such instance"

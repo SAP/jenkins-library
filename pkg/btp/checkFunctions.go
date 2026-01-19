@@ -2,15 +2,16 @@ package btp
 
 import (
 	"encoding/json"
-	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) bool {
-	serviceInstanceJSON, err := btp.GetServiceInstance(options)
+func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) CheckResponse {
+	serviceInstanceJSON, err := btp.RunGetServiceInstance(options)
 
 	if err != nil {
-		fmt.Println("Service Instance not found...")
-		return false
+		log.Entry().Infof("Service Instance %v not found...", options.InstanceName)
+		return CheckResponse{successful: false, done: false}
 	}
 
 	data := ServiceInstanceData{}
@@ -18,30 +19,37 @@ func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) 
 	err = json.Unmarshal([]byte(serviceInstanceJSON), &data)
 
 	if err != nil {
-		return false
+		log.Entry().Errorf("Parsing of service instance JSON failed: %v", err)
+		return CheckResponse{successful: false, done: false}
 	}
 
-	return data.Ready
+	if data.Ready {
+		log.Entry().Infof("Service Instance %v is ready.", options.InstanceName)
+	} else {
+		log.Entry().Infof("Service Instance %v is not ready yet.", options.InstanceName)
+	}
+
+	return CheckResponse{successful: true, done: data.Ready}
 }
 
-func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) bool {
-	_, err := btp.GetServiceInstance(options)
+func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) CheckResponse {
+	_, err := btp.RunGetServiceInstance(options)
 
 	if err == nil {
-		fmt.Println("Service Instance still exists...")
-		return false
+		log.Entry().Infof("Service Instance %v still exists...", options.InstanceName)
+		return CheckResponse{successful: false, done: false}
 	}
 
-	fmt.Println("Service Instance deleted!")
-	return true
+	log.Entry().Infof("Service Instance %v deleted!", options.InstanceName)
+	return CheckResponse{successful: true, done: true}
 }
 
-func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bool {
-	serviceBindingJSON, err := btp.GetServiceBinding(options)
+func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) CheckResponse {
+	serviceBindingJSON, err := btp.RunGetServiceBinding(options)
 
 	if err != nil {
-		fmt.Println("Service Binding not found...")
-		return false
+		log.Entry().Infof("Service Binding %v not found...", options.BindingName)
+		return CheckResponse{successful: false, done: false}
 	}
 
 	data := ServiceBindingData{}
@@ -49,20 +57,32 @@ func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bo
 	err = json.Unmarshal([]byte(serviceBindingJSON), &data)
 
 	if err != nil {
-		return false
+		log.Entry().Errorf("Parsing of service binding JSON failed: %v", err)
+		return CheckResponse{successful: true, done: false}
 	}
 
-	return data.Ready
+	if data.Ready {
+		log.Entry().Infof("Service Binding %v is ready.", options.BindingName)
+	} else {
+		log.Entry().Infof("Service Binding %v is not ready yet.", options.BindingName)
+	}
+
+	return CheckResponse{successful: true, done: data.Ready}
 }
 
-func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) bool {
-	_, err := btp.GetServiceBinding(options)
+func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) CheckResponse {
+	_, err := btp.RunGetServiceBinding(options)
 
 	if err == nil {
-		fmt.Println("Service Binding still exists")
-		return false
+		log.Entry().Infof("Service Binding %v still exists", options.BindingName)
+		return CheckResponse{successful: false, done: false}
 	}
 
-	fmt.Println("Service Binding deleted!")
-	return true
+	log.Entry().Infof("Service Binding %v deleted!", options.BindingName)
+	return CheckResponse{successful: true, done: true}
+}
+
+type CheckResponse struct {
+	successful bool
+	done       bool
 }
