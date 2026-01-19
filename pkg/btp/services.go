@@ -145,6 +145,9 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 	return res, nil
 }
 
+/*
+Actually runs the get service binding command and returns the result without login/logout
+*/
 func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (string, error) {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
@@ -418,6 +421,9 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 	return res, nil
 }
 
+/*
+Actually runs the get service binding command and returns the result without login/logout
+*/
 func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (string, error) {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
