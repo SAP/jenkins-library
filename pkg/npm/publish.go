@@ -33,7 +33,7 @@ func (pd *npmMinimalPackageDescriptor) Scope() string {
 }
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
-func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
+func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password, publishTag string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	for _, packageJSON := range packageJSONFiles {
 		log.Entry().Infof("triggering publish for %s", packageJSON)
 
@@ -45,7 +45,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.publish(packageJSON, registry, username, password, packBeforePublish, buildCoordinates)
+		err = exec.publish(packageJSON, registry, username, password, publishTag, packBeforePublish, buildCoordinates)
 		if err != nil {
 			return err
 		}
@@ -54,7 +54,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 }
 
 // publish executes npm publish for package.json
-func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
+func (exec *Execute) publish(packageJSON, registry, username, password, publishTag string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	oldWorkingDirectory, err := exec.Utils.Getwd()
@@ -134,12 +134,6 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		log.Entry().Debug("no registry provided")
 	}
 
-	// Read version to check if it's a prerelease
-	version, err := exec.readPackageVersion(packageJSON)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read package version from %s", packageJSON)
-	}
-
 	if packBeforePublish {
 		// change directory in package json file , since npm pack will run only for that packages
 		if err := exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
@@ -188,12 +182,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
-		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry}
-		if isPrerelease(version) {
-			log.Entry().Infof("Detected prerelease version %s, adding --tag prerelease", version)
-			publishArgs = append(publishArgs, "--tag", "prerelease")
-		}
-
+		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry, "--tag", publishTag}
 		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
@@ -212,12 +201,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		}
 	} else {
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
-		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry}
-		if isPrerelease(version) {
-			log.Entry().Infof("Detected prerelease version %s, adding --tag prerelease", version)
-			publishArgs = append(publishArgs, "--tag", "prerelease")
-		}
-
+		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry, "--tag", publishTag}
 		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
@@ -259,32 +243,4 @@ func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
 	json.Unmarshal(b, &pd)
 
 	return pd.Scope(), nil
-}
-
-// readPackageVersion reads the version from package.json
-func (exec *Execute) readPackageVersion(packageJSON string) (string, error) {
-	b, err := exec.Utils.FileRead(packageJSON)
-	if err != nil {
-		return "", err
-	}
-
-	var pd npmMinimalPackageDescriptor
-
-	if err := json.Unmarshal(b, &pd); err != nil {
-		return "", err
-	}
-
-	return pd.Version, nil
-}
-
-// isPrerelease checks if a version string is a prerelease version
-// According to semver spec, a prerelease version is indicated by appending a hyphen
-// and a series of dot separated identifiers (e.g., 1.0.0-alpha, 1.0.0-beta.1, 0.0.2-20251029013231)
-func isPrerelease(version string) bool {
-	// Remove build metadata (anything after +) as it doesn't affect prerelease status
-	version = strings.Split(version, "+")[0]
-
-	// Check if there's a hyphen after the version numbers
-	// This indicates a prerelease version per semver specification
-	return strings.Contains(version, "-")
 }
