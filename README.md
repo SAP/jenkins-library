@@ -13,7 +13,9 @@
 - Contact your SAP representative for details
 
 ### Timeline
+
 - **Now - December 31, 2026**: Limited maintenance (critical issues only)
+
 - **January 1, 2027**: Repository becomes read-only/archived
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
