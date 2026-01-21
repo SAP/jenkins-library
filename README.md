@@ -4,19 +4,13 @@
 
 ### What This Means
 
-**For SAP Internal & Hyperspace Users:**
-
-- Support and updates will continue through internal channels & repositories
-  
-- Please refer to internal documentation or contact your SAP representative for details
-
-**For Open-Source Users:**
-
 - This repository will no longer be actively maintained after the archive date
   
 - The repository will remain available in read-only mode for reference
   
 - No further updates, bug fixes, or pull requests will be accepted after December 31, 2026
+
+- Contact your SAP representative for details
 
 ### Timeline
 - **Now - December 31, 2026**: Limited maintenance (critical issues only)
