@@ -152,6 +152,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: publishTag
+        type: string
+        description: Value of --tag flag that is passed to `npm publish` command. If not specified, the default tag 'latest' is used.
+        default: latest
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: repositoryUrl
         type: string
         description: Url to the repository to which the project artifacts should be published.
