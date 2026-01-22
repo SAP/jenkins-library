@@ -87,7 +87,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        mandatory: true
+        mandatory: false
         aliases:
           - name: btp/parameters
       - name: timeout

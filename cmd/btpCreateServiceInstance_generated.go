@@ -183,7 +183,6 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
 	cmd.MarkFlagRequired("serviceInstanceName")
-	cmd.MarkFlagRequired("parameters")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -270,7 +269,7 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/parameters"}},
 						Default:     os.Getenv("PIPER_parameters"),
 					},

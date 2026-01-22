@@ -43,9 +43,6 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		if options.BindingName == "" {
 			missingParams = append(missingParams, "BindingName")
 		}
-		if options.Parameters == "" {
-			missingParams = append(missingParams, "Parameters")
-		}
 		if options.Timeout == 0 {
 			missingParams = append(missingParams, "Timeout")
 		}
@@ -61,13 +58,18 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		WithField("name", options.BindingName).
 		WithField("parameter", options.Parameters)
 
-	btpCreateBindingScript, _ := NewBTPCommandBuilder().
+	builder := NewBTPCommandBuilder().
 		WithAction("create").
 		WithTarget("services/binding").
 		WithName(options.BindingName).
 		WithServiceInstanceName(options.ServiceInstance).
-		WithSubAccount(options.Subaccount).
-		WithParameters(options.Parameters).Build()
+		WithSubAccount(options.Subaccount)
+
+	if options.Parameters != "" {
+		builder = builder.WithParameters(options.Parameters)
+	}
+
+	btpCreateBindingScript, _ := builder.Build()
 
 	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpCreateBindingScript,
@@ -325,9 +327,6 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		if options.InstanceName == "" {
 			missingParams = append(missingParams, "InstanceName")
 		}
-		if options.Parameters == "" {
-			missingParams = append(missingParams, "Parameters")
-		}
 		if options.Timeout == 0 {
 			missingParams = append(missingParams, "Timeout")
 		}
@@ -345,15 +344,19 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		WithField("name", options.InstanceName).
 		WithField("parameters", options.Parameters)
 
-	btpCreateInstanceScript, _ := NewBTPCommandBuilder().
+	builder := NewBTPCommandBuilder().
 		WithAction("create").
 		WithTarget("services/instance").
 		WithName(options.InstanceName).
 		WithSubAccount(options.Subaccount).
-		WithParameters(options.Parameters).
 		WithPlanName(options.PlanName).
-		WithOfferingName(options.OfferingName).
-		Build()
+		WithOfferingName(options.OfferingName)
+
+	if options.Parameters != "" {
+		builder = builder.WithParameters(options.Parameters)
+	}
+
+	btpCreateInstanceScript, _ := builder.Build()
 
 	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpCreateInstanceScript,

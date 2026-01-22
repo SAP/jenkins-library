@@ -180,7 +180,6 @@ func addBtpCreateServiceBindingFlags(cmd *cobra.Command, stepConfig *btpCreateSe
 	cmd.MarkFlagRequired("subaccount")
 	cmd.MarkFlagRequired("serviceInstanceName")
 	cmd.MarkFlagRequired("serviceBindingName")
-	cmd.MarkFlagRequired("parameters")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -258,7 +257,7 @@ func btpCreateServiceBindingMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/parameters"}},
 						Default:     os.Getenv("PIPER_parameters"),
 					},
