@@ -42,7 +42,7 @@ func BtpDeleteServiceBindingCommand() *cobra.Command {
 	var createBtpDeleteServiceBindingCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Delete a service binding in BTP",
-		Long:  `Delete a service binding in SAP Business Technology Platform (BTP).`,
+		Long:  `Delete a service binding in SAP Business Technology Platform (BTP) using ` + "`" + `btp delete services/binding` + "`" + ` ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-delete-services-binding.html?locale=en-US&version=Cloud)).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

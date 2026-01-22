@@ -45,7 +45,7 @@ func BtpCreateServiceInstanceCommand() *cobra.Command {
 	var createBtpCreateServiceInstanceCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Creates a service instance in BTP",
-		Long:  `Creates a service instance in SAP Business Technology Platform (BTP).`,
+		Long:  `Creates a service instance in SAP Business Technology Platform (BTP) using ` + "`" + `btp create services/instance` + "`" + ` ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-create-services-instance.html?locale=en-US&version=Cloud)).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

@@ -2,7 +2,7 @@ metadata:
   name: btpCreateServiceInstance
   description: Creates a service instance in BTP
   longDescription: |
-    Creates a service instance in SAP Business Technology Platform (BTP).
+    Creates a service instance in SAP Business Technology Platform (BTP) using `btp create services/instance` ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-create-services-instance.html?locale=en-US&version=Cloud)).
 spec:
   inputs:
     secrets:

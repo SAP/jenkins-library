@@ -2,7 +2,7 @@ metadata:
   name: btpCreateServiceBinding
   description: Creates a service binding in BTP
   longDescription: |
-    Creates a service binding in SAP Business Technology Platform (BTP).
+    Creates a service binding in SAP Business Technology Platform (BTP) using `btp create services/binding ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-create-services-binding.html?locale=en-US&version=Cloud)).
 spec:
   inputs:
     secrets:

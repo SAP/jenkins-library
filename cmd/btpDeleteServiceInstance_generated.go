@@ -42,7 +42,7 @@ func BtpDeleteServiceInstanceCommand() *cobra.Command {
 	var createBtpDeleteServiceInstanceCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Delete a service instance in BTP",
-		Long:  `Delete a service instance in SAP Business Technology Platform (BTP).`,
+		Long:  `Delete a service instance in SAP Business Technology Platform (BTP) using ` + "`" + `btp delete services/instance` + "`" + ` ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-delete-services-instance.html?locale=en-US&version=Cloud)).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

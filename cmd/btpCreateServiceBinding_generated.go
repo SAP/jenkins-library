@@ -44,7 +44,7 @@ func BtpCreateServiceBindingCommand() *cobra.Command {
 	var createBtpCreateServiceBindingCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Creates a service binding in BTP",
-		Long:  `Creates a service binding in SAP Business Technology Platform (BTP).`,
+		Long:  `Creates a service binding in SAP Business Technology Platform (BTP) using ` + "`" + `btp create services/binding ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-create-services-binding.html?locale=en-US&version=Cloud)).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
