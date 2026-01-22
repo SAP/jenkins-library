@@ -85,6 +85,9 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 		return "", fmt.Errorf("failed to construct parameters from options: %w", err)
 	}
 
+	// Debug: print settings files and effective settings before running mvn
+	debugPrintSettings(options, utils)
+
 	err = utils.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -384,4 +387,64 @@ func GetTestModulesExcludes(utils Utils) []string {
 		excludes = append(excludes, "-pl", "!integration-tests")
 	}
 	return excludes
+}
+
+// debugPrintSettings prints global settings, project settings and effective settings.
+func debugPrintSettings(options *ExecuteOptions, utils Utils) {
+	// Resolve settings paths (will not re-download if already present)
+	resolve := func(opt, defaultPath string) string {
+		if opt == "" {
+			return ""
+		}
+		p, err := getSettingsFilePath(opt, defaultPath, utils, false)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("failed to resolve settings path for %s", opt)
+			return ""
+		}
+		return p
+	}
+
+	globalPath := resolve(options.GlobalSettingsFile, ".pipeline/mavenGlobalSettings.xml")
+	projectPath := resolve(options.ProjectSettingsFile, defaultMavenProjectSettingsPath)
+
+	printFile := func(label, path string) {
+		if path == "" {
+			log.Entry().Infof("%s: not configured", label)
+			return
+		}
+		exists, _ := utils.FileExists(path)
+		if !exists {
+			log.Entry().Infof("%s: %s (not found)", label, path)
+			return
+		}
+		log.Entry().Infof("%s path: %s", label, path)
+		if b, err := utils.FileRead(path); err == nil {
+			// NOTE: May contain secrets
+			log.Entry().Infof("%s content:\n%s", label, string(b))
+		} else {
+			log.Entry().WithError(err).Warnf("failed to read %s", label)
+		}
+	}
+
+	printFile("Global settings", globalPath)
+	printFile("Project settings", projectPath)
+
+	// Produce and print effective settings
+	const effOut = ".pipeline/effective-settings.xml"
+	_ = utils.MkdirAll(".pipeline", 0o775)
+
+	effArgs, _ := DownloadAndGetMavenParameters(options.GlobalSettingsFile, options.ProjectSettingsFile, utils)
+	if options.M2Path != "" {
+		effArgs = append(effArgs, "-Dmaven.repo.local="+options.M2Path)
+	}
+	effArgs = append(effArgs, "--batch-mode", "help:effective-settings", "-Doutput="+effOut)
+	if err := utils.RunExecutable(mavenExecutable, effArgs...); err != nil {
+		log.Entry().WithError(err).Warn("failed to generate effective settings")
+		return
+	}
+	if b, err := utils.FileRead(effOut); err == nil {
+		log.Entry().Infof("Effective settings (help:effective-settings):\n%s", string(b))
+	} else {
+		log.Entry().WithError(err).Warn("failed to read effective settings output")
+	}
 }
