@@ -46,7 +46,7 @@ func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 	// Save if we are now waiting things to be Ready
 	waitingForReady := false
 
-	nbRetry := 0
+	retryCount := 0
 	maxRetries := 3
 
 	// Poll to check completion
@@ -57,7 +57,7 @@ func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 	log.Entry().Info("Checking command completion...")
 
 	for time.Since(startTime) < timeoutDuration {
-		if nbRetry >= maxRetries {
+		if retryCount >= maxRetries {
 			return errors.New("Maximum number of retries reached while polling for command completion")
 		}
 
@@ -72,13 +72,18 @@ func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 				return nil
 			} else {
 				waitingForReady = true
-				log.Entry().Info("Command not yet completed, waiting for Readiness...")
+				retryCount = 0
+				log.Entry().Info("Command not yet completed, waiting for status ready...")
 			}
 		} else {
+			err := opts.LoginFunc()
+			if err != nil {
+				return errors.Wrap(err, "Failed to re-login during polling")
+			}
+
 			if waitingForReady {
 				log.Entry().Info("Command was previously in progress, but now reports failure.")
-				nbRetry++
-				return errors.New("Command execution failed during polling")
+				retryCount++
 			} else {
 				log.Entry().Info("Command not yet completed, checking again...")
 			}

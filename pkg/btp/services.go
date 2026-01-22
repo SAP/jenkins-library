@@ -73,6 +73,9 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		CmdScript:      btpCreateBindingScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
+		LoginFunc: func() error {
+			return btp.Login(loginOptions)
+		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
 				Url:              options.Url,
@@ -249,6 +252,9 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		CmdScript:      btpDeleteBindingScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
+		LoginFunc: func() error {
+			return btp.Login(loginOptions)
+		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceBindingDeleted(btp, GetServiceBindingOptions{
 				Url:              options.Url,
@@ -353,6 +359,9 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		CmdScript:      btpCreateInstanceScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
+		LoginFunc: func() error {
+			return btp.Login(loginOptions)
+		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceInstanceCreated(btp, GetServiceInstanceOptions{
 				Url:              options.Url,
@@ -526,6 +535,9 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		CmdScript:      btpGetServiceScript,
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
+		LoginFunc: func() error {
+			return btp.Login(loginOptions)
+		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceInstanceDeleted(btp, GetServiceInstanceOptions{
 				Url:              options.Url,

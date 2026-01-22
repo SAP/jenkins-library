@@ -6,6 +6,7 @@ type RunSyncOptions struct {
 	CmdScript              []string
 	TimeoutSeconds         int
 	PollInterval           int
+	LoginFunc              func() error
 	CheckFunc              func() CheckResponse // Function to check the command status
 	IgnoreErrorOnFirstCall bool                 // Whether to ignore error on the first call before polling
 }
