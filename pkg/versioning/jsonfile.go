@@ -34,7 +34,7 @@ func (j *JSONfile) init() {
 
 // VersioningScheme returns the relevant versioning scheme
 func (j *JSONfile) VersioningScheme() string {
-	return "semver2"
+	return "npm11-cloud"
 }
 
 // GetVersion returns the current version of the artifact with a JSON-based build descriptor

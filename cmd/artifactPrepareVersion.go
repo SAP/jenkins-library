@@ -308,6 +308,8 @@ func versioningTemplate(scheme string) (string, error) {
 	case "semver2":
 		// according to https://semver.org/spec/v2.0.0.html
 		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", nil
+	case "npm11-cloud":
+		return "{{.Version}}{{if .Timestamp}}_{{.Timestamp}}{{if .CommitID}}+{{.CommitID}}{{end}}{{end}}", nil
 	}
 	return "", fmt.Errorf("versioning scheme '%v' not supported", scheme)
 }
