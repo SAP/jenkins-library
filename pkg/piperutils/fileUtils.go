@@ -10,12 +10,17 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bmatcuk/doublestar"
 )
+
+const maxFileSize int64 = 2 * 1024 * 1024 * 1024 // 2 GB
 
 // FileUtils ...
 type FileUtils interface {
@@ -65,8 +70,12 @@ func (f Files) TempDir(dir, pattern string) (name string, err error) {
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.
 func (f Files) FileExists(filename string) (bool, error) {
-	info, err := os.Stat(filename)
+	return FileExists(filename)
+}
 
+// FileExists returns true if the file system entry for the given path exists and is not a directory.
+func FileExists(filename string) (bool, error) {
+	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
@@ -75,11 +84,6 @@ func (f Files) FileExists(filename string) (bool, error) {
 	}
 
 	return !info.IsDir(), nil
-}
-
-// FileExists returns true if the file system entry for the given path exists and is not a directory.
-func FileExists(filename string) (bool, error) {
-	return Files{}.FileExists(filename)
 }
 
 // DirExists returns true if the file system entry for the given path exists and is a directory.
@@ -98,34 +102,7 @@ func (f Files) DirExists(path string) (bool, error) {
 
 // Copy ...
 func (f Files) Copy(src, dst string) (int64, error) {
-	exists, err := f.FileExists(src)
-	if err != nil {
-		return 0, err
-	}
-
-	if !exists {
-		return 0, errors.New("Source file '" + src + "' does not exist")
-	}
-
-	source, err := os.Open(src)
-	if err != nil {
-		return 0, err
-	}
-	defer func() { _ = source.Close() }()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		return 0, err
-	}
-	stats, err := os.Stat(src)
-	if err != nil {
-		return 0, err
-	}
-
-	os.Chmod(dst, stats.Mode())
-	defer func() { _ = destination.Close() }()
-	nBytes, err := CopyData(destination, source)
-	return nBytes, err
+	return Copy(src, dst)
 }
 
 // Move will move files from src to dst
@@ -268,16 +245,16 @@ func Untar(src string, dest string, stripComponentLevel int) error {
 	return untar(file, dest, stripComponentLevel)
 }
 
-func untar(r io.Reader, dir string, level int) (err error) {
+func untar(r io.Reader, dir string, level int) error {
 	madeDir := map[string]bool{}
-
 	tr := tar.NewReader(r)
+
 	for {
 		f, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return fmt.Errorf("tar error: %v", err)
 		}
 		if strings.HasPrefix(f.Name, "/") {
@@ -291,52 +268,74 @@ func untar(r io.Reader, dir string, level int) (err error) {
 		// when level X folder(s) needs to be removed we first check that the rel path must have atleast X or greater than X pathseperatorserr
 		// or else we might end in index out of range
 		if level > 0 {
-			if strings.Count(rel, string(os.PathSeparator)) >= level {
-				relSplit := strings.SplitN(rel, string(os.PathSeparator), level+1)
-				rel = relSplit[level]
-			} else {
+			if strings.Count(rel, string(os.PathSeparator)) < level {
 				return fmt.Errorf("files %q in tarball archive not under level %v", f.Name, level)
 			}
+			relSplit := strings.SplitN(rel, string(os.PathSeparator), level+1)
+			rel = relSplit[level]
 		}
 
 		abs := filepath.Join(dir, rel)
+		mode := f.FileInfo().Mode()
 
-		fi := f.FileInfo()
-		mode := fi.Mode()
 		switch {
 		case mode.IsRegular():
 			// Make the directory. This is redundant because it should
 			// already be made by a directory entry in the tar
 			// beforehand. Thus, don't check for errors; the next
 			// write will fail with the same error.
-			dir := filepath.Dir(abs)
-			if !madeDir[dir] {
-				if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+			parent := filepath.Dir(abs)
+			if !madeDir[parent] {
+				if err = os.MkdirAll(parent, 0o755); err != nil {
 					return err
 				}
-				madeDir[dir] = true
+				madeDir[parent] = true
 			}
+
 			wf, err := os.OpenFile(abs, os.O_RDWR|os.O_CREATE|os.O_TRUNC, mode.Perm())
 			if err != nil {
-				return err
+				return fmt.Errorf("open failed for %s: %v", abs, err)
 			}
-			n, err := io.Copy(wf, tr)
-			if closeErr := wf.Close(); closeErr != nil && err == nil {
-				err = closeErr
+
+			// Reject if header size exceeds limit.
+			if f.Size > maxFileSize {
+				_ = wf.Close()
+				_ = os.Remove(abs)
+				log.Entry().Warnf("Rejecting file %s: exceeds maximum allowed size of %d bytes (2GB limit)", abs, maxFileSize)
+				return fmt.Errorf("file %s exceeds maximum allowed size of %d bytes: actual %d", abs, maxFileSize, f.Size)
 			}
-			if err != nil {
+			// Copy exactly the entry size (guarded by the header check above).
+			n, err := io.CopyN(wf, tr, f.Size)
+			if err != nil && err != io.EOF {
+				_ = wf.Close()
+				_ = os.Remove(abs)
 				return fmt.Errorf("error writing to %s: %v", abs, err)
 			}
 			if n != f.Size {
+				_ = os.Remove(abs)
 				return fmt.Errorf("only wrote %d bytes to %s; expected %d", n, abs, f.Size)
 			}
+
+			if err = wf.Sync(); err != nil {
+				_ = wf.Close()
+				_ = os.Remove(abs)
+				return fmt.Errorf("sync failed for %s: %v", abs, err)
+			}
+
+			if err = wf.Close(); err != nil {
+				_ = os.Remove(abs)
+				return fmt.Errorf("close failed for %s: %v", abs, err)
+			}
 		case mode.IsDir():
-			if err := os.MkdirAll(abs, 0o755); err != nil {
+			if err = os.MkdirAll(abs, 0o755); err != nil {
 				return err
 			}
 			madeDir[abs] = true
 		case mode&fs.ModeSymlink != 0:
-			if err := os.Symlink(f.Linkname, abs); err != nil {
+			if !validRelPath(f.Linkname) {
+				return fmt.Errorf("tar symlink %q has invalid target %q", f.Name, f.Linkname)
+			}
+			if err = os.Symlink(f.Linkname, abs); err != nil {
 				return err
 			}
 		default:
@@ -350,31 +349,90 @@ func untar(r io.Reader, dir string, level int) (err error) {
 func isFileGzipped(file string) (bool, error) {
 	f, err := os.Open(file)
 	defer f.Close()
-
 	if err != nil {
 		return false, err
 	}
 
 	b := make([]byte, 3)
-	_, err = io.ReadFull(f, b)
-
-	if err != nil {
+	if _, err = io.ReadFull(f, b); err != nil {
 		return false, err
 	}
 
 	return b[0] == 0x1f && b[1] == 0x8b && b[2] == 8, nil
 }
 
+// validRelPath validates a tar entry name to prevent path traversal and unsafe names.
+// Tar headers use forward slashes, so use `path` instead of `filepath`.
 func validRelPath(p string) bool {
-	if p == "" || strings.Contains(p, `\`) || strings.HasPrefix(p, "/") || strings.Contains(p, "../") {
+	// Non-empty and valid UTF-8
+	if p == "" || !utf8.ValidString(p) {
 		return false
 	}
+
+	// Disallow NUL and control characters
+	for _, r := range p {
+		if r == 0 || (r < 0x20 && r != '\t' && r != '\n') {
+			return false
+		}
+	}
+
+	// Tar uses forward slashes; reject Windows separators
+	if strings.Contains(p, `\`) {
+		return false
+	}
+
+	// Normalize and check for absolute or parent traversal
+	clean := path.Clean(p)
+	if strings.HasPrefix(clean, "/") || strings.HasPrefix(p, "/") {
+		return false
+	}
+	if clean == "." {
+		return false
+	}
+	// Reject any component that climbs up
+	if strings.Contains(clean, "../") || strings.HasPrefix(clean, "../") || strings.HasSuffix(clean, "/..") || clean == ".." {
+		return false
+	}
+
+	// No leading "./" or trailing "/"
+	if strings.HasPrefix(p, "./") || strings.HasSuffix(p, "/") {
+		return false
+	}
+
 	return true
 }
 
 // Copy ...
 func Copy(src, dst string) (int64, error) {
-	return Files{}.Copy(src, dst)
+	exists, err := FileExists(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !exists {
+		return 0, errors.New("Source file '" + src + "' does not exist")
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = source.Close() }()
+
+	destination, err := os.Create(dst)
+	defer func() { _ = destination.Close() }()
+
+	if err != nil {
+		return 0, err
+	}
+	stats, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	os.Chmod(dst, stats.Mode())
+	nBytes, err := CopyData(destination, source)
+	return nBytes, err
 }
 
 // FileRead is a wrapper for os.ReadFile().
@@ -434,7 +492,7 @@ func ExcludeFiles(files, excludes []string) ([]string, error) {
 		return files, nil
 	}
 
-	var filteredFiles []string
+	filteredFiles := make([]string, 0, len(files))
 	for _, file := range files {
 		includeFile := true
 		file = filepath.FromSlash(file)
@@ -483,6 +541,15 @@ func (f Files) Symlink(oldname, newname string) error {
 
 // SHA256 computes a SHA256 for a given file
 func (f Files) SHA256(path string) (string, error) {
+	// Reject files larger than the global tar limit
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if info.Size() > maxFileSize {
+		return "", fmt.Errorf("file %s exceeds maximum allowed size of %d bytes: actual %d", path, maxFileSize, info.Size())
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -490,8 +557,7 @@ func (f Files) SHA256(path string) (string, error) {
 	defer file.Close()
 
 	hash := sha256.New()
-	_, err = io.Copy(hash, file)
-	if err != nil {
+	if _, err = io.Copy(hash, io.LimitReader(file, maxFileSize)); err != nil {
 		return "", err
 	}
 
