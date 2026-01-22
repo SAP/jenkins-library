@@ -182,7 +182,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 		}
 
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
-		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry, "--tag", publishTag}
+		// publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry, "--tag", publishTag}
+		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry}
 		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
@@ -201,7 +202,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 		}
 	} else {
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
-		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry, "--tag", publishTag}
+		// publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry, "--tag", publishTag}
+		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry}
 		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
