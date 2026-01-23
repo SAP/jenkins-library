@@ -106,8 +106,7 @@ func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 		"--repositoryPassword=test-pass")
 
 	// Verify the command detected the prerelease version
-	assert.Contains(t, output, "Detected prerelease version")
-	assert.Contains(t, output, "0.0.1-20251112123456")
+	assert.Contains(t, output, "No publish tag provided, using 'prerelease' based on version 0.0.1-20251112123456")
 	assert.Contains(t, output, "--tag prerelease")
 
 	// Verify it attempted to publish (will fail due to fake registry, but that's expected)
