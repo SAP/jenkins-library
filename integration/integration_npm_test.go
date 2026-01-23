@@ -84,8 +84,8 @@ func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
 	assert.Contains(t, output, "https://foo.bar")
 }
 
-// TestNPMIntegrationPublishPrerelease verifies that passing publishTag flag
-// runs npm publish with passed tag (required by npm 11+ for prerelease versions)
+// TestNPMIntegrationPublishPrerelease verifies that not passing publishTag flag
+// runs npm publish with 'prerelease' tag for version with prerelease part (required by npm 11+ for prerelease versions)
 func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 	t.Parallel()
 
@@ -100,43 +100,12 @@ func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 	exitCode, output := RunPiperExpectFailure(t, container, "/publishPrerelease",
 		"npmExecuteScripts",
 		"--publish",
-		"--publishTag=prerelease",
 		"--repositoryUrl=https://fake-registry.example.com",
 		"--repositoryUsername=test-user",
 		"--repositoryPassword=test-pass")
 
 	// Verify the command detected the prerelease version
 	assert.Contains(t, output, "--tag prerelease")
-
-	// Verify it attempted to publish (will fail due to fake registry, but that's expected)
-	assert.Contains(t, output, "triggering publish for package.json")
-
-	// Command should fail because the registry doesn't exist
-	assert.NotEqual(t, 0, exitCode, "Expected command to fail with fake registry")
-}
-
-// TestNPMIntegrationPublishDefaultTag verifies that not passing publishTag flag
-// runs npm publish with default 'latest' tag
-func TestNPMIntegrationPublishDefaultTag(t *testing.T) {
-	t.Parallel()
-
-	container := StartPiperContainer(t, ContainerConfig{
-		Image:    "node:24-bookworm",
-		TestData: "TestNpmIntegration/publishPrerelease",
-		WorkDir:  "/publishPrerelease",
-	})
-
-	// We expect this to fail because we're using a fake registry,
-	// but we want to verify that the --tag prerelease flag is added
-	exitCode, output := RunPiperExpectFailure(t, container, "/publishPrerelease",
-		"npmExecuteScripts",
-		"--publish",
-		"--repositoryUrl=https://fake-registry.example.com",
-		"--repositoryUsername=test-user",
-		"--repositoryPassword=test-pass")
-
-	// Verify the command detected the prerelease version
-	assert.Contains(t, output, "--tag latest")
 
 	// Verify it attempted to publish (will fail due to fake registry, but that's expected)
 	assert.Contains(t, output, "triggering publish for package.json")
