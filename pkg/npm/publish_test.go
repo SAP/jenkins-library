@@ -633,3 +633,28 @@ func TestNpmPublish(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPrerelease(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected bool
+	}{
+		{"prerelease with timestamp", "0.0.2-20251029013231", true},
+		{"prerelease with timestamp and git hash", "0.0.2-20251029013231+a28cbc5623de32dff88f64cfd8b0795f57050d0c", true},
+		{"prerelease beta", "1.0.0-beta.1", true},
+		{"prerelease alpha", "2.0.0-alpha.3", true},
+		{"prerelease rc", "3.5.0-rc.2", true},
+		{"stable version", "1.0.0", false},
+		{"stable version with patch", "1.2.3", false},
+		{"version with build metadata", "1.0.0+build123", false},
+		{"prerelease with build metadata", "1.0.0-beta+build", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isPrerelease(tt.version)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
