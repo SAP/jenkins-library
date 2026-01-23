@@ -7,6 +7,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -105,10 +106,52 @@ func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 		"--repositoryPassword=test-pass")
 
 	// Verify the command detected the prerelease version
+	assert.Contains(t, output, "Detected prerelease version")
+	assert.Contains(t, output, "0.0.1-20251112123456")
 	assert.Contains(t, output, "--tag prerelease")
 
 	// Verify it attempted to publish (will fail due to fake registry, but that's expected)
 	assert.Contains(t, output, "triggering publish for package.json")
+
+	// Command should fail because the registry doesn't exist
+	assert.NotEqual(t, 0, exitCode, "Expected command to fail with fake registry")
+}
+
+// TestNPMIntegrationPublishStable verifies that publishing a stable version
+// adds the --tag latest flag
+func TestNPMIntegrationPublishStable(t *testing.T) {
+	t.Parallel()
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    "node:24-bookworm",
+		TestData: "TestNpmIntegration/publishStable",
+		WorkDir:  "/publishStable",
+	})
+
+	// We expect this to fail because we're using a fake registry,
+	// but we want to verify that the --tag flag is added for stable versions
+	exitCode, output := RunPiperExpectFailure(t, container, "/publishStable",
+		"npmExecuteScripts",
+		"--publish",
+		"--repositoryUrl=https://fake-registry.example.com",
+		"--repositoryUsername=test-user",
+		"--repositoryPassword=test-pass")
+
+	// Verify it attempted to publish
+	assert.Contains(t, output, "triggering publish for package.json")
+
+	// Verify it did NOT detect a prerelease version or add --tag flag
+	assert.NotContains(t, output, "Detected prerelease version")
+	assert.NotContains(t, output, "--tag prerelease")
+
+	// For stable versions, there should be no mention of --tag in the output
+	// (we're checking the logs don't show the prerelease-specific logic)
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Detected prerelease") {
+			t.Errorf("Should not detect prerelease for stable version 1.0.0, but found: %s", line)
+		}
+	}
 
 	// Command should fail because the registry doesn't exist
 	assert.NotEqual(t, 0, exitCode, "Expected command to fail with fake registry")

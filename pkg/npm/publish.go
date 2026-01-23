@@ -141,11 +141,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 	}
 
 	tag := publishTag
-	if tag == "" {
-		tag = "latest"
-		if isPrerelease(version) {
-			tag = "prerelease"
-		}
+	if tag == "" && isPrerelease(version) {
+		tag = "prerelease"
 		log.Entry().Infof("No publish tag provided, using '%s' based on version %s", tag, version)
 	}
 
@@ -197,7 +194,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 		}
 
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
-		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry, "--tag", tag}
+		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry}
+		if tag != "" {
+			publishArgs = append(publishArgs, "--tag", tag)
+		}
 		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
@@ -216,7 +216,10 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 		}
 	} else {
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
-		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry, "--tag", tag}
+		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry}
+		if tag != "" {
+			publishArgs = append(publishArgs, "--tag", tag)
+		}
 		err = execRunner.RunExecutable("npm", publishArgs...)
 		if err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
