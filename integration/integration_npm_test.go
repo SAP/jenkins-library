@@ -117,7 +117,7 @@ func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 }
 
 // TestNPMIntegrationPublishStable verifies that publishing a stable version
-// adds the --tag latest flag
+// does NOT add the --tag flag (default npm behavior for stable versions)
 func TestNPMIntegrationPublishStable(t *testing.T) {
 	t.Parallel()
 
@@ -128,7 +128,7 @@ func TestNPMIntegrationPublishStable(t *testing.T) {
 	})
 
 	// We expect this to fail because we're using a fake registry,
-	// but we want to verify that the --tag flag is added for stable versions
+	// but we want to verify that the --tag flag is NOT added for stable versions
 	exitCode, output := RunPiperExpectFailure(t, container, "/publishStable",
 		"npmExecuteScripts",
 		"--publish",
