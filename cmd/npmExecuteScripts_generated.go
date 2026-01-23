@@ -273,7 +273,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorList, "buildDescriptorList", []string{}, "List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Create a BOM xml using CycloneDX.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures npm to publish the artifact to a repository.")
-	cmd.Flags().StringVar(&stepConfig.PublishTag, "publishTag", `latest`, "Value of --tag flag that is passed to `npm publish` command. If not specified, the default tag 'latest' is used.")
+	cmd.Flags().StringVar(&stepConfig.PublishTag, "publishTag", os.Getenv("PIPER_publishTag"), "Value of --tag flag that is passed to `npm publish` command. If not specified, it will be determined automatically depending on semver2 version (e.g., 1.0.0-202601012233 will be 'prerelease', 1.0.0 will be 'latest').")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
@@ -434,7 +434,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `latest`,
+						Default:     os.Getenv("PIPER_publishTag"),
 					},
 					{
 						Name: "repositoryUrl",
