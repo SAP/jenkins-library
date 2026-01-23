@@ -154,8 +154,7 @@ spec:
           - PARAMETERS
       - name: publishTag
         type: string
-        description: Value of --tag flag that is passed to `npm publish` command. If not specified, the default tag 'latest' is used.
-        default: latest
+        description: Value of --tag flag that is passed to `npm publish` command. If not specified, it will be determined automatically depending on semver2 version (e.g., 1.0.0-202601012233 will be 'prerelease', 1.0.0 will be 'latest').
         scope:
           - STEPS
           - STAGES
