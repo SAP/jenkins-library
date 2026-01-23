@@ -142,12 +142,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 
 	tag := publishTag
 	if tag == "" {
-		log.Entry().Debug("no publish tag provided, determining automatically based on version")
 		tag = "latest"
 		if isPrerelease(version) {
-			log.Entry().Infof("Detected prerelease version %s, adding using 'prerelease' as publish tag", version)
 			tag = "prerelease"
 		}
+		log.Entry().Infof("No publish tag provided, using '%s' based on version %s", tag, version)
 	}
 
 	if packBeforePublish {
