@@ -30,7 +30,6 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	// we are logged in --> create service binding
 	parametersCheck := options.Subaccount == "" ||
 		options.BindingName == "" ||
-		options.Parameters == "" ||
 		options.Timeout == 0 ||
 		options.PollInterval == 0
 
@@ -308,7 +307,6 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		options.PlanName == "" ||
 		options.OfferingName == "" ||
 		options.InstanceName == "" ||
-		options.Parameters == "" ||
 		options.Timeout == 0 ||
 		options.PollInterval == 0
 
