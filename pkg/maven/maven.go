@@ -419,7 +419,6 @@ func DebugPrintSettings(options *ExecuteOptions, utils Utils) {
 		}
 		log.Entry().Infof("%s path: %s", label, path)
 		if b, err := utils.FileRead(path); err == nil {
-			// NOTE: May contain secrets
 			log.Entry().Infof("%s content:\n%s", label, string(b))
 		} else {
 			log.Entry().WithError(err).Warnf("failed to read %s", label)
@@ -429,7 +428,7 @@ func DebugPrintSettings(options *ExecuteOptions, utils Utils) {
 	printFile("Global settings", globalPath)
 	printFile("Project settings", projectPath)
 
-	// Produce and print effective settings
+	// Produce and print effective settings using same Flags/Defines/M2
 	const effOut = ".pipeline/effective-settings.xml"
 	_ = utils.MkdirAll(".pipeline", 0o775)
 
@@ -437,7 +436,15 @@ func DebugPrintSettings(options *ExecuteOptions, utils Utils) {
 	if options.M2Path != "" {
 		effArgs = append(effArgs, "-Dmaven.repo.local="+options.M2Path)
 	}
+	// add build flags/defines (profiles, extra repo flags) so help:effective-settings resolves like the build
+	if options.Flags != nil {
+		effArgs = append(effArgs, options.Flags...)
+	}
+	if options.Defines != nil {
+		effArgs = append(effArgs, options.Defines...)
+	}
 	effArgs = append(effArgs, "--batch-mode", "help:effective-settings", "-Doutput="+effOut)
+
 	if err := utils.RunExecutable(mavenExecutable, effArgs...); err != nil {
 		log.Entry().WithError(err).Warn("failed to generate effective settings")
 		return
