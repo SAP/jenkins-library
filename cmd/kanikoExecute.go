@@ -177,7 +177,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
 			containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 			buildOpts := append(config.BuildOptions, "--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag))
-			if err = runKaniko(file, buildOpts, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment, config.RegistryMirrors); err != nil {
+			if err = runKaniko(config, file, buildOpts, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 				return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 			}
 			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, image)
@@ -248,7 +248,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					dockerfilePath = entry.DockerfilePath
 				}
 
-				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment, config.RegistryMirrors); err != nil {
+				if err = runKaniko(config, dockerfilePath, buildOptions, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
 				}
 
@@ -279,7 +279,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					dockerfilePath = entry.DockerfilePath
 				}
 
-				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment, config.RegistryMirrors); err != nil {
+				if err = runKaniko(config, dockerfilePath, buildOptions, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
 				}
 
@@ -383,7 +383,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		config.BuildOptions = append(config.BuildOptions, "--no-push")
 	}
 
-	if err = runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment, config.RegistryMirrors); err != nil {
+	if err = runKaniko(config, config.DockerfilePath, config.BuildOptions, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 		return err
 	}
 
@@ -404,7 +404,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	return nil
 }
 
-func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, registryMirrors []string) error {
+func runKaniko(config *kanikoExecuteOptions, dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
@@ -415,7 +415,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", "dir://" + cwd}
 
 	// Add registry mirrors
-	for _, mirror := range registryMirrors {
+	for _, mirror := range config.RegistryMirrors {
 		kanikoOpts = append(kanikoOpts, "--registry-mirror", mirror)
 	}
 
@@ -428,7 +428,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
 
-	if readDigest {
+	if config.ReadImageDigest {
 		kanikoOpts = append(kanikoOpts, "--digest-file", digestFilePath)
 	}
 

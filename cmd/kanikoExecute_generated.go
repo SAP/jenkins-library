@@ -605,7 +605,7 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name:        "registryMirrors",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
