@@ -16,9 +16,9 @@ import (
 
 // Bom represents the root BOM element
 type Bom struct {
-	Xmlns      string      `xml:"xmlns,attr"`
-	Metadata   Metadata    `xml:"metadata"`
-	Components []Component `xml:"components>component,omitempty"`
+	Xmlns      string         `xml:"xmlns,attr"`
+	Metadata   Metadata       `xml:"metadata"`
+	Components []BomComponent `xml:"components>component,omitempty"`
 }
 
 // Metadata provides additional information about the BOM
@@ -31,12 +31,6 @@ type BomComponent struct {
 	Name    string `xml:"name"`
 	Version string `xml:"version"`
 	Purl    string `xml:"purl"`
-}
-
-// Component represents a software/hardware component
-type Component struct {
-	Name string `xml:"name"`
-	Purl string `xml:"purl"`
 }
 
 func GetBom(absoluteBomPath string) (Bom, error) {
@@ -69,8 +63,8 @@ func GetComponent(bomFilePath string) BomComponent {
 	return bom.Metadata.Component
 }
 
-// GetBomVersion extracts the CycloneDX schema version from the BOM
-func GetBomVersion(bomFilePath string) (string, error) {
+// GetBomSchemaVersion extracts the CycloneDX schema version from the BOM
+func GetBomSchemaVersion(bomFilePath string) (string, error) {
 	bom, err := GetBom(bomFilePath)
 	if err != nil {
 		return "", err
@@ -135,6 +129,15 @@ func ValidatePurl(purl string) error {
 	return nil
 }
 
+func GetName(bomFilePath string) string {
+	bom, err := GetBom(bomFilePath)
+	if err != nil {
+		log.Entry().Warnf("unable to get bom metadata name: %v", err)
+		return ""
+	}
+	return bom.Metadata.Component.Name
+}
+
 // UpdatePurl updates the PURL in the BOM metadata component
 // This uses the official CycloneDX library for robust XML handling
 func UpdatePurl(sbomPath string, newPurl string) error {
@@ -145,7 +148,7 @@ func UpdatePurl(sbomPath string, newPurl string) error {
 	}
 	defer file.Close()
 
-	// Decode the SBOM using official CycloneDX library
+	// Decode the SBOM
 	var bom cdx.BOM
 	decoder := cdx.NewBOMDecoder(file, cdx.BOMFileFormatXML)
 	if err := decoder.Decode(&bom); err != nil {
@@ -158,7 +161,6 @@ func UpdatePurl(sbomPath string, newPurl string) error {
 
 		if parent.PackageURL == "" {
 			parent.PackageURL = newPurl
-			log.Entry().Debugf("adding purl in BOM: %s", newPurl)
 		} else {
 			log.Entry().Debugf("purl already present in parent component hence not updating for: %s", sbomPath)
 		}
@@ -174,7 +176,7 @@ func UpdatePurl(sbomPath string, newPurl string) error {
 	}
 	defer outFile.Close()
 
-	// Encode back to SBOM format with pretty printing
+	// Encode back to SBOM format
 	encoder := cdx.NewBOMEncoder(outFile, cdx.BOMFileFormatXML)
 	encoder.SetPretty(true)
 	if err := encoder.Encode(&bom); err != nil {

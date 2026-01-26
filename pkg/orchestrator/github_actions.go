@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -299,10 +300,22 @@ func (g *githubActionsConfigProvider) fetchJobs() error {
 		return fmt.Errorf("no jobs found in response")
 	}
 
-	g.jobs = convertJobs(jobs.Jobs)
+	filteredJobs := filterJobs(jobs.Jobs)
+	g.jobs = convertJobs(filteredJobs)
 	g.jobsFetched = true
 
 	return nil
+}
+
+// filterJobs returns only the jobs associated with a runner.
+// This is necessary because fetching jobs for a workflow run triggered by a pull request
+// also includes extra PR check jobs.
+// This also filters out skipped jobs.
+func filterJobs(jobs []*github.WorkflowJob) []*github.WorkflowJob {
+	filtered := slices.Clone(jobs)
+	return slices.DeleteFunc(filtered, func(j *github.WorkflowJob) bool {
+		return j.GetRunnerID() == 0
+	})
 }
 
 func convertJobs(jobs []*github.WorkflowJob) []job {

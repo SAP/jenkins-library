@@ -44,14 +44,33 @@ spec:
       - name: installArtifacts
         type: bool
         description:
-          "If enabled, it will install all artifacts to the local maven repository to make them available before running the tests.
-          This is required if the integration test module has dependencies to other modules in the repository and they were not installed before."
+          "If enabled, it will install all artifacts from all modules to the local maven repository.
+          This is required if the `integration-tests` module has dependencies on other modules in the same repository
+          which have not yet been installed.
+          Artifacts are installed using the `install:install-file` goal which expects the artifacts
+          to be already available.
+          If you'd like to build the artifacts on the spot, you might want to use `installWithReactor instead.
+          Mutually exclusive with `installWithReactor`."
         scope:
           - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS
         default: true
+      - name: installWithReactor
+        type: bool
+        description:
+          "If enabled, it will use the Maven reactor to build and install the `integration-tests` module and all
+          of its dependencies.
+          Artifacts are installed using the `install` goal which builds the artifacts on the spot if required.
+          If you already have the artifacts available, you might want to use `installArtifacts` instead.
+          Mutually exclusive with `installArtifacts`."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string
