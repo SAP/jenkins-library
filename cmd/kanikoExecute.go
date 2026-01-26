@@ -570,6 +570,7 @@ func findImageNameTagInPurl(containerImageNameTags []string, purlReference strin
 		}
 	}
 
+	log.Entry().Warnf("unable to find image name tag in purlReference '%s' from tags: %v", purlReference, containerImageNameTags)
 	return ""
 }
 
