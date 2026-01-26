@@ -442,6 +442,8 @@ func debugPrintSettings(options *ExecuteOptions, utils Utils) {
 		log.Entry().WithError(err).Warn("failed to generate effective settings")
 		return
 	}
+	tb, _ := utils.FileRead(effOut)
+	log.Entry().Infof("Effective settings: \n%s", string(tb))
 	if b, err := utils.FileRead(effOut); err == nil {
 		log.Entry().Infof("Effective settings (help:effective-settings):\n%s", string(b))
 	} else {
