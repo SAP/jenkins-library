@@ -314,6 +314,27 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: registryMirrors
+        type: "[]string"
+        description: List of registry mirrors to use instead of default index.docker.io. Format examples, mirror.gcr.io, 127.0.0.1, 192.168.0.1:5000, mycompany-docker-virtual.jfrog.io
+        longDescription: |
+          Set registry mirror(s) to use instead of the default index.docker.io.
+          If an image is not found on the first mirror, Kaniko will try the next mirror(s),
+          and at the end fallback on the default registry.
+
+          Valid formats:
+          - mirror.gcr.io
+          - 127.0.0.1
+          - 192.168.0.1:5000
+          - mycompany-docker-virtual.jfrog.io
+          - harbor.private.io/theproject
+
+          You can specify URLs with schemes (e.g., http://127.0.0.1:5000).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
