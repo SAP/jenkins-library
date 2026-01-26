@@ -86,7 +86,7 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	}
 
 	// Debug: print settings files and effective settings before running mvn
-	debugPrintSettings(options, utils)
+	DebugPrintSettings(options, utils)
 
 	err = utils.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
@@ -390,7 +390,7 @@ func GetTestModulesExcludes(utils Utils) []string {
 }
 
 // debugPrintSettings prints global settings, project settings and effective settings.
-func debugPrintSettings(options *ExecuteOptions, utils Utils) {
+func DebugPrintSettings(options *ExecuteOptions, utils Utils) {
 	// Resolve settings paths (will not re-download if already present)
 	resolve := func(opt, defaultPath string) string {
 		if opt == "" {
@@ -442,8 +442,6 @@ func debugPrintSettings(options *ExecuteOptions, utils Utils) {
 		log.Entry().WithError(err).Warn("failed to generate effective settings")
 		return
 	}
-	tb, _ := utils.FileRead(effOut)
-	log.Entry().Infof("Effective settings: \n%s", string(tb))
 	if b, err := utils.FileRead(effOut); err == nil {
 		log.Entry().Infof("Effective settings (help:effective-settings):\n%s", string(b))
 	} else {

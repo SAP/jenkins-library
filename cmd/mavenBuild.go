@@ -145,6 +145,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		M2Path:                      config.M2Path,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 	}
+	maven.DebugPrintSettings(&mavenOptions, utils)
 
 	_, err := maven.Execute(&mavenOptions, utils)
 	if err != nil {
