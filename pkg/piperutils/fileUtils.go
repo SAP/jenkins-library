@@ -257,9 +257,8 @@ func untar(r io.Reader, dir string, level int) error {
 			}
 			return fmt.Errorf("tar error: %v", err)
 		}
-		if strings.HasPrefix(f.Name, "/") {
-			f.Name = fmt.Sprintf(".%s", f.Name)
-		}
+		// Strip leading "/" to make the path relative
+		f.Name, _ = strings.CutPrefix(f.Name, "/")
 		if !validRelPath(f.Name) { // blocks path traversal attacks
 			return fmt.Errorf("tar contained invalid name error %q", f.Name)
 		}
@@ -381,16 +380,26 @@ func validRelPath(p string) bool {
 		return false
 	}
 
-	// Normalize and check for absolute or parent traversal
+	// Check for absolute paths before cleaning
+	if strings.HasPrefix(p, "/") {
+		return false
+	}
+
+	// Check for parent directory traversal in the original path
+	// We must check before cleaning because path.Clean normalizes away "../"
+	components := strings.Split(p, "/")
+	for _, component := range components {
+		if component == ".." {
+			return false
+		}
+	}
+
+	// Normalize and check if it cleans to "." or becomes absolute
 	clean := path.Clean(p)
-	if strings.HasPrefix(clean, "/") || strings.HasPrefix(p, "/") {
+	if strings.HasPrefix(clean, "/") {
 		return false
 	}
 	if clean == "." {
-		return false
-	}
-	// Reject any component that climbs up
-	if strings.Contains(clean, "../") || strings.HasPrefix(clean, "../") || strings.HasSuffix(clean, "/..") || clean == ".." {
 		return false
 	}
 
