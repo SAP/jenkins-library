@@ -31,7 +31,8 @@ type SettingsDownloadUtils interface {
 func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) ([]string, error) {
 	mavenArgs := []string{}
 	if len(globalSettingsFile) > 0 {
-		globalSettingsFileName, err := getSettingsFilePath(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, false)
+		log.Entry().Info("found global settings file in config, use it by overriding existing")
+		globalSettingsFileName, err := getSettingsFilePath(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, true)
 		if err != nil {
 			return nil, err
 		}
@@ -284,6 +285,7 @@ func getSettingsFilePath(settingsFileOption, settingsFile string, utils Settings
 	if filepath.IsAbs(result) {
 		absoluteFilePath = result
 	} else {
+		log.Entry().Info("Using local, since non-url format is provided")
 		dir, err := os.Getwd()
 		if err != nil {
 			return "", fmt.Errorf("failed to get current working directory: %w", err)
