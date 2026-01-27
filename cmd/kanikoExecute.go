@@ -554,12 +554,23 @@ func parsePurl(purlStr string) (registry, name, version string, err error) {
 }
 
 func findImageNameTagInPurl(containerImageNameTags []string, purlReference string) string {
+	// check for exact matches
 	for _, entry := range containerImageNameTags {
 		if entry == purlReference {
 			log.Entry().Debugf("found image name tag %s in purlReference %s", entry, purlReference)
 			return entry
 		}
 	}
+
+	// check for suffix matches
+	for _, entry := range containerImageNameTags {
+		if strings.HasSuffix(entry, purlReference) {
+			log.Entry().Debugf("found suffix match: %s for purlReference %s", entry, purlReference)
+			return entry
+		}
+	}
+
+	log.Entry().Warnf("unable to find image name tag in purlReference '%s' from tags: %v", purlReference, containerImageNameTags)
 	return ""
 }
 

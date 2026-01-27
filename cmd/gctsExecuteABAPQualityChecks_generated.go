@@ -184,7 +184,7 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.Flags().StringVar(&stepConfig.AtcVariant, "atcVariant", `DEFAULT`, "Variant for ATC checks")
 	cmd.Flags().StringVar(&stepConfig.Scope, "scope", `repository`, "Scope of objects for which you want to execute the checks:\n<br/>\n- `localChangedObjects`: The object scope is derived from the last activity in the local repository. The checks are executed for the individual objects.\n<br/>\n- `remoteChangedObjects`: The object scope is the delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.\n<br/>\n- `localChangedPackages`: The object scope is derived from the last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.\n<br/>\n- `remoteChangedPackages`: The object scope is the delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.\n<br/>\n- `repository`: The object scope comprises all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.\n<br/>\n- `packages`: The object scope comprises all packages that are part of the local repository. The checks are executed for the packages.\n")
 	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of the commit that triggered the pipeline or any other commit used to calculate the object scope. Specifying a commit is mandatory for the `remoteChangedObjects` and `remoteChangedPackages` scopes.")
-	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies an output file name for the results of the ATC checks.")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies an output file name for the results of the ABAP Unit tests.")
 
@@ -195,7 +195,6 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("client")
-	cmd.MarkFlagRequired("workspace")
 }
 
 // retrieve step metadata
@@ -319,7 +318,7 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_workspace"),
 					},
