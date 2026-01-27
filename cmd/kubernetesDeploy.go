@@ -120,6 +120,10 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		if err != nil {
 			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
 		}
+		kubeSecretParams = append(kubeSecretParams,
+			fmt.Sprintf("--namespace=%v", config.Namespace),
+			"--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify),
+		)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {
@@ -327,6 +331,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		}
 
 		kubeSecretApplyParams := []string{"apply", "-f", filepath.Join(tmpFolder, "secret.json")}
+		kubeSecretApplyParams = append(kubeSecretApplyParams, kubeParams...)
 		if err := utils.RunExecutable("kubectl", kubeSecretApplyParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 		}
@@ -538,7 +543,6 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		config.ContainerRegistrySecret,
 		fmt.Sprintf("--from-file=.dockerconfigjson=%v", targetPath),
 		"--type=kubernetes.io/dockerconfigjson",
-		"--insecure-skip-tls-verify=" + strconv.FormatBool(config.InsecureSkipTLSVerify),
 		"--dry-run=client",
 		"--output=json",
 	}
