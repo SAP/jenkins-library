@@ -32,7 +32,7 @@ func (pd *npmMinimalPackageDescriptor) Scope() string {
 }
 
 // PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
-func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
+func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password, publishTag string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	for _, packageJSON := range packageJSONFiles {
 		log.Entry().Infof("triggering publish for %s", packageJSON)
 
@@ -44,7 +44,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.publish(packageJSON, registry, username, password, packBeforePublish, buildCoordinates)
+		err = exec.publish(packageJSON, registry, username, password, publishTag, packBeforePublish, buildCoordinates)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 }
 
 // publish executes npm publish for package.json
-func (exec *Execute) publish(packageJSON, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
+func (exec *Execute) publish(packageJSON, registry, username, password, publishTag string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	oldWorkingDirectory, err := exec.Utils.Getwd()
@@ -139,6 +139,12 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 		return errors.Wrapf(err, "failed to read package version from %s", packageJSON)
 	}
 
+	tag := publishTag
+	if tag == "" && isPrerelease(version) {
+		tag = "prerelease"
+		log.Entry().Infof("No publish tag provided, using '%s' based on version %s", tag, version)
+	}
+
 	if packBeforePublish {
 		// change directory in package json file , since npm pack will run only for that packages
 		if err = exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
@@ -188,9 +194,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
 		publishArgs := []string{"publish", "--tarball", tarballFilePath, "--userconfig", ".piperNpmrc", "--registry", registry}
-		if isPrerelease(version) {
-			log.Entry().Infof("Detected prerelease version %s, adding --tag prerelease", version)
-			publishArgs = append(publishArgs, "--tag", "prerelease")
+		if tag != "" {
+			publishArgs = append(publishArgs, "--tag", tag)
 		}
 
 		if err = execRunner.RunExecutable("npm", publishArgs...); err != nil {
@@ -210,9 +215,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string, p
 	} else {
 		// Build publish command with --tag for prerelease versions (required by npm 11+)
 		publishArgs := []string{"publish", "--userconfig", npmrc.filepath, "--registry", registry}
-		if isPrerelease(version) {
-			log.Entry().Infof("Detected prerelease version %s, adding --tag prerelease", version)
-			publishArgs = append(publishArgs, "--tag", "prerelease")
+		if tag != "" {
+			publishArgs = append(publishArgs, "--tag", tag)
 		}
 
 		if err = execRunner.RunExecutable("npm", publishArgs...); err != nil {

@@ -27,6 +27,7 @@ type ConfigCommandOptions struct {
 	StepName                      string
 	ContextConfig                 bool
 	OpenFile                      func(s string, t map[string]string) (io.ReadCloser, error)
+	SetVaultCredentials           bool
 }
 
 var configOptions ConfigCommandOptions
@@ -41,6 +42,7 @@ func SetConfigOptions(c ConfigCommandOptions) {
 	configOptions.StageConfigAcceptedParameters = c.StageConfigAcceptedParameters
 	configOptions.StepMetadata = c.StepMetadata
 	configOptions.StepName = c.StepName
+	configOptions.SetVaultCredentials = c.SetVaultCredentials
 }
 
 type getConfigUtils interface {
@@ -226,6 +228,20 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 			flagValues = config.AvailableFlagValues(cmd, &paramFilter)
 		}
 
+		if configOptions.SetVaultCredentials {
+			// add vault credentials so that configuration can be fetched from vault
+			if GeneralConfig.VaultRoleID == "" {
+				GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultAppRoleID")
+			}
+			if GeneralConfig.VaultRoleSecretID == "" {
+				GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultAppRoleSecretID")
+			}
+			if GeneralConfig.VaultToken == "" {
+				GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
+			}
+			myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
+		}
+
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
 			return stepConfig, errors.Wrap(err, "getting step config failed")
@@ -287,6 +303,7 @@ func addConfigFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&configOptions.StepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
 	cmd.Flags().StringVar(&configOptions.StepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.ContextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
+	cmd.Flags().BoolVar(&configOptions.SetVaultCredentials, "setVaultCredentials", false, "Defines whether to set Vault credentials to enable fetching credentials from Vault or not")
 }
 
 func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCloser, config.StepFilters, error) {
