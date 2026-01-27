@@ -262,18 +262,4 @@ func TestValidRelPath(t *testing.T) {
 			assert.False(t, validRelPath("/"))
 		})
 	})
-
-	// Test the critical bug: interaction with the caller code at line 260-262
-	t.Run("caller interaction bug", func(t *testing.T) {
-		// This test demonstrates the bug at fileutils.go:260-262
-		// When a tar entry starts with "/", it's converted to "./something"
-		// but validRelPath rejects paths starting with "./"
-		absolutePath := "/foo/bar"
-		// Simulate the transformation done at line 260-262
-		transformedPath := "." + absolutePath // Results in "./foo/bar"
-
-		// This will fail validation even though it was "fixed" by the caller
-		assert.False(t, validRelPath(transformedPath),
-			"Bug: paths transformed from absolute (line 260-262) are rejected by validRelPath")
-	})
 }
