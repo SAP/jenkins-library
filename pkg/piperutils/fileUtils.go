@@ -347,10 +347,10 @@ func untar(r io.Reader, dir string, level int) error {
 // isFileGzipped checks the first 3 bytes of the given file to determine if it is gzipped or not. Returns `true` if the file is gzipped.
 func isFileGzipped(file string) (bool, error) {
 	f, err := os.Open(file)
-	defer f.Close()
 	if err != nil {
 		return false, err
 	}
+	defer f.Close()
 
 	b := make([]byte, 3)
 	if _, err = io.ReadFull(f, b); err != nil {
