@@ -18,3 +18,7 @@ func StringWithDefault(input, defaultValue string) string {
 	}
 	return inputCleared
 }
+
+func SanitizePath(input string) string {
+	return strings.Split(input, "?")[0]
+}
