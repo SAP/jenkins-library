@@ -142,12 +142,12 @@ spec:
         mandatory: false
       - name: workspace
         type: string
-        description: Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.
+        description: Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
       - name: atcResultsFileName
         type: string
         description: Specifies an output file name for the results of the ATC checks.
