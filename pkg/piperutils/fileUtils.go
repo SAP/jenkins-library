@@ -425,11 +425,11 @@ func Copy(src, dst string) (int64, error) {
 	defer func() { _ = source.Close() }()
 
 	destination, err := os.Create(dst)
-	defer func() { _ = destination.Close() }()
-
 	if err != nil {
 		return 0, err
 	}
+	defer func() { _ = destination.Close() }()
+
 	stats, err := os.Stat(src)
 	if err != nil {
 		return 0, err
