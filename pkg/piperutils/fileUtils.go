@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -368,9 +367,9 @@ func validRelPath(p string) bool {
 		return false
 	}
 
-	// Disallow NUL and control characters
+	// Disallow NUL and all control characters (including tab and newline)
 	for _, r := range p {
-		if r == 0 || (r < 0x20 && r != '\t' && r != '\n') {
+		if r == 0 || r < 0x20 {
 			return false
 		}
 	}
@@ -394,17 +393,14 @@ func validRelPath(p string) bool {
 		}
 	}
 
-	// Normalize and check if it cleans to "." or becomes absolute
-	clean := path.Clean(p)
-	if strings.HasPrefix(clean, "/") {
-		return false
-	}
-	if clean == "." {
+	// No leading "./" (but allow trailing "/" for tar directory entries)
+	if strings.HasPrefix(p, "./") {
 		return false
 	}
 
-	// No leading "./" or trailing "/"
-	if strings.HasPrefix(p, "./") || strings.HasSuffix(p, "/") {
+	// Validate the path without trailing slash
+	pathToValidate := strings.TrimSuffix(p, "/")
+	if pathToValidate == "" || pathToValidate == "." {
 		return false
 	}
 
