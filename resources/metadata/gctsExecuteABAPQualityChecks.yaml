@@ -147,7 +147,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
       - name: atcResultsFileName
         type: string
         description: Specifies an output file name for the results of the ATC checks.
