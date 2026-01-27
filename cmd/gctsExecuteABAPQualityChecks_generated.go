@@ -195,7 +195,6 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("client")
-	cmd.MarkFlagRequired("workspace")
 }
 
 // retrieve step metadata
@@ -319,7 +318,7 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_workspace"),
 					},
