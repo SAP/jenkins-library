@@ -436,6 +436,13 @@ func Copy(src, dst string) (int64, error) {
 	}
 
 	os.Chmod(dst, stats.Mode())
+	sourceStat, err := source.Stat()
+	if err != nil {
+		return 0, err
+	}
+	if sourceStat.Size() > maxFileSize {
+		return 0, fmt.Errorf("file %s exceeds maximum allowed size of %d bytes: actual %d", src, maxFileSize, sourceStat.Size())
+	}
 	nBytes, err := CopyData(destination, source)
 	return nBytes, err
 }
