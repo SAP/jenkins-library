@@ -55,6 +55,15 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		MaxRetries:                maxRetries,
 		TransportSkipVerification: config.SkipSSLVerification,
 	}
+	// Add proxy support if configured
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse proxy URL")
+		}
+		clientOptions.TransportProxy = proxyURL
+		log.Entry().Infof("Using proxy: %v", config.Proxy)
+	}
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)
 	configurationMetadata, getConfigMetadataErr := getConfigurationMetadata(config, httpClient)
@@ -519,6 +528,14 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 		Password:                  config.Password,
 		MaxRetries:                -1,
 		TransportSkipVerification: config.SkipSSLVerification,
+	}
+	// Add proxy support if configured
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse proxy URL")
+		}
+		clientOptions.TransportProxy = proxyURL
 	}
 	httpClient.SetOptions(clientOptions)
 
