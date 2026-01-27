@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -265,7 +267,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			}
 
 			artifactVersion, err = artifact.GetVersion()
-
 			if err != nil {
 				return err
 			}
@@ -286,6 +287,8 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		utils.SetOptions(repoClientOptions)
 
 		var binaryArtifacts piperenv.Artifacts
+		buildCoordinates := []versioning.Coordinates{}
+
 		for _, binary := range binaries {
 
 			targetPath := fmt.Sprintf("go/%s/%s/%s", goModFile.Module.Mod.Path, artifactVersion, binary)
@@ -312,12 +315,51 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			binaryArtifacts = append(binaryArtifacts, piperenv.Artifact{
 				Name: binary,
 			})
+
+			if config.CreateBuildArtifactsMetadata {
+				err, coordinate := createGoBuildArtifactsMetadata(binary, config.TargetRepositoryURL, artifactVersion, utils)
+				if err != nil {
+					log.Entry().Warnf("unable to create build artifact metadata : %v", err)
+				}
+				buildCoordinates = append(buildCoordinates, coordinate)
+			}
 		}
 		commonPipelineEnvironment.custom.artifacts = binaryArtifacts
+
+		if len(buildCoordinates) == 0 {
+			log.Entry().Warnf("unable to identify artifact coordinates for the go binary(s) published")
+			return nil
+		}
+
+		var buildArtifacts build.BuildArtifacts
+		buildArtifacts.Coordinates = buildCoordinates
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.goBuildArtifacts = string(jsonResult)
 
 	}
 
 	return nil
+}
+
+func createGoBuildArtifactsMetadata(binary string, repositoryURL string, artifactVersion string, utils golangBuildUtils) (error, versioning.Coordinates) {
+	options := versioning.Options{}
+	builtArtifact, err := versioning.GetArtifact("golang", "", &options, utils)
+	coordinate, err := builtArtifact.GetCoordinates()
+	component := piperutils.GetComponent(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
+
+	purl := component.Purl
+	// golang purls contain the hex code for & with GOOS and GOARC and should be reomved from the PURL
+	purl = strings.ReplaceAll(purl, "\\u0026", "&")
+	if err != nil {
+		return err, coordinate
+	}
+	coordinate.ArtifactID = binary
+	coordinate.URL = repositoryURL
+	coordinate.BuildPath = filepath.Dir(binary)
+	coordinate.PURL = purl
+	coordinate.Version = artifactVersion
+
+	return nil, coordinate
 }
 
 func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils) error {

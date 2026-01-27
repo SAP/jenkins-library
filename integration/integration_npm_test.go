@@ -85,8 +85,8 @@ func TestNPMIntegrationRegistryWithTwoModules(t *testing.T) {
 	assert.Contains(t, output, "https://foo.bar")
 }
 
-// TestNPMIntegrationPublishPrerelease verifies that publishing a prerelease version
-// automatically adds the --tag prerelease flag (required by npm 11+)
+// TestNPMIntegrationPublishPrerelease verifies that not passing publishTag flag
+// runs npm publish with 'prerelease' tag for version with prerelease part (required by npm 11+ for prerelease versions)
 func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 	t.Parallel()
 
@@ -106,9 +106,8 @@ func TestNPMIntegrationPublishPrerelease(t *testing.T) {
 		"--repositoryPassword=test-pass")
 
 	// Verify the command detected the prerelease version
-	assert.Contains(t, output, "Detected prerelease version")
-	assert.Contains(t, output, "0.0.1-20251112123456")
-	assert.Contains(t, output, "adding --tag prerelease")
+	assert.Contains(t, output, "No publish tag provided, using 'prerelease' based on version 0.0.1-20251112123456")
+	assert.Contains(t, output, "--tag prerelease")
 
 	// Verify it attempted to publish (will fail due to fake registry, but that's expected)
 	assert.Contains(t, output, "triggering publish for package.json")
@@ -142,7 +141,7 @@ func TestNPMIntegrationPublishStable(t *testing.T) {
 
 	// Verify it did NOT detect a prerelease version or add --tag flag
 	assert.NotContains(t, output, "Detected prerelease version")
-	assert.NotContains(t, output, "adding --tag prerelease")
+	assert.NotContains(t, output, "--tag prerelease")
 
 	// For stable versions, there should be no mention of --tag in the output
 	// (we're checking the logs don't show the prerelease-specific logic)
