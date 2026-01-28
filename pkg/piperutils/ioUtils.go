@@ -14,7 +14,7 @@ func CopyData(dst io.Writer, src io.Reader) (int64, error) {
 	bytesWritten := int64(0)
 	done := false
 
-	for {
+	for !done {
 		nr, err := src.Read(tmp)
 		bytesRead += int64(nr)
 		if err != nil {
@@ -27,9 +27,6 @@ func CopyData(dst io.Writer, src io.Reader) (int64, error) {
 		bytesWritten += int64(nw)
 		if err != nil {
 			return bytesWritten, errors.Wrap(err, "write error")
-		}
-		if done {
-			break
 		}
 	}
 	if bytesRead != bytesWritten {
