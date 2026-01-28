@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -248,16 +249,31 @@ func SonarExecuteScanCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					// publish pipeline taskrun finished event to GCP Pub/Sub
+
+					// create cloud event
+					cloudEventSource := GeneralConfig.HookConfig.GCPPubSubConfig.Source
+					cloudEventType := GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix + "pipelineTaskRunFinished"
+					event := events.NewEvent(cloudEventType, cloudEventSource, "")
+
+					// publish cloud event via GCP Pub/Sub
+					gcpEventTopic := GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix + "pipelinetaskrun-finished"
+					eventBytes, err := event.ToBytes()
+					if err != nil {
+						log.Entry().WithError(err).Warn("failed to marshal event to bytes")
+					}
+					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
+					)
+					if err = gcpClient.Publish(gcpEventTopic, eventBytes); err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
+					} else {
+						log.Entry().Info("event published")
 					}
 				}
 			}
