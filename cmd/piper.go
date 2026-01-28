@@ -65,6 +65,9 @@ type GCPPubSubConfiguration struct {
 	IdentityPool     string `json:"identityPool,omitempty"`
 	IdentityProvider string `json:"identityProvider,omitempty"`
 	Topic            string `json:"topic,omitempty"`
+	TopicPrefix      string `json:"topicPrefix,omitempty"`
+	Source           string `json:"source,omitempty"`
+	TypePrefix       string `json:"typePrefix,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
