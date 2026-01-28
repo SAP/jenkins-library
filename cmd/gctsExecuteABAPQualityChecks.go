@@ -69,6 +69,14 @@ func rungctsExecuteABAPQualityChecks(config *gctsExecuteABAPQualityChecksOptions
 		TransportSkipVerification: config.SkipSSLVerification,
 	}
 
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse proxy URL")
+		}
+		clientOptions.TransportProxy = proxyURL
+		log.Entry().Infof("Using proxy: %v", config.Proxy)
+	}
 	httpClient.SetOptions(clientOptions)
 
 	log.Entry().Infof("start of gctsExecuteABAPQualityChecks step with configuration values: %v", config)
