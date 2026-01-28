@@ -56,7 +56,13 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	)
 	// send event
-	if events.SendEvent(config.EventSource, config.EventType, config.Topic, config.EventData, config.AdditionalEventData, client); err != nil {
+	if events.SendEvent(
+		config.EventSource,
+		config.EventType,
+		config.Topic,
+		config.EventData,
+		config.AdditionalEventData,
+		client); err != nil {
 		log.Entry().WithError(err).Warn("  failed")
 	} else {
 		log.Entry().Debug("  succeeded")

@@ -64,9 +64,9 @@ type GCPPubSubConfiguration struct {
 	ProjectNumber    string `json:"projectNumber,omitempty"`
 	IdentityPool     string `json:"identityPool,omitempty"`
 	IdentityProvider string `json:"identityProvider,omitempty"`
+	Source           string `json:"source,omitempty"`
 	Topic            string `json:"topic,omitempty"`
 	TopicPrefix      string `json:"topicPrefix,omitempty"`
-	Source           string `json:"source,omitempty"`
 	TypePrefix       string `json:"typePrefix,omitempty"`
 }
 
