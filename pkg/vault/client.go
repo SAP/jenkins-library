@@ -3,14 +3,15 @@ package vault
 import (
 	"context"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	vaultAPI "github.com/hashicorp/vault/api"
-	"github.com/hashicorp/vault/api/auth/approle"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	vaultAPI "github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/api/auth/approle"
+	"github.com/pkg/errors"
 )
 
 // Client handles communication with Vault
@@ -177,26 +178,35 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 	vaultApiClient.SetMaxRetryWait(time.Second * 90)
 	vaultApiClient.SetMaxRetries(3)
 	vaultApiClient.SetCheckRetry(func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+		// Log all vault responses at debug level for visibility
 		if resp != nil {
-			log.Entry().Debugln("Vault response: ", resp.Status, resp.StatusCode, err)
+			logMsg := fmt.Sprintf("Vault response %s", resp.Status)
+			if err != nil {
+				logMsg += fmt.Sprintf(" (err: %v)", err)
+			}
+			log.Entry().Debugln(logMsg)
 		} else {
-			log.Entry().Debugln("Vault response: ", err)
+			log.Entry().Debugf("Vault response: no HTTP response (err: %v)", err)
 		}
 
 		isEOF := false
 		if err != nil && strings.Contains(err.Error(), "EOF") {
-			log.Entry().Infoln("isEOF is true")
+			log.Entry().Debugln("isEOF is true")
 			isEOF = true
-		}
-
-		if err == io.EOF {
-			log.Entry().Infoln("err = io.EOF is true")
 		}
 
 		retry, err := vaultAPI.DefaultRetryPolicy(ctx, resp, err)
 
 		if err != nil || err == io.EOF || isEOF || retry {
-			log.Entry().Infoln("Retrying vault request...")
+			if resp != nil {
+				logMsg := fmt.Sprintf("Retrying vault request... %s", resp.Status)
+				if err != nil {
+					logMsg += fmt.Sprintf(" (err: %v)", err)
+				}
+				log.Entry().Info(logMsg)
+			} else {
+				log.Entry().Infof("Retrying vault request... (err: %v)", err)
+			}
 			return true, nil
 		}
 		return false, nil
