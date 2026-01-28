@@ -7,7 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type gcpPublishEventUtils interface {
@@ -45,43 +44,22 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 	}
-
 	config := utils.GetConfig()
-	data, err := createNewEvent(config)
-	if err != nil {
-		return errors.Wrap(err, "failed to create event data")
-	}
 
-	err = utils.NewPubsubClient(
+	log.Entry().Debug("publishing event to GCP Pub/Sub...")
+	// create GCP Pub/Sub client
+	client := utils.NewPubsubClient(
 		config.GcpProjectNumber,
 		config.GcpWorkloadIDentityPool,
 		config.GcpWorkloadIDentityPoolProvider,
 		provider.BuildURL(),
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
-	).Publish(config.Topic, data)
-	if err != nil {
-		return errors.Wrap(err, "failed to publish event")
+	)
+	// send event
+	if events.SendEvent(config.EventSource, config.EventType, config.Topic, config.EventData, config.AdditionalEventData, client); err != nil {
+		log.Entry().WithError(err).Warn("  failed")
+	} else {
+		log.Entry().Debug("  succeeded")
 	}
-
-	log.Entry().Infof("Event published successfully! With topic: %s", config.Topic)
 	return nil
-}
-
-func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
-	event, err := events.NewEvent(config.EventType, config.EventSource, "").CreateWithJSONData(config.EventData)
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "failed to create new event")
-	}
-
-	err = event.AddToCloudEventData(config.AdditionalEventData)
-	if err != nil {
-		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
-	}
-
-	eventBytes, err := event.ToBytes()
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "casting event to bytes failed")
-	}
-	log.Entry().Debugf("CloudEvent created: %s", string(eventBytes))
-	return eventBytes, nil
 }

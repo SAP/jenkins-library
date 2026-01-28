@@ -249,19 +249,8 @@ func SonarExecuteScanCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					// publish pipeline taskrun finished event to GCP Pub/Sub
-
-					// create cloud event
-					cloudEventSource := GeneralConfig.HookConfig.GCPPubSubConfig.Source
-					cloudEventType := GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix + "pipelineTaskRunFinished"
-					event := events.NewEvent(cloudEventType, cloudEventSource, "")
-
-					// publish cloud event via GCP Pub/Sub
-					gcpEventTopic := GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix + "pipelinetaskrun-finished"
-					eventBytes, err := event.ToBytes()
-					if err != nil {
-						log.Entry().WithError(err).Warn("failed to marshal event to bytes")
-					}
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// create GCP Pub/Sub client
 					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
@@ -270,10 +259,17 @@ func SonarExecuteScanCommand() *cobra.Command {
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
 					)
-					if err = gcpClient.Publish(gcpEventTopic, eventBytes); err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					// send event
+					if err := events.SendTaskRunFinishedEvent(
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
+						"",
+						"",
+						gcpClient); err != nil {
+						log.Entry().WithError(err).Warn("  failed")
 					} else {
-						log.Entry().Info("event published")
+						log.Entry().Debug("  succeeded")
 					}
 				}
 			}
