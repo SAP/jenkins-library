@@ -48,6 +48,15 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		MaxRetries:                maxRetries,
 		TransportSkipVerification: config.SkipSSLVerification,
 	}
+	// Add proxy support if configured
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse proxy URL")
+		}
+		clientOptions.TransportProxy = proxyURL
+		log.Entry().Infof("Using proxy: %v", config.Proxy)
+	}
 	httpClient.SetOptions(clientOptions)
 
 	repoInfo, err := getRepoInfo(config, telemetryData, httpClient)
@@ -127,6 +136,15 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 		clientOptions.Token = "Bearer " + config.GithubPersonalAccessToken
 	} else {
 		log.Entry().Warning("no GitHub personal access token was provided")
+	}
+	// Add proxy support if configured
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to parse proxy URL")
+		}
+		clientOptions.TransportProxy = proxyURL
+		log.Entry().Infof("Using proxy: %v", config.Proxy)
 	}
 
 	httpClient.SetOptions(clientOptions)
