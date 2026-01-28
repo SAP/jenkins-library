@@ -120,10 +120,6 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		if err != nil {
 			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
 		}
-		kubeSecretParams = append(kubeSecretParams,
-			fmt.Sprintf("--namespace=%v", config.Namespace),
-			"--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify),
-		)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := utils.RunExecutable("kubectl", kubeSecretParams...); err != nil {

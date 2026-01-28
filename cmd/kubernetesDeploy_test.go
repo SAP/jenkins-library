@@ -58,7 +58,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -72,7 +72,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[1].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{"create", "secret", "generic", "testSecret", "--from-file=.dockerconfigjson=.pipeline/docker/config.json",
-			"--type=kubernetes.io/dockerconfigjson", "--dry-run=client", "--output=json", "--namespace=deploymentNamespace", "--insecure-skip-tls-verify=true"},
+			"--type=kubernetes.io/dockerconfigjson", "--dry-run=client", "--output=json"},
 			mockUtils.Calls[1].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
@@ -127,7 +127,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -146,9 +146,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[1].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
@@ -181,7 +179,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.AddFile("/path/to/.docker/config.json", []byte(`{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`))
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=/path/to/.docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: k8sSecretSpec,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=/path/to/.docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: k8sSecretSpec,
 		}
 
 		var stdout bytes.Buffer
@@ -201,9 +199,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=/path/to/.docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[1].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
@@ -253,7 +249,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: k8sSecretSpec,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: k8sSecretSpec,
 		}
 
 		var stdout bytes.Buffer
@@ -272,9 +268,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[1].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
@@ -344,7 +338,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -358,7 +352,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		assert.Equal(t, "kubectl", mockUtils.Calls[1].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{"create", "secret", "generic", "testSecret", "--from-file=.dockerconfigjson=.pipeline/docker/config.json",
-			"--type=kubernetes.io/dockerconfigjson", "--dry-run=client", "--output=json", "--namespace=deploymentNamespace", "--insecure-skip-tls-verify=true"},
+			"--type=kubernetes.io/dockerconfigjson", "--dry-run=client", "--output=json"},
 			mockUtils.Calls[1].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[2].Exec, "Wrong upgrade command")
@@ -412,7 +406,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -429,9 +423,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -490,7 +482,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -506,9 +498,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -576,7 +566,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -592,9 +582,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -662,7 +650,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -678,9 +666,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -736,7 +722,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -752,9 +738,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -788,7 +772,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -804,9 +788,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -839,7 +821,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -876,7 +858,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -892,9 +874,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -928,7 +908,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -966,7 +946,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -982,9 +962,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -1030,7 +1008,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -1086,7 +1064,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -1102,9 +1080,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
@@ -1200,7 +1176,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		mockUtils := newKubernetesDeployMockUtils()
 		mockUtils.StdoutReturn = map[string]string{
-			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json --namespace=deploymentNamespace --insecure-skip-tls-verify=true`: dockerConfigJSON,
+			`kubectl create secret generic testSecret --from-file=.dockerconfigjson=.pipeline/docker/config.json --type=kubernetes.io/dockerconfigjson --dry-run=client --output=json`: dockerConfigJSON,
 		}
 
 		var stdout bytes.Buffer
@@ -1217,9 +1193,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--from-file=.dockerconfigjson=.pipeline/docker/config.json",
 			"--type=kubernetes.io/dockerconfigjson",
 			"--dry-run=client",
-			"--output=json",
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true"},
+			"--output=json"},
 			mockUtils.Calls[0].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", mockUtils.Calls[1].Exec, "Wrong upgrade command")
