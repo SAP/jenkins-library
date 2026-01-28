@@ -2,15 +2,13 @@ package btp
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
-func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) bool {
-	serviceInstanceJSON, err := btp.GetServiceInstance(options)
+func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) CheckResponse {
+	serviceInstanceJSON, err := btp.RunGetServiceInstance(options)
 
 	if err != nil {
-		fmt.Println("Service Instance not found...")
-		return false
+		return CheckResponse{successful: false, done: false}
 	}
 
 	data := ServiceInstanceData{}
@@ -18,29 +16,27 @@ func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) 
 	err = json.Unmarshal([]byte(serviceInstanceJSON), &data)
 
 	if err != nil {
-		return false
+		return CheckResponse{successful: false, done: false}
 	}
 
-	return data.Ready
+	return CheckResponse{successful: true, done: data.Ready}
 }
 
-func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) bool {
-	_, err := btp.GetServiceInstance(options)
+func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) CheckResponse {
+	_, err := btp.RunGetServiceInstance(options)
 
 	if err == nil {
-		fmt.Println("Instance still exists...")
-		return false
+		return CheckResponse{successful: false, done: false}
 	}
 
-	return true
+	return CheckResponse{successful: true, done: true}
 }
 
-func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bool {
-	serviceBindingJSON, err := btp.GetServiceBinding(options)
+func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) CheckResponse {
+	serviceBindingJSON, err := btp.RunGetServiceBinding(options)
 
 	if err != nil {
-		fmt.Println("Service Binding not found...")
-		return false
+		return CheckResponse{successful: false, done: false}
 	}
 
 	data := ServiceBindingData{}
@@ -48,19 +44,23 @@ func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) bo
 	err = json.Unmarshal([]byte(serviceBindingJSON), &data)
 
 	if err != nil {
-		return false
+		return CheckResponse{successful: true, done: false}
 	}
 
-	return data.Ready
+	return CheckResponse{successful: true, done: data.Ready}
 }
 
-func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) bool {
-	_, err := btp.GetServiceBinding(options)
+func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) CheckResponse {
+	_, err := btp.RunGetServiceBinding(options)
 
 	if err == nil {
-		fmt.Println("Binding still exists")
-		return false
+		return CheckResponse{successful: false, done: false}
 	}
 
-	return true
+	return CheckResponse{successful: true, done: true}
+}
+
+type CheckResponse struct {
+	successful bool
+	done       bool
 }

@@ -45,8 +45,8 @@ func TestRunSync_Success(t *testing.T) {
 		CmdScript:      []string{"btp", "deploy"},
 		TimeoutSeconds: 1,
 		PollInterval:   30,
-		CheckFunc: func() bool {
-			return true // Simulate a successful check
+		CheckFunc: func() CheckResponse {
+			return CheckResponse{successful: true, done: true} // Simulate a successful check
 		},
 	})
 	assert.NoError(t, err)
@@ -66,8 +66,8 @@ func TestRunSync_Erro_On_Check(t *testing.T) {
 		CmdScript:      []string{"btp", "deploy"},
 		TimeoutSeconds: timeoutMin,
 		PollInterval:   20,
-		CheckFunc: func() bool {
-			return false
+		CheckFunc: func() CheckResponse {
+			return CheckResponse{successful: false, done: false}
 		},
 	})
 

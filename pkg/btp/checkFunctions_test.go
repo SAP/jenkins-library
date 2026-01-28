@@ -25,15 +25,13 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":              "Authentication successful",
-				"btp get services/instance": string(jsonData),
-				"btp logout":                "",
+				"btp .* get services/instance": string(jsonData),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceInstanceCreated(btp, btpConfig)
-		assert.True(t, result)
+		assert.True(t, result.done && result.successful)
 	})
 
 	t.Run("success ready false", func(t *testing.T) {
@@ -42,62 +40,39 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":              "Authentication successful",
-				"btp get services/instance": string(jsonData),
-				"btp logout":                "",
+				"btp .* get services/instance": string(jsonData),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceInstanceCreated(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 
 	t.Run("GetServiceInstance error", func(t *testing.T) {
 		//given
 		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
-				"btp get services/instance": errors.New("not found"),
+				"btp .* get services/instance": errors.New("not found"),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceInstanceCreated(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 
 	t.Run("unmarshal error", func(t *testing.T) {
 		//given
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":              "Authentication successful",
 				"btp get services/instance": "not-json",
-				"btp logout":                "",
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceInstanceCreated(btp, btpConfig)
-		assert.False(t, result)
-	})
-
-	t.Run("logout error", func(t *testing.T) {
-		//given
-		data := map[string]interface{}{"ready": true}
-		jsonData, _ := json.Marshal(data)
-		m := &BtpExecutorMock{
-			StdoutReturn: map[string]string{
-				"btp login .*":              "Authentication successful",
-				"btp get services/instance": string(jsonData),
-			},
-			ShouldFailOnCommand: map[string]error{
-				"btp logout": errors.New("logout failed"),
-			},
-		}
-		m.Stdout(new(bytes.Buffer))
-		btp := NewBTPUtils(m)
-		result := IsServiceInstanceCreated(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 }
 
@@ -115,27 +90,26 @@ func TestIsServiceInstanceDeleted(t *testing.T) {
 	t.Run("instance still exists", func(t *testing.T) {
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":              "Authentication successful",
-				"btp get services/instance": "{}",
+				"btp .* get services/instance": "{}",
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceInstanceDeleted(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 
 	t.Run("instance not found", func(t *testing.T) {
 		//given
 		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
-				"btp get services/instance": errors.New("not found"),
+				"btp .* get services/instance": errors.New("not found"),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceInstanceDeleted(btp, btpConfig)
-		assert.True(t, result)
+		assert.True(t, result.done && result.successful)
 	})
 }
 
@@ -156,15 +130,13 @@ func TestIsServiceBindingCreated(t *testing.T) {
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":             "Authentication successful",
-				"btp get services/binding": string(jsonData),
-				"btp logout":               "",
+				"btp .* get services/binding": string(jsonData),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceBindingCreated(btp, btpConfig)
-		assert.True(t, result)
+		assert.True(t, result.done && result.successful)
 	})
 
 	t.Run("success ready false", func(t *testing.T) {
@@ -173,15 +145,13 @@ func TestIsServiceBindingCreated(t *testing.T) {
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":             "Authentication successful",
-				"btp get services/binding": string(jsonData),
-				"btp logout":               "",
+				"btp .* get services/binding": string(jsonData),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceBindingCreated(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 
 	t.Run("GetServiceBinding error", func(t *testing.T) {
@@ -194,40 +164,20 @@ func TestIsServiceBindingCreated(t *testing.T) {
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceBindingCreated(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 
 	t.Run("unmarshal error", func(t *testing.T) {
 		//given
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":             "Authentication successful",
-				"btp get services/binding": "not-json",
-				"btp logout":               "",
+				"btp .* get services/binding": "not-json",
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceBindingCreated(btp, btpConfig)
-		assert.False(t, result)
-	})
-
-	t.Run("logout error", func(t *testing.T) {
-		data := map[string]interface{}{"ready": true}
-		jsonData, _ := json.Marshal(data)
-		m := &BtpExecutorMock{
-			StdoutReturn: map[string]string{
-				"btp login .*":             "Authentication successful",
-				"btp get services/binding": string(jsonData),
-			},
-			ShouldFailOnCommand: map[string]error{
-				"btp logout": errors.New("logout failed"),
-			},
-		}
-		m.Stdout(new(bytes.Buffer))
-		btp := NewBTPUtils(m)
-		result := IsServiceBindingCreated(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 }
 
@@ -245,25 +195,24 @@ func TestIsServiceBindingDeleted(t *testing.T) {
 	t.Run("binding still exists", func(t *testing.T) {
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp login .*":             "Authentication successful",
-				"btp get services/binding": "{}",
+				"btp .* get services/binding": "{}",
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceBindingDeleted(btp, btpConfig)
-		assert.False(t, result)
+		assert.False(t, result.done && result.successful)
 	})
 
 	t.Run("binding not found", func(t *testing.T) {
 		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
-				"btp get services/binding": errors.New("not found"),
+				"btp .* get services/binding": errors.New("not found"),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
 		btp := NewBTPUtils(m)
 		result := IsServiceBindingDeleted(btp, btpConfig)
-		assert.True(t, result)
+		assert.True(t, result.done && result.successful)
 	})
 }
