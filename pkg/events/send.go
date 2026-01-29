@@ -8,8 +8,8 @@ type eventClient interface {
 	Publish(topic string, data []byte) error
 }
 
-const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
 const eventTopicTaskRunFinished = "pipelinetaskrun-finished"
+const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
 
 func SendTaskRunFinishedEvent(eventSource, eventTypePrefix, eventTopicPrefix, data, additionalEventData string, client eventClient) error {
 	eventType := eventTypePrefix + eventTypeTaskRunFinished
@@ -23,14 +23,18 @@ func SendEvent(eventSource, eventType, eventTopic, data, additionalEventData str
 	if err != nil {
 		return err
 	}
-	// log.Entry().Infof("  with data %s", event)
-	log.Entry().Debugf("event %+v", event)
-	log.Entry().Debugf("event data %+v", event.cloudEvent.Data())
 
 	err = event.AddToCloudEventData(additionalEventData)
 	if err != nil {
 		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
 	}
+
+	log.Entry().Debugf("event %+v", event)
+
+	var newEventData map[string]interface{}
+	event.cloudEvent.DataAs(&newEventData)
+	log.Entry().Debugf("event data %+v", newEventData)
+	// log.Entry().Debugf("event data %+v", event.cloudEvent.Data())
 
 	// publish cloud event via GCP Pub/Sub
 	eventBytes, err := event.ToBytes()
