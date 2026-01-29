@@ -53,7 +53,7 @@ func TestKubernetesDeployIntegrationKubectlSecretNamespace(t *testing.T) {
 	assert.Contains(t, secretOutput, "secret/reg-secret")
 
 	// Verify secret does NOT exist in default namespace
-	exitCode, _ := ExecCommandExpectFailure(t, container, "/", []string{
+	exitCode, _ := ExecCommandExpectNonZero(t, container, "/", []string{
 		"kubectl", "get", "secret", "reg-secret", "-n", "default",
 	})
 	assert.NotEqual(t, 0, exitCode, "Secret should NOT exist in default namespace")
@@ -113,9 +113,9 @@ func TestKubernetesDeployIntegrationKubectlMultipleNamespaces(t *testing.T) {
 	ExecCommand(t, container, "/", []string{"kubectl", "get", "secret", "secret-b", "-n", "namespace-b"})
 
 	// Cross-check: secrets should NOT exist in wrong namespaces
-	exitCode, _ := ExecCommandExpectFailure(t, container, "/", []string{"kubectl", "get", "secret", "secret-a", "-n", "namespace-b"})
+	exitCode, _ := ExecCommandExpectNonZero(t, container, "/", []string{"kubectl", "get", "secret", "secret-a", "-n", "namespace-b"})
 	assert.NotEqual(t, 0, exitCode)
-	exitCode, _ = ExecCommandExpectFailure(t, container, "/", []string{"kubectl", "get", "secret", "secret-b", "-n", "namespace-a"})
+	exitCode, _ = ExecCommandExpectNonZero(t, container, "/", []string{"kubectl", "get", "secret", "secret-b", "-n", "namespace-a"})
 	assert.NotEqual(t, 0, exitCode)
 
 	t.Log("Test passed: Secrets were created in their correct namespaces")

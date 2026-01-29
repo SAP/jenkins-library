@@ -241,8 +241,10 @@ func ExecCommand(t *testing.T, container testcontainers.Container, workDir strin
 	return outputStr
 }
 
-// ExecCommandExpectFailure executes a command expecting it to fail.
-func ExecCommandExpectFailure(t *testing.T, container testcontainers.Container, workDir string, command []string) (int, string) {
+// ExecCommandExpectNonZero executes a command and returns the exit code and output.
+// Unlike ExecCommand, this does not fail the test on non-zero exit codes.
+// Use this when you need to check the exit code yourself.
+func ExecCommandExpectNonZero(t *testing.T, container testcontainers.Container, workDir string, command []string) (int, string) {
 	t.Helper()
 
 	ctx := context.Background()
