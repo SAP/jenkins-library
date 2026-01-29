@@ -236,21 +236,18 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.OIDCConfig.RoleID,
 					)
 					// send event
-					// Build a safe JSON payload for the event
-					type taskPayload struct {
-						TaskName string ` + "`json:\"taskName\"`" + `
-					}
-					payloadBytes, mErr := json.Marshal(taskPayload{TaskName: STEP_NAME})
-					if mErr != nil {
-						log.Entry().WithError(mErr).Warn("failed to marshal Pub/Sub event payload")
-					}
-					if err := events.SendTaskRunFinished(
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						string(payloadBytes),
-						"",
-						gcpClient); err != nil {
+                    // Build a safe JSON payload for the event via events package
+                    payload, mErr := events.SafeDataFromTaskName(STEP_NAME)
+                    if mErr != nil {
+                        log.Entry().WithError(mErr).Warn("failed to marshal Pub/Sub event payload")
+                    }
+                    if err := events.SendTaskRunFinished(
+                        {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+                        {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+                        {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
+                        payload,
+                        "",
+                        gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
 					} else {
 						log.Entry().Debug("  succeeded")
@@ -272,6 +269,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	{{- range $key, $value := uniqueName .StepParameters }}
+	{{ if isCLIParam $value.Type }}cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, {{ $value.Name | quote }}, {{ $value.Default }}, {{ $value.Description | quote }}){{end}}{{ end }}
+	{{- printf "\n" }}
+	{{- range
 	{{ if isCLIParam $value.Type }}cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, {{ $value.Name | quote }}, {{ $value.Default }}, {{ $value.Description | quote }}){{end}}{{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}
