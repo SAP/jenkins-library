@@ -63,9 +63,9 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		config.EventData,
 		config.AdditionalEventData,
 		client); err != nil {
-		log.Entry().WithError(err).Warn("  failed")
+		log.Entry().WithError(err).Warn("  event publish failed")
 	} else {
-		log.Entry().Debug("  succeeded")
+		log.Entry().Debug("  event publish succeeded")
 	}
 	return nil
 }

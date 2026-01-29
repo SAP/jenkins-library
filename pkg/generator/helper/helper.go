@@ -65,6 +65,7 @@ import (
 	"path/filepath"
 	{{ end -}}
 	"time"
+	"encoding/json"
 
 	{{ if .ExportPrefix -}}
 	{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"
@@ -235,11 +236,19 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.OIDCConfig.RoleID,
 					)
 					// send event
+					// Build a safe JSON payload for the event
+					type taskPayload struct {
+						TaskName string ` + "`json:\"taskName\"`" + `
+					}
+					payloadBytes, mErr := json.Marshal(taskPayload{TaskName: STEP_NAME})
+					if mErr != nil {
+						log.Entry().WithError(mErr).Warn("failed to marshal Pub/Sub event payload")
+					}
 					if err := events.SendTaskRunFinished(
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						"{\"taskName\":\""+STEP_NAME+"\"}",
+						string(payloadBytes),
 						"",
 						gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
