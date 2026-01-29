@@ -10,5 +10,5 @@ func EncodeString(token string) string {
 }
 
 func EncodeUsernamePassword(username, password string) string {
-	return EncodeString(fmt.Sprintf("%s:%s", username, password))
+	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", username, password)))
 }

@@ -133,7 +133,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	if err := fileWrite(targetPath, jsonResult, utils); err != nil {
+	if err = fileWrite(targetPath, jsonResult, utils); err != nil {
 		return "", err
 	}
 
@@ -216,7 +216,7 @@ func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, 
 	exportCmd := cranecmd.NewCmdExport(&noOpts)
 	exportCmd.SetArgs(args)
 
-	if err := exportCmd.Execute(); err != nil {
+	if err = exportCmd.Execute(); err != nil {
 		return nil, err
 	}
 
@@ -248,12 +248,12 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	args := []string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat}
 	craneCmd.SetArgs(args)
 
-	if err := craneCmd.Execute(); err != nil {
+	if err = craneCmd.Execute(); err != nil {
 		defer os.Remove(tmpFile.Name())
 		return nil, err
 	}
 
-	if err := os.Rename(tmpFile.Name(), targetFile); err != nil {
+	if err = os.Rename(tmpFile.Name(), targetFile); err != nil {
 		defer os.Remove(tmpFile.Name())
 		return nil, err
 	}
