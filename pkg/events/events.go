@@ -25,7 +25,7 @@ type Event struct {
 	uuidData    string
 }
 
-func NewEvent(eventType, eventSource string, uuidString string) Event {
+func NewEvent(eventType, eventSource, uuidString string) Event {
 	return Event{
 		eventType:   eventType,
 		eventSource: eventSource,
