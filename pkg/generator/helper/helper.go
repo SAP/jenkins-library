@@ -65,7 +65,6 @@ import (
 	"path/filepath"
 	{{ end -}}
 	"time"
-	"encoding/json"
 
 	{{ if .ExportPrefix -}}
 	{{ .ExportPrefix }} "github.com/SAP/jenkins-library/cmd"
