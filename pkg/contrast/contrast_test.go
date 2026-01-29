@@ -147,8 +147,19 @@ func TestGetVulnerabilitiesFromClient(t *testing.T) {
 		contrastClient := &contrastHttpClientMock{}
 		findings, err := getVulnerabilitiesFromClient(contrastClient, vulnsUrlEmpty, 0)
 		assert.NoError(t, err)
-		assert.Empty(t, findings)
-		assert.Equal(t, 0, len(findings))
+		assert.NotEmpty(t, findings)
+		assert.Equal(t, 2, len(findings))
+		for _, f := range findings {
+			assert.True(t, f.ClassificationName == AuditAll || f.ClassificationName == Optional)
+			if f.ClassificationName == AuditAll {
+				assert.Equal(t, 0, f.Total)
+				assert.Equal(t, 0, f.Audited)
+			}
+			if f.ClassificationName == Optional {
+				assert.Equal(t, 0, f.Total)
+				assert.Equal(t, 0, f.Audited)
+			}
+		}
 	})
 
 	t.Run("Error", func(t *testing.T) {
