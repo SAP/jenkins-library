@@ -264,7 +264,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						`{"taskName":"`+STEP_NAME+`"}`,
+						"{\"taskName\":\""+STEP_NAME+"\"}",
 						"",
 						gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
