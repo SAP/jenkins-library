@@ -3,12 +3,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -178,16 +180,32 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// create GCP Pub/Sub client
+					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					)
+					// send event
+					// Build a safe JSON payload for the event via events package
+					payload, mErr := events.SafeDataFromTaskName(STEP_NAME)
+					if mErr != nil {
+						log.Entry().WithError(mErr).Warn("failed to marshal Pub/Sub event payload")
+					}
+					if err := events.SendTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
+						payload,
+						"",
+						gcpClient); err != nil {
+						log.Entry().WithError(err).Warn("  failed")
+					} else {
+						log.Entry().Debug("  succeeded")
 					}
 				}
 			}
