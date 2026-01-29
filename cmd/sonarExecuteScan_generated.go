@@ -260,7 +260,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
 					)
 					// send event
-					if err := events.SendTaskRunFinishedEvent(
+					if err := events.SendTaskRunFinished(
 						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,

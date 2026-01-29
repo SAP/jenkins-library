@@ -56,7 +56,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	)
 	// send event
-	if events.SendEvent(
+	if events.Send(
 		config.EventSource,
 		config.EventType,
 		config.Topic,

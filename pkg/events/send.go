@@ -11,13 +11,13 @@ type eventClient interface {
 const eventTopicTaskRunFinished = "pipelinetaskrun-finished"
 const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
 
-func SendTaskRunFinishedEvent(eventSource, eventTypePrefix, eventTopicPrefix, data, additionalEventData string, client eventClient) error {
+func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix, data, additionalEventData string, client eventClient) error {
 	eventType := eventTypePrefix + eventTypeTaskRunFinished
 	eventTopic := eventTopicPrefix + eventTopicTaskRunFinished
-	return SendEvent(eventSource, eventType, eventTopic, data, additionalEventData, client)
+	return Send(eventSource, eventType, eventTopic, data, additionalEventData, client)
 }
 
-func SendEvent(eventSource, eventType, eventTopic, data, additionalEventData string, client eventClient) error {
+func Send(eventSource, eventType, eventTopic, data, additionalEventData string, client eventClient) error {
 	// create cloud event
 	event, err := NewEvent(eventType, eventSource, "").CreateWithJSONData(data)
 	if err != nil {
@@ -30,11 +30,10 @@ func SendEvent(eventSource, eventType, eventTopic, data, additionalEventData str
 	}
 
 	log.Entry().Debugf("event %+v", event)
-
+	// log event payload
 	var newEventData map[string]interface{}
 	event.cloudEvent.DataAs(&newEventData)
 	log.Entry().Debugf("event data %+v", newEventData)
-	// log.Entry().Debugf("event data %+v", event.cloudEvent.Data())
 
 	// publish cloud event via GCP Pub/Sub
 	eventBytes, err := event.ToBytes()
