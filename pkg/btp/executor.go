@@ -2,11 +2,12 @@ package btp
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // Stdin ..
@@ -25,7 +26,7 @@ func (e *Executor) GetStdoutValue() string {
 
 func (e *Executor) Run(cmdScript []string) (err error) {
 	if err := e.Cmd.RunExecutable(cmdScript[0], cmdScript[1:]...); err != nil {
-		return fmt.Errorf("Failed to execute BTP CLI: %w", err)
+		return errors.Wrap(err, "Failed to execute BTP CLI")
 	}
 	return nil
 }
@@ -38,30 +39,59 @@ func (e *Executor) Run(cmdScript []string) (err error) {
 func (e *Executor) RunSync(opts RunSyncOptions) (err error) {
 	err = e.Run(opts.CmdScript)
 
-	if err != nil {
-		return fmt.Errorf("Failed to execute BTP CLI: %w", err)
+	if err != nil && !opts.IgnoreErrorOnFirstCall {
+		return errors.Wrap(err, "Failed to execute BTP CLI (Sync)")
 	}
+
+	// Save if we are now waiting things to be Ready
+	waitingForReady := false
+
+	retryCount := 0
+	maxRetries := 3
 
 	// Poll to check completion
 	timeoutDuration := time.Duration(opts.TimeoutSeconds) * time.Second
 	pollIntervall := time.Duration(opts.PollInterval) * time.Second
 	startTime := time.Now()
 
-	fmt.Println("Checking command completion...")
+	log.Entry().Info("Checking command completion...")
 
 	for time.Since(startTime) < timeoutDuration {
+		if retryCount >= maxRetries {
+			return errors.New("Maximum number of retries reached while polling for command completion")
+		}
+
 		// Wait before the next check
 		time.Sleep(pollIntervall)
 
 		check := opts.CheckFunc()
 
-		if check {
-			fmt.Println("Command execution completed successfully!")
-			return nil
+		if check.successful {
+			if check.done {
+				log.Entry().Info("Command execution completed successfully!")
+				return nil
+			} else {
+				waitingForReady = true
+				retryCount = 0
+				log.Entry().Info("Command not yet completed, waiting for status ready...")
+			}
+		} else {
+			err := opts.LoginFunc()
+			if err != nil {
+				return errors.Wrap(err, "Failed to re-login during polling")
+			}
+
+			if waitingForReady {
+				log.Entry().Info("Command was previously in progress, but now reports failure.")
+				retryCount++
+			} else {
+				log.Entry().Info("Command not yet completed, checking again...")
+			}
 		}
+
 	}
 
-	return fmt.Errorf("Command did not completed within the timeout period")
+	return errors.New("Command did not completed within the timeout period")
 }
 
 type Executor struct {
