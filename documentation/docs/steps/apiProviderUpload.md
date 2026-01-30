@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+This step will soon be deprecated!
+
 ## ${docGenDescription}
 
 With this step, you can add a new entity to the API Providers. An API Provider is a concept in API Management, capability of SAP Integration Suite, which defines the connection details for services running on specific hosts whose details you want to access.

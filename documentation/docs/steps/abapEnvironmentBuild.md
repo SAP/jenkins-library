@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+This step will soon be deprecated!
+
 ## ${docGenDescription}
 
 ## Prerequisites SAP BTP, ABAP environment

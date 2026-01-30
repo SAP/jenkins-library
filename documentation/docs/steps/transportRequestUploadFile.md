@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+This step will soon be deprecated!
+
 ## ${docGenDescription}
 
 **Note:** This step is deprecated. Use the transport type specific steps instead.

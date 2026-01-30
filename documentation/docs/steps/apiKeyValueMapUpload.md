@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+This step will soon be deprecated!
+
 ## ${docGenDescription}
 
 With this step you can store one or more key value pairs of data stored in a group called a map or key value map.

@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+This step will soon be deprecated!
+
 ## Prerequisites
 
 You need to create a personal access token within GitHub and add this to the Jenkins credentials store.
