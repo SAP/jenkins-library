@@ -11,21 +11,21 @@ type eventClient interface {
 const eventTopicTaskRunFinished = "pipelinetaskrun-finished"
 const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
 
-// Add uuidString parameter so callers can provide a stable identifier
-func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix, data, additionalEventData, uuidString string, client eventClient) error {
+func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix, data, additionalEventData string, client eventClient) error {
 	eventType := eventTypePrefix + eventTypeTaskRunFinished
 	eventTopic := eventTopicPrefix + eventTopicTaskRunFinished
-	return Send(eventSource, eventType, eventTopic, data, additionalEventData, uuidString, client)
+	return Send(eventSource, eventType, eventTopic, data, additionalEventData, client)
 }
 
-func Send(eventSource, eventType, eventTopic, data, additionalEventData, uuidString string, client eventClient) error {
-	// create cloud event with provided uuidString (falls back to random inside NewEvent if empty)
-	event, err := NewEvent(eventType, eventSource, uuidString).CreateWithJSONData(data)
+func Send(eventSource, eventType, eventTopic, data, additionalEventData string, client eventClient) error {
+	// create cloud event
+	event, err := NewEvent(eventType, eventSource, "").CreateWithJSONData(data)
 	if err != nil {
 		return err
 	}
 
-	if err = event.AddToCloudEventData(additionalEventData); err != nil {
+	err = event.AddToCloudEventData(additionalEventData)
+	if err != nil {
 		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
 	}
 
