@@ -230,6 +230,7 @@ func Execute() {
 	rootCmd.AddCommand(AscAppUploadCommand())
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
+	rootCmd.AddCommand(FsOnboardingStepCommand())
 
 	addRootFlags(rootCmd)
 

@@ -1,0 +1,19 @@
+metadata:
+  name: fsOnboardingStep
+  description: This step will execute a fskhiri build.
+  longDescription: |
+    This step will wello world step.
+spec:
+  inputs:
+    secrets:
+      - name: fskhiriPrivateModulesGitTokenCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repos where your go private modules are stored.
+        type: jenkins
+    params:
+      - name: buildFlags
+        type: "[]string"
+        description: Defines list of build flags to be used.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
