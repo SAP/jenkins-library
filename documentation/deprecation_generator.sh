@@ -4,11 +4,12 @@
 set -euo pipefail
 
 # Configurable paths
-STEPS_FILE="${1:-/Users/C5399877/Library/CloudStorage/OneDrive-SAPSE/Documents/Piper/jenkins-library/documentation/deprecated_steps.yaml}"
-DOCS_DIR="${2:-documentation/docs/steps}"
+STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}"
+DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}"
 
 # Deprecation block (exact text)
-DEPR_BLOCK=$'!!! warning "Deprecation notice"\n    This step will soon be deprecated!'
+DEPR_TITLE=$'!!! warning "Deprecation notice"'
+DEPR_BODY=$'This step will soon be deprecated!'
 
 # Load steps from YAML into a plain array (compatible with macOS bash)
 STEPS=()
@@ -45,22 +46,19 @@ contains() {
 # Helper: insert deprecation block two lines under header "# <StepName>"
 insert_deprecation() {
   local file="$1"
-  local step="$2"
-
   if grep -q 'Deprecation notice' "$file"; then
     echo "SKIP (already deprecated): \`$file\`"
     return
   fi
 
-  awk -v block="$DEPR_BLOCK" '
+  awk -v t="$DEPR_TITLE" -v b="$DEPR_BODY" '
     BEGIN { inserted=0 }
     {
-      if (!inserted && $0 == # ${docGenStepName) {
+      if (!inserted && $0 == "# ${docGenStepName}") {
         print $0
-        print ""     # first blank line
-        print ""     # second blank line
-        n = split(block, b, "\n")
-        for (i=1;i<=n;i++) print b[i]
+        print ""     # blank line
+        print t
+        print b
         inserted=1
         next
       }
@@ -78,16 +76,12 @@ remove_deprecation() {
     return
   fi
 
-  awk '
-    BEGIN { inblock=0 }
-    # start of block
-    /^!!! warning "Deprecation notice"$/ { inblock=1; next }
-    # while in block skip indented lines (4 spaces or tabs) and empty lines that belong to block
-    inblock && ($0 ~ /^[[:space:]]/ || $0 == "") { next }
-    # first non-indented/non-empty line after block -> end block and print it
-    inblock { inblock=0; print; next }
-    { print }
-  ' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+awk '
+  BEGIN { skip=0 }
+  /^!!! warning "Deprecation notice"$/ { skip=2; next }   # drop this line and the following line
+  skip > 0 { skip--; next }
+  { print }
+' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
   echo "REMOVED: \`$file\`"
 }
 

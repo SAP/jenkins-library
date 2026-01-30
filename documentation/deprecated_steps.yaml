@@ -1,4 +1,3 @@
 steps:
   - newmanExecute
   - uiVeri5ExecuteTests
-  - abapAddonAssemblyKitCheck
