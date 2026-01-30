@@ -30,11 +30,13 @@ type pythonBuildOptions struct {
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
 	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
 	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
+	AdditionalEventData      string   `json:"additionalEventData,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo   string
+		additionalEventData string
 	}
 }
 
@@ -45,6 +47,7 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "additionalEventData", value: p.custom.additionalEventData},
 	}
 
 	errCount := 0
@@ -232,6 +235,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
+	cmd.Flags().StringVar(&stepConfig.AdditionalEventData, "additionalEventData", os.Getenv("PIPER_additionalEventData"), "Optional JSON object to be merged into the CloudEvent data for this step.")
 
 }
 
@@ -356,6 +360,20 @@ func pythonBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `requirements.txt`,
 					},
+					{
+						Name: "additionalEventData",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/additionalEventData",
+							},
+						},
+						Scope:     []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_additionalEventData"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -368,6 +386,7 @@ func pythonBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/additionalEventData"},
 						},
 					},
 				},
