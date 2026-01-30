@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -29,11 +30,13 @@ type pythonBuildOptions struct {
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
 	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
 	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
+	AdditionalEventData      string   `json:"additionalEventData,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo   string
+		additionalEventData string
 	}
 }
 
@@ -44,6 +47,7 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "additionalEventData", value: p.custom.additionalEventData},
 	}
 
 	errCount := 0
@@ -178,16 +182,32 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// create GCP Pub/Sub client
+					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					)
+					// send event
+					// Build a safe JSON payload for the event via events package
+					payload, mErr := events.SafeDataFromTaskName(STEP_NAME)
+					if mErr != nil {
+						log.Entry().WithError(mErr).Warn("failed to marshal Pub/Sub event payload")
+					}
+					if err := events.SendTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
+						payload,
+						"",
+						gcpClient); err != nil {
+						log.Entry().WithError(err).Warn("  failed")
+					} else {
+						log.Entry().Debug("  succeeded")
 					}
 				}
 			}
@@ -215,6 +235,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
+	cmd.Flags().StringVar(&stepConfig.AdditionalEventData, "additionalEventData", os.Getenv("PIPER_additionalEventData"), "Optional JSON object to be merged into the CloudEvent data for this step.")
 
 }
 
@@ -339,6 +360,20 @@ func pythonBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `requirements.txt`,
 					},
+					{
+						Name: "additionalEventData",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/additionalEventData",
+							},
+						},
+						Scope:     []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_additionalEventData"),
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -351,6 +386,7 @@ func pythonBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/additionalEventData"},
 						},
 					},
 				},

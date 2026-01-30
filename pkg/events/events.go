@@ -3,6 +3,7 @@ package events
 import (
 	"bytes"
 	"encoding/json"
+	"maps"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -25,7 +26,7 @@ type Event struct {
 	uuidData    string
 }
 
-func NewEvent(eventType, eventSource string, uuidString string) Event {
+func NewEvent(eventType, eventSource, uuidString string) Event {
 	return Event{
 		eventType:   eventType,
 		eventSource: eventSource,
@@ -49,11 +50,16 @@ func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
 func (e Event) Create(data any, opts ...Option) Event {
 	e.cloudEvent = cloudevents.NewEvent("1.0")
 
+	// compute and set id
+	var id string
 	if e.uuidData != "" {
-		e.cloudEvent.SetID(GetUUID(e.uuidData))
+		id = GetUUID(e.uuidData)
 	} else {
-		e.cloudEvent.SetID(uuid.New().String())
+		id = uuid.New().String()
 	}
+	e.cloudEvent.SetID(id)
+	// return id back to wrapper for logging
+	e.uuidData = id
 
 	// set default values
 	e.cloudEvent.SetType(e.eventType)
@@ -106,10 +112,23 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 		errors.Wrap(err, "couldn't add additional data to cloud event")
 	}
 
-	for k, v := range additionalData {
-		newEventData[k] = v
-	}
+	maps.Copy(newEventData, additionalData)
 
 	e.cloudEvent.SetData("application/json", newEventData)
 	return nil
+}
+
+// SafeDataFromKV builds a valid JSON object from a single key/value using encoding/json.
+func SafeDataFromKV(key, value string) (string, error) {
+	payload := map[string]string{key: value}
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal event payload")
+	}
+	return string(b), nil
+}
+
+// SafeDataFromTaskName builds the standard payload containing taskName.
+func SafeDataFromTaskName(taskName string) (string, error) {
+	return SafeDataFromKV("taskName", taskName)
 }
