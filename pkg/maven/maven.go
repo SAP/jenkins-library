@@ -341,7 +341,13 @@ func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, error) {
 	var parameters []string
 
-	parameters, err := DownloadAndGetMavenParameters(options.GlobalSettingsFile, options.ProjectSettingsFile, utils)
+	// skip global settings if configured
+	global := options.GlobalSettingsFile
+	if options.SkipGlobalSettings {
+		global = ""
+	}
+
+	parameters, err := DownloadAndGetMavenParameters(global, options.ProjectSettingsFile, utils)
 	if err != nil {
 		return nil, err
 	}
