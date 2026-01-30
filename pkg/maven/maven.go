@@ -28,6 +28,7 @@ type ExecuteOptions struct {
 	Flags                       []string `json:"flags,omitempty"`
 	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 	ReturnStdout                bool     `json:"returnStdout,omitempty"`
+	SkipGlobalSettings          bool     `json:"skipGlobalSettings,omitempty"`
 }
 
 // EvaluateOptions are used by Evaluate() to construct the Maven command line.

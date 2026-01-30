@@ -144,6 +144,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		M2Path:                      config.M2Path,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		SkipGlobalSettings:          config.SkipGlobalSettings,
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
