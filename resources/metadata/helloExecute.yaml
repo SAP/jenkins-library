@@ -1,0 +1,20 @@
+metadata:
+  name: helloExecute
+  description: Prints a greeting message for a provided username.
+  longDescription: >
+    The `helloExecute` step prints a greeting to the pipeline log. It accepts the
+    `helloUsername` parameter and outputs a simple `Hello <username>` message.
+spec:
+  inputs:
+    params:
+      - name: helloUsername
+        type: string
+        description: Name of the person to greet.
+        scope:
+          - PARAMETERS
+          - STEPS
+        default: "World"
+  outputs: {}
+  containers:
+    - name: alpine
+      image: alpine:3.18
