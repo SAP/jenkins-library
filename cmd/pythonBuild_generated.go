@@ -195,18 +195,12 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 					if mErr != nil {
 						log.Entry().WithError(mErr).Warn("failed to marshal Pub/Sub event payload")
 					}
-					// uuid seed: prefer CorrelationID, fallback to STEP_NAME
-					uuidSeed := GeneralConfig.CorrelationID
-					if uuidSeed == "" {
-						uuidSeed = STEP_NAME
-					}
 					if err := events.SendTaskRunFinished(
 						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
 						payload,
 						"",
-						uuidSeed,
 						gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
 					} else {

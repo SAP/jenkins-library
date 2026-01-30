@@ -56,18 +56,12 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	)
 	// send event
-	// Choose a stable uuid seed: prefer GeneralConfig.CorrelationID; fallback to config.EventType.
-	uuidSeed := GeneralConfig.CorrelationID
-	if uuidSeed == "" {
-		uuidSeed = config.EventType
-	}
 	if events.Send(
 		config.EventSource,
 		config.EventType,
 		config.Topic,
 		config.EventData,
 		config.AdditionalEventData,
-		uuidSeed,
 		client); err != nil {
 		log.Entry().WithError(err).Warn("  failed")
 	} else {
