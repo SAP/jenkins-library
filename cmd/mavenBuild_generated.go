@@ -42,6 +42,7 @@ type mavenBuildOptions struct {
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 	DeployFlags                     []string `json:"deployFlags,omitempty"`
 	CreateBuildArtifactsMetadata    bool     `json:"createBuildArtifactsMetadata,omitempty"`
+	SkipGlobalSettings              bool     `json:"skipGlobalSettings,omitempty"`
 }
 
 type mavenBuildCommonPipelineEnvironment struct {
@@ -305,6 +306,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringSliceVar(&stepConfig.DeployFlags, "deployFlags", []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`}, "maven deploy flags that will be used when publish is detected.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
+	cmd.Flags().BoolVar(&stepConfig.SkipGlobalSettings, "skipGlobalSettings", false, "flag to skip global settings.xml file for mvn command")
 
 }
 
@@ -557,6 +559,15 @@ func mavenBuildMetadata() config.StepData {
 					},
 					{
 						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "skipGlobalSettings",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",

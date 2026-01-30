@@ -263,6 +263,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: skipGlobalSettings
+        type: bool
+        default: false
+        description: flag to skip global settings.xml file for mvn command
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
     resources:
       - type: stash
   outputs:
