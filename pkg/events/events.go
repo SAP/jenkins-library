@@ -3,6 +3,7 @@ package events
 import (
 	"bytes"
 	"encoding/json"
+	"maps"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -111,9 +112,7 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 		errors.Wrap(err, "couldn't add additional data to cloud event")
 	}
 
-	for k, v := range additionalData {
-		newEventData[k] = v
-	}
+	maps.Copy(newEventData, additionalData)
 
 	e.cloudEvent.SetData("application/json", newEventData)
 	return nil
