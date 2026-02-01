@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func createTempFile(t *testing.T, content string) (string, func()) {
@@ -23,6 +24,8 @@ func createTempFile(t *testing.T, content string) (string, func()) {
 const validBom = `<bom>
 					<metadata>
 						<component>
+							<name>com.example/mycomponent</name>
+							<version>1.0.0</version>
 							<purl>pkg:maven/com.example/mycomponent@1.0.0</purl>
 						</component>
 					</metadata>
@@ -289,7 +292,7 @@ func TestGetBomVersion(t *testing.T) {
 			fileName, cleanup := createTempFile(t, tt.bomContent)
 			defer cleanup()
 
-			version, err := GetBomVersion(fileName)
+			version, err := GetBomSchemaVersion(fileName)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedVersion, version)
@@ -322,7 +325,114 @@ func TestParseMTASampleBOM(t *testing.T) {
 	assert.NoError(t, err, "MTA sample BOM validation failed")
 
 	// Verify version detection
-	version, err := GetBomVersion(bomPath)
+	version, err := GetBomSchemaVersion(bomPath)
 	assert.NoError(t, err, "Failed to get BOM version")
 	assert.Equal(t, "1.4", version, "Expected version 1.4")
+}
+
+func TestGetBOMName(t *testing.T) {
+	tests := []struct {
+		name         string
+		filePath     string
+		bomFilename  string
+		xmlContent   string
+		expectedName string
+	}{
+		{
+			name:         "valid BOM file",
+			xmlContent:   validBom,
+			expectedName: "com.example/mycomponent",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			name := GetName(filePath)
+			if name != tt.expectedName {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedName, name)
+			}
+		})
+	}
+}
+
+func TestGetBOMVersion(t *testing.T) {
+	tests := []struct {
+		name            string
+		filePath        string
+		bomFilename     string
+		xmlContent      string
+		expectedVersion string
+	}{
+		{
+			name:            "valid BOM file",
+			xmlContent:      validBom,
+			expectedVersion: "1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			component := GetComponent(filePath)
+			if component.Version != tt.expectedVersion {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedVersion, component.Version)
+			}
+		})
+	}
+}
+
+func TestUpdateBOMPurl(t *testing.T) {
+	tests := []struct {
+		name         string
+		filePath     string
+		bomFilename  string
+		xmlContent   string
+		expectedPurl string
+	}{
+		{
+			name:         "valid BOM file",
+			xmlContent:   validBom,
+			expectedPurl: "pkg:maven/com.example/mycomponent@1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var filePath string
+			var cleanup func()
+			if tt.xmlContent != "" {
+				filePath, cleanup = createTempFile(t, tt.xmlContent)
+				defer cleanup()
+			} else {
+				// Use a non-existent file path
+				filePath = "nonexistent.xml"
+			}
+
+			err := UpdatePurl(filePath, "pkg:maven/com.example/mycomponent@1.0.0")
+			require.NoError(t, err)
+			component := GetComponent(filePath)
+			if component.Purl != tt.expectedPurl {
+				t.Errorf("Expected PURL: %v, got: %v", tt.expectedPurl, component.Purl)
+			}
+		})
+	}
 }

@@ -88,6 +88,8 @@ const (
 	SrcZip                     = "src.zip"
 	CodeqlDatabaseYml          = "codeql-database.yml"
 	OriginRemote               = "origin"
+	// MaxFileSize prevents decompression bombs by limiting individual file extraction
+	MaxFileSize = 100 * 1024 * 1024 // 100 MB
 )
 
 func (uploader *GitUploaderInstance) UploadProjectToGithub() (string, error) {
@@ -338,11 +340,22 @@ func unzip(zipPath, targetDir, srcDir, dbDir string) error {
 			return err
 		}
 
-		_, err = io.Copy(fNew, rc)
-		if err != nil {
+		n, err := io.CopyN(fNew, rc, MaxFileSize)
+		if err != nil && err != io.EOF {
 			rc.Close()
 			fNew.Close()
 			return err
+		}
+		// Check if file exceeds size limit
+		if n == MaxFileSize {
+			var buf [1]byte
+			if _, err := rc.Read(buf[:1]); err == nil {
+				rc.Close()
+				fNew.Close()
+				os.Remove(fpath)
+				log.Entry().Warnf("Rejecting file %s: exceeds maximum allowed size of %d bytes (100MB limit)", fName, MaxFileSize)
+				return fmt.Errorf("file %s exceeds maximum allowed size of %d bytes", fName, MaxFileSize)
+			}
 		}
 		rc.Close()
 		fNew.Close()

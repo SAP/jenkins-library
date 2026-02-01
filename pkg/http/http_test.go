@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -678,6 +679,55 @@ func TestParseHTTPResponseBodyXML(t *testing.T) {
 
 	})
 
+}
+func TestTransformBody(t *testing.T) {
+	t.Run("nil body", func(t *testing.T) {
+		// when
+		result := transformBody(nil)
+		// then
+		assert.Equal(t, "", result)
+	})
+
+	t.Run("body shorter than max", func(t *testing.T) {
+		// given
+		bodyContent := "this is a short body"
+		body := bytes.NewReader([]byte(bodyContent))
+		// when
+		result := transformBody(body)
+		// then
+		assert.Equal(t, bodyContent, result)
+	})
+
+	t.Run("body longer than max", func(t *testing.T) {
+		// given
+		longBody := make([]byte, maxLogBodyLength+100)
+		for i := range longBody {
+			longBody[i] = 'a'
+		}
+		body := bytes.NewReader(longBody)
+		// when
+		result := transformBody(body)
+		// then
+		expected := string(longBody[:maxLogBodyLength]) + "...(truncated)"
+		assert.Equal(t, expected, result)
+		assert.True(t, strings.HasSuffix(result, "...(truncated)"))
+		assert.Len(t, result, maxLogBodyLength+len("...(truncated)"))
+	})
+
+	t.Run("body with exact max length", func(t *testing.T) {
+		// given
+		exactBody := make([]byte, maxLogBodyLength)
+		for i := range exactBody {
+			exactBody[i] = 'b'
+		}
+		body := bytes.NewReader(exactBody)
+		// when
+		result := transformBody(body)
+		// then
+		assert.Equal(t, string(exactBody), result)
+		assert.False(t, strings.HasSuffix(result, "...(truncated)"))
+		assert.Len(t, result, maxLogBodyLength)
+	})
 }
 
 type mockReadCloser struct {
