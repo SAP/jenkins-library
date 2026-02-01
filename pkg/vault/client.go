@@ -200,11 +200,11 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 
 		if err != nil || err == io.EOF || isEOF || retry {
 			if resp != nil {
-				logMsg := fmt.Sprintf("Retrying vault request... %s", resp.Status)
 				if err != nil {
-					logMsg += fmt.Sprintf(" (err: %v)", err)
+				    log.Entry().Infof("Retrying vault request... %s (err: %v)", resp.Status, err)
+				} else {
+				    log.Entry().Infof("Retrying vault request... %s", resp.Status)
 				}
-				log.Entry().Info(logMsg)
 			} else {
 				log.Entry().Infof("Retrying vault request... (err: %v)", err)
 			}
