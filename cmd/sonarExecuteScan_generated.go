@@ -250,6 +250,16 @@ func SonarExecuteScanCommand() *cobra.Command {
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare taskrunfinished event data
+					outcome := "failure"
+					if stepTelemetryData.ErrorCode == "0" {
+						outcome = "success"
+					}
+					payload := events.TaskRunEventData{
+						TaskName:  STEP_NAME,
+						StageName: telemetryClient.GetData().StageName,
+						Outcome:   outcome,
+					}
 					// create GCP Pub/Sub client
 					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
@@ -264,8 +274,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						"{\"taskName\":\""+STEP_NAME+"\"}",
-						"",
+						payload,
 						gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
 					} else {
