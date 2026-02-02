@@ -11,10 +11,10 @@ type eventClient interface {
 const eventTopicTaskRunFinished = "pipelinetaskrun-finished"
 const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
 
-func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix, data, additionalEventData string, client eventClient) error {
+func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix string, data TaskRunEventData, client eventClient) error {
 	eventType := eventTypePrefix + eventTypeTaskRunFinished
 	eventTopic := eventTopicPrefix + eventTopicTaskRunFinished
-	return Send(eventSource, eventType, eventTopic, data, additionalEventData, client)
+	return Send(eventSource, eventType, eventTopic, data.toJSON(), "", client)
 }
 
 func Send(eventSource, eventType, eventTopic, data, additionalEventData string, client eventClient) error {

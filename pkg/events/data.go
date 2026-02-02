@@ -7,8 +7,9 @@ import (
 )
 
 type TaskRunEventData struct {
-	TaskName string `json:"taskName"`
-	Outcome  string `json:"outcome"`
+	TaskName  string `json:"taskName"`
+	StageName string `json:"stageName"`
+	Outcome   string `json:"outcome"`
 }
 
 func (data *TaskRunEventData) toJSON() string {
