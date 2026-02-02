@@ -4,22 +4,22 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+const eventTopicTaskRunFinished = "pipelinetaskrun-finished"
+const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
+
 type eventClient interface {
 	Publish(topic string, data []byte) error
 }
 
-const eventTopicTaskRunFinished = "pipelinetaskrun-finished"
-const eventTypeTaskRunFinished = "pipelineTaskRunFinished"
-
-func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix string, data EventPayload, client eventClient) error {
+func SendTaskRunFinished(eventSource, eventTypePrefix, eventTopicPrefix string, payload EventPayload, client eventClient) error {
 	eventType := eventTypePrefix + eventTypeTaskRunFinished
 	eventTopic := eventTopicPrefix + eventTopicTaskRunFinished
-	return Send(eventSource, eventType, eventTopic, data, client)
+	return Send(eventSource, eventType, eventTopic, payload, client)
 }
 
-func Send(eventSource, eventType, eventTopic string, data EventPayload, client eventClient) error {
+func Send(eventSource, eventType, eventTopic string, payload EventPayload, client eventClient) error {
 	// create cloud event
-	event, err := NewEvent(eventType, eventSource, "").CreateWithJSONData(data.ToJSON())
+	event, err := NewEvent(eventType, eventSource, "").CreateWithJSONData(payload.ToJSON())
 	if err != nil {
 		return err
 	}

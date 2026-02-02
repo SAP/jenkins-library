@@ -1,7 +1,6 @@
 package events
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,47 +94,4 @@ func TestSkipEscapeForHTML(t *testing.T) {
 		expected,
 		got,
 	)
-}
-
-func TestSafeDataFromKV(t *testing.T) {
-	tests := []struct {
-		name  string
-		key   string
-		value string
-	}{
-		{"simple", "taskName", "step"},
-		{"with quotes", "taskName", `my"step'name`},
-		{"unicode", "taskName", "ステップ"},
-		{"special chars", "taskName", `}{:"',\n`},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s, err := SafeDataFromKV(tt.key, tt.value)
-			if err != nil {
-				t.Fatalf("SafeDataFromKV error: %v", err)
-			}
-			var obj map[string]string
-			if err := json.Unmarshal([]byte(s), &obj); err != nil {
-				t.Fatalf("payload is not valid JSON: %v\npayload: %s", err, s)
-			}
-			if obj[tt.key] != tt.value {
-				t.Fatalf("value mismatch: got %q want %q", obj[tt.key], tt.value)
-			}
-		})
-	}
-}
-
-func TestSafeDataFromTaskName(t *testing.T) {
-	s, err := SafeDataFromTaskName(`my"step`)
-	if err != nil {
-		t.Fatalf("SafeDataFromTaskName error: %v")
-	}
-	var obj map[string]string
-	if err := json.Unmarshal([]byte(s), &obj); err != nil {
-		t.Fatalf("payload is not valid JSON: %v\npayload: %s", err, s)
-	}
-	if obj["taskName"] != `my"step` {
-		t.Fatalf("value mismatch: got %q", obj["taskName"])
-	}
 }

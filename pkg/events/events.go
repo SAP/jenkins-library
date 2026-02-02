@@ -117,18 +117,3 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 	e.cloudEvent.SetData("application/json", newEventData)
 	return nil
 }
-
-// SafeDataFromKV builds a valid JSON object from a single key/value using encoding/json.
-func SafeDataFromKV(key, value string) (string, error) {
-	payload := map[string]string{key: value}
-	b, err := json.Marshal(payload)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal event payload")
-	}
-	return string(b), nil
-}
-
-// SafeDataFromTaskName builds the standard payload containing taskName.
-func SafeDataFromTaskName(taskName string) (string, error) {
-	return SafeDataFromKV("taskName", taskName)
-}
