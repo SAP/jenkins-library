@@ -893,3 +893,84 @@ func TestKanikoBuildArtifactMetadata(t *testing.T) {
 
 	assert.NoError(t, err)
 }
+
+func TestFindImageNameTagInPurl(t *testing.T) {
+	t.Run("exact match found", func(t *testing.T) {
+		containerImageNameTags := []string{
+			"myImage:1.0.0",
+			"anotherImage:2.0.0",
+		}
+		purlReference := "myImage:1.0.0"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "myImage:1.0.0", result)
+	})
+
+	t.Run("suffix match found - with registry", func(t *testing.T) {
+		containerImageNameTags := []string{
+			"my.registry.com:50000/apps/myImage:1.0.0",
+			"my.registry.com:50000/apps/anotherImage:2.0.0",
+		}
+		purlReference := "apps/myImage:1.0.0"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "my.registry.com:50000/apps/myImage:1.0.0", result)
+	})
+
+	t.Run("suffix match found - full path vs short name", func(t *testing.T) {
+		containerImageNameTags := []string{
+			"381100958081-20260101-140816476-758.staging.repositories.cloud.sap/apps/bdc-subscription-service:0.2.60-20260101140711_89cd498",
+		}
+		purlReference := "bdc-subscription-service:0.2.60-20260101140711_89cd498"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "381100958081-20260101-140816476-758.staging.repositories.cloud.sap/apps/bdc-subscription-service:0.2.60-20260101140711_89cd498", result)
+	})
+
+	t.Run("no match found", func(t *testing.T) {
+		containerImageNameTags := []string{
+			"myImage:1.0.0",
+			"anotherImage:2.0.0",
+		}
+		purlReference := "nonExistentImage:3.0.0"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "", result)
+	})
+
+	t.Run("empty container image name tags", func(t *testing.T) {
+		containerImageNameTags := []string{}
+		purlReference := "myImage:1.0.0"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "", result)
+	})
+
+	t.Run("multiple matches - exact match takes precedence", func(t *testing.T) {
+		containerImageNameTags := []string{
+			"my.registry.com/myImage:1.0.0",
+			"myImage:1.0.0",
+		}
+		purlReference := "myImage:1.0.0"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "myImage:1.0.0", result)
+	})
+
+	t.Run("suffix match with namespace", func(t *testing.T) {
+		containerImageNameTags := []string{
+			"registry.example.com/namespace/subnamespace/image:tag",
+		}
+		purlReference := "subnamespace/image:tag"
+
+		result := findImageNameTagInPurl(containerImageNameTags, purlReference)
+
+		assert.Equal(t, "registry.example.com/namespace/subnamespace/image:tag", result)
+	})
+}

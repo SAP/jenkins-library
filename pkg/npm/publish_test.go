@@ -49,7 +49,7 @@ func TestNpmPublish(t *testing.T) {
 
 		tarballPath string
 
-		hasTagFlag bool // for prerelease versions
+		publishTag string
 
 		err string
 	}
@@ -63,6 +63,7 @@ func TestNpmPublish(t *testing.T) {
 		registryURL        string
 		registryUser       string
 		registryPassword   string
+		publishTag         string
 		packBeforePublish  bool
 
 		wants wants
@@ -523,9 +524,8 @@ func TestNpmPublish(t *testing.T) {
 				tarballPath:       "/sub/package.tgz",
 			},
 		},
-		// prerelease versions
 		{
-			name: "success - prerelease version, unpacked package - should add --tag prerelease",
+			name: "success - no publishTag provided for prerelease",
 
 			files: map[string]string{
 				"package.json": `{"name": "piper-project", "version": "0.0.2-20251029013231"}`,
@@ -540,48 +540,27 @@ func TestNpmPublish(t *testing.T) {
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				hasTagFlag:        true,
+				publishTag:        "prerelease",
 			},
 		},
 		{
-			name: "success - prerelease version, packed package - should add --tag prerelease",
+			name: "success - with different publishTag",
 
 			files: map[string]string{
-				"package.json": `{"name": "piper-project", "version": "1.0.0-beta.1"}`,
+				"package.json": `{"name": "piper-project", "version": "0.0.2-20251029013231"}`,
 			},
 
 			packageDescriptors: []string{"package.json"},
 
-			packBeforePublish: true,
-
 			registryURL:      "https://my.private.npm.registry/",
 			registryUser:     "ThisIsTheUser",
 			registryPassword: "AndHereIsThePassword",
+			publishTag:       "next",
 
 			wants: wants{
 				publishConfigPath: `\.piperNpmrc`,
 				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				tarballPath:       "/package.tgz",
-				hasTagFlag:        true,
-			},
-		},
-		{
-			name: "success - prerelease version with alpha tag, unpacked package - should add --tag prerelease",
-
-			files: map[string]string{
-				"package.json": `{"name": "@piper/project", "version": "2.0.0-alpha.3"}`,
-			},
-
-			packageDescriptors: []string{"package.json"},
-
-			registryURL:      "https://my.private.npm.registry/",
-			registryUser:     "ThisIsTheUser",
-			registryPassword: "AndHereIsThePassword",
-
-			wants: wants{
-				publishConfigPath: `\.piperNpmrc`,
-				publishConfig:     "registry=https://my.private.npm.registry/\n@piper:registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
-				hasTagFlag:        true,
+				publishTag:        "next",
 			},
 		},
 		// TODO multiple projects
@@ -611,7 +590,7 @@ func TestNpmPublish(t *testing.T) {
 			}
 
 			coordinates := []versioning.Coordinates{}
-			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.packBeforePublish, &coordinates)
+			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.publishTag, test.packBeforePublish, &coordinates)
 
 			if len(test.wants.err) == 0 && assert.NoError(t, err) {
 				if assert.NotEmpty(t, utils.execRunner.Calls) {
@@ -642,12 +621,10 @@ func TestNpmPublish(t *testing.T) {
 						}
 					}
 
-					// Check for --tag flag on prerelease versions
-					if test.wants.hasTagFlag {
-						if assert.Contains(t, publishCmd.Params, "--tag") {
-							tagValue := publishCmd.Params[slices.Index(publishCmd.Params, "--tag")+1]
-							assert.Equal(t, "prerelease", tagValue)
-						}
+					if test.wants.publishTag != "" {
+						assert.Contains(t, publishCmd.Params, "--tag")
+						tagValue := publishCmd.Params[slices.Index(publishCmd.Params, "--tag")+1]
+						assert.Equal(t, test.wants.publishTag, tagValue)
 					}
 				}
 			} else {

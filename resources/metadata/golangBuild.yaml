@@ -257,12 +257,21 @@ spec:
           - PARAMETERS
           - STEPS
         default: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz"
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/goBuildArtifacts
           - name: custom/artifacts
             type: "piperenv.Artifacts"
       - name: reports

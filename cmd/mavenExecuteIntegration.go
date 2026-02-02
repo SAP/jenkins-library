@@ -20,13 +20,33 @@ func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry
 }
 
 func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils maven.Utils) error {
-	pomPath := filepath.Join("integration-tests", "pom.xml")
-	hasIntegrationTestsModule, _ := utils.FileExists(pomPath)
+	integrationTestsPomPath := filepath.Join("integration-tests", "pom.xml")
+	hasIntegrationTestsModule, _ := utils.FileExists(integrationTestsPomPath)
 	if !hasIntegrationTestsModule {
 		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
 	}
 
-	if config.InstallArtifacts {
+	if config.InstallArtifacts && config.InstallWithReactor {
+		return fmt.Errorf("parameters 'installArtifacts' and 'installWithReactor' are mutually exclusive")
+	}
+
+	if err := validateForkCount(config.ForkCount); err != nil {
+		return err
+	}
+
+	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
+	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
+
+	if config.InstallWithReactor {
+		err := maven.InstallModuleWithReactor("integration-tests", &maven.EvaluateOptions{
+			M2Path:              config.M2Path,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+		}, utils)
+		if err != nil {
+			return err
+		}
+	} else if config.InstallArtifacts {
 		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -37,24 +57,17 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		}
 	}
 
-	if err := validateForkCount(config.ForkCount); err != nil {
-		return err
-	}
-
-	retryDefine := fmt.Sprintf("-Dsurefire.rerunFailingTestsCount=%v", config.Retry)
-	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
-
 	mavenOptions := maven.ExecuteOptions{
-		PomPath:             pomPath,
+		PomPath:             integrationTestsPomPath,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		Goals:               []string{"org.jacoco:jacoco-maven-plugin:prepare-agent", config.Goal},
 		Defines:             []string{retryDefine, forkCountDefine},
+		Flags:               []string{},
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
-
 	return err
 }
 

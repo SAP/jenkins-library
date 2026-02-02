@@ -177,7 +177,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
 			containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 			buildOpts := append(config.BuildOptions, "--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag))
-			if err = runKaniko(file, buildOpts, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+			if err = runKaniko(config, file, buildOpts, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 				return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 			}
 			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, image)
@@ -248,7 +248,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					dockerfilePath = entry.DockerfilePath
 				}
 
-				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+				if err = runKaniko(config, dockerfilePath, buildOptions, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
 				}
 
@@ -279,7 +279,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 					dockerfilePath = entry.DockerfilePath
 				}
 
-				if err = runKaniko(dockerfilePath, buildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+				if err = runKaniko(config, dockerfilePath, buildOptions, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
 				}
 
@@ -383,7 +383,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		config.BuildOptions = append(config.BuildOptions, "--no-push")
 	}
 
-	if err = runKaniko(config.DockerfilePath, config.BuildOptions, config.ReadImageDigest, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+	if err = runKaniko(config, config.DockerfilePath, config.BuildOptions, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 		return err
 	}
 
@@ -404,7 +404,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	return nil
 }
 
-func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
+func runKaniko(config *kanikoExecuteOptions, dockerFilepath string, buildOptions []string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) error {
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
@@ -413,6 +413,12 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 	// kaniko build context needs a proper prefix, for local directory it is 'dir://'
 	// for more details see https://github.com/GoogleContainerTools/kaniko#kaniko-build-contexts
 	kanikoOpts := []string{"--dockerfile", dockerFilepath, "--context", "dir://" + cwd}
+
+	// Add registry mirrors
+	for _, mirror := range config.RegistryMirrors {
+		kanikoOpts = append(kanikoOpts, "--registry-mirror", mirror)
+	}
+
 	kanikoOpts = append(kanikoOpts, buildOptions...)
 
 	tmpDir, err := fileUtils.TempDir("", "*-kanikoExecute")
@@ -422,7 +428,7 @@ func runKaniko(dockerFilepath string, buildOptions []string, readDigest bool, ex
 
 	digestFilePath := fmt.Sprintf("%s/digest.txt", tmpDir)
 
-	if readDigest {
+	if config.ReadImageDigest {
 		kanikoOpts = append(kanikoOpts, "--digest-file", digestFilePath)
 	}
 
@@ -554,12 +560,23 @@ func parsePurl(purlStr string) (registry, name, version string, err error) {
 }
 
 func findImageNameTagInPurl(containerImageNameTags []string, purlReference string) string {
+	// check for exact matches
 	for _, entry := range containerImageNameTags {
 		if entry == purlReference {
 			log.Entry().Debugf("found image name tag %s in purlReference %s", entry, purlReference)
 			return entry
 		}
 	}
+
+	// check for suffix matches
+	for _, entry := range containerImageNameTags {
+		if strings.HasSuffix(entry, purlReference) {
+			log.Entry().Debugf("found suffix match: %s for purlReference %s", entry, purlReference)
+			return entry
+		}
+	}
+
+	log.Entry().Warnf("unable to find image name tag in purlReference '%s' from tags: %v", purlReference, containerImageNameTags)
 	return ""
 }
 
