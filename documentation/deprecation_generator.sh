@@ -4,8 +4,8 @@
 set -euo pipefail
 
 # Configurable paths
-STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}"
-DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}"
+STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}" #Path to deprecated_steps.yaml where all deprecated steps are listed
+DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}" #Path to the docs/steps/ directory containing the .md files
 
 # Deprecation block (exact text)
 DEPR_TITLE=$'!!! warning "Deprecation notice"'
