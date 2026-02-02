@@ -109,25 +109,12 @@ spec:
           - STAGES
           - PARAMETERS
         default: requirements.txt
-      - name: additionalEventData
-        type: string
-        description: "Optional JSON object to be merged into the CloudEvent data for this step."
-        scope:
-          - GENERAL
-          - STAGES
-          - STEPS
-          - PARAMETERS
-        mandatory: false
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: custom/additionalEventData
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
-          - name: custom/additionalEventData
   containers:
     - name: python
       image: python:3.11
