@@ -142,7 +142,7 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 					if stepTelemetryData.ErrorCode == "0" {
 						outcome = "success"
 					}
-					payload := events.TaskRunEventData{
+					payload := events.TaskRunEventPayload{
 						TaskName:  STEP_NAME,
 						StageName: telemetryClient.GetData().StageName,
 						Outcome:   outcome,
@@ -161,7 +161,7 @@ Authentication to GCP is handled by an OIDC token received from, for example, Va
 						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						payload,
+						&payload,
 						gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
 					} else {

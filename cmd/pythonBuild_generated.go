@@ -188,7 +188,7 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 					if stepTelemetryData.ErrorCode == "0" {
 						outcome = "success"
 					}
-					payload := events.TaskRunEventData{
+					payload := events.TaskRunEventPayload{
 						TaskName:  STEP_NAME,
 						StageName: telemetryClient.GetData().StageName,
 						Outcome:   outcome,
@@ -207,7 +207,7 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
 						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						payload,
+						&payload,
 						gcpClient); err != nil {
 						log.Entry().WithError(err).Warn("  failed")
 					} else {

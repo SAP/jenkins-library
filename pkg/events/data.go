@@ -7,15 +7,19 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type EventPayloadData struct {
+type EventPayload interface {
+	ToJSON() string
+}
+
+type GenericEventPayload struct {
 	JSONData string
 }
 
-func (e *EventPayloadData) ToJSON() string {
+func (e *GenericEventPayload) ToJSON() string {
 	return e.JSONData
 }
 
-func (e *EventPayloadData) Merge(otherJSONData string) {
+func (e *GenericEventPayload) Merge(otherJSONData string) {
 	if otherJSONData != "" {
 		// read other data
 		var otherJSONObj map[string]interface{}
@@ -40,13 +44,13 @@ func (e *EventPayloadData) Merge(otherJSONData string) {
 	}
 }
 
-type TaskRunEventPayloadData struct {
+type TaskRunEventPayload struct {
 	TaskName  string `json:"taskName"`
 	StageName string `json:"stageName"`
 	Outcome   string `json:"outcome"`
 }
 
-func (data *TaskRunEventPayloadData) toJSON() string {
+func (data *TaskRunEventPayload) ToJSON() string {
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
 		log.Entry().WithError(err).Error("Failed to marshal TaskRunEventPayloadData to JSON")

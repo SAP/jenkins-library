@@ -47,6 +47,11 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	config := utils.GetConfig()
 
 	log.Entry().Debug("publishing event to GCP Pub/Sub...")
+
+	// prepare event data
+	payload := events.GenericEventPayload{JSONData: config.EventData}
+	payload.Merge(config.AdditionalEventData)
+
 	// create GCP Pub/Sub client
 	client := utils.NewPubsubClient(
 		config.GcpProjectNumber,
@@ -60,8 +65,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		config.EventSource,
 		config.EventType,
 		config.Topic,
-		config.EventData,
-		config.AdditionalEventData,
+		&payload,
 		client); err != nil {
 		log.Entry().WithError(err).Warn("  failed")
 	} else {
