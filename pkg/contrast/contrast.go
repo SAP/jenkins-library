@@ -105,7 +105,6 @@ func getVulnerabilitiesFromClient(client ContrastHttpClient, url string, page in
 
 	if vulnsResponse.Empty {
 		log.Entry().Info("empty vulnerabilities response")
-		return []ContrastFindings{}, nil
 	}
 
 	auditAllFindings, optionalFindings := getFindings(vulnsResponse.Vulnerabilities)
@@ -124,7 +123,11 @@ func getVulnerabilitiesFromClient(client ContrastHttpClient, url string, page in
 func getFindings(vulnerabilities []Vulnerability) (ContrastFindings, ContrastFindings) {
 	var auditAllFindings, optionalFindings ContrastFindings
 	auditAllFindings.ClassificationName = AuditAll
+	auditAllFindings.Total = 0
+	auditAllFindings.Audited = 0
 	optionalFindings.ClassificationName = Optional
+	optionalFindings.Total = 0
+	optionalFindings.Audited = 0
 
 	for _, vuln := range vulnerabilities {
 		if vuln.Severity == Critical || vuln.Severity == High || vuln.Severity == Medium {

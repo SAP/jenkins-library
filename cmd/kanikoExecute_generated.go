@@ -45,6 +45,7 @@ type kanikoExecuteOptions struct {
 	CreateBOM                        bool                     `json:"createBOM,omitempty"`
 	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
 	CreateBuildArtifactsMetadata     bool                     `json:"createBuildArtifactsMetadata,omitempty"`
+	RegistryMirrors                  []string                 `json:"registryMirrors,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -350,6 +351,7 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
+	cmd.Flags().StringSliceVar(&stepConfig.RegistryMirrors, "registryMirrors", []string{}, "List of registry mirrors to use instead of default index.docker.io. Format examples, mirror.gcr.io, 127.0.0.1, 192.168.0.1:5000, mycompany-docker-virtual.jfrog.io")
 
 }
 
@@ -599,6 +601,15 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "registryMirrors",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},
