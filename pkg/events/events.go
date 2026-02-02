@@ -50,16 +50,11 @@ func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
 func (e Event) Create(data any, opts ...Option) Event {
 	e.cloudEvent = cloudevents.NewEvent("1.0")
 
-	// compute and set id
-	var id string
 	if e.uuidData != "" {
-		id = GetUUID(e.uuidData)
+		e.cloudEvent.SetID(GetUUID(e.uuidData))
 	} else {
-		id = uuid.New().String()
+		e.cloudEvent.SetID(uuid.New().String())
 	}
-	e.cloudEvent.SetID(id)
-	// return id back to wrapper for logging
-	e.uuidData = id
 
 	// set default values
 	e.cloudEvent.SetType(e.eventType)
