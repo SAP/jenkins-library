@@ -49,7 +49,7 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	log.Entry().Debug("publishing event to GCP Pub/Sub...")
 
 	// prepare event data
-	payload := events.GenericEventPayload{JSONData: config.EventData}
+	payload := events.PayloadGeneric{JSONData: config.EventData}
 	payload.Merge(config.AdditionalEventData)
 
 	// create GCP Pub/Sub client

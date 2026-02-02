@@ -85,7 +85,9 @@ func TestSendTaskRunFinished(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mc := &mockClient{publishErr: tt.publishErr}
-			err := SendTaskRunFinished(tt.eventSource, tt.eventTypePrefix, tt.eventTopicPrefix, tt.data, tt.additionalEventData, mc)
+			payload := (&PayloadGeneric{JSONData: tt.data})
+			payload.Merge(tt.additionalEventData)
+			err := SendTaskRunFinished(tt.eventSource, tt.eventTypePrefix, tt.eventTopicPrefix, payload, mc)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("SendTaskRunFinished() error = %v, wantErr = %v", err, tt.wantErr)
 			}
@@ -113,7 +115,8 @@ func TestSend(t *testing.T) {
 
 	t.Run("invalid payload JSON returns error", func(t *testing.T) {
 		mc := &mockClient{}
-		err := Send("piper", "sap.pipelineTaskRunFinished", "sap.pipelinetaskrun-finished", `{invalid`, "", mc)
+		payload := (&PayloadGeneric{JSONData: `{invalid`})
+		err := Send("piper", "sap.pipelineTaskRunFinished", "sap.pipelinetaskrun-finished", payload, mc)
 		if err == nil {
 			t.Fatalf("expected error for invalid JSON payload")
 		}
@@ -121,7 +124,8 @@ func TestSend(t *testing.T) {
 
 	t.Run("publish error returns error", func(t *testing.T) {
 		mc := &mockClient{publishErr: errors.New("fail")}
-		err := Send("piper", "sap.pipelineTaskRunFinished", "sap.pipelinetaskrun-finished", string(payloadBytes), "", mc)
+		payload := (&PayloadGeneric{JSONData: string(payloadBytes)})
+		err := Send("piper", "sap.pipelineTaskRunFinished", "sap.pipelinetaskrun-finished", payload, mc)
 		if err == nil {
 			t.Fatalf("expected error on publish failure")
 		}

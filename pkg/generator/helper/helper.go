@@ -230,7 +230,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					if stepTelemetryData.ErrorCode == "0" {
 						outcome = "success"
 					}
-					payload := events.TaskRunEventPayload{
+					payload := events.PayloadTaskRunFinished{
 						TaskName: STEP_NAME,
 						StageName: telemetryClient.GetData().StageName,
 						Outcome:  outcome,

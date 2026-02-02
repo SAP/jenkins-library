@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_GenericEventPayload_Merge(t *testing.T) {
+func Test_PayloadGeneric_Merge(t *testing.T) {
 	cases := []struct {
 		name           string
 		payloadString  string
@@ -21,7 +21,7 @@ func Test_GenericEventPayload_Merge(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			assert := assert.New(t)
-			payload := GenericEventPayload{JSONData: tc.payloadString}
+			payload := PayloadGeneric{JSONData: tc.payloadString}
 
 			// test
 			payload.Merge(tc.otherString)
@@ -32,7 +32,7 @@ func Test_GenericEventPayload_Merge(t *testing.T) {
 	}
 }
 
-func Test_GenericEventPayload_ToJSON(t *testing.T) {
+func Test_PayloadGeneric_ToJSON(t *testing.T) {
 	cases := []struct {
 		name          string
 		payloadString string
@@ -45,13 +45,11 @@ func Test_GenericEventPayload_ToJSON(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			assert := assert.New(t)
-			payload := GenericEventPayload{JSONData: tc.payloadString}
+			payload := PayloadGeneric{JSONData: tc.payloadString}
 
 			// test
 			gotStr := payload.ToJSON()
 			assert.NotEmpty(gotStr, "ToJSON returned empty string")
-			// var got GenericEventPayload
-			// assert.NoError(json.Unmarshal([]byte(gotStr), &got), "failed to unmarshal JSON from ToJSON()")
 			// assert
 			assert.Equal(tc.payloadString, gotStr)
 		})

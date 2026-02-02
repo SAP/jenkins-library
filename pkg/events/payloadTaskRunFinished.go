@@ -6,16 +6,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type TaskRunEventPayload struct {
+type PayloadTaskRunFinished struct {
 	TaskName  string `json:"taskName"`
 	StageName string `json:"stageName"`
 	Outcome   string `json:"outcome"`
 }
 
-func (data *TaskRunEventPayload) ToJSON() string {
+func (data *PayloadTaskRunFinished) ToJSON() string {
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		log.Entry().WithError(err).Error("Failed to marshal TaskRunEventPayloadData to JSON")
+		log.Entry().WithError(err).Error("Failed to marshal PayloadTaskRunFinishedData to JSON")
 		return ""
 	}
 	return string(jsonBytes)

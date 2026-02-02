@@ -265,7 +265,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 					if stepTelemetryData.ErrorCode == "0" {
 						outcome = "success"
 					}
-					payload := events.TaskRunEventPayload{
+					payload := events.PayloadTaskRunFinished{
 						TaskName:  STEP_NAME,
 						StageName: telemetryClient.GetData().StageName,
 						Outcome:   outcome,

@@ -7,11 +7,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-type GenericEventPayload struct {
+type PayloadGeneric struct {
 	JSONData string
 }
 
-func (e *GenericEventPayload) Merge(otherJSONData string) {
+func (e *PayloadGeneric) Merge(otherJSONData string) {
 	if otherJSONData == "" {
 		return
 	}
@@ -45,6 +45,6 @@ func (e *GenericEventPayload) Merge(otherJSONData string) {
 	e.JSONData = string(jsonBytes)
 }
 
-func (e *GenericEventPayload) ToJSON() string {
+func (e *PayloadGeneric) ToJSON() string {
 	return e.JSONData
 }
