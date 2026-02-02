@@ -1,24 +1,21 @@
 //go:build unit
-// +build unit
 
 package vault
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-
-	"github.com/stretchr/testify/mock"
-
 	"github.com/SAP/jenkins-library/pkg/vault/mocks"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type SecretData = map[string]interface{}
