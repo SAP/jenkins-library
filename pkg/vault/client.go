@@ -12,7 +12,6 @@ import (
 
 	vaultAPI "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/api/auth/approle"
-	"github.com/pkg/errors"
 )
 
 // Client handles communication with Vault
@@ -58,7 +57,7 @@ func newClient(cfg *ClientConfig) (*Client, error) {
 func NewClient(cfg *ClientConfig) (*Client, error) {
 	c, err := newClient(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "vault client initialization failed")
+		return nil, fmt.Errorf("vault client initialization failed: %w", err)
 	}
 	applyApiClientRetryConfiguration(c.vaultApiClient)
 
@@ -74,7 +73,7 @@ func NewClient(cfg *ClientConfig) (*Client, error) {
 func NewClientWithToken(cfg *ClientConfig, token string) (*Client, error) {
 	c, err := newClient(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "vault client initialization failed")
+		return nil, fmt.Errorf("vault client initialization failed: %w", err)
 	}
 
 	c.vaultApiClient.SetToken(token)
@@ -201,9 +200,9 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 		if err != nil || err == io.EOF || isEOF || retry {
 			if resp != nil {
 				if err != nil {
-				    log.Entry().Infof("Retrying vault request... %s (err: %v)", resp.Status, err)
+					log.Entry().Infof("Retrying vault request... %s (err: %v)", resp.Status, err)
 				} else {
-				    log.Entry().Infof("Retrying vault request... %s", resp.Status)
+					log.Entry().Infof("Retrying vault request... %s", resp.Status)
 				}
 			} else {
 				log.Entry().Infof("Retrying vault request... (err: %v)", err)
