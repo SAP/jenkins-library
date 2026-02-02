@@ -3,9 +3,15 @@
 
 set -euo pipefail
 
+# About the script:
+# This script manages deprecation notices in markdown documentation files for the listed steps in the file "deprecated_steps.yaml".
+# For the listed steps, it ensures that a deprecation notice block is present in their corresponding .md files [contains()]. If
+# not it adds DEPTR_TITLE and DEPR_BODY under the header [insert_deprecation()]. If a step is removed from the list, the script
+# removes the deprecation block from its .md file if it exists [remove_deprecation()].
+
 # Configurable paths
-STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}" #Path to deprecated_steps.yaml where all deprecated steps are listed
-DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}" #Path to the docs/steps/ directory containing the .md files
+STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}" # Path to deprecated_steps.yaml where all deprecated steps are listed
+DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}" # Path to the docs/steps/ directory containing the .md files
 
 # Deprecation block (exact text)
 DEPR_TITLE=$'!!! warning "Deprecation notice"'
