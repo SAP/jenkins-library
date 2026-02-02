@@ -16,7 +16,7 @@ jobs:
     name: 'Format'
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Markdown Linting
         uses: nosborn/github-action-markdown-cli@v3.3.0
         with:
