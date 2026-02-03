@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 type gcpPublishEventUtils interface {
@@ -61,13 +62,14 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	)
 	// send event
-	if events.Send(
+	if err := events.Send(
 		config.EventSource,
 		config.EventType,
 		config.Topic,
 		&payload,
 		client); err != nil {
 		log.Entry().WithError(err).Warn("  failed")
+		return errors.Wrap(err, "failed to publish event")
 	} else {
 		log.Entry().Debug("  succeeded")
 	}
