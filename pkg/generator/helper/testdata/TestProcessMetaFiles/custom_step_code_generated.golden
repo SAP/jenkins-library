@@ -16,6 +16,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -250,14 +251,31 @@ func TestStepCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						piperOsCmd.GeneralConfig.CorrelationID,
 						piperOsCmd.GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
