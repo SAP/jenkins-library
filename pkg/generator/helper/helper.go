@@ -78,7 +78,6 @@ import (
 	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
-	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -224,36 +223,16 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					log.Entry().Debug("publishing event to GCP Pub/Sub...")
-					// prepare taskrunfinished event data
-					outcome := "failure"
-					if stepTelemetryData.ErrorCode == "0" {
-						outcome = "success"
-					}
-					payload := events.PayloadTaskRunFinished{
-						TaskName: STEP_NAME,
-						StageName: telemetryClient.GetData().StageName,
-						Outcome:  outcome,
-					}
-					// create GCP Pub/Sub client
-					gcpClient := gcp.NewGcpPubsubClient(
+					err := gcp.NewGcpPubsubClient(
 						vaultClient,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					)
-					// send event
-                    if err := events.SendTaskRunFinished(
-                        {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-                        {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-                        {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-                        &payload,
-                        gcpClient); err != nil {
-						log.Entry().WithError(err).Warn("  failed")
-					} else {
-						log.Entry().Debug("  succeeded")
+					).Publish({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					if err != nil {
+						log.Entry().WithError(err).Warn("event publish failed")
 					}
 				}
 			}
