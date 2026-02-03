@@ -249,17 +249,37 @@ func TestStepCommand() *cobra.Command {
 					piperOsCmd.GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare taskrunfinished event data
+					outcome := "failure"
+					if stepTelemetryData.ErrorCode == "0" {
+						outcome = "success"
+					}
+					payload := events.PayloadTaskRunFinished{
+						TaskName:  STEP_NAME,
+						StageName: telemetryClient.GetData().StageName,
+						Outcome:   outcome,
+					}
+					// create GCP Pub/Sub client
+					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						piperOsCmd.GeneralConfig.CorrelationID,
-						piperOsCmd.GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						GeneralConfig.CorrelationID,
+						GeneralConfig.HookConfig.OIDCConfig.RoleID,
+					)
+					// send event
+					if err := events.SendTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
+						&payload,
+						gcpClient); err != nil {
+						log.Entry().WithError(err).Warn("  failed")
+					} else {
+						log.Entry().Debug("  succeeded")
 					}
 				}
 			}
