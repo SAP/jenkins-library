@@ -11,7 +11,7 @@ type eventClient interface {
 	Publish(topic string, data []byte) error
 }
 
-func Send(eventSource, eventType, eventTopic string, payload EventPayload, client eventClient) error {
+func Send(eventSource, eventType, eventTopic string, payload Payload, client eventClient) error {
 	// create cloud event
 	event, err := NewEvent(eventType, eventSource, "").CreateWithJSONData(payload.ToJSON())
 	if err != nil {
