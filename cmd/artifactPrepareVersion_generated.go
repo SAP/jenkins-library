@@ -260,28 +260,29 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					log.Entry().Debug("publishing event to GCP Pub/Sub...")
-					// prepare taskrunfinished event data
+					// prepare event payload
 					payload := events.NewPayloadTaskRunFinished(
 						telemetryClient.GetData().StageName,
 						STEP_NAME,
 						stepTelemetryData.ErrorCode,
 					)
-					// create GCP Pub/Sub client
-					gcpClient := gcp.NewGcpPubsubClient(
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					)
-					// send event
-					err := events.SendTaskRunFinished(
-						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
-						payload,
-						gcpClient,
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
 					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
