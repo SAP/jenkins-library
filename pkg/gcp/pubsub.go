@@ -45,6 +45,7 @@ func (cl *pubsubClient) Publish(topic string, data []byte) error {
 }
 
 func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Client, error) {
+	//carve out this part
 	if cl.vaultClient == nil {
 		return nil, errors.New("Vault client is not configured")
 	}

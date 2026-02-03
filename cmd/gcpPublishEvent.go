@@ -68,6 +68,10 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 }
 
 func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
+	// convert incoming config.EventData json string into map[string]interface{}
+	// convert incoming config.AdditionalEventData json string into map[string]interface{}
+	// merge them
+	// call eventdemo.NewClient().Send()
 	event, err := events.NewEvent(config.EventType, config.EventSource, "").CreateWithJSONData(config.EventData)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to create new event")

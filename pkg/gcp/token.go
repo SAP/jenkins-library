@@ -3,11 +3,12 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"google.golang.org/api/option"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"google.golang.org/api/option"
 
 	"github.com/pkg/errors"
 	"google.golang.org/api/sts/v1"
@@ -18,6 +19,7 @@ const (
 	gcpPubsubTokenExpiryKey = "PIPER_gcpPubsubTokenExpiresAt"
 )
 
+// carve out this part
 // getFederatedToken tries to retrieve cached token from env variables, otherwise it will exchange
 // OIDC identity token to access token and cache them in env variables
 func getFederatedToken(projectNumber, pool, provider, oidcToken string) (string, error) {
