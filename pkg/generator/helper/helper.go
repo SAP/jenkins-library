@@ -78,6 +78,7 @@ import (
 	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -223,14 +224,30 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare taskrunfinished event data
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create GCP Pub/Sub client
+					gcpClient := gcp.NewGcpPubsubClient(
 						vaultClient,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
 						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					)
+					// send event
+					err := events.SendTaskRunFinished(
+						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix,
+						payload,
+						gcpClient,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
