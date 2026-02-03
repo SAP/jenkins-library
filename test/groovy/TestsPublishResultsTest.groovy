@@ -47,7 +47,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         helper.registerAllowedMethod('jacoco', [Map.class], {
             parameters -> publisherStepOptions['jacoco'] = parameters
         })
-        helper.registerAllowedMethod('cobertura', [Map.class], {
+        helper.registerAllowedMethod('recordCoverage', [Map.class], {
             parameters -> publisherStepOptions['cobertura'] = parameters
         })
         helper.registerAllowedMethod('perfReport', [Map.class], {
@@ -126,14 +126,18 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
         assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
 
+        // verify recordCoverage was called and carries the expected COBERTURA parser and pattern
         assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
-        assertTrue('Cobertura default pattern is empty', publisherStepOptions.cobertura.coberturaReportFile != null)
+        assertTrue('Cobertura tools not empty', publisherStepOptions.cobertura.tools != null)
+        assertEquals('COBERTURA', publisherStepOptions.cobertura.tools[0].parser)
+
         String sampleCoberturaPathForJava = 'my/workspace/my/project/target/coverage/cobertura-coverage.xml'
         assertTrue('Cobertura default pattern does not match files at target/coverage/cobertura-coverage.xml for Java projects',
-            Minimatch.minimatch(sampleCoberturaPathForJava, publisherStepOptions.cobertura.coberturaReportFile))
+            Minimatch.minimatch(sampleCoberturaPathForJava, publisherStepOptions.cobertura.tools[0].pattern))
+
         String sampleCoberturaPathForKarma = 'my/workspace/my/project/target/coverage/Chrome 78.0.3904 (Mac OS X 10.14.6)/cobertura-coverage.xml'
         assertTrue('Cobertura default pattern does not match files at target/coverage/<browser>/cobertura-coverage.xml for UI5 projects',
-            Minimatch.minimatch(sampleCoberturaPathForKarma, publisherStepOptions.cobertura.coberturaReportFile))
+        Minimatch.minimatch(sampleCoberturaPathForKarma, publisherStepOptions.cobertura.tools[0].pattern))
     }
 
     @Test
