@@ -7,6 +7,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+// PayloadGeneric defines a generic payload for data that can be serialized to JSON for event delivery.
+// Additional data can be merged into the existing JSON data.
 type PayloadGeneric struct {
 	JSONData string
 }
