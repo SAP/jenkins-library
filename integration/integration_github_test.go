@@ -27,7 +27,7 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	}
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
-		owner = "OliverNocon"
+		owner = "AnarGasimov"
 	}
 	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
@@ -104,7 +104,7 @@ func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
 
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
-		owner = "OliverNocon"
+		owner = "AnarGasimov"
 	}
 	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
@@ -112,12 +112,12 @@ func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
 	}
 	// test
 	result, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
-		Owner: owner, Repository: repository, APIURL: "https://api.github.com", Token: token, SHA: "3601ed6"})
+		Owner: owner, Repository: repository, APIURL: "https://api.github.com", Token: token, SHA: "fee7f31"})
 
 	// assert
 	assert.NoError(t, err)
-	assert.Equal(t, 2, result.Additions)
+	assert.Equal(t, 3, result.Additions)
 	assert.Equal(t, 0, result.Deletions)
-	assert.Equal(t, 2, result.Total)
+	assert.Equal(t, 3, result.Total)
 	assert.Equal(t, 1, result.Files)
 }
