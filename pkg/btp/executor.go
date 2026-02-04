@@ -52,22 +52,44 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 	err := e.Run(opts.CmdScript)
 
 	if err != nil {
-		_, errorMessageCode, err := GetErrorInfos(e.GetStderrValue())
-		if err != nil {
-			return errors.Wrap(err, "Failed to extract error code from JSON response")
+		if err := handleInitialCheck(e, opts); err != nil {
+			return err
 		}
+	}
+
+	return handlePolling(opts)
+}
+
+func handleInitialCheck(e *Executor, opts RunSyncOptions) error {
+	errorData, errorMessageCode, err := GetErrorInfos(e.GetStderrValue())
+	if err != nil {
+		return errors.Wrap(err, "Failed to extract error code from JSON response")
+	}
+
+	if errorData.Error == "Conflict" {
+		return errors.New("Command returned a conflict error.")
+	} else {
+		fullCmd := strings.Join(opts.CmdScript, " ")
 
 		switch errorMessageCode {
 		case "SERVICE_INSTANCE_NOT_FOUND":
-			if strings.Contains(strings.Join(opts.CmdScript, " "), "create services/binding") {
+			if strings.Contains(fullCmd, "create services/instance") || strings.Contains(fullCmd, "delete services/instance") {
 				return errors.New("Service instance not found.")
 			}
+		case "SERVICE_BINDING_NOT_FOUND":
+			if strings.Contains(fullCmd, "create services/binding") || strings.Contains(fullCmd, "delete services/binding") {
+				return errors.New("Service binding not found.")
+			}
 		case "INSTANCE_ALREADY_EXISTS":
-			if strings.Contains(strings.Join(opts.CmdScript, " "), "create services/instance") {
+			if strings.Contains(fullCmd, "create services/instance") {
 				return errors.New("Service instance with the same name already exists.")
 			}
+		case "MULTIPLE_BINDINGS_FOUND":
+			if strings.Contains(fullCmd, "delete services/binding") {
+				return errors.New("Multiple service bindings found with the same name.")
+			}
 		case "BINDING_ALREADY_EXISTS":
-			if strings.Contains(strings.Join(opts.CmdScript, " "), "create services/binding") {
+			if strings.Contains(fullCmd, "create services/binding") {
 				return errors.New("Service binding with the same name already exists for the service instance.")
 			}
 		}
@@ -76,7 +98,10 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 			return errors.Wrap(err, "Failed to execute BTP CLI (Sync)")
 		}
 	}
+	return nil
+}
 
+func handlePolling(opts RunSyncOptions) error {
 	// Save if we are now waiting things to be Ready
 	waitingForReady := false
 
@@ -108,29 +133,19 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 		check := opts.CheckFunc()
 
 		if check.successful {
-			badRequestCount = 0
-
 			if check.done {
 				log.Entry().Info("Command execution completed successfully!")
 				return nil
 			} else {
 				waitingForReady = true
 				retryCount = 0
+				badRequestCount = 0
 				log.Entry().Info("Command not yet completed, waiting for status ready...")
 			}
 		} else {
-			if check.errorData.Error == "Conflict" {
-				return errors.New("Command check returned a conflict error.")
-			} else {
-				switch check.errorMessageCode {
-				case "MULTIPLE_BINDINGS_FOUND":
-					return errors.New("Multiple service bindings found with the given name.")
-				default:
-					err := opts.LoginFunc()
-					if err != nil {
-						return errors.Wrap(err, "Failed to re-login during polling")
-					}
-				}
+			err := handlePollingCheck(opts, check)
+			if err != nil {
+				return err
 			}
 
 			if waitingForReady {
@@ -141,15 +156,25 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 					badRequestCount++
 					log.Entry().Infof("Command not yet completed, checking again... : BadRequest count %d", badRequestCount)
 				} else {
-
 					log.Entry().Info("Command not yet completed, checking again...")
 				}
 			}
 		}
-
 	}
 
 	return errors.New("Command did not completed within the timeout period")
+}
+
+func handlePollingCheck(opts RunSyncOptions, check CheckResponse) error {
+	if check.errorData.Error == "Conflict" {
+		return errors.New("Command check returned a conflict error.")
+	} else {
+		err := opts.LoginFunc()
+		if err != nil {
+			return errors.Wrap(err, "Failed to re-login during polling")
+		}
+	}
+	return nil
 }
 
 type Executor struct {
