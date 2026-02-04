@@ -98,7 +98,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 
 	if err != nil {
 		// error while getting service binding
-		log.SetErrorCategory(log.ErrorConfiguration)
+		log.SetErrorCategory(log.ErrorService)
 		return "", errors.Wrapf(err, "Creation of service binding failed for binding : %s", options.BindingName)
 	}
 
@@ -188,15 +188,20 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 	builder := NewBTPCommandBuilder().
 		WithAction("get").
 		WithTarget("services/binding").
-		WithSubAccount(options.Subaccount).
-		WithName(options.BindingName)
+		WithSubAccount(options.Subaccount)
+
+	if options.BindingId != "" {
+		builder = builder.WithID(options.BindingId)
+	} else {
+		builder = builder.WithName(options.BindingName)
+	}
 
 	btpGetBindingScript, _ := builder.Build()
 	err := btp.Exec.Run(btpGetBindingScript)
 
 	if err != nil {
 		// error while getting service binding
-		log.SetErrorCategory(log.ErrorConfiguration)
+		log.SetErrorCategory(log.ErrorService)
 		return "", errors.Wrapf(err, "Retrieve service binding %v failed", options.BindingName)
 	}
 
@@ -204,6 +209,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 
 	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
 		return "", errors.Wrap(err, "Parsing service binding JSON failed")
 	}
 
@@ -282,12 +288,13 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 
 	if err != nil {
 		// error while getting service binding
-		log.SetErrorCategory(log.ErrorConfiguration)
+		log.SetErrorCategory(log.ErrorService)
 		return errors.Wrapf(err, "Failed to delete Service-Binding: %v", options.BindingName)
 	}
 
 	err = btp.Logout()
 	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
 		return errors.Wrapf(err, "Logout of BTP failed")
 	}
 
@@ -394,7 +401,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 
 	if err != nil {
 		// error while getting service instance
-		log.SetErrorCategory(log.ErrorConfiguration)
+		log.SetErrorCategory(log.ErrorService)
 		return "", errors.Wrapf(err, "Creation of service instance failed")
 	}
 
@@ -490,23 +497,15 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 	err := btp.Exec.Run(btpGetServiceScript)
 
 	if err != nil {
-		// error while getting service instance
-		log.SetErrorCategory(log.ErrorConfiguration)
-
-		// parse and return error
-		errorJSON, err := GetJSON(serviceInstanceBytes.String())
-
-		if err != nil {
-			return "", errors.Wrap(err, "Parsing error JSON failed")
-		}
-
-		return errorJSON, errors.Wrapf(err, "Retrieve service instance failed")
+		log.SetErrorCategory(log.ErrorService)
+		return "", errors.Wrapf(err, "Retrieve service instance failed")
 	}
 
 	// parse and return service instance
 	serviceInstanceJSON, err := GetJSON(serviceInstanceBytes.String())
 
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		return "", errors.Wrap(err, "Parsing service instance JSON failed")
 	}
 
@@ -534,6 +533,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 
 	if err != nil {
 		// error while trying to run btp login
+		log.SetErrorCategory(log.ErrorService)
 		return errors.Wrapf(err, "Login to BTP failed")
 	}
 
@@ -586,12 +586,13 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 
 	if err != nil {
 		// error while deleting service instance
-		log.SetErrorCategory(log.ErrorConfiguration)
+		log.SetErrorCategory(log.ErrorService)
 		return errors.Wrapf(err, "Checking if Service-Instance was deleted failed")
 	}
 
 	err = btp.Logout()
 	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
 		return errors.Wrapf(err, "Logout of BTP failed")
 	}
 
@@ -634,6 +635,7 @@ type GetServiceBindingOptions struct {
 	User             string
 	Password         string
 	IdentityProvider string
+	BindingId        string
 }
 
 type DeleteServiceBindingOptions struct {
