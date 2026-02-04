@@ -73,6 +73,26 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		return nil, err
 	}
 
+	// Generate SARIF report if boolean flag is set
+	if config.GenerateSarif {
+		sarifReports, sarifErr := generateSarifReport(config, utils)
+		if sarifErr != nil {
+			log.Entry().WithError(sarifErr).Error("Failed to generate SARIF report")
+			return nil, sarifErr
+		}
+		reports = append(reports, sarifReports...)
+	}
+
+	// Generate PDF report if boolean flag is set
+	if config.GeneratePdf {
+		pdfReports, pdfErr := generatePdfReport(config, utils)
+		if pdfErr != nil {
+			log.Entry().WithError(pdfErr).Error("Failed to generate PDF report")
+			return nil, pdfErr
+		}
+		reports = append(reports, pdfReports...)
+	}
+
 	auth := getAuth(config)
 	appAPIUrl, appUIUrl := getApplicationUrls(config)
 
@@ -133,4 +153,54 @@ func getApplicationUrls(config *contrastExecuteScanOptions) (string, string) {
 
 func getAuth(config *contrastExecuteScanOptions) string {
 	return base64.StdEncoding.EncodeToString([]byte(config.Username + ":" + config.ServiceKey))
+}
+
+// generateSarifReport generates a SARIF report using the Contrast API
+func generateSarifReport(config *contrastExecuteScanOptions, utils contrastExecuteScanUtils) ([]piperutils.Path, error) {
+	log.Entry().Info("Starting SARIF report generation...")
+
+	client := contrast.NewClient(config.UserAPIKey, config.ServiceKey, config.Username, config.OrganizationID, config.Server)
+
+	data, err := client.GenerateSarifReport(config.ApplicationID)
+	if err != nil {
+		return nil, errors.Wrap(err, "SARIF generation failed")
+	}
+
+	sarifPath := "./contrast/piper_contrast.sarif"
+	if err := utils.MkdirAll("./contrast", 0755); err != nil {
+		return nil, errors.Wrap(err, "failed to create contrast directory")
+	}
+
+	if err := utils.FileWrite(sarifPath, data, 0644); err != nil {
+		return nil, errors.Wrap(err, "failed to write SARIF file")
+	}
+
+	log.Entry().Infof("SARIF report saved to %s", sarifPath)
+
+	return []piperutils.Path{{Name: "Contrast SARIF Report", Target: sarifPath}}, nil
+}
+
+// generatePdfReport generates a PDF attestation report using the Contrast API
+func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecuteScanUtils) ([]piperutils.Path, error) {
+	log.Entry().Info("Starting PDF report generation...")
+
+	client := contrast.NewClient(config.UserAPIKey, config.ServiceKey, config.Username, config.OrganizationID, config.Server)
+
+	data, err := client.GeneratePdfReport(config.ApplicationID)
+	if err != nil {
+		return nil, errors.Wrap(err, "PDF generation failed")
+	}
+
+	pdfPath := "./contrast/piper_contrast_attestation.pdf"
+	if err := utils.MkdirAll("./contrast", 0755); err != nil {
+		return nil, errors.Wrap(err, "failed to create contrast directory")
+	}
+
+	if err := utils.FileWrite(pdfPath, data, 0644); err != nil {
+		return nil, errors.Wrap(err, "failed to write PDF file")
+	}
+
+	log.Entry().Infof("PDF report saved to %s", pdfPath)
+
+	return []piperutils.Path{{Name: "Contrast PDF Attestation Report", Target: pdfPath}}, nil
 }

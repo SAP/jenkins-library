@@ -110,6 +110,22 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: generateSarif
+        type: bool
+        default: false
+        description: "Generate SARIF report asynchronously from Contrast API"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: generatePdf
+        type: bool
+        default: false
+        description: "Generate PDF attestation report from Contrast API"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports
