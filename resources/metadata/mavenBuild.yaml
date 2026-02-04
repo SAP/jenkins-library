@@ -266,7 +266,7 @@ spec:
       - name: skipGlobalSettings
         type: bool
         default: false
-        description: flag to skip global settings.xml file for mvn command
+        description: Flag to bypass the global settings.xml file when executing Maven commands, allowing dependencies to be downloaded from a private/common repository instead of enforcing download only from internal repository.
         scope:
           - STEPS
           - STAGES
