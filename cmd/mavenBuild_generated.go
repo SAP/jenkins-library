@@ -306,7 +306,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringSliceVar(&stepConfig.DeployFlags, "deployFlags", []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`}, "maven deploy flags that will be used when publish is detected.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
-	cmd.Flags().BoolVar(&stepConfig.SkipGlobalSettings, "skipGlobalSettings", false, "flag to skip global settings.xml file for mvn command")
+	cmd.Flags().BoolVar(&stepConfig.SkipGlobalSettings, "skipGlobalSettings", false, "Flag to bypass the global settings.xml file when executing Maven commands, allowing dependencies to be downloaded from a private/common repository instead of enforcing download only from internal repository.")
 
 }
 
