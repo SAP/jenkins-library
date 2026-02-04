@@ -1,8 +1,5 @@
 # ${docGenStepName}
 
-!!! warning "Deprecation notice"
-This step will soon be deprecated!
-
 ## ${docGenDescription}
 
 !!! Currently the Object Set configuration is limited to the usage of Multi Property Sets. Please note that other sets besides the Multi Property Set will not be included in the ATC runs. You can see an example of the Multi Property Sets with all configurable properties. However, we strongly reccommend to only specify packages and software components like in the first two examples of the section `ATC config file example`.

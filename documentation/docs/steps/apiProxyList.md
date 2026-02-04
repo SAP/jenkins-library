@@ -1,8 +1,5 @@
 # ${docGenStepName}
 
-!!! warning "Deprecation notice"
-This step will soon be deprecated!
-
 ## ${docGenDescription}
 
 With this step, you can retrieve all the API proxies from the API portal. An API Proxy is a concept in API Management, capability of SAP Integration Suite, which anonymizes any HTTP endpoints like REST, OData, or SOAP and enhance it with policies and routes.

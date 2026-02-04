@@ -1,8 +1,5 @@
 # ${docGenStepName}
 
-!!! warning "Deprecation notice"
-This step will soon be deprecated!
-
 ## ${docGenDescription}
 
 The SAP Alert Notification service for SAP BTP allows users to define

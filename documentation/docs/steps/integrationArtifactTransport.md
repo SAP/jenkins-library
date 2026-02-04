@@ -1,8 +1,5 @@
 # ${docGenStepName}
 
-!!! warning "Deprecation notice"
-This step will soon be deprecated!
-
 ## ${docGenDescription}
 
 With this step, you can transport Integration Packages from SAP Integration Suite across various landscapes using SAP Content Agent Service.

@@ -1,8 +1,5 @@
 # ${docGenStepName}
 
-!!! warning "Deprecation notice"
-This step will soon be deprecated!
-
 ## ${docGenDescription}
 
 * API Provider defines the connection details for services running on specific hosts.

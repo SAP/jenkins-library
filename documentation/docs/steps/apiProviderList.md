@@ -1,8 +1,5 @@
 # ${docGenStepName}
 
-!!! warning "Deprecation notice"
-This step will soon be deprecated!
-
 ## ${docGenDescription}
 
 With this step, you can retrieve all the API providers from the API portal. An API provider is a concept in API Management, capability of SAP Integration Suite, which defines the connection details for services running on specific hosts whose details you want to access.

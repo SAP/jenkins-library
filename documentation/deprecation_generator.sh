@@ -10,8 +10,8 @@ set -euo pipefail
 # removes the deprecation block from its .md file if it exists [remove_deprecation()].
 
 # Configurable paths
-STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}" # Path to deprecated_steps.yaml where all deprecated steps are listed
-DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}" # Path to the docs/steps/ directory containing the .md files
+STEPS_FILE="${1:-/Users/C5399877/Library/CloudStorage/OneDrive-SAPSE/Documents/Piper/jenkins-library/documentation/deprecated_steps.yaml}" # Path to deprecated_steps.yaml where all deprecated steps are listed
+DOCS_DIR="${2:-/Users/C5399877/Library/CloudStorage/OneDrive-SAPSE/Documents/Piper/jenkins-library/documentation/docs/steps}" # Path to the docs/steps/ directory containing the .md files
 
 # Deprecation block (exact text)
 DEPR_TITLE=$'!!! warning "Deprecation notice"'
