@@ -33,6 +33,10 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
+	apiUrl := os.Getenv("PIPER_INTEGRATION_GITHUB_API_URL")
+	if len(apiUrl) == 0 {
+		t.Fatal("No GitHub API URL maintained")
+	}
 	dir := t.TempDir()
 
 	testAsset := filepath.Join(dir, "test.txt")
@@ -58,6 +62,8 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			repository,
 			"--token",
 			token,
+			"--apiUrl",
+			apiUrl,
 			"--assetPath",
 			testAsset,
 			"--noTelemetry",
@@ -82,6 +88,8 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			repository,
 			"--token",
 			token,
+			"--apiUrl",
+			apiUrl,
 			"--assetPathList",
 			testAsset,
 			"--assetPathList",
