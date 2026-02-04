@@ -19,6 +19,7 @@ func TestRun(t *testing.T) {
 	}
 
 	m.Stdout(new(bytes.Buffer))
+	m.Stderr(new(bytes.Buffer))
 
 	// Test successful command execution
 	err := m.Run([]string{"btp", "login"})

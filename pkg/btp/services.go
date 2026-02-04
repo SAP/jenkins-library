@@ -12,6 +12,11 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
 	}
+	var responseBytes bytes.Buffer
+	btp.Exec.Stdout(&responseBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
 
 	loginOptions := LoginOptions{
 		Url:              options.Url,
@@ -130,8 +135,6 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 		// error while trying to run btp login
 		return "", errors.Wrap(err, "Login to BTP failed")
 	}
-	var serviceBindingBytes bytes.Buffer
-	btp.Exec.Stdout(&serviceBindingBytes)
 
 	// we are logged in --> read service binding
 	res, err := btp.RunGetServiceBinding(options)
@@ -159,6 +162,9 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 
 	var serviceBindingBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceBindingBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
 
 	parametersCheck := options.Subaccount == "" ||
 		options.BindingName == ""
@@ -208,6 +214,11 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
 	}
+	var responseBytes bytes.Buffer
+	btp.Exec.Stdout(&responseBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
 
 	loginOptions := LoginOptions{
 		Url:              options.Url,
@@ -287,6 +298,11 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
 	}
+	var responseBytes bytes.Buffer
+	btp.Exec.Stdout(&responseBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
 
 	loginOptions := LoginOptions{
 		Url:              options.Url,
@@ -442,6 +458,9 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 	var serviceInstanceBytes bytes.Buffer
 	btp.Exec.Stdout(&serviceInstanceBytes)
 
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
+
 	parametersCheck := options.Subaccount == "" ||
 		options.InstanceName == ""
 
@@ -473,7 +492,15 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 	if err != nil {
 		// error while getting service instance
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", errors.Wrapf(err, "Retrieve service instance failed")
+
+		// parse and return error
+		errorJSON, err := GetJSON(serviceInstanceBytes.String())
+
+		if err != nil {
+			return "", errors.Wrap(err, "Parsing error JSON failed")
+		}
+
+		return errorJSON, errors.Wrapf(err, "Retrieve service instance failed")
 	}
 
 	// parse and return service instance
@@ -490,6 +517,11 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
 	}
+	var responseBytes bytes.Buffer
+	btp.Exec.Stdout(&responseBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
 
 	loginOptions := LoginOptions{
 		Url:              options.Url,
@@ -567,14 +599,14 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 }
 
 func GetJSON(value string) (string, error) {
-	var serviceBindingJSON string
+	var jsonContent string
 
 	if len(value) > 0 {
 		// parse and return service key
 		var lines []string = strings.Split(value, "\n")
-		serviceBindingJSON = strings.Join(lines, "")
+		jsonContent = strings.Join(lines, "")
 
-		return serviceBindingJSON, nil
+		return jsonContent, nil
 	}
 
 	return "", errors.New("The returned value is empty")

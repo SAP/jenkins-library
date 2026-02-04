@@ -118,3 +118,8 @@ type ServiceBindingData struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 	Labels       string    `json:"labels"`
 }
+
+type BTPErrorData struct {
+	Error       string `json:"error"`
+	Description string `json:"description"`
+}

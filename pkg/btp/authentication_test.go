@@ -21,6 +21,7 @@ func TestBTPLogin(t *testing.T) {
 	}
 
 	m.Stdout(new(bytes.Buffer))
+	m.Stderr(new(bytes.Buffer))
 
 	t.Run("BTP Login: missing parameter", func(t *testing.T) {
 		defer loginMockCleanup(m)

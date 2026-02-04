@@ -103,7 +103,11 @@ func TestIsServiceInstanceDeleted(t *testing.T) {
 		//given
 		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
-				"btp .* get services/instance": errors.New("not found"),
+				"btp .* get services/instance .+": errors.New(`
+				{
+				"error": "BadRequest",
+				"description": "Could not find such instance"
+				}`),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
@@ -207,7 +211,11 @@ func TestIsServiceBindingDeleted(t *testing.T) {
 	t.Run("binding not found", func(t *testing.T) {
 		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
-				"btp .* get services/binding": errors.New("not found"),
+				"btp .* get services/binding": errors.New(`
+				{
+				"error": "BadRequest",
+				"description": "Could not find such binding"
+				}`),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))

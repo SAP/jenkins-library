@@ -19,15 +19,23 @@ func (b *BtpExecutorMock) Stdout(out io.Writer) {
 	b.stdout = out
 }
 
+func (b *BtpExecutorMock) Stderr(errOut io.Writer) {
+	b.stderr = errOut
+}
+
 func (b *BtpExecutorMock) GetStdoutValue() string {
 	return b.stdout.(*bytes.Buffer).String()
+}
+
+func (b *BtpExecutorMock) GetStderrValue() string {
+	return b.stderr.(*bytes.Buffer).String()
 }
 
 func (b *BtpExecutorMock) Run(cmdScript []string) (err error) {
 	execCall := BtpExecCall{Exec: cmdScript[0], Params: cmdScript[1:]}
 	b.Calls = append(b.Calls, execCall)
 
-	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout)
+	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout, b.stderr)
 }
 
 func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
@@ -53,7 +61,7 @@ func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 }
 
 // Processes command results based on predefined mock data.
-func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer, stderr io.Writer) error {
 	// Check if the command should return a specific output
 	if stdoutReturn != nil {
 		for pattern, output := range stdoutReturn {
@@ -68,6 +76,7 @@ func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]stri
 	if shouldFailOnCommand != nil {
 		for pattern, err := range shouldFailOnCommand {
 			if matchCommand(pattern, call) {
+				stderr.Write([]byte(err.Error()))
 				return err
 			}
 		}
