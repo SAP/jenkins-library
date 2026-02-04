@@ -1,3 +1,4 @@
 steps:
   - newmanExecute
   - uiVeri5ExecuteTests
+  - malwareExecuteScan

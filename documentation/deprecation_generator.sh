@@ -8,14 +8,15 @@ set -euo pipefail
 # For the listed steps, it ensures that a deprecation notice block is present in their corresponding .md files [contains()]. If
 # not it adds DEPTR_TITLE and DEPR_BODY under the header [insert_deprecation()]. If a step is removed from the list, the script
 # removes the deprecation block from its .md file if it exists [remove_deprecation()].
+# For now the goal of the script is to alert users regarding OS sunset.
 
 # Configurable paths
-STEPS_FILE="${1:-/Users/C5399877/Library/CloudStorage/OneDrive-SAPSE/Documents/Piper/jenkins-library/documentation/deprecated_steps.yaml}" # Path to deprecated_steps.yaml where all deprecated steps are listed
-DOCS_DIR="${2:-/Users/C5399877/Library/CloudStorage/OneDrive-SAPSE/Documents/Piper/jenkins-library/documentation/docs/steps}" # Path to the docs/steps/ directory containing the .md files
+STEPS_FILE="${1:-/yourAbsoluteDirPathForStepsYamlFile}" # Path to deprecated_steps.yaml where all deprecated steps are listed
+DOCS_DIR="${2:-/yourAbsoluteDirPathForMDDocsFiles}" # Path to the docs/steps/ directory containing the .md files
 
 # Deprecation block (exact text)
 DEPR_TITLE=$'!!! warning "Deprecation notice"'
-DEPR_BODY=$'This step will soon be deprecated!'
+DEPR_BODY=$'This step will be deprecated and will be read only from Dec 2026'
 
 # Load steps from YAML into a plain array (compatible with macOS bash)
 STEPS=()
