@@ -27,11 +27,15 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	}
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
-		owner = "OliverNocon"
+		owner = "piper-test"
 	}
 	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
 		repository = "piper-integration"
+	}
+	apiUrl := os.Getenv("PIPER_INTEGRATION_GITHUB_API_URL")
+	if len(apiUrl) == 0 {
+		t.Fatal("No GitHub API URL maintained")
 	}
 	dir := t.TempDir()
 
@@ -58,6 +62,8 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			repository,
 			"--token",
 			token,
+			"--apiUrl",
+			apiUrl,
 			"--assetPath",
 			testAsset,
 			"--noTelemetry",
@@ -82,6 +88,8 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			repository,
 			"--token",
 			token,
+			"--apiUrl",
+			apiUrl,
 			"--assetPathList",
 			testAsset,
 			"--assetPathList",
@@ -104,15 +112,22 @@ func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
 
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
-		owner = "OliverNocon"
+		owner = "piper-test"
 	}
+
 	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
+
+	apiUrl := os.Getenv("PIPER_INTEGRATION_GITHUB_API_URL")
+	if len(apiUrl) == 0 {
+		t.Fatal("No GitHub API URL maintained")
+	}
+
 	// test
 	result, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
-		Owner: owner, Repository: repository, APIURL: "https://api.github.com", Token: token, SHA: "3601ed6"})
+		Owner: owner, Repository: repository, APIURL: apiUrl, Token: token, SHA: "eba66f2"})
 
 	// assert
 	assert.NoError(t, err)
