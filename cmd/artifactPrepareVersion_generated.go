@@ -153,7 +153,7 @@ Define ` + "`" + `buildTool: custom` + "`" + ` as well as ` + "`" + `filePath: <
 
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.txt` + "`" + ` file or to a file without extension.
 
-**Warning:** Using a plain version file may lead to issues in later pipeline steps (e.g., sapDownloadArtifact), as some steps expect structured files (ini, yaml, json) for version extraction.
+**Warning:** Using a plain version file may lead to issues in later pipeline steps, as some steps expect structured files (ini, yaml, json) for version extraction.
 
 #### ` + "`" + `ini` + "`" + ` file containing the version:
 
