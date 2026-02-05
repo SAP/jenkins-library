@@ -145,6 +145,7 @@ jobs:
       - name: Run test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+          PIPER_INTEGRATION_GITHUB_HOST: ${{secrets.PIPER_INTEGRATION_GITHUB_HOST}}
           PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
           PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
         run: |

@@ -56,19 +56,21 @@ metadata:
 
     **Please note:** `<path to your file>` need to point either to a `*.txt` file or to a file without extension.
 
+    **Warning:** Using a plain version file may lead to issues in later pipeline steps, as some steps expect structured files (ini, yaml, json) for version extraction.
+
     #### `ini` file containing the version:
 
-    Define `buildTool: custom`, `filePath: <path to your ini-file>` as well as parameters `versionSection` and `versionSource` to point to the version location (section & parameter name) within the file.
+    Define `buildTool: custom`, `filePath: <path to your ini-file>` as well as parameters `customVersionSection` and `customVersionField` to point to the version location (section & parameter name) within the file.
 
     **Please note:** `<path to your file>` need to point either to a `*.cfg` or a `*.ini` file.
 
     #### `json` file containing the version:
 
-    Define `buildTool: custom`, `filePath: <path to your *.json file` as well as parameter `versionSource` to point to the parameter containing the version.
+    Define `buildTool: custom`, `filePath: <path to your *.json file>` as well as parameter `customVersionField` to point to the parameter containing the version.
 
     #### `yaml` file containing the version
 
-    Define `buildTool: custom`, `filePath: <path to your *.yml/*.yaml file` as well as parameter `versionSource` to point to the parameter containing the version.
+    Define `buildTool: custom`, `filePath: <path to your *.yml/*.yaml file>` as well as parameter `customVersionField` to point to the parameter containing the version.
 spec:
   inputs:
     secrets:
