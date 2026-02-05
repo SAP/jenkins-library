@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,10 +34,12 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
-	apiUrl := os.Getenv("PIPER_INTEGRATION_GITHUB_API_URL")
-	if len(apiUrl) == 0 {
-		t.Fatal("No GitHub API URL maintained")
+	host := os.Getenv("PIPER_INTEGRATION_GITHUB_HOST")
+	if len(host) == 0 {
+		t.Fatal("No GitHub host maintained")
 	}
+	apiUrl := fmt.Sprintf("https://%s/api/v3", host)
+	uploadUrl := fmt.Sprintf("https://%s/api/uploads", host)
 	dir := t.TempDir()
 
 	testAsset := filepath.Join(dir, "test.txt")
@@ -64,6 +67,8 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			token,
 			"--apiUrl",
 			apiUrl,
+			"--uploadUrl",
+			uploadUrl,
 			"--assetPath",
 			testAsset,
 			"--noTelemetry",
@@ -90,6 +95,8 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			token,
 			"--apiUrl",
 			apiUrl,
+			"--uploadUrl",
+			uploadUrl,
 			"--assetPathList",
 			testAsset,
 			"--assetPathList",
@@ -120,10 +127,11 @@ func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
 		repository = "piper-integration"
 	}
 
-	apiUrl := os.Getenv("PIPER_INTEGRATION_GITHUB_API_URL")
-	if len(apiUrl) == 0 {
-		t.Fatal("No GitHub API URL maintained")
+	host := os.Getenv("PIPER_INTEGRATION_GITHUB_HOST")
+	if len(host) == 0 {
+		t.Fatal("No GitHub host maintained")
 	}
+	apiUrl := fmt.Sprintf("https://%s/api/v3", host)
 
 	// test
 	result, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
