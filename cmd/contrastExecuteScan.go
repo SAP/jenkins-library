@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/base64"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -155,7 +156,6 @@ func getAuth(config *contrastExecuteScanOptions) string {
 	return base64.StdEncoding.EncodeToString([]byte(config.Username + ":" + config.ServiceKey))
 }
 
-// generateSarifReport generates a SARIF report using the Contrast API
 func generateSarifReport(config *contrastExecuteScanOptions, utils contrastExecuteScanUtils) ([]piperutils.Path, error) {
 	log.Entry().Info("Starting SARIF report generation...")
 
@@ -166,8 +166,10 @@ func generateSarifReport(config *contrastExecuteScanOptions, utils contrastExecu
 		return nil, errors.Wrap(err, "SARIF generation failed")
 	}
 
-	sarifPath := "./contrast/piper_contrast.sarif"
-	if err := utils.MkdirAll("./contrast", 0755); err != nil {
+	modulePath := "./"
+	reportsDirectory := filepath.Join(modulePath, "contrast")
+	sarifPath := filepath.Join(reportsDirectory, "piper_contrast.sarif")
+	if err := utils.MkdirAll(reportsDirectory, 0777); err != nil {
 		return nil, errors.Wrap(err, "failed to create contrast directory")
 	}
 
@@ -191,8 +193,10 @@ func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecute
 		return nil, errors.Wrap(err, "PDF generation failed")
 	}
 
-	pdfPath := "./contrast/piper_contrast_attestation.pdf"
-	if err := utils.MkdirAll("./contrast", 0755); err != nil {
+	modulePath := "./"
+	reportsDirectory := filepath.Join(modulePath, "contrast")
+	pdfPath := filepath.Join(reportsDirectory, "piper_contrast_attestation.pdf")
+	if err := utils.MkdirAll(reportsDirectory, 0777); err != nil {
 		return nil, errors.Wrap(err, "failed to create contrast directory")
 	}
 
@@ -204,3 +208,4 @@ func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecute
 
 	return []piperutils.Path{{Name: "Contrast PDF Attestation Report", Target: pdfPath}}, nil
 }
+

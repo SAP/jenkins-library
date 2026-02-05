@@ -1,6 +1,7 @@
 package contrast
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,10 +12,16 @@ import (
 
 // StartAsyncPdfGeneration initiates async PDF report generation for the given application
 func (c *Client) StartAsyncPdfGeneration(appUuid string) (string, error) {
-	url := fmt.Sprintf("%s/Contrast/api/ng/%s/applications/%s/attestation?showRouteObservations=true&showVulnerabilitiesDetails=true",
-		c.BaseURL, c.OrgID, appUuid)
-
-	req, err := http.NewRequest("POST", url, nil)
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/applications/%s/attestation", c.BaseURL, c.OrgID, appUuid)
+	body := map[string]bool{
+		"showVulnerabilitiesDetails": true,
+		"showRouteObservations":      true,
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request body: %w", err)
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
