@@ -8,11 +8,11 @@ func IsServiceInstanceCreated(btp *BTPUtils, options GetServiceInstanceOptions) 
 	serviceInstanceJSON, err := btp.RunGetServiceInstance(options)
 
 	if err != nil {
-		errorData, errorMessageCode, err := GetErrorInfos(btp.Exec.GetStderrValue())
+		errorData, err := GetErrorInfos(btp.Exec.GetStderrValue())
 		if err != nil {
 			return CheckResponse{successful: false, done: false}
 		}
-		return CheckResponse{successful: false, done: false, errorData: errorData, errorMessageCode: errorMessageCode}
+		return CheckResponse{successful: false, done: false, errorData: errorData}
 	}
 
 	data := ServiceInstanceData{}
@@ -30,14 +30,14 @@ func IsServiceInstanceDeleted(btp *BTPUtils, options GetServiceInstanceOptions) 
 	_, err := btp.RunGetServiceInstance(options)
 
 	if err != nil {
-		errorData, errorMessageCode, err := GetErrorInfos(btp.Exec.GetStderrValue())
+		errorData, err := GetErrorInfos(btp.Exec.GetStderrValue())
 		if err != nil {
 			return CheckResponse{successful: false, done: false}
 		}
-		if errorMessageCode == "SERVICE_INSTANCE_NOT_FOUND" {
+		if errorData.Error != "Conflict" {
 			return CheckResponse{successful: true, done: true}
 		}
-		return CheckResponse{successful: false, done: false, errorData: errorData, errorMessageCode: errorMessageCode}
+		return CheckResponse{successful: false, done: false, errorData: errorData}
 	}
 
 	return CheckResponse{successful: false, done: false}
@@ -47,15 +47,14 @@ func IsServiceBindingCreated(btp *BTPUtils, options GetServiceBindingOptions) Ch
 	serviceBindingJSON, err := btp.RunGetServiceBinding(options)
 
 	if err != nil {
-		errorData, errorMessageCode, err := GetErrorInfos(btp.Exec.GetStderrValue())
+		errorData, err := GetErrorInfos(btp.Exec.GetStderrValue())
 		if err != nil {
 			return CheckResponse{successful: false, done: false}
 		}
-		return CheckResponse{successful: false, done: false, errorData: errorData, errorMessageCode: errorMessageCode}
+		return CheckResponse{successful: false, done: false, errorData: errorData}
 	}
 
 	data := ServiceBindingData{}
-
 	err = json.Unmarshal([]byte(serviceBindingJSON), &data)
 
 	if err != nil {
@@ -69,22 +68,25 @@ func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) Ch
 	_, err := btp.RunGetServiceBinding(options)
 
 	if err != nil {
-		errorData, errorMessageCode, err := GetErrorInfos(btp.Exec.GetStderrValue())
+		errorData, err := GetErrorInfos(btp.Exec.GetStderrValue())
 		if err != nil {
-			return CheckResponse{successful: false, done: false}
+			if errorData.Error == "" {
+				return CheckResponse{successful: true, done: true}
+			} else {
+				return CheckResponse{successful: false, done: false}
+			}
 		}
-		if errorMessageCode == "SERVICE_BINDING_NOT_FOUND" {
+		if errorData.Error != "Conflict" {
 			return CheckResponse{successful: true, done: true}
 		}
-		return CheckResponse{successful: false, done: false, errorData: errorData, errorMessageCode: errorMessageCode}
+		return CheckResponse{successful: false, done: false, errorData: errorData}
 	}
 
 	return CheckResponse{successful: false, done: false}
 }
 
 type CheckResponse struct {
-	successful       bool
-	done             bool
-	errorData        BTPErrorData
-	errorMessageCode string
+	successful bool
+	done       bool
+	errorData  BTPErrorData
 }

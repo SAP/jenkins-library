@@ -2,6 +2,8 @@ package btp
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -53,6 +55,9 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		if options.PollInterval == 0 {
 			missingParams = append(missingParams, "PollInterval")
 		}
+		if options.ServiceInstance == "" {
+			missingParams = append(missingParams, "ServiceInstance")
+		}
 		errorMsg += strings.Join(missingParams, ", ")
 
 		return "", errors.Wrap(errors.New(errorMsg), "Failed to create service binding")
@@ -75,6 +80,20 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 
 	btpCreateBindingScript, _ := builder.Build()
 
+	instanceData, err := GetServiceInstanceData(btp, GetServiceInstanceOptions{
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
+		Subaccount:       options.Subaccount,
+		InstanceName:     options.ServiceInstance,
+	})
+
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get service instance data")
+	}
+
 	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpCreateBindingScript,
 		TimeoutSeconds: options.Timeout,
@@ -84,13 +103,15 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
-				Url:              options.Url,
-				Subdomain:        options.Subdomain,
-				User:             options.User,
-				Password:         options.Password,
-				IdentityProvider: options.IdentityProvider,
-				Subaccount:       options.Subaccount,
-				BindingName:      options.BindingName,
+				Url:               options.Url,
+				Subdomain:         options.Subdomain,
+				User:              options.User,
+				Password:          options.Password,
+				IdentityProvider:  options.IdentityProvider,
+				Subaccount:        options.Subaccount,
+				BindingName:       options.BindingName,
+				ServiceInstance:   options.ServiceInstance,
+				ServiceInstanceId: instanceData.ID,
 			})
 		},
 		IgnoreErrorOnFirstCall: true,
@@ -167,7 +188,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 	btp.Exec.Stderr(&errorResBytes)
 
 	parametersCheck := options.Subaccount == "" ||
-		options.BindingName == ""
+		(options.BindingName == "" && options.BindingId == "")
 
 	if parametersCheck {
 		errorMsg := "Parameters missing. Please provide: "
@@ -175,8 +196,8 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 		if options.Subaccount == "" {
 			missingParams = append(missingParams, "Subaccount")
 		}
-		if options.BindingName == "" {
-			missingParams = append(missingParams, "BindingName")
+		if options.BindingName == "" && options.BindingId == "" {
+			missingParams = append(missingParams, "BindingName or BindingId")
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
@@ -186,14 +207,20 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
 
 	builder := NewBTPCommandBuilder().
-		WithAction("get").
 		WithTarget("services/binding").
 		WithSubAccount(options.Subaccount)
 
-	if options.BindingId != "" {
-		builder = builder.WithID(options.BindingId)
+	if options.BindingName != "" && options.ServiceInstanceId != "" {
+		builder = builder.WithAction("list").
+			WithFieldsFilter(fmt.Sprintf("\"service_instance_id eq '%s' and name eq '%s'\"", options.ServiceInstanceId, options.BindingName))
 	} else {
-		builder = builder.WithName(options.BindingName)
+		builder = builder.WithAction("get")
+
+		if options.BindingId != "" {
+			builder = builder.WithID(options.BindingId)
+		} else {
+			builder = builder.WithName(options.BindingName)
+		}
 	}
 
 	btpGetBindingScript, _ := builder.Build()
@@ -211,6 +238,23 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
 		return "", errors.Wrap(err, "Parsing service binding JSON failed")
+	}
+
+	if options.BindingName != "" && options.ServiceInstanceId != "" {
+		dataList := []ServiceBindingData{}
+		err = json.Unmarshal([]byte(serviceBindingJSON), &dataList)
+		if err == nil && len(dataList) > 0 {
+			data := dataList[0]
+			foundedServiceBindingBytes, err := json.Marshal(data)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorService)
+				return "", errors.Wrap(err, "Failed to marshal service binding data")
+			}
+			serviceBindingJSON = string(foundedServiceBindingBytes)
+		} else {
+			log.SetErrorCategory(log.ErrorService)
+			return "", errors.New("No service binding found with the given name and service instance id")
+		}
 	}
 
 	return serviceBindingJSON, nil
@@ -253,6 +297,9 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		if options.BindingName == "" {
 			missingParams = append(missingParams, "BindingName")
 		}
+		if options.ServiceInstance == "" {
+			missingParams = append(missingParams, "ServiceInstance")
+		}
 		errorMsg += strings.Join(missingParams, ", ")
 
 		return errors.Wrap(errors.New(errorMsg), "Failed to delete service binding")
@@ -260,11 +307,40 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
 
+	instanceData, err := GetServiceInstanceData(btp, GetServiceInstanceOptions{
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
+		Subaccount:       options.Subaccount,
+		InstanceName:     options.ServiceInstance,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "Failed to get service instance data")
+	}
+
+	bindingData, err := GetServiceBindingData(btp, GetServiceBindingOptions{
+		Url:               options.Url,
+		Subdomain:         options.Subdomain,
+		User:              options.User,
+		Password:          options.Password,
+		IdentityProvider:  options.IdentityProvider,
+		Subaccount:        options.Subaccount,
+		BindingName:       options.BindingName,
+		ServiceInstanceId: instanceData.ID,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "Service binding not found")
+	}
+
 	btpDeleteBindingScript, _ := NewBTPCommandBuilder().
 		WithAction("delete").
 		WithTarget("services/binding").
 		WithSubAccount(options.Subaccount).
-		WithName(options.BindingName).WithConfirm().Build()
+		WithID(bindingData.ID).WithConfirm().Build()
 
 	err = btp.Exec.RunSync(RunSyncOptions{
 		CmdScript:      btpDeleteBindingScript,
@@ -281,7 +357,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 				Password:         options.Password,
 				IdentityProvider: options.IdentityProvider,
 				Subaccount:       options.Subaccount,
-				BindingName:      options.BindingName,
+				BindingId:        options.BindingName,
 			})
 		},
 	})
@@ -469,7 +545,7 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 	btp.Exec.Stderr(&errorResBytes)
 
 	parametersCheck := options.Subaccount == "" ||
-		options.InstanceName == ""
+		(options.InstanceName == "" && options.InstanceId == "")
 
 	if parametersCheck {
 		errorMsg := "Parameters missing. Please provide: "
@@ -477,8 +553,8 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 		if options.Subaccount == "" {
 			missingParams = append(missingParams, "Subaccount")
 		}
-		if options.InstanceName == "" {
-			missingParams = append(missingParams, "InstanceName")
+		if options.InstanceName == "" && options.InstanceId == "" {
+			missingParams = append(missingParams, "InstanceName or InstanceId")
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
@@ -490,8 +566,13 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 	builder := NewBTPCommandBuilder().
 		WithAction("get").
 		WithTarget("services/instance").
-		WithName(options.InstanceName).
 		WithSubAccount(options.Subaccount)
+
+	if options.InstanceId != "" {
+		builder = builder.WithID(options.InstanceId)
+	} else {
+		builder = builder.WithName(options.InstanceName)
+	}
 
 	btpGetServiceScript, _ := builder.Build()
 	err := btp.Exec.Run(btpGetServiceScript)
@@ -557,10 +638,24 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
 
+	instanceData, err := GetServiceInstanceData(btp, GetServiceInstanceOptions{
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
+		Subaccount:       options.Subaccount,
+		InstanceName:     options.InstanceName,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "Service instance not found")
+	}
+
 	btpGetServiceScript, _ := NewBTPCommandBuilder().
 		WithAction("delete").
 		WithTarget("services/instance").
-		WithName(options.InstanceName).
+		WithID(instanceData.ID).
 		WithSubAccount(options.Subaccount).
 		WithConfirm().Build()
 
@@ -579,7 +674,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 				Password:         options.Password,
 				IdentityProvider: options.IdentityProvider,
 				Subaccount:       options.Subaccount,
-				InstanceName:     options.InstanceName,
+				InstanceId:       instanceData.ID,
 			})
 		},
 	})
@@ -613,6 +708,36 @@ func GetJSON(value string) (string, error) {
 	return "", errors.New("The returned value is empty")
 }
 
+func GetServiceInstanceData(btp *BTPUtils, options GetServiceInstanceOptions) (ServiceInstanceData, error) {
+	serviceInstanceJSON, err := btp.RunGetServiceInstance(options)
+
+	if err != nil {
+		return ServiceInstanceData{}, errors.Wrap(err, "Failed to get service instance")
+	}
+
+	instanceData := ServiceInstanceData{}
+	err = json.Unmarshal([]byte(serviceInstanceJSON), &instanceData)
+	if err != nil {
+		return ServiceInstanceData{}, errors.Wrap(err, "Failed to unmarshal service instance JSON")
+	}
+	return instanceData, nil
+}
+
+func GetServiceBindingData(btp *BTPUtils, options GetServiceBindingOptions) (ServiceBindingData, error) {
+	serviceBindingJSON, err := btp.RunGetServiceBinding(options)
+
+	if err != nil {
+		return ServiceBindingData{}, errors.Wrap(err, "Failed to get service binding")
+	}
+
+	instanceData := ServiceBindingData{}
+	err = json.Unmarshal([]byte(serviceBindingJSON), &instanceData)
+	if err != nil {
+		return ServiceBindingData{}, errors.Wrap(err, "Failed to unmarshal service binding JSON")
+	}
+	return instanceData, nil
+}
+
 type CreateServiceBindingOptions struct {
 	Url              string
 	Subdomain        string
@@ -628,14 +753,16 @@ type CreateServiceBindingOptions struct {
 }
 
 type GetServiceBindingOptions struct {
-	Url              string
-	Subdomain        string
-	Subaccount       string
-	BindingName      string
-	User             string
-	Password         string
-	IdentityProvider string
-	BindingId        string
+	Url               string
+	Subdomain         string
+	Subaccount        string
+	BindingName       string
+	User              string
+	Password          string
+	IdentityProvider  string
+	BindingId         string
+	ServiceInstance   string
+	ServiceInstanceId string
 }
 
 type DeleteServiceBindingOptions struct {
@@ -648,6 +775,7 @@ type DeleteServiceBindingOptions struct {
 	IdentityProvider string
 	Timeout          int
 	PollInterval     int
+	ServiceInstance  string
 }
 
 type CreateServiceInstanceOptions struct {
@@ -673,6 +801,7 @@ type GetServiceInstanceOptions struct {
 	IdentityProvider string
 	Subaccount       string
 	InstanceName     string
+	InstanceId       string
 }
 
 type DeleteServiceInstanceOptions struct {
