@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -73,17 +74,36 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		return nil, err
 	}
 
-	auth := getAuth(config)
+	// Create unified Contrast client for both sync and async operations
 	appAPIUrl, appUIUrl := getApplicationUrls(config)
+	client := contrast.NewClient(config.UserAPIKey, config.ServiceKey, config.Username, config.OrganizationID, config.Server, appAPIUrl)
 
-	contrastInstance := contrast.NewContrastInstance(appAPIUrl, config.UserAPIKey, auth)
-	appInfo, err := contrastInstance.GetAppInfo(appUIUrl, config.Server)
+	// Generate SARIF report if boolean flag is set
+	if config.GenerateSarif {
+		sarifReports, sarifErr := generateSarifReport(config, utils, client)
+		if sarifErr != nil {
+			log.Entry().WithError(sarifErr).Error("Failed to generate SARIF report")
+			return nil, sarifErr
+		}
+		reports = append(reports, sarifReports...)
+	}
+
+	// Generate PDF report if boolean flag is set
+	if config.GeneratePdf {
+		pdfReports, pdfErr := generatePdfReport(config, utils, client)
+		if pdfErr != nil {
+			log.Entry().WithError(pdfErr).Error("Failed to generate PDF report")
+			return nil, pdfErr
+		}
+		reports = append(reports, pdfReports...)
+	}
+	appInfo, err := client.GetAppInfo(appUIUrl, config.Server)
 	if err != nil {
 		log.Entry().Errorf("error while getting app info")
 		return nil, err
 	}
 
-	findings, err := contrastInstance.GetVulnerabilities()
+	findings, err := client.GetVulnerabilities()
 	if err != nil {
 		log.Entry().Errorf("error while getting vulns")
 		return nil, err
@@ -94,9 +114,14 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		ApplicationUrl: appInfo.Url,
 		ScanResults:    findings,
 	}
-	paths, err := contrast.WriteJSONReport(contrastAudit, "./")
+	jsonData, err := json.Marshal(contrastAudit)
 	if err != nil {
-		log.Entry().Errorf("error while writing json report")
+		log.Entry().Errorf("error while marshaling json report: %v", err)
+		return nil, err
+	}
+	paths, err := contrast.SaveReportFile(utils, "piper_contrast_report.json", "Contrast JSON Compliance Report", jsonData)
+	if err != nil {
+		log.Entry().Errorf("error while writing json report: %v", err)
 		return nil, err
 	}
 	reports = append(reports, paths...)
@@ -133,4 +158,28 @@ func getApplicationUrls(config *contrastExecuteScanOptions) (string, string) {
 
 func getAuth(config *contrastExecuteScanOptions) string {
 	return base64.StdEncoding.EncodeToString([]byte(config.Username + ":" + config.ServiceKey))
+}
+
+// generateSarifReport generates a SARIF report using the Contrast API
+func generateSarifReport(config *contrastExecuteScanOptions, utils contrastExecuteScanUtils, client *contrast.Client) ([]piperutils.Path, error) {
+	log.Entry().Info("Starting SARIF report generation...")
+
+	data, err := client.GenerateSarifReport(config.ApplicationID)
+	if err != nil {
+		return nil, errors.Wrap(err, "SARIF generation failed")
+	}
+
+	return contrast.SaveReportFile(utils, "piper_contrast.sarif", "Contrast SARIF Report", data)
+}
+
+// generatePdfReport generates a PDF attestation report using the Contrast API
+func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecuteScanUtils, client *contrast.Client) ([]piperutils.Path, error) {
+	log.Entry().Info("Starting PDF report generation...")
+
+	data, err := client.GeneratePdfReport(config.ApplicationID)
+	if err != nil {
+		return nil, errors.Wrap(err, "PDF generation failed")
+	}
+
+	return contrast.SaveReportFile(utils, "piper_contrast_attestation.pdf", "Contrast PDF Attestation Report", data)
 }
