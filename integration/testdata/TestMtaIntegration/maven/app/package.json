@@ -2,7 +2,7 @@
     "name": "my-awesome-package",
     "version": "1.0.0",
     "dependencies": {
-        "uuid": "^8.1.0"
+        "uuid": "^13.0.0"
     },
     "devDependencies": {
         "is-number": "^7.0.0"
