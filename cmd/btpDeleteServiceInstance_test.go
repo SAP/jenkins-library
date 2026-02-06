@@ -12,6 +12,7 @@ import (
 
 func TestRunBtpDeleteServiceInstance(t *testing.T) {
 	InstanceName := "testServiceInstance"
+	InstanceId := "xxxx"
 	m := &btp.BtpExecutorMock{}
 	m.Stdout(new(bytes.Buffer))
 
@@ -23,9 +24,15 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp .* login .+": "Authentication successful",
+			"btp .* get services/instance (.*)--name": fmt.Sprintf(`
+				{
+				"id": "%s",
+				"name": "%s",
+				"ready": true
+				}`, InstanceId, InstanceName),
 		}
 		m.ShouldFailOnCommand = map[string]error{
-			"btp .* get services/instance": fmt.Errorf(`
+			"btp .* get services/instance (.*)--id": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such instance"
@@ -53,8 +60,8 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},
-				m.Calls[1])
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--id", InstanceId, "--subaccount", config.Subaccount, "--confirm"}},
+				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
@@ -67,9 +74,15 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp .* login .+": "Authentication successful",
+			"btp .* get services/instance (.*)--name": fmt.Sprintf(`
+				{
+				"id": "%s",
+				"name": "%s",
+				"ready": true
+				}`, InstanceId, InstanceName),
 		}
 		m.ShouldFailOnCommand = map[string]error{
-			"btp .* get services/instance": fmt.Errorf(`
+			"btp .* get services/instance (.*)--id": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such instance"
@@ -98,8 +111,8 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--confirm"}},
-				m.Calls[1])
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--id", InstanceId, "--subaccount", config.Subaccount, "--confirm"}},
+				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
