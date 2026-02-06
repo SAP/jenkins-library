@@ -27,12 +27,18 @@ func TestBTPCreateServiceBinding(t *testing.T) {
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp .* login .+": "Authentication successful",
-				"btp .* get services/binding .+": fmt.Sprintf(`
+				"btp .* get services/instance .+": fmt.Sprintf(`
 				{
+				"id": "xxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.ServiceInstance),
+				"btp .* list services/binding .+": fmt.Sprintf(`
+				[{
 				"id": "xxxx",
 				"name": "%s",
 				"ready": true
-				}`, btpConfig.BindingName),
+				}]`, btpConfig.BindingName),
 			},
 		}
 
@@ -100,19 +106,32 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 	t.Run("BTP DeleteServiceBinding not working", func(t *testing.T) {
 		//given
 		btpConfig := DeleteServiceBindingOptions{
-			Url:          "https://api.endpoint.com",
-			Subdomain:    "xxxxxxx",
-			Subaccount:   "yyyyyyy",
-			BindingName:  "testServiceBindingName",
-			User:         "test_user",
-			Password:     "test_password",
-			Timeout:      3600,
-			PollInterval: 600,
+			Url:             "https://api.endpoint.com",
+			Subdomain:       "xxxxxxx",
+			Subaccount:      "yyyyyyy",
+			BindingName:     "testServiceBindingName",
+			User:            "test_user",
+			Password:        "test_password",
+			Timeout:         3600,
+			PollInterval:    600,
+			ServiceInstance: "test_instance",
 		}
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp .* login .+": "Authentication successful",
+				"btp .* get services/instance .+": fmt.Sprintf(`
+				{
+				"id": "xxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.ServiceInstance),
+				"btp .* list services/binding .+": fmt.Sprintf(`
+				[{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}]`, btpConfig.BindingName),
 			},
 			ShouldFailOnCommand: map[string]error{
 				"btp .* delete services/binding .+": fmt.Errorf(`
@@ -140,19 +159,31 @@ func TestBTPDeleteServiceBinding(t *testing.T) {
 	t.Run("BTP DeleteServiceBinding working", func(t *testing.T) {
 		//given
 		btpConfig := DeleteServiceBindingOptions{
-			Url:          "https://api.endpoint.com",
-			Subdomain:    "xxxxxxx",
-			Subaccount:   "yyyyyyy",
-			BindingName:  "testServiceBindingName",
-			User:         "test_user",
-			Password:     "test_password",
-			Timeout:      3600,
-			PollInterval: 600,
+			Url:             "https://api.endpoint.com",
+			Subdomain:       "xxxxxxx",
+			Subaccount:      "yyyyyyy",
+			BindingName:     "testServiceBindingName",
+			User:            "test_user",
+			Password:        "test_password",
+			Timeout:         3600,
+			PollInterval:    600,
+			ServiceInstance: "test_instance",
 		}
 
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp .* login .+": "Authentication successful",
+				"btp .* get services/instance .+": fmt.Sprintf(`
+				{
+				"id": "xxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.ServiceInstance),
+				"btp .* list services/binding .+": fmt.Sprintf(`[{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}]`, btpConfig.BindingName),
 			},
 			ShouldFailOnCommand: map[string]error{
 				"btp .* get services/binding .+": fmt.Errorf(`
@@ -325,9 +356,15 @@ func TestBTPDeleteServiceInstance(t *testing.T) {
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
 				"btp .* login .+": "Authentication successful",
+				"btp .* get services/instance (.*)--name": fmt.Sprintf(`
+				{
+				"id": "xxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.InstanceName),
 			},
 			ShouldFailOnCommand: map[string]error{
-				"btp .* get services/instance .+": fmt.Errorf(`
+				"btp .* get services/instance (.*)--id": fmt.Errorf(`
 				{
 				"error": "BadRequest",
 				"description": "Could not find such instance"
