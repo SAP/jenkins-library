@@ -3,7 +3,6 @@ package btp
 import (
 	"bytes"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -49,10 +48,10 @@ func (e *Executor) Run(cmdScript []string) (err error) {
 func (e *Executor) RunSync(opts RunSyncOptions) error {
 	var errorResBytes bytes.Buffer
 	e.Stderr(&errorResBytes)
-	err := e.Run(opts.CmdScript)
 
-	if err != nil {
-		if err := handleInitialCheck(e, opts); err != nil {
+	if e.Run(opts.CmdScript) != nil {
+		err := handleInitialCheck(e, opts)
+		if err != nil {
 			return err
 		}
 	}
@@ -61,39 +60,14 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 }
 
 func handleInitialCheck(e *Executor, opts RunSyncOptions) error {
-	errorData, errorMessageCode, err := GetErrorInfos(e.GetStderrValue())
+	errorData, err := GetErrorInfos(e.GetStderrValue())
 	if err != nil {
 		return errors.Wrap(err, "Failed to extract error code from JSON response")
 	}
 
 	if errorData.Error == "Conflict" {
-		return errors.New("Command returned a conflict error.")
+		return errors.Wrap(errors.New(errorData.Description), "Command returned a conflict error.")
 	} else {
-		fullCmd := strings.Join(opts.CmdScript, " ")
-
-		switch errorMessageCode {
-		case "SERVICE_INSTANCE_NOT_FOUND":
-			if strings.Contains(fullCmd, "create services/instance") || strings.Contains(fullCmd, "delete services/instance") {
-				return errors.New("Service instance not found.")
-			}
-		case "SERVICE_BINDING_NOT_FOUND":
-			if strings.Contains(fullCmd, "create services/binding") || strings.Contains(fullCmd, "delete services/binding") {
-				return errors.New("Service binding not found.")
-			}
-		case "INSTANCE_ALREADY_EXISTS":
-			if strings.Contains(fullCmd, "create services/instance") {
-				return errors.New("Service instance with the same name already exists.")
-			}
-		case "MULTIPLE_BINDINGS_FOUND":
-			if strings.Contains(fullCmd, "delete services/binding") {
-				return errors.New("Multiple service bindings found with the same name.")
-			}
-		case "BINDING_ALREADY_EXISTS":
-			if strings.Contains(fullCmd, "create services/binding") {
-				return errors.New("Service binding with the same name already exists for the service instance.")
-			}
-		}
-
 		if !opts.IgnoreErrorOnFirstCall {
 			return errors.Wrap(err, "Failed to execute BTP CLI (Sync)")
 		}
@@ -148,11 +122,14 @@ func handlePolling(opts RunSyncOptions) error {
 				return err
 			}
 
+			// Re-login before next check
+			_ = opts.LoginFunc()
+
 			if waitingForReady {
 				log.Entry().Infof("Command was previously in progress, but now reports failure : Retry count %d.", retryCount)
 				retryCount++
 			} else {
-				if check.errorData.Error != "BadRequest" {
+				if check.errorData.Error == "BadRequest" {
 					badRequestCount++
 					log.Entry().Infof("Command not yet completed, checking again... : BadRequest count %d", badRequestCount)
 				} else {
@@ -167,12 +144,7 @@ func handlePolling(opts RunSyncOptions) error {
 
 func handlePollingCheck(opts RunSyncOptions, check CheckResponse) error {
 	if check.errorData.Error == "Conflict" {
-		return errors.New("Command check returned a conflict error.")
-	} else {
-		err := opts.LoginFunc()
-		if err != nil {
-			return errors.Wrap(err, "Failed to re-login during polling")
-		}
+		return errors.Wrap(errors.New(check.errorData.Description), "Command check returned a conflict error.")
 	}
 	return nil
 }
