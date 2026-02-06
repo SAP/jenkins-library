@@ -120,21 +120,24 @@ func TestIsServiceInstanceDeleted(t *testing.T) {
 func TestIsServiceBindingCreated(t *testing.T) {
 	//given
 	btpConfig := GetServiceBindingOptions{
-		Url:         "https://api.endpoint.com",
-		Subdomain:   "xxxxxxx",
-		Subaccount:  "yyyyyyy",
-		BindingName: "testServiceBindingName",
-		User:        "test_user",
-		Password:    "test_password",
+		Url:               "https://api.endpoint.com",
+		Subdomain:         "xxxxxxx",
+		Subaccount:        "yyyyyyy",
+		BindingName:       "testServiceBindingName",
+		User:              "test_user",
+		Password:          "test_password",
+		ServiceInstance:   "testServiceInstanceName",
+		ServiceInstanceId: "xxx",
 	}
 
 	t.Run("success ready true", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": true}
+		data := []map[string]interface{}{{"ready": true}}
 		jsonData, _ := json.Marshal(data)
+
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp .* get services/binding": string(jsonData),
+				"btp .* list services/binding": string(jsonData),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
@@ -145,11 +148,12 @@ func TestIsServiceBindingCreated(t *testing.T) {
 
 	t.Run("success ready false", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": false}
+		data := []map[string]interface{}{{"ready": false}}
 		jsonData, _ := json.Marshal(data)
+
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
-				"btp .* get services/binding": string(jsonData),
+				"btp .* list services/binding": string(jsonData),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
@@ -162,7 +166,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 		//given
 		m := &BtpExecutorMock{
 			ShouldFailOnCommand: map[string]error{
-				"btp get services/binding": errors.New("not found"),
+				"btp .* list services/binding": errors.New("not found"),
 			},
 		}
 		m.Stdout(new(bytes.Buffer))
