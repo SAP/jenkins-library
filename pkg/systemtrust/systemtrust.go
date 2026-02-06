@@ -48,7 +48,7 @@ func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration
 		return "", errors.Wrap(err, "couldn't get token from System Trust")
 	}
 	for _, s := range secrets {
-		if s.System == refName {
+		if s.System == body.System {
 			return s.Token, nil
 		}
 	}
