@@ -59,7 +59,7 @@ spec:
           - name: btp/subaccount
       - name: serviceInstanceName
         type: string
-        description: Name of the service instance to create
+        description: Name of the service instance for which the service binding will be created
         scope:
           - PARAMETERS
           - STAGES
