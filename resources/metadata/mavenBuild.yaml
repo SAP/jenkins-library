@@ -263,6 +263,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: skipGlobalSettings
+        type: bool
+        default: false
+        description: Flag to bypass the global settings.xml file when executing Maven commands, allowing dependencies to be downloaded from a private/common repository instead of enforcing download only from internal repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
     resources:
       - type: stash
   outputs:
