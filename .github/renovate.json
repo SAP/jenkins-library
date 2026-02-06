@@ -146,6 +146,36 @@
             "datasourceTemplate": "docker",
             "extractVersionTemplate": "(?<version>.*)",
             "autoReplaceStringTemplate": "Image: \"{{depName}}:{{newValue}}\""
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "resources/metadata/golangBuild.yaml"
+            ],
+            "matchStrings": [
+                "default: \"https://github\\.com/golangci/golangci-lint/releases/download/v(?<currentValue>[^/]+)/golangci-lint-[^-]+-linux-amd64\\.tar\\.gz\""
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "depNameTemplate": "golangci/golangci-lint",
+            "extractVersionTemplate": "^(?<version>.*)",
+            "autoReplaceStringTemplate": "default: \"https://github.com/golangci/golangci-lint/releases/download/v{{newValue}}/golangci-lint-{{newValue}}-linux-amd64.tar.gz\""
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "cmd/golangBuild_test.go"
+            ],
+            "matchStrings": [
+                "GolangciLintURL: \"https://github\\.com/golangci/golangci-lint/releases/download/v(?<currentValue>[^/]+)/golangci-lint-[^-]+-darwin-amd64\\.tar\\.gz\""
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "github-releases",
+            "depNameTemplate": "golangci/golangci-lint",
+            "extractVersionTemplate": "^(?<version>.*)",
+            "autoReplaceStringTemplate": "GolangciLintURL: \"https://github.com/golangci/golangci-lint/releases/download/v{{newValue}}/golangci-lint-{{newValue}}-darwin-amd64.tar.gz\""
         }
     ],
     "postUpdateOptions": [

@@ -305,6 +305,10 @@ go 1.17`
 		}
 		utils := newGolangBuildTestsUtils()
 		utils.AddFile("go.mod", []byte(modTestFile))
+		// Mock version command to return v1.x
+		utils.StdoutReturn = map[string]string{
+			binaryPath + " version": "golangci-lint has version v1.51.2",
+		}
 		telemetry := telemetry.CustomData{}
 		err := runGolangBuild(&config, &telemetry, utils, &cpe)
 		assert.NoError(t, err)
@@ -313,8 +317,12 @@ go 1.17`
 		assert.NoError(t, err)
 
 		assert.Equal(t, []byte("content"), b)
+		// Should call version command first
 		assert.Equal(t, binaryPath, utils.Calls[0].Exec)
-		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[0].Params)
+		assert.Equal(t, []string{"version"}, utils.Calls[0].Params)
+		// Then run linting with v1 syntax
+		assert.Equal(t, binaryPath, utils.Calls[1].Exec)
+		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[1].Params)
 	})
 
 	t.Run("failure - install pre-requisites for testing", func(t *testing.T) {
@@ -973,50 +981,74 @@ func TestRunGolangciLint(t *testing.T) {
 
 	tt := []struct {
 		name                string
+		versionOutput       string
 		shouldFailOnCommand map[string]error
 		fileWriteError      error
 		exitCode            int
-		expectedCommand     []string
+		expectedCommands    [][]string
 		expectedErr         error
 		failOnLintingError  bool
 	}{
 		{
-			name:                "success",
+			name:                "success - v1 version detection",
+			versionOutput:       "golangci-lint has version v1.51.2",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommands:    [][]string{{binaryPath, "version"}, {binaryPath, "run", "--out-format", "checkstyle"}},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success - v2 version detection",
+			versionOutput:       "golangci-lint has version v2.0.0",
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommands:    [][]string{{binaryPath, "version"}, {binaryPath, "run", "--output.checkstyle.path", lintSettings["reportOutputPath"]}},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success - version command fails, fallback to v1",
+			versionOutput:       "",
+			shouldFailOnCommand: map[string]error{binaryPath + " version": fmt.Errorf("version command failed")},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommands:    [][]string{{binaryPath, "version"}, {binaryPath, "run", "--out-format", "checkstyle"}},
 			expectedErr:         nil,
 		},
 		{
 			name:                "failure - failed to run golangci-lint",
+			versionOutput:       "golangci-lint has version v1.51.2",
 			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
 			fileWriteError:      nil,
 			exitCode:            0,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
 		},
 		{
 			name:                "failure - failed to write golangci-lint report",
+			versionOutput:       "golangci-lint has version v1.51.2",
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
 			exitCode:            0,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
 		},
 		{
 			name:                "failure - failed with ExitCode == 1",
+			versionOutput:       "golangci-lint has version v1.51.2",
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
 			failOnLintingError:  true,
 		},
 		{
 			name:                "success - ignore failed with ExitCode == 1",
+			versionOutput:       "golangci-lint has version v1.51.2",
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommands:    [][]string{{binaryPath, "version"}, {binaryPath, "run", "--out-format", "checkstyle"}},
 			expectedErr:         nil,
 			failOnLintingError:  false,
 		},
@@ -1030,11 +1062,21 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
+			if test.versionOutput != "" {
+				utils.StdoutReturn = map[string]string{
+					binaryPath + " version": test.versionOutput,
+				}
+			}
+
 			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
 
 			if test.expectedErr == nil {
-				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
-				assert.Equal(t, test.expectedCommand[1:], utils.Calls[0].Params)
+				if len(test.expectedCommands) > 0 {
+					for i, expectedCmd := range test.expectedCommands {
+						assert.Equal(t, expectedCmd[0], utils.Calls[i].Exec)
+						assert.Equal(t, expectedCmd[1:], utils.Calls[i].Params)
+					}
+				}
 			} else {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			}
