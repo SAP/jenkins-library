@@ -15,6 +15,7 @@ const (
 	testClientUsername   = "test-username"
 	testClientServiceKey = "test-service-key"
 	testClientBaseURL    = "https://test.contrastsecurity.com"
+	testClientAppURL     = "https://test.contrastsecurity.com/api/v4/organizations/org-123/applications/app-123"
 	testReportUUID       = "test-report-uuid"
 
 	// HTTP constants
@@ -29,12 +30,12 @@ const (
 func TestClientCreation(t *testing.T) {
 	t.Run("with custom base URL", func(t *testing.T) {
 		customURL := "https://custom.contrastsecurity.com"
-		client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, customURL)
+		client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, customURL, testClientAppURL)
 		verifyClientFields(t, client, customURL)
 	})
 
 	t.Run("with empty base URL uses default", func(t *testing.T) {
-		client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, "")
+		client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, "", testClientAppURL)
 		verifyClientFields(t, client, defaultBaseURL)
 	})
 }
@@ -56,6 +57,12 @@ func verifyClientFields(t *testing.T, client *Client, expectedURL string) {
 	if client.BaseURL != expectedURL {
 		t.Errorf("Expected BaseURL %s, got %s", expectedURL, client.BaseURL)
 	}
+	if client.AppURL != testClientAppURL {
+		t.Errorf("Expected AppURL %s, got %s", testClientAppURL, client.AppURL)
+	}
+	if client.Auth == "" {
+		t.Error("Expected Auth to be set")
+	}
 	if client.HttpClient == nil {
 		t.Error("Expected HttpClient to be initialized")
 	}
@@ -65,7 +72,7 @@ func verifyClientFields(t *testing.T, client *Client, expectedURL string) {
 }
 
 func TestAddAuth(t *testing.T) {
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 
 	req, err := http.NewRequest("GET", "http://example.com", nil)
 	if err != nil {
@@ -118,7 +125,7 @@ func TestCheckReportStatusSuccess(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 
 	response, err := client.checkReportStatus(server.URL)
 	if err != nil {
@@ -177,7 +184,7 @@ func TestCheckReportStatusServerError(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 
 	_, err := client.checkReportStatus(server.URL)
 	if err == nil {
@@ -195,7 +202,7 @@ func TestCheckReportStatusInvalidJSON(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 
 	_, err := client.checkReportStatus(server.URL)
 	if err == nil {
@@ -217,7 +224,7 @@ func TestPollReportStatusSuccess(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, server.URL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, server.URL, testClientAppURL)
 
 	// Note: This test will take actual time due to real sleeps in the polling function
 	response, err := client.PollReportStatus(testReportUUID, "TEST")
@@ -254,7 +261,7 @@ func TestDownloadReportSuccess(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 
 	data, err := client.DownloadReport(server.URL, "TEST")
 	if err != nil {
@@ -280,7 +287,7 @@ func TestDownloadReportServerError(t *testing.T) {
 	})
 	defer server.Close()
 
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 
 	_, err := client.DownloadReport(server.URL, "TEST")
 	if err == nil {
@@ -333,7 +340,7 @@ func verifyPollConfigValues(t *testing.T, config pollConfig) {
 }
 
 func TestWaitAndBackoff(t *testing.T) {
-	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL)
+	client := NewClient(testClientApiKey, testClientServiceKey, testClientUsername, testClientOrgID, testClientBaseURL, testClientAppURL)
 	config := newPollConfig()
 
 	testNormalBackoff(t, client, config)

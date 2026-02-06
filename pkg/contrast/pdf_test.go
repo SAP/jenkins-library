@@ -15,8 +15,9 @@ func TestStartAsyncPdfGeneration_Success(t *testing.T) {
 		if r.URL.Path != "/Contrast/api/ng/org-123/applications/app-456/attestation" {
 			t.Errorf("Unexpected URL path: %s", r.URL.Path)
 		}
-		if r.URL.RawQuery != "showRouteObservations=true&showVulnerabilitiesDetails=true" {
-			t.Errorf("Unexpected query params: %s", r.URL.RawQuery)
+		// API now uses JSON body instead of query params
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
 		}
 
 		w.WriteHeader(http.StatusOK)

@@ -46,38 +46,8 @@ type Contrast interface {
 	GetAppInfo(appUIUrl, server string)
 }
 
-type ContrastInstance struct {
-	url    string
-	apiKey string
-	auth   string
-}
-
-func NewContrastInstance(url, apiKey, auth string) ContrastInstance {
-	return ContrastInstance{
-		url:    url,
-		apiKey: apiKey,
-		auth:   auth,
-	}
-}
-
-func (contrast *ContrastInstance) GetVulnerabilities() ([]ContrastFindings, error) {
-	url := contrast.url + "/vulnerabilities"
-	client := NewContrastHttpClient(contrast.apiKey, contrast.auth)
-
-	return getVulnerabilitiesFromClient(client, url, startPage)
-}
-
-func (contrast *ContrastInstance) GetAppInfo(appUIUrl, server string) (*ApplicationInfo, error) {
-	client := NewContrastHttpClient(contrast.apiKey, contrast.auth)
-	app, err := getApplicationFromClient(client, contrast.url)
-	if err != nil {
-		log.Entry().Errorf("failed to get application from client: %v", err)
-		return nil, err
-	}
-	app.Url = appUIUrl
-	app.Server = server
-	return app, nil
-}
+// Note: ContrastInstance is deprecated. Use the unified Client from client.go instead.
+// The Client now supports both async (SARIF/PDF) and sync (vulnerabilities, app info) operations.
 
 func getApplicationFromClient(client ContrastHttpClient, url string) (*ApplicationInfo, error) {
 	var appResponse ApplicationResponse

@@ -18,6 +18,7 @@ func (c *Client) StartAsyncSarifGeneration(appUuid string) (string, error) {
 	payload := map[string]interface{}{
 		"severities":  []string{"CRITICAL", "HIGH", "MEDIUM", "LOW", "NOTE"},
 		"quickFilter": "OPEN",
+		"toolTypes": []string{"ASSESS"},
 	}
 	bodyBytes, _ := json.Marshal(payload)
 	body := bytes.NewBuffer(bodyBytes)
@@ -67,17 +68,12 @@ func (c *Client) GenerateSarifReport(appUuid string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to start SARIF generation: %w", err)
 	}
-
-	// Poll for completion using common function
 	statusResp, err := c.PollReportStatus(reportUuid, "SARIF")
 	if err != nil {
 		return nil, fmt.Errorf("failed to poll SARIF status: %w", err)
 	}
-
 	if statusResp.DownloadUrl == "" {
 		return nil, fmt.Errorf("SARIF download URL not provided")
 	}
-
-	// Download the report using common function
 	return c.DownloadReport(statusResp.DownloadUrl, "SARIF")
 }

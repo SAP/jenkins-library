@@ -112,7 +112,7 @@ spec:
           - STEPS
       - name: generateSarif
         type: bool
-        default: false
+        default: true
         description: "Generate SARIF report asynchronously from Contrast API"
         scope:
           - PARAMETERS
@@ -120,7 +120,7 @@ spec:
           - STEPS
       - name: generatePdf
         type: bool
-        default: false
+        default: true
         description: "Generate PDF attestation report from Contrast API"
         scope:
           - PARAMETERS
@@ -134,4 +134,8 @@ spec:
           - filePattern: "**/toolrun_contrast_*.json"
             type: contrast
           - filePattern: "**/piper_contrast_report.json"
+            type: contrast
+          - filePattern: "**/piper_contrast.sarif"
+            type: contrast
+          - filePattern: "**/piper_contrast_attestation.pdf"
             type: contrast

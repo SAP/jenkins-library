@@ -61,19 +61,14 @@ func (c *Client) StartAsyncPdfGeneration(appUuid string) (string, error) {
 
 // GeneratePdfReport generates a PDF attestation report for the given application (start, poll, download)
 func (c *Client) GeneratePdfReport(appUuid string) ([]byte, error) {
-	// Start async generation
 	reportUuid, err := c.StartAsyncPdfGeneration(appUuid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start PDF generation: %w", err)
 	}
-
-	// Poll for completion using common function
 	_, err = c.PollReportStatus(reportUuid, "PDF")
 	if err != nil {
 		return nil, fmt.Errorf("failed to poll PDF status: %w", err)
 	}
-
-	// Build download URL and download the report
 	downloadUrl := fmt.Sprintf("%s/Contrast/api/ng/%s/reports/%s/download", c.BaseURL, c.OrgID, reportUuid)
 	return c.DownloadReport(downloadUrl, "PDF")
 }

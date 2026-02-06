@@ -1,6 +1,7 @@
 package contrast
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,13 +11,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// Client is the Contrast API client for report generation
+// Client is the unified Contrast API client for both sync and async operations
 type Client struct {
 	ApiKey     string
 	ServiceKey string
 	Username   string
 	OrgID      string
 	BaseURL    string
+	AppURL     string 
+	Auth       string
 	HttpClient *http.Client
 }
 
@@ -28,17 +31,22 @@ type ReportStatusResponse struct {
 	DownloadUrl string   `json:"downloadUrl,omitempty"`
 }
 
-// NewClient creates a new Contrast API client
-func NewClient(apiKey, serviceKey, username, orgID, baseURL string) *Client {
+// NewClient creates a new unified Contrast API client for both sync and async operations
+func NewClient(apiKey, serviceKey, username, orgID, baseURL, appURL string) *Client {
 	if baseURL == "" {
 		baseURL = "https://cs003.contrastsecurity.com"
 	}
+	// Pre-encode auth for synchronous API calls
+	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + serviceKey))
+
 	return &Client{
 		ApiKey:     apiKey,
 		ServiceKey: serviceKey,
 		Username:   username,
 		OrgID:      orgID,
 		BaseURL:    baseURL,
+		AppURL:     appURL,
+		Auth:       auth,
 		HttpClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }
@@ -171,4 +179,25 @@ func (c *Client) DownloadReport(downloadUrl, reportType string) ([]byte, error) 
 
 	log.Entry().Infof("%s report downloaded successfully (%d bytes)", reportType, len(data))
 	return data, nil
+}
+
+// GetVulnerabilities gets vulnerabilities for the application (synchronous)
+func (c *Client) GetVulnerabilities() ([]ContrastFindings, error) {
+	url := c.AppURL + "/vulnerabilities"
+	httpClient := NewContrastHttpClient(c.ApiKey, c.Auth)
+
+	return getVulnerabilitiesFromClient(httpClient, url, startPage)
+}
+
+// GetAppInfo gets application information (synchronous)
+func (c *Client) GetAppInfo(appUIUrl, server string) (*ApplicationInfo, error) {
+	httpClient := NewContrastHttpClient(c.ApiKey, c.Auth)
+	app, err := getApplicationFromClient(httpClient, c.AppURL)
+	if err != nil {
+		log.Entry().Errorf("failed to get application from client: %v", err)
+		return nil, err
+	}
+	app.Url = appUIUrl
+	app.Server = server
+	return app, nil
 }
