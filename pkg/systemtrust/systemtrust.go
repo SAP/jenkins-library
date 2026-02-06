@@ -1,6 +1,7 @@
 package systemtrust
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,10 +21,6 @@ type Secret struct {
 	System string
 }
 
-type Response struct {
-	Secrets []Secret
-}
-
 type Configuration struct {
 	ServerURL           string
 	TokenEndPoint       string
@@ -31,9 +28,22 @@ type Configuration struct {
 	Token               string
 }
 
-// GetToken requests a single token
+type tokenRequestArray = []tokenRequest
+
+type tokenRequest struct {
+	System string `json:"system"`
+	Scope  string `json:"scope,omitempty"` // scope is not mandatory
+}
+
+const defaultScope = "pipeline"
+
+// GetToken requests a single token.
+// By default, refName is used as the system and the default scope is applied.
+// If refName contains "<scope>", the value before "<scope>" is used as the system
+// and the value after "<scope>" is propagated as the scope.
 func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration Configuration) (string, error) {
-	secrets, err := getSecrets([]string{refName}, client, systemTrustConfiguration)
+	body := refNameToTokenBody(refName)
+	secrets, err := getSecrets(client, systemTrustConfiguration, body)
 	if err != nil {
 		return "", errors.Wrap(err, "couldn't get token from System Trust")
 	}
@@ -45,15 +55,32 @@ func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration
 	return "", errors.New("could not find token in System Trust response")
 }
 
-// getSecrets transforms the System Trust JSON response into System Trust secrets, and can be used to request multiple tokens
-func getSecrets(refNames []string, client *piperhttp.Client, systemTrustConfiguration Configuration) ([]Secret, error) {
-	var secrets []Secret
-	query := url.Values{
-		systemTrustConfiguration.TokenQueryParamName: {
-			strings.Join(refNames, ","),
-		},
+func refNameToTokenBody(refName string) tokenRequest {
+	const marker = "<scope>"
+
+	system := refName
+	scope := defaultScope
+
+	if strings.Contains(refName, marker) {
+		parts := strings.SplitN(refName, marker, 2)
+
+		if parts[0] != "" && parts[1] != "" {
+			system = parts[0]
+			scope = parts[1]
+		}
 	}
-	response, err := getResponse(systemTrustConfiguration.ServerURL, systemTrustConfiguration.TokenEndPoint, query, client)
+
+	return tokenRequest{
+		System: system,
+		Scope:  scope,
+	}
+}
+
+// getSecrets using the system trust session token and convert to respectful system token based on request body
+func getSecrets(client *piperhttp.Client, systemTrustConfiguration Configuration, requests ...tokenRequest) ([]Secret, error) {
+	var secrets []Secret
+
+	response, err := getResponse(systemTrustConfiguration.ServerURL, systemTrustConfiguration.TokenEndPoint, client, requests)
 	if err != nil {
 		return secrets, errors.Wrap(err, "getting secrets from System Trust failed")
 	}
@@ -67,18 +94,24 @@ func getSecrets(refNames []string, client *piperhttp.Client, systemTrustConfigur
 }
 
 // getResponse returns a map of the JSON response that the System Trust puts out
-func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp.Client) (map[string]string, error) {
+func getResponse(serverURL, endpoint string, client *piperhttp.Client, body tokenRequestArray) (map[string]string, error) {
 	var secrets map[string]string
 
-	rawURL, err := parseURL(serverURL, endpoint, query)
+	rawURL, err := parseURL(serverURL, endpoint)
 	if err != nil {
 		return secrets, errors.Wrap(err, "parsing System Trust url failed")
 	}
+
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
-	log.Entry().Debugf("  with URL %s", rawURL)
-	response, err := client.SendRequest(http.MethodGet, rawURL, nil, header, nil)
+	bodyReader, err := trustTokenRequestToReader(body)
+	if err != nil {
+		return secrets, errors.Wrap(err, "getting body reader failed")
+	}
+
+	log.Entry().Debugf("  with body %s", body)
+	response, err := client.SendRequest(http.MethodPost, rawURL, bodyReader, header, nil)
 	if err != nil {
 		if response != nil {
 			// the body contains full error message which we want to log
@@ -92,6 +125,8 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 	}
 	defer response.Body.Close()
 
+	log.Entry().Debugf("  with response code %d", response.StatusCode)
+
 	err = json.NewDecoder(response.Body).Decode(&secrets)
 	if err != nil {
 		return secrets, errors.Wrap(err, "getting response from System Trust failed")
@@ -100,8 +135,16 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 	return secrets, nil
 }
 
-// parseURL creates the full URL for a System Trust GET request
-func parseURL(serverURL, endpoint string, query url.Values) (string, error) {
+func trustTokenRequestToReader(body tokenRequestArray) (io.Reader, error) {
+	b, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
+}
+
+// parseURL creates the full URL for a System Trust POST request
+func parseURL(serverURL, endpoint string) (string, error) {
 	rawFullEndpoint, err := url.JoinPath(serverURL, endpoint)
 	if err != nil {
 		return "", errors.New("error parsing System Trust URL")
@@ -110,12 +153,6 @@ func parseURL(serverURL, endpoint string, query url.Values) (string, error) {
 	if err != nil {
 		return "", errors.New("error parsing System Trust URL")
 	}
-	// commas and spaces shouldn't be escaped since the System Trust won't accept it
-	unescapedRawQuery, err := url.QueryUnescape(query.Encode())
-	if err != nil {
-		return "", errors.New("error parsing System Trust URL")
-	}
-	fullURL.RawQuery = unescapedRawQuery
 	return fullURL.String(), nil
 }
 
