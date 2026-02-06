@@ -57,6 +57,17 @@ spec:
         mandatory: true
         aliases:
           - name: btp/subaccount
+      - name: serviceInstanceName
+        type: string
+        description: Name of the service instance for which the service binding will be deleted
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/instanceName
       - name: serviceBindingName
         type: string
         description: Name of the service binding to create
