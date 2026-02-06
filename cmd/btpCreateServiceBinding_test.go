@@ -25,12 +25,18 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp .* login .+": "Authentication successful",
-			"btp .* get services/binding": fmt.Sprintf(`
+			"btp .* get services/instance .+": fmt.Sprintf(`
 				{
 				"id": "xxxx",
 				"name": "%s",
 				"ready": true
-				}`, BindingName),
+				}`, InstanceName),
+			"btp .* list services/binding": fmt.Sprintf(`
+				[{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}]`, BindingName),
 		}
 
 		// init
@@ -57,7 +63,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 				m.Calls[0])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/binding", "--name", config.ServiceBindingName, "--instance-name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters}},
-				m.Calls[1])
+				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
@@ -70,12 +76,18 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp .* login .+": "Authentication successful",
-			"btp .* get services/binding": fmt.Sprintf(`
+			"btp .* get services/instance .+": fmt.Sprintf(`
 				{
 				"id": "xxxx",
 				"name": "%s",
 				"ready": true
-				}`, BindingName),
+				}`, InstanceName),
+			"btp .* list services/binding": fmt.Sprintf(`
+				[{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}]`, BindingName),
 		}
 
 		// init
@@ -101,7 +113,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 				m.Calls[0])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/binding", "--name", config.ServiceBindingName, "--instance-name", config.ServiceInstanceName, "--subaccount", config.Subaccount}},
-				m.Calls[1])
+				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
@@ -114,12 +126,18 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		utils := btp.NewBTPUtils(m)
 		m.StdoutReturn = map[string]string{
 			"btp .* login .+": "Authentication successful",
-			"btp .* get services/binding": fmt.Sprintf(`
+			"btp .* get services/instance .+": fmt.Sprintf(`
 				{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				}`, InstanceName),
+			"btp .* list services/binding": fmt.Sprintf(`
+				[{
 					"id": "xxx",
 					"name": "%s",
 					"ready": true
-				}`, InstanceName),
+				}]`, BindingName),
 		}
 
 		// init
@@ -147,7 +165,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 				m.Calls[0])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/binding", "--name", config.ServiceBindingName, "--instance-name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--parameters", config.Parameters}},
-				m.Calls[1])
+				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
 				m.Calls[len(m.Calls)-1])
