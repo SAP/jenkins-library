@@ -20,7 +20,7 @@ require (
 	github.com/buildpacks/lifecycle v0.18.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/docker/cli v27.1.0+incompatible
-	github.com/docker/docker v27.1.1+incompatible
+	github.com/docker/docker v28.0.0+incompatible
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/getsentry/sentry-go v0.31.1
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
