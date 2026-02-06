@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"regexp"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -55,26 +55,15 @@ func rungctsExecuteABAPQualityChecks(config *gctsExecuteABAPQualityChecksOptions
 	const repository = "repository"
 	const packages = "packages"
 
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
-
-	maxRetries := -1
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                maxRetries,
-		TransportSkipVerification: config.SkipSSLVerification,
-	}
-
 	httpClient.SetOptions(clientOptions)
 
 	log.Entry().Infof("start of gctsExecuteABAPQualityChecks step with configuration values: %v", config)
 
 	var objects []repoObject
-	var err error
 
 	log.Entry().Info("scope:", config.Scope)
 
