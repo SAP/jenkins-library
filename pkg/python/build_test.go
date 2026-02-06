@@ -75,8 +75,7 @@ func TestBuildWithPyProjectToml(t *testing.T) {
 		"wheel"}, mockRunner.Calls[3].Params)
 	assert.Equal(t, "python", mockRunner.Calls[4].Exec)
 	assert.Equal(t, []string{
-		"-m", "build",
-		"--no-isolation"}, mockRunner.Calls[4].Params)
+		"-m", "build"}, mockRunner.Calls[4].Params)
 }
 
 func TestBuildWithPyProjectTomlWithVirtualEnv(t *testing.T) {
@@ -91,6 +90,5 @@ func TestBuildWithPyProjectTomlWithVirtualEnv(t *testing.T) {
 	assert.Len(t, mockRunner.Calls, 5)
 	assert.Equal(t, ".venv/bin/python", mockRunner.Calls[4].Exec)
 	assert.Equal(t, []string{
-		"-m", "build",
-		"--no-isolation"}, mockRunner.Calls[4].Params)
+		"-m", "build"}, mockRunner.Calls[4].Params)
 }

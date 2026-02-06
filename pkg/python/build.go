@@ -49,7 +49,7 @@ func BuildWithPyProjectToml(
 
 	var flags []string
 	flags = append(flags, pythonArgs...)
-	flags = append(flags, "-m", "build", "--no-isolation")
+	flags = append(flags, "-m", "build")
 	flags = append(flags, moduleArgs...)
 
 	log.Entry().Debug("building project")
