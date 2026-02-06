@@ -293,7 +293,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Containers", func(t *testing.T) {
 		filters := metadata2.GetContextParameterFilters()
-		params := defaultParams("containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "dockerRegistryUrl", "dockerRegistryCredentialsId", "pip", "scanType")
+		params := defaultParams("containerCommand", "containerShell", "dockerEnvVars", "dockerEnvInherit", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "dockerRegistryUrl", "dockerRegistryCredentialsId", "pip", "scanType")
 
 		assert.Equal(t, params, filters.All, "incorrect filter All")
 		assert.Equal(t, params, filters.General, "incorrect filter General")
@@ -305,7 +305,7 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Sidecars", func(t *testing.T) {
 		filters := metadata3.GetContextParameterFilters()
-		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace")
+		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarEnvInherit", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace")
 		assert.Equal(t, params, filters.All, "incorrect filter All")
 		assert.Equal(t, params, filters.General, "incorrect filter General")
 		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
