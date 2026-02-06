@@ -120,7 +120,7 @@ spec:
           - STEPS
       - name: generatePdf
         type: bool
-        default: true
+        default: false
         description: "Generate PDF attestation report from Contrast API"
         scope:
           - PARAMETERS

@@ -215,7 +215,7 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threshold for maximum number of allowed vulnerabilities.")
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", true, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateSarif, "generateSarif", true, "Generate SARIF report asynchronously from Contrast API")
-	cmd.Flags().BoolVar(&stepConfig.GeneratePdf, "generatePdf", true, "Generate PDF attestation report from Contrast API")
+	cmd.Flags().BoolVar(&stepConfig.GeneratePdf, "generatePdf", false, "Generate PDF attestation report from Contrast API")
 
 	cmd.MarkFlagRequired("userApiKey")
 	cmd.MarkFlagRequired("serviceKey")
@@ -367,7 +367,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     true,
+						Default:     false,
 					},
 				},
 			},
