@@ -256,6 +256,6 @@ exclude = [
 		_, err := ParseDescriptor("project.toml", utils, &piperhttp.Client{})
 
 		assert.Error(t, err)
-		assert.Equal(t, "parsing schema version: toml: line 0: unexpected EOF; expected key separator '='", err.Error())
+		assert.Equal(t, "parsing schema version: toml: line 1: unexpected EOF; expected key separator '='", err.Error())
 	})
 }
