@@ -18,7 +18,7 @@ type Client struct {
 	Username   string
 	OrgID      string
 	BaseURL    string
-	AppURL     string 
+	AppURL     string
 	Auth       string
 	HttpClient *http.Client
 }

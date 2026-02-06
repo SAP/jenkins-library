@@ -18,7 +18,7 @@ func (c *Client) StartAsyncSarifGeneration(appUuid string) (string, error) {
 	payload := map[string]interface{}{
 		"severities":  []string{"CRITICAL", "HIGH", "MEDIUM", "LOW", "NOTE"},
 		"quickFilter": "OPEN",
-		"toolTypes": []string{"ASSESS"},
+		"toolTypes":   []string{"ASSESS"},
 	}
 	bodyBytes, _ := json.Marshal(payload)
 	body := bytes.NewBuffer(bodyBytes)
