@@ -94,11 +94,7 @@ func newPollConfig() pollConfig {
 }
 
 func NewClient(apiKey, serviceKey, username, orgID, baseURL, appURL string) *Client {
-	if baseURL == "" {
-		baseURL = "https://cs003.contrastsecurity.com"
-	}
 	auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + serviceKey))
-
 	return &Client{
 		ApiKey:     apiKey,
 		ServiceKey: serviceKey,
