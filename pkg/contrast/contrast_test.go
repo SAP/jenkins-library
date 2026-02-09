@@ -372,12 +372,12 @@ func TestClientCreation(t *testing.T) {
 		assert.NotNil(t, client.HttpClient)
 	})
 
-	t.Run("with_empty_base_URL_uses_default", func(t *testing.T) {
+	t.Run("with_empty_base_URL", func(t *testing.T) {
 		appURL := "https://api.example.com/app"
 		client := NewClient("api-key", "service-key", "user@example.com", "org-123", "", appURL)
 
 		assert.NotNil(t, client)
-		assert.Equal(t, "https://cs003.contrastsecurity.com", client.BaseURL)
+		assert.Equal(t, "", client.BaseURL)
 	})
 }
 
