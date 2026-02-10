@@ -256,7 +256,7 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz"
+        default: "https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-linux-amd64.tar.gz"
       - name: createBuildArtifactsMetadata
         type: bool
         default: false
