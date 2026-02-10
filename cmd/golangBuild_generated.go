@@ -288,7 +288,7 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PrivateModules, "privateModules", os.Getenv("PIPER_privateModules"), "Tells go which modules shall be considered to be private (by setting [GOPRIVATE](https://pkg.go.dev/cmd/go#hdr-Configuration_for_downloading_non_public_code)).")
 	cmd.Flags().StringVar(&stepConfig.PrivateModulesGitToken, "privateModulesGitToken", os.Getenv("PIPER_privateModulesGitToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "Version of the artifact to be built.")
-	cmd.Flags().StringVar(&stepConfig.GolangciLintURL, "golangciLintUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
+	cmd.Flags().StringVar(&stepConfig.GolangciLintURL, "golangciLintUrl", `https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-linux-amd64.tar.gz`, "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 
 	cmd.MarkFlagRequired("targetArchitectures")
@@ -592,7 +592,7 @@ func golangBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz`,
+						Default:     `https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-linux-amd64.tar.gz`,
 					},
 					{
 						Name:        "createBuildArtifactsMetadata",
