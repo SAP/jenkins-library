@@ -325,15 +325,17 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils detectUtils, sys *blackduckSystem, influx *detectExecuteScanInflux, blackduckSystem *blackduckSystem) error {
 	log.Entry().Infof("Scanning %d images", len(config.ImageNameTags))
 	for _, image := range config.ImageNameTags {
-		// Download image to be scanned
 		log.Entry().Debugf("Scanning image: %q", image)
 
 		options := &containerSaveImageOptions{
-			ContainerRegistryURL:      config.RegistryURL,
-			ContainerImage:            image,
-			ContainerRegistryPassword: config.RepositoryPassword,
-			ContainerRegistryUser:     config.RepositoryUsername,
-			ImageFormat:               "legacy",
+			ContainerRegistryURL: config.RegistryURL,
+			ContainerImage:       image,
+			ImageFormat:          "legacy",
+		}
+		// Only set credentials if provided
+		if config.RepositoryUsername != "" && config.RepositoryPassword != "" {
+			options.ContainerRegistryUser = config.RepositoryUsername
+			options.ContainerRegistryPassword = config.RepositoryPassword
 		}
 
 		dClientOptions := piperDocker.ClientOptions{ImageName: options.ContainerImage, RegistryURL: options.ContainerRegistryURL, ImageFormat: options.ImageFormat}
