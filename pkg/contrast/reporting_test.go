@@ -109,3 +109,55 @@ func TestCreateToolRecordContrast(t *testing.T) {
 		assert.Equal(t, appInfo.Name, toolRecord.Keys[0].DisplayName)
 	})
 }
+
+func TestSaveReportFileSuccess(t *testing.T) {
+	t.Run("SaveSarifReport", func(t *testing.T) {
+		utils := newContrastExecuteScanTestsUtils()
+		testData := []byte(`{"version": "2.1.0"}`)
+
+		paths, err := SaveReportFile(utils, "piper_contrast.sarif", "Contrast SARIF Report", testData)
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, paths)
+		assert.Equal(t, 1, len(paths))
+		assert.Equal(t, "Contrast SARIF Report", paths[0].Name)
+		assert.Equal(t, "contrast/piper_contrast.sarif", paths[0].Target)
+	})
+
+	t.Run("SavePdfReport", func(t *testing.T) {
+		utils := newContrastExecuteScanTestsUtils()
+		testData := []byte("PDF content here")
+
+		paths, err := SaveReportFile(utils, "piper_contrast_attestation.pdf", "Contrast PDF Attestation Report", testData)
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, paths)
+		assert.Equal(t, 1, len(paths))
+		assert.Equal(t, "Contrast PDF Attestation Report", paths[0].Name)
+		assert.Equal(t, "contrast/piper_contrast_attestation.pdf", paths[0].Target)
+	})
+
+	t.Run("SaveJsonReport", func(t *testing.T) {
+		utils := newContrastExecuteScanTestsUtils()
+		testData := []byte(`{"toolName":"contrast"}`)
+
+		paths, err := SaveReportFile(utils, "piper_contrast_report.json", "Contrast JSON Compliance Report", testData)
+
+		assert.NoError(t, err)
+		assert.NotEmpty(t, paths)
+		assert.Equal(t, 1, len(paths))
+		assert.Equal(t, "Contrast JSON Compliance Report", paths[0].Name)
+		assert.Equal(t, "contrast/piper_contrast_report.json", paths[0].Target)
+	})
+}
+
+func TestSaveReportFileFileWriteFails(t *testing.T) {
+	utils := newContrastExecuteScanTestsUtils()
+	utils.FileWriteError = assert.AnError
+
+	paths, err := SaveReportFile(utils, "test.txt", "Test File", []byte("test"))
+
+	assert.Error(t, err)
+	assert.Nil(t, paths)
+	assert.Contains(t, err.Error(), "failed to write test.txt file")
+}
