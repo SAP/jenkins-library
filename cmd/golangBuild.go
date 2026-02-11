@@ -185,14 +185,20 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			return err
 		}
 
+
 		// hardcode those for now
 		lintSettings := map[string]string{
 			"reportStyle":      "checkstyle", // readable by Sonar
 			"reportOutputPath": "golangci-lint-report.xml",
 			"additionalParams": "",
 		}
+		// Detect golangci-lint version to use appropriate command syntax
+		lintArgs, err := getGolangciLintArgs(config.GolangciLintURL, lintSettings)
+		if err != nil {
+			return fmt.Errorf("failed to determine golangci-lint command syntax: %w", err)
+		}
 
-		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings, config.GolangciLintURL); err != nil {
+		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings, lintArgs); err != nil {
 			return err
 		}
 	}
@@ -508,18 +514,12 @@ func extractVersionFromURL(url string) (string, error) {
 	return "v" + matches[1], nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string, golangciLintURL string) error {
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string, lintArgs []string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
-
-	// Detect golangci-lint version to use appropriate command syntax
-	lintArgs, err := getGolangciLintArgs(golangciLintURL, lintSettings)
-	if err != nil {
-		return fmt.Errorf("failed to determine golangci-lint command syntax: %w", err)
-	}
 
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
-	err = utils.RunExecutable(binaryPath, lintArgs...)
+	err := utils.RunExecutable(binaryPath, lintArgs...)
 	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
