@@ -106,6 +106,7 @@ spec:
         description: Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: false
