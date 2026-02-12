@@ -29,7 +29,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install groovy -y
 
       - name: Cache Maven Packages
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-maven-
 
       - name: Cache Go Packages
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
