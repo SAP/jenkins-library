@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -29,6 +30,8 @@ type contrastExecuteScanOptions struct {
 	ApplicationID               string `json:"applicationId,omitempty"`
 	VulnerabilityThresholdTotal int    `json:"vulnerabilityThresholdTotal,omitempty"`
 	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
+	GenerateSarif               bool   `json:"generateSarif,omitempty"`
+	GeneratePdf                 bool   `json:"generatePdf,omitempty"`
 }
 
 type contrastExecuteScanReports struct {
@@ -43,6 +46,8 @@ func (p *contrastExecuteScanReports) persist(stepConfig contrastExecuteScanOptio
 	content := []gcs.ReportOutputParam{
 		{FilePattern: "**/toolrun_contrast_*.json", ParamRef: "", StepResultType: "contrast"},
 		{FilePattern: "**/piper_contrast_report.json", ParamRef: "", StepResultType: "contrast"},
+		{FilePattern: "**/piper_contrast.sarif", ParamRef: "", StepResultType: "contrast"},
+		{FilePattern: "**/piper_contrast_attestation.pdf", ParamRef: "", StepResultType: "contrast"},
 	}
 
 	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
@@ -175,14 +180,31 @@ func ContrastExecuteScanCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
@@ -210,6 +232,8 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "Application UUID. It's the Last UUID of application View URL")
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdTotal, "vulnerabilityThresholdTotal", 0, "Threshold for maximum number of allowed vulnerabilities.")
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", true, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
+	cmd.Flags().BoolVar(&stepConfig.GenerateSarif, "generateSarif", true, "Generate SARIF report asynchronously from Contrast API")
+	cmd.Flags().BoolVar(&stepConfig.GeneratePdf, "generatePdf", false, "Generate PDF attestation report from Contrast API")
 
 	cmd.MarkFlagRequired("userApiKey")
 	cmd.MarkFlagRequired("serviceKey")
@@ -345,6 +369,24 @@ func contrastExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     true,
 					},
+					{
+						Name:        "generateSarif",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "generatePdf",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Outputs: config.StepOutputs{
@@ -355,6 +397,8 @@ func contrastExecuteScanMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"filePattern": "**/toolrun_contrast_*.json", "type": "contrast"},
 							{"filePattern": "**/piper_contrast_report.json", "type": "contrast"},
+							{"filePattern": "**/piper_contrast.sarif", "type": "contrast"},
+							{"filePattern": "**/piper_contrast_attestation.pdf", "type": "contrast"},
 						},
 					},
 				},
