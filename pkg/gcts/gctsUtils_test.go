@@ -15,7 +15,7 @@ func TestGctsUtils(t *testing.T) {
 		skipSSLVerification := true
 
 		options, err := NewHttpClientOptions(username, password, proxy, skipSSLVerification)
-		
+
 		assert.NoError(t, err)
 		assert.Equal(t, username, options.Username)
 		assert.Equal(t, password, options.Password)
@@ -23,7 +23,7 @@ func TestGctsUtils(t *testing.T) {
 		assert.NotNil(t, options.TransportProxy)
 		assert.Equal(t, proxy, options.TransportProxy.String())
 	})
-	
+
 	t.Run("no transport proxy set when proxy is not defined", func(t *testing.T) {
 		options, err := NewHttpClientOptions("password", "userName", "", false)
 		assert.NoError(t, err)
