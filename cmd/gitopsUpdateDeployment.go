@@ -107,7 +107,10 @@ func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverUR
 		return fmt.Errorf("plain clone failed '%s': %w", serverURL, err)
 	}
 	g.worktree, err = g.repository.Worktree()
-	return fmt.Errorf("failed to retrieve worktree: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve worktree: %w", err)
+	}
+	return nil
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) ChangeBranch(branchName string) error {
