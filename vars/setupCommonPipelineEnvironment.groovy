@@ -266,7 +266,7 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
 
     if(gitBranch.contains("/")){
         def gitBranchSplit = gitBranch.split("/")
-        if(gitBranchSplit.length > 0 && gitBranchSplit[0] == "origin") {
+        if(gitBranchSplit.length > 1 && gitBranchSplit[0] == "origin") {
             gitBranch = gitBranchSplit[1..-1].join("/")
         }
     }
@@ -296,7 +296,7 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     if(branchParts.length < 2) {
         script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
         script.commonPipelineEnvironment.setGitRef("NA")
-        echo "[${STEP_NAME}] Invalid PR branch format: ${gitBranch}"
+        echo "[${STEP_NAME}] Invalid PR branch format: expected format <prefix>-<changeId>, got: ${gitBranch}"
         return
     }
     def changeId = branchParts[1]

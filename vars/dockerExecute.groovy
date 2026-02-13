@@ -407,11 +407,11 @@ boolean isContainerDefined(config) {
 def getContainerDefined(config) {
     def containerMap = ContainerMap.instance.getMap()
     if (!containerMap.containsKey(env.POD_NAME)) {
-        throw new IllegalStateException("POD_NAME '${env.POD_NAME}' not found in container map")
+        throw new IllegalStateException("POD_NAME not found in container map: ${env.POD_NAME}")
     }
     def podContainers = containerMap.get(env.POD_NAME)
     if (!podContainers.containsKey(config.dockerImage)) {
-        throw new IllegalStateException("Docker image '${config.dockerImage}' not found in pod '${env.POD_NAME}'")
+        throw new IllegalStateException("Docker image not found in pod. Image: ${config.dockerImage}, Pod: ${env.POD_NAME}")
     }
     return podContainers.get(config.dockerImage).toLowerCase()
 }
