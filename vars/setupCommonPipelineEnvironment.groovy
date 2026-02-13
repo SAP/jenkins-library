@@ -292,7 +292,9 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     def mergeOrHead = isMergeCommit?"merge":"head"
-    def branchParts = gitBranch.split("-")
+    // PR branches are expected to be in format "PR-<changeId>" where changeId may contain hyphens
+    // Split only on the first hyphen to preserve changeId integrity
+    def branchParts = gitBranch.split("-", 2)
     if(branchParts.length < 2) {
         script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
         script.commonPipelineEnvironment.setGitRef("NA")
