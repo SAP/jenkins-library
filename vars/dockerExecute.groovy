@@ -228,7 +228,7 @@ void call(Map parameters = [:], body) {
                 executeInsideDocker = false
             }
 
-            returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
+            def returnCode = sh script: 'docker ps -q > /dev/null', returnStatus: true
             if (returnCode != 0) {
                 echo "[WARNING][$STEP_NAME] Cannot connect to docker daemon (command 'docker ps' did not return with '0'). Configured docker image '${config.dockerImage}' will not be used."
                 executeInsideDocker = false
@@ -405,7 +405,15 @@ boolean isContainerDefined(config) {
 
 
 def getContainerDefined(config) {
-    return ContainerMap.instance.getMap().get(env.POD_NAME).get(config.dockerImage).toLowerCase()
+    def containerMap = ContainerMap.instance.getMap()
+    if (!containerMap.containsKey(env.POD_NAME)) {
+        throw new IllegalStateException("POD_NAME '${env.POD_NAME}' not found in container map")
+    }
+    def podContainers = containerMap.get(env.POD_NAME)
+    if (!podContainers.containsKey(config.dockerImage)) {
+        throw new IllegalStateException("Docker image '${config.dockerImage}' not found in pod '${env.POD_NAME}'")
+    }
+    return podContainers.get(config.dockerImage).toLowerCase()
 }
 
 

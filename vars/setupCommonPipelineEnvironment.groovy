@@ -265,8 +265,8 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     if(gitBranch.contains("/")){
-        gitBranchSplit = gitBranch.split("/")
-        if(gitBranchSplit[0] == "origin") {
+        def gitBranchSplit = gitBranch.split("/")
+        if(gitBranchSplit.length > 0 && gitBranchSplit[0] == "origin") {
             gitBranch = gitBranchSplit[1..-1].join("/")
         }
     }
@@ -292,7 +292,14 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     def mergeOrHead = isMergeCommit?"merge":"head"
-    def changeId = gitBranch.split("-")[1]
+    def branchParts = gitBranch.split("-")
+    if(branchParts.length < 2) {
+        script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
+        script.commonPipelineEnvironment.setGitRef("NA")
+        echo "[${STEP_NAME}] Invalid PR branch format: ${gitBranch}"
+        return
+    }
+    def changeId = branchParts[1]
     script.commonPipelineEnvironment.setGitRef("refs/pull/" + changeId + "/" + mergeOrHead)
 
     if(!isMergeCommit){
