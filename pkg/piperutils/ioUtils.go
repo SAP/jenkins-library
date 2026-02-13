@@ -3,8 +3,6 @@ package piperutils
 import (
 	"fmt"
 	"io"
-
-	"errors"
 )
 
 // CopyData transfers the bytes from src to dst without doing close handling implicitly.
@@ -30,7 +28,7 @@ func CopyData(dst io.Writer, src io.Reader) (int64, error) {
 		}
 	}
 	if bytesRead != bytesWritten {
-		return bytesRead, errors.New(fmt.Sprintf("transfer error: read %v bytes but wrote %v bytes", bytesRead, bytesWritten))
+		return bytesRead, fmt.Errorf("transfer error: read %v bytes but wrote %v bytes", bytesRead, bytesWritten)
 	}
 	return bytesWritten, nil
 }

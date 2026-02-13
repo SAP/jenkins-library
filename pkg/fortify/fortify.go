@@ -32,8 +32,6 @@ import (
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
-	"errors"
-
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/sirupsen/logrus"
@@ -221,7 +219,7 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
+		return nil, fmt.Errorf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id)
 	}
 
 	log.Entry().Debugf("Could not find project version with name %v under project %v auto-creating one now...", versionName, projectName)

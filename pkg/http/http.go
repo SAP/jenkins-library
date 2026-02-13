@@ -19,8 +19,6 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/hashicorp/go-retryablehttp"
@@ -155,7 +153,7 @@ func (c *Client) UploadRequest(method, url, file, fileFieldName string, header h
 // Upload uploads a file's content as multipart-form or pure binary with given http method request to the specified URL
 func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	if data.Method != http.MethodPost && data.Method != http.MethodPut {
-		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
+		return nil, fmt.Errorf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut)
 	}
 
 	// Binary upload :: other options ("binary" or "form").

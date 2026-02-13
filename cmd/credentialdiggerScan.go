@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -54,7 +52,7 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 		repoUrlOrchestrator := provider.RepoURL()
 		if repoUrlOrchestrator == "n/a" {
 			// Jenkins configuration error
-			configError := errors.New(fmt.Sprintf("Unknown repository URL %s", repoUrlOrchestrator))
+			configError := fmt.Errorf("Unknown repository URL %s", repoUrlOrchestrator)
 			log.Entry().WithError(configError).Error(
 				"Repository URL n/a. Please verify git plugin is installed.")
 			// The repository to scan was not identified. Return an error

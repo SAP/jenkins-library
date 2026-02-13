@@ -491,7 +491,7 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 		if parsingError != nil {
 			return "", err
 		}
-		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
+		abapError := fmt.Errorf("%s - %s", errorCode, errorText)
 		err = fmt.Errorf("%s: %w", err.Error(), abapError)
 
 	}

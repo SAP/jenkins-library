@@ -365,7 +365,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 	if APIKey != "" {
 		token, err = sys.getAPIToken()
 		if err != nil {
-			return sys, fmt.Errorf(fmt.Sprintf("Error fetching oAuth token using API Key: %v", shortenGUID(APIKey)), err)
+			return sys, fmt.Errorf("Error fetching oAuth token using API Key %v: %w", shortenGUID(APIKey), err)
 		}
 	} else if client_id != "" && client_secret != "" {
 		token, err = sys.getOAuth2Token()
@@ -719,7 +719,7 @@ func (sys *SystemInstance) GetGroupByName(groupName string) (Group, error) {
 		}
 	}
 
-	return group, errors.New(fmt.Sprintf("No group matching %v", groupName))
+	return group, fmt.Errorf("No group matching %v", groupName)
 }
 
 // New for Cx1
@@ -737,7 +737,7 @@ func (sys *SystemInstance) GetGroupByID(groupID string) (Group, error) {
 		}
 	}
 
-	return group, errors.New(fmt.Sprintf("No group with ID %v", groupID))
+	return group, fmt.Errorf("No group with ID %v", groupID)
 }
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
@@ -1250,7 +1250,7 @@ func (s *Scan) IsIncremental() (bool, error) {
 			}
 		}
 	}
-	return false, errors.New(fmt.Sprintf("Scan %v did not have a sast-engine incremental flag set", s.ScanID))
+	return false, fmt.Errorf("Scan %v did not have a sast-engine incremental flag set", s.ScanID)
 }
 
 func (sys *SystemInstance) GetScanResults(scanID string, limit uint64) ([]ScanResult, error) {
@@ -1326,7 +1326,7 @@ func (sys *SystemInstance) GetScanSummary(scanID string) (ScanSummary, error) {
 		return ScanSummary{}, err
 	}
 	if ScansSummaries.TotalCount == 0 {
-		return ScanSummary{}, errors.New(fmt.Sprintf("Failed to retrieve scan summary for scan ID %v", scanID))
+		return ScanSummary{}, fmt.Errorf("Failed to retrieve scan summary for scan ID %v", scanID)
 	}
 
 	if len(ScansSummaries.ScanSum) == 0 {

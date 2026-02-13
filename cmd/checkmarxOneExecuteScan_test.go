@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"errors"
-
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
@@ -215,7 +213,7 @@ func (sys *checkmarxOneSystemMock) GetGroupByName(groupName string) (checkmarxOn
 		}
 	}
 
-	return group, errors.New(fmt.Sprintf("No group matching %v", groupName))
+	return group, fmt.Errorf("No group matching %v", groupName)
 }
 
 func (sys *checkmarxOneSystemMock) GetGroupByID(groupID string) (checkmarxOne.Group, error) {
