@@ -185,7 +185,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			return err
 		}
 
-
 		// hardcode those for now
 		lintSettings := map[string]string{
 			"reportStyle":      "checkstyle", // readable by Sonar
@@ -489,16 +488,14 @@ func getGolangciLintArgs(golangciLintURL string, lintSettings map[string]string)
 		log.Entry().Debugf("Could not extract golangci-lint version from URL, using v1 syntax: %v", err)
 		return []string{"run", "--out-format", lintSettings["reportStyle"]}, nil
 	}
-
 	log.Entry().Debugf("golangci-lint version from URL: %s", version)
 
-	// Check if this is v2.x (which uses different syntax)
-	if strings.HasPrefix(version, "v2.") {
-		// v2 syntax: --output.<format>.path stdout
-		return []string{"run", fmt.Sprintf("--output.%s.path", lintSettings["reportStyle"]), lintSettings["reportOutputPath"]}, nil
-	} else {
-		// v1 syntax: --out-format
+	// Check if this is v1.x
+	if strings.HasPrefix(version, "v1.") {
 		return []string{"run", "--out-format", lintSettings["reportStyle"]}, nil
+	} else {
+		// support golangci-lint v2 and later
+		return []string{"run", fmt.Sprintf("--output.%s.path", lintSettings["reportStyle"]), lintSettings["reportOutputPath"]}, nil
 	}
 }
 

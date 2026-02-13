@@ -1142,9 +1142,9 @@ func TestGetGolangciLintArgs(t *testing.T) {
 			expectedErr:     nil,
 		},
 		{
-			name:            "success - v3.0.0 version (fallback to v1 syntax for v3+)",
+			name:            "success - v3.0.0 version (v2 syntax)",
 			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v3.0.0/golangci-lint-3.0.0-linux-amd64.tar.gz",
-			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
 			expectedErr:     nil,
 		},
 		{
