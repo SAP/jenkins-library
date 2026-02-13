@@ -3,7 +3,6 @@ metadata:
   description: Clones a Git repository
   longDescription: |
     Clones a Git repository from a remote repository to a local repository on an ABAP system. To be able to execute this step, the corresponding local repository has to exist on the local ABAP system.
-
 spec:
   inputs:
     secrets:
@@ -78,3 +77,12 @@ spec:
           - STEPS
         mandatory: false
         default: false
+      - name: proxy
+        type: string
+        description: Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false

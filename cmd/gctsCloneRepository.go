@@ -3,9 +3,9 @@ package cmd
 import (
 	"io"
 	"net/http"
-	"net/http/cookiejar"
 
 	"github.com/Jeffail/gabs/v2"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -28,14 +28,9 @@ func gctsCloneRepository(config gctsCloneRepositoryOptions, telemetryData *telem
 
 func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return errors.Wrap(err, "failed to create HTTP client options")
 	}
 	httpClient.SetOptions(clientOptions)
 

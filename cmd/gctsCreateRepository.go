@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/http/cookiejar"
 
 	gabs "github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -36,14 +36,9 @@ func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *tel
 
 func createRepository(config *gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrapf(cookieErr, "creating repository on the ABAP system %v failed", config.Host)
-	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return errors.Wrapf(err, "creating repository on the ABAP system %v failed", config.Host)
 	}
 	httpClient.SetOptions(clientOptions)
 
