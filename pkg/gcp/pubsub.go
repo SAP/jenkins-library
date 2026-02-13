@@ -1,11 +1,13 @@
 package gcp
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
+	"errors"
+	"fmt"
+
+	"cloud.google.com/go/pubsub"
 	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )
@@ -38,7 +40,7 @@ func (cl *pubsubClient) Publish(topic string, data []byte) error {
 	ctx := context.Background()
 	psClient, err := cl.getAuthorizedGCPClient(ctx)
 	if err != nil {
-		return errors.Wrap(err, "could not get authorized pubsub client token")
+		return fmt.Errorf("could not get authorized pubsub client token: %w", err)
 	}
 
 	return cl.publish(ctx, psClient, topic, cl.orderingKey, data)
@@ -51,12 +53,12 @@ func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Cli
 
 	oidcToken, err := cl.vaultClient.GetOIDCTokenByValidation(cl.oidcRoleId)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get oidc token")
+		return nil, fmt.Errorf("could not get oidc token: %w", err)
 	}
 
 	accessToken, err := getFederatedToken(cl.projectNumber, cl.pool, cl.provider, oidcToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get federated token")
+		return nil, fmt.Errorf("could not get federated token: %w", err)
 	}
 
 	staticTokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
@@ -72,7 +74,7 @@ func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, to
 	// By removing .Get() method call we can make publishing asynchronous, but without ability to catch errors
 	msgID, err := publishResult.Get(context.Background())
 	if err != nil {
-		return errors.Wrap(err, "event publish failed")
+		return fmt.Errorf("event publish failed: %w", err)
 	}
 
 	log.Entry().Debugf("Event published with ID: %s", msgID)

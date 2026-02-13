@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"errors"
+
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 /*

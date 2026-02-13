@@ -15,7 +15,6 @@ import (
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
-	"github.com/pkg/errors"
 )
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
@@ -34,7 +33,7 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, cli
 
 	token, err := communicationInstance.getOAuthToken()
 	if err != nil {
-		return communicationInstance, errors.Wrap(err, "Error fetching OAuth token")
+		return communicationInstance, fmt.Errorf("Error fetching OAuth token: %w", err)
 	}
 
 	clientOptions.Token = token
@@ -194,7 +193,7 @@ func (communicationInstance *CommunicationInstance) UploadFileToNode(fileInfo Fi
 	body := NodeUploadRequestEntity{ContentType: "MTA", StorageType: "FILE", NodeName: nodeName, Description: description, NamedUser: namedUser, Entries: []Entry{entry}}
 	bodyBytes, errMarshaling := json.Marshal(body)
 	if errMarshaling != nil {
-		return nodeUploadResponseEntity, errors.Wrapf(errMarshaling, "unable to marshal request body %v", body)
+		return nodeUploadResponseEntity, fmt.Errorf("unable to marshal request body %v: %w", body, errMarshaling)
 	}
 
 	data, errSendRequest := sendRequest(communicationInstance, http.MethodPost, "/v2/nodes/upload", bytes.NewReader(bodyBytes), header, http.StatusOK, false)
@@ -226,7 +225,7 @@ func (communicationInstance *CommunicationInstance) ExportFileToNode(fileInfo Fi
 	body := NodeUploadRequestEntity{ContentType: "MTA", StorageType: "FILE", NodeName: nodeName, Description: description, NamedUser: namedUser, Entries: []Entry{entry}}
 	bodyBytes, errMarshaling := json.Marshal(body)
 	if errMarshaling != nil {
-		return nodeUploadResponseEntity, errors.Wrapf(errMarshaling, "unable to marshal request body %v", body)
+		return nodeUploadResponseEntity, fmt.Errorf("unable to marshal request body %v: %w", body, errMarshaling)
 	}
 
 	data, errSendRequest := sendRequest(communicationInstance, http.MethodPost, "/v2/nodes/export", bytes.NewReader(bodyBytes), header, http.StatusOK, false)
@@ -257,7 +256,7 @@ func (communicationInstance *CommunicationInstance) UpdateMtaExtDescriptor(nodeI
 	var mtaExtDescriptor MtaExtDescriptor
 	fileHandle, errOpenFile := os.Open(file)
 	if errOpenFile != nil {
-		return mtaExtDescriptor, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
+		return mtaExtDescriptor, fmt.Errorf("unable to locate file %v: %w", file, errOpenFile)
 	}
 	defer fileHandle.Close()
 
@@ -293,7 +292,7 @@ func (communicationInstance *CommunicationInstance) UploadMtaExtDescriptorToNode
 	var mtaExtDescriptor MtaExtDescriptor
 	fileHandle, errOpenFile := os.Open(file)
 	if errOpenFile != nil {
-		return mtaExtDescriptor, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
+		return mtaExtDescriptor, fmt.Errorf("unable to locate file %v: %w", file, errOpenFile)
 	}
 	defer fileHandle.Close()
 
@@ -326,7 +325,7 @@ func (communicationInstance *CommunicationInstance) UploadFile(file, namedUser s
 	var fileInfo FileInfo
 	fileHandle, errOpenFile := os.Open(file)
 	if errOpenFile != nil {
-		return fileInfo, errors.Wrapf(errOpenFile, "unable to locate file %v", file)
+		return fileInfo, fmt.Errorf("unable to locate file %v: %w", file, errOpenFile)
 	}
 	defer fileHandle.Close()
 

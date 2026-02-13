@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"net/http/cookiejar"
 	"net/url"
+
+	"errors"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -11,7 +14,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomData) {
@@ -43,15 +45,15 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 
 	repoInfo, err := getRepoInfo(config, telemetryData, httpClient)
 	if err != nil {
-		return errors.Wrap(err, "could not get local repository data")
+		return fmt.Errorf("could not get local repository data: %w", err)
 	}
 
 	if repoInfo.Result.URL == "" {
-		return errors.Errorf("no remote repository URL configured")
+		return fmt.Errorf("no remote repository URL configured")
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "could not parse remote repository URL as valid URL")
+		return fmt.Errorf("could not parse remote repository URL as valid URL: %w", err)
 	}
 
 	var deployOptions gctsDeployOptions
@@ -72,7 +74,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 	} else {
 		repoHistory, err := getRepoHistory(config, telemetryData, httpClient)
 		if err != nil {
-			return errors.Wrap(err, "could not retrieve repository commit history")
+			return fmt.Errorf("could not retrieve repository commit history: %w", err)
 		}
 		if repoHistory.Result[0].FromCommit != "" {
 
@@ -88,14 +90,14 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 			}
 
 		} else {
-			return errors.Errorf("no commit to rollback to (fromCommit) could be identified from the repository commit history")
+			return fmt.Errorf("no commit to rollback to (fromCommit) could be identified from the repository commit history")
 		}
 	}
 
 	deployErr := pullByCommit(&deployOptions, telemetryData, command, httpClient)
 
 	if deployErr != nil {
-		return errors.Wrap(deployErr, "rollback commit failed")
+		return fmt.Errorf("rollback commit failed: %w", deployErr)
 	}
 
 	log.Entry().
@@ -123,7 +125,7 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 	if config.Proxy != "" {
 		proxyURL, err := url.Parse(config.Proxy)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to parse proxy URL")
+			return "", fmt.Errorf("failed to parse proxy URL: %w", err)
 		}
 		clientOptions.TransportProxy = proxyURL
 		log.Entry().Infof("Using proxy: %v", config.Proxy)
@@ -159,13 +161,13 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 		bodyText, readErr := io.ReadAll(resp.Body)
 
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read")
+			return "", fmt.Errorf("HTTP response body could not be read: %w", readErr)
 		}
 
 		response, parsingErr := gabs.ParseJSON([]byte(bodyText))
 
 		if parsingErr != nil {
-			return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+			return "", fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 		}
 
 		if status, ok := response.Path("state").Data().(string); ok && status == "success" {
@@ -176,7 +178,7 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 		}
 	}
 
-	return "", errors.Errorf("no commit with status 'success' could be found")
+	return "", fmt.Errorf("no commit with status 'success' could be found")
 }
 
 func getCommits(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) ([]string, error) {

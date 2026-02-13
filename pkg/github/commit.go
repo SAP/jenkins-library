@@ -1,8 +1,9 @@
 package github
 
 import (
+	"fmt"
+
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 )
 
 // FetchCommitOptions to configure the lookup
@@ -29,12 +30,12 @@ func FetchCommitStatistics(options *FetchCommitOptions) (FetchCommitResult, erro
 	// create GitHub client
 	ctx, client, err := NewClientBuilder(options.Token, options.APIURL).WithTrustedCerts(options.TrustedCerts).Build()
 	if err != nil {
-		return FetchCommitResult{}, errors.Wrap(err, "failed to get GitHub client")
+		return FetchCommitResult{}, fmt.Errorf("failed to get GitHub client: %w", err)
 	}
 	// fetch commit by SAH
 	result, _, err := client.Repositories.GetCommit(ctx, options.Owner, options.Repository, options.SHA, &github.ListOptions{})
 	if err != nil {
-		return FetchCommitResult{}, errors.Wrap(err, "failed to get GitHub commit")
+		return FetchCommitResult{}, fmt.Errorf("failed to get GitHub commit: %w", err)
 	}
 	return FetchCommitResult{
 		Files:     len(result.Files),

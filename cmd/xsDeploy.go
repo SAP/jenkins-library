@@ -11,11 +11,12 @@ import (
 	"sync"
 	"text/template"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 // DeployMode ...
@@ -126,7 +127,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 
 	mode, err := ValueOfMode(XsDeployOptions.Mode)
 	if err != nil {
-		return errors.Wrapf(err, "Extracting mode failed: '%s'", XsDeployOptions.Mode)
+		return fmt.Errorf("Extracting mode failed: '%s': %w", XsDeployOptions.Mode, err)
 	}
 
 	if mode == NoDeploy {
@@ -136,7 +137,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 
 	action, err := ValueOfAction(XsDeployOptions.Action)
 	if err != nil {
-		return errors.Wrapf(err, "Extracting action failed: '%s'", XsDeployOptions.Action)
+		return fmt.Errorf("Extracting action failed: '%s': %w", XsDeployOptions.Action, err)
 	}
 
 	if mode == Deploy && action != None {
@@ -449,7 +450,7 @@ func copyFileFromHomeToPwd(xsSessionFile string, fileUtils piperutils.FileUtils)
 	src, dest := fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile), xsSessionFile
 	log.Entry().Debugf("Copying xs session file from home directory ('%s') to workspace ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
-		return errors.Wrapf(err, "Cannot copy xssession file from home directory ('%s') to workspace ('%s')", src, dest)
+		return fmt.Errorf("Cannot copy xssession file from home directory ('%s') to workspace ('%s'): %w", src, dest, err)
 	}
 	log.Entry().Debugf("xs session file copied from home directory ('%s') to workspace ('%s')", src, dest)
 	return nil
@@ -467,7 +468,7 @@ func copyFileFromPwdToHome(xsSessionFile string, fileUtils piperutils.FileUtils)
 	src, dest := xsSessionFile, fmt.Sprintf("%s/%s", os.Getenv("HOME"), xsSessionFile)
 	log.Entry().Debugf("Copying xs session file from workspace ('%s') to home directory ('%s')", src, dest)
 	if _, err := fileUtils.Copy(src, dest); err != nil {
-		return errors.Wrapf(err, "Cannot copy xssession file from workspace ('%s') to home directory ('%s')", src, dest)
+		return fmt.Errorf("Cannot copy xssession file from workspace ('%s') to home directory ('%s'): %w", src, dest, err)
 	}
 	log.Entry().Debugf("xs session file copied from workspace ('%s') to home directory ('%s')", src, dest)
 	return nil

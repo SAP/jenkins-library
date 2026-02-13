@@ -1,12 +1,12 @@
 package sonar
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	sonargo "github.com/magicsong/sonargo/sonar"
-	"github.com/pkg/errors"
 )
 
 // EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/issues/search
@@ -67,7 +67,7 @@ func (service *IssueService) getIssueCount(severity issueSeverity, categories *[
 	}
 	result, _, err := service.SearchIssues(options)
 	if err != nil {
-		return -1, errors.Wrapf(err, "failed to fetch the numer of '%s' issues", severity)
+		return -1, fmt.Errorf("failed to fetch the numer of '%s' issues: %w", severity, err)
 	}
 
 	table := map[string]int{}

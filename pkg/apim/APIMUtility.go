@@ -9,7 +9,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/pasztorpisti/qs"
-	"github.com/pkg/errors"
 )
 
 // Utils for apim
@@ -53,7 +52,7 @@ func (apim *Bundle) InitAPIM() error {
 	token, tokenErr := x.GetBearerToken()
 
 	if tokenErr != nil {
-		return errors.Wrap(tokenErr, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", tokenErr)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token.AccessToken)
 	httpClient.SetOptions(clientOptions)

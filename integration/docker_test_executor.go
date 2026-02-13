@@ -18,8 +18,9 @@ import (
 	"testing"
 	"time"
 
+	"errors"
+
 	"github.com/magiconair/properties/assert"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -190,9 +191,9 @@ func (d *IntegrationTestDockerExecRunner) whenRunningPiperCommand(command string
 	if err != nil {
 		stdOut, outputErr := d.getPiperOutput()
 		if outputErr != nil {
-			return errors.Wrap(outputErr, "unable to get output after Piper command failure")
+			return fmt.Errorf("unable to get output after Piper command failure: %w", outputErr)
 		}
-		return errors.Wrapf(err, "piper output: \n%s", stdOut.String())
+		return fmt.Errorf("piper output: \n%s: %w", stdOut.String(), err)
 	}
 	return err
 }

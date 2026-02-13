@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
+
+	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -9,7 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *telemetry.CustomData) {
@@ -49,18 +51,18 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 	errConfig := checkConfiguration(config)
 	if errConfig != nil {
-		return errors.Wrap(errConfig, "The provided configuration is not allowed")
+		return fmt.Errorf("The provided configuration is not allowed: %w", errConfig)
 	}
 
 	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories, ByogUsername: config.ByogUsername, ByogPassword: config.ByogPassword, ByogAuthMethod: config.ByogAuthMethod}, false)
 	if errGetRepos != nil {
-		return errors.Wrap(errGetRepos, "Could not read repositories")
+		return fmt.Errorf("Could not read repositories: %w", errGetRepos)
 	}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "")
 	if errorGetInfo != nil {
-		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
+		return fmt.Errorf("Parameters for the ABAP Connection not available: %w", errorGetInfo)
 	}
 	connectionDetails.CertificateNames = config.CertificateNames
 
@@ -89,7 +91,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 	// If the repository had been cloned already, as checkout/pull has been done - polling the status is not necessary anymore
 	api, errGetAPI := apiManager.GetAPI(connectionDetails, repo)
 	if errGetAPI != nil {
-		return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
+		return fmt.Errorf("Could not initialize the connection to the system: %w", errGetAPI)
 	}
 
 	logString := repo.GetCloneLogString()
@@ -101,7 +103,7 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 
 	alreadyCloned, activeBranch, errCheckCloned, isByog := api.GetRepository()
 	if errCheckCloned != nil {
-		return errors.Wrap(errCheckCloned, errorString)
+		return fmt.Errorf("%s: %w", errorString, errCheckCloned)
 	}
 
 	if !alreadyCloned {
@@ -110,13 +112,13 @@ func cloneSingleRepo(apiManager abaputils.SoftwareComponentApiManagerInterface, 
 		}
 		errClone := api.Clone()
 		if errClone != nil {
-			return errors.Wrap(errClone, errorString)
+			return fmt.Errorf("%s: %w", errorString, errClone)
 		}
 		// set correct filename for archive file
 		logOutputManager.FileNameStep = "clone"
 		status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 		if errorPollEntity != nil {
-			return errors.Wrap(errorPollEntity, errorString)
+			return fmt.Errorf("%s: %w", errorString, errorPollEntity)
 		}
 		if status == "E" {
 			return errors.New("Clone of " + logString + " failed on the ABAP System")

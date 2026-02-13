@@ -12,12 +12,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 // AbapUtils Struct
@@ -45,7 +46,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed. Check for https.")
+			return connectionDetails, fmt.Errorf("Schema validation for host parameter failed. Check for https.: %w", err)
 		}
 		var hostOdataURL = options.Host + oDataURL
 		if match {
@@ -66,7 +67,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		// Url, User and Password should be read from a cf service key
 		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, c)
 		if error != nil {
-			return connectionDetails, errors.Wrap(error, "Read service key failed")
+			return connectionDetails, fmt.Errorf("Read service key failed: %w", error)
 		}
 		connectionDetails.Host = abapServiceKey.URL
 		connectionDetails.URL = abapServiceKey.URL + oDataURL
@@ -212,7 +213,7 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 			return "", err
 		}
 		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
-		err = errors.Wrap(abapError, err.Error())
+		err = fmt.Errorf("%s: %w", err.Error(), abapError)
 
 	}
 	return errorCode, err

@@ -9,9 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"errors"
+
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 type checkmarxOneSystemMock struct {

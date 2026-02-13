@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/bndr/gojenkins"
-	"github.com/pkg/errors"
 )
 
 // Jenkins is an interface to abstract gojenkins.Jenkins.
@@ -36,7 +35,7 @@ func TriggerJob(ctx context.Context, jenkins Jenkins, job Job, parameters map[st
 	// update job
 	_, pollJobErr := job.Poll(ctx)
 	if pollJobErr != nil {
-		return nil, errors.Wrapf(pollJobErr, "failed to load job")
+		return nil, fmt.Errorf("failed to load job: %w", pollJobErr)
 	}
 	// start job
 	queueID, startBuildErr := job.InvokeSimple(ctx, parameters)

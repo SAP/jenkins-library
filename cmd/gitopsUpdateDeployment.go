@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
@@ -22,7 +24,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/pkg/errors"
 )
 
 const toolKubectl = "kubectl"
@@ -80,7 +81,7 @@ func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitM
 		_, err := g.worktree.Add(path)
 
 		if err != nil {
-			return [20]byte{}, errors.Wrap(err, "failed to add file to git")
+			return [20]byte{}, fmt.Errorf("failed to add file to git: %w", err)
 		}
 	}
 
@@ -89,7 +90,7 @@ func (g *gitopsUpdateDeploymentGitUtils) CommitFiles(filePaths []string, commitM
 		Author: &object.Signature{Name: author, When: time.Now()},
 	})
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "failed to commit file")
+		return [20]byte{}, fmt.Errorf("failed to commit file: %w", err)
 	}
 
 	return commit, nil
@@ -103,10 +104,10 @@ func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverUR
 	var err error
 	g.repository, err = gitUtil.PlainClone(username, password, serverURL, branchName, directory, caCerts)
 	if err != nil {
-		return errors.Wrapf(err, "plain clone failed '%s'", serverURL)
+		return fmt.Errorf("plain clone failed '%s': %w", serverURL, err)
 	}
 	g.worktree, err = g.repository.Worktree()
-	return errors.Wrap(err, "failed to retrieve worktree")
+	return fmt.Errorf("failed to retrieve worktree: %w", err)
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) ChangeBranch(branchName string) error {
@@ -140,7 +141,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
 	temporaryFolder = regexp.MustCompile(`^./`).ReplaceAllString(temporaryFolder, "")
 	if err != nil {
-		return errors.Wrap(err, "failed to create temporary directory")
+		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
 	defer func() {
@@ -157,7 +158,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 
 	err = cloneRepositoryAndChangeBranch(config, gitUtils, fileUtils, temporaryFolder, certs)
 	if err != nil {
-		return errors.Wrap(err, "repository could not get prepared")
+		return fmt.Errorf("repository could not get prepared: %w", err)
 	}
 
 	filePath := filepath.Join(temporaryFolder, config.FilePath)
@@ -167,7 +168,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 
 	allFiles, err := fileUtils.Glob(filePath)
 	if err != nil {
-		return errors.Wrap(err, "unable to expand globbing pattern")
+		return fmt.Errorf("unable to expand globbing pattern: %w", err)
 	} else if len(allFiles) == 0 {
 		return errors.New("no matching files found for provided globbing pattern")
 	}
@@ -178,13 +179,13 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		if config.Tool == toolKubectl {
 			outputBytes, err = executeKubectl(config, command, currentFile)
 			if err != nil {
-				return errors.Wrap(err, "error on kubectl execution")
+				return fmt.Errorf("error on kubectl execution: %w", err)
 			}
 		} else if config.Tool == toolHelm {
 
 			out, err := runHelmCommand(command, config, currentFile)
 			if err != nil {
-				return errors.Wrap(err, "failed to apply helm command")
+				return fmt.Errorf("failed to apply helm command: %w", err)
 			}
 			// join all helm outputs into the same "FilePath"
 			outputBytes = append(outputBytes, []byte("---\n")...)
@@ -194,7 +195,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		} else if config.Tool == toolKustomize {
 			_, err = runKustomizeCommand(command, config, currentFile)
 			if err != nil {
-				return errors.Wrap(err, "failed to apply kustomize command")
+				return fmt.Errorf("failed to apply kustomize command: %w", err)
 			}
 			outputBytes = nil
 		} else {
@@ -205,7 +206,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		if outputBytes != nil {
 			err = fileUtils.FileWrite(currentFile, outputBytes, 0755)
 			if err != nil {
-				return errors.Wrap(err, "failed to write file")
+				return fmt.Errorf("failed to write file: %w", err)
 			}
 		}
 	}
@@ -221,7 +222,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 
 	commit, err := commitAndPushChanges(config, gitUtils, allFiles, certs)
 	if err != nil {
-		return errors.Wrap(err, "failed to commit and push changes")
+		return fmt.Errorf("failed to commit and push changes: %w", err)
 	}
 
 	log.Entry().Infof("Changes committed with %s", commit.String())
@@ -233,19 +234,19 @@ func checkRequiredFieldsForDeployTool(config *gitopsUpdateDeploymentOptions) err
 	if config.Tool == toolHelm {
 		err := checkRequiredFieldsForHelm(config)
 		if err != nil {
-			return errors.Wrap(err, "missing required fields for helm")
+			return fmt.Errorf("missing required fields for helm: %w", err)
 		}
 		logNotRequiredButFilledFieldForHelm(config)
 	} else if config.Tool == toolKubectl {
 		err := checkRequiredFieldsForKubectl(config)
 		if err != nil {
-			return errors.Wrap(err, "missing required fields for kubectl")
+			return fmt.Errorf("missing required fields for kubectl: %w", err)
 		}
 		logNotRequiredButFilledFieldForKubectl(config)
 	} else if config.Tool == toolKustomize {
 		err := checkRequiredFieldsForKustomize(config)
 		if err != nil {
-			return errors.Wrap(err, "missing required fields for kustomize")
+			return fmt.Errorf("missing required fields for kustomize: %w", err)
 		}
 		logNotRequiredButFilledFieldForKustomize(config)
 	}
@@ -263,7 +264,7 @@ func checkRequiredFieldsForHelm(config *gitopsUpdateDeploymentOptions) error {
 	}
 	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Errorf("the following parameters are necessary for helm: %v", missingParameters)
+		return fmt.Errorf("the following parameters are necessary for helm: %v", missingParameters)
 	}
 	return nil
 }
@@ -278,7 +279,7 @@ func checkRequiredFieldsForKustomize(config *gitopsUpdateDeploymentOptions) erro
 	}
 	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Errorf("the following parameters are necessary for kustomize: %v", missingParameters)
+		return fmt.Errorf("the following parameters are necessary for kustomize: %v", missingParameters)
 	}
 	return nil
 }
@@ -290,7 +291,7 @@ func checkRequiredFieldsForKubectl(config *gitopsUpdateDeploymentOptions) error 
 	}
 	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Errorf("the following parameters are necessary for kubectl: %v", missingParameters)
+		return fmt.Errorf("the following parameters are necessary for kubectl: %v", missingParameters)
 	}
 	return nil
 }
@@ -325,12 +326,12 @@ func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUt
 
 	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, config.BranchName, temporaryFolder, certs)
 	if err != nil {
-		return errors.Wrap(err, "failed to plain clone repository")
+		return fmt.Errorf("failed to plain clone repository: %w", err)
 	}
 
 	err = gitUtils.ChangeBranch(config.BranchName)
 	if err != nil {
-		return errors.Wrap(err, "failed to change branch")
+		return fmt.Errorf("failed to change branch: %w", err)
 	}
 	return nil
 }
@@ -363,14 +364,14 @@ func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateD
 	var outputBytes []byte
 	registryImage, err := buildRegistryPlusImage(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to apply kubectl command")
+		return nil, fmt.Errorf("failed to apply kubectl command: %w", err)
 	}
 	patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
 
 	log.Entry().Infof("[kubectl] updating '%s'", filePath)
 	outputBytes, err = runKubeCtlCommand(command, patchString, filePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to apply kubectl command")
+		return nil, fmt.Errorf("failed to apply kubectl command: %w", err)
 	}
 	return outputBytes, nil
 }
@@ -383,7 +384,7 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 
 	url, err := docker.ContainerRegistryFromURL(registryURL)
 	if err != nil {
-		return "", errors.Wrap(err, "registry URL could not be extracted")
+		return "", fmt.Errorf("registry URL could not be extracted: %w", err)
 	}
 	if url != "" {
 		url = url + "/"
@@ -404,7 +405,7 @@ func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString str
 	}
 	err := command.RunExecutable(toolKubectl, kubeParams...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to apply kubectl command")
+		return nil, fmt.Errorf("failed to apply kubectl command: %w", err)
 	}
 	return kubectlOutput.Bytes(), nil
 }
@@ -415,7 +416,7 @@ func runHelmCommand(command gitopsUpdateDeploymentExecRunner, config *gitopsUpda
 
 	registryImage, imageTag, err := buildRegistryPlusImageAndTagSeparately(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to extract registry URL, image name, and image tag")
+		return nil, fmt.Errorf("failed to extract registry URL, image name, and image tag: %w", err)
 	}
 	helmParams := []string{
 		"template",
@@ -432,7 +433,7 @@ func runHelmCommand(command gitopsUpdateDeploymentExecRunner, config *gitopsUpda
 	log.Entry().Infof("[helmn] updating '%s'", filePath)
 	err = command.RunExecutable(toolHelm, helmParams...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute helm command")
+		return nil, fmt.Errorf("failed to execute helm command: %w", err)
 	}
 	return helmOutput.Bytes(), nil
 }
@@ -454,7 +455,7 @@ func runKustomizeCommand(command gitopsUpdateDeploymentExecRunner, config *gitop
 	log.Entry().Infof("[kustomize] updating '%s'", filePath)
 	err = command.RunExecutable(toolKustomize, kustomizeParams...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute kustomize command")
+		return nil, fmt.Errorf("failed to execute kustomize command: %w", err)
 	}
 
 	return kustomizeOutput.Bytes(), nil
@@ -468,7 +469,7 @@ func buildRegistryPlusImageAndTagSeparately(config *gitopsUpdateDeploymentOption
 	if registryURL != "" {
 		containerURL, err := docker.ContainerRegistryFromURL(registryURL)
 		if err != nil {
-			return "", "", errors.Wrap(err, "registry URL could not be extracted")
+			return "", "", fmt.Errorf("registry URL could not be extracted: %w", err)
 		}
 		if containerURL != "" {
 			containerURL = containerURL + "/"
@@ -507,12 +508,12 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 
 	commit, err := gitUtils.CommitFiles(filePaths, commitMessage, config.Username)
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "committing changes failed")
+		return [20]byte{}, fmt.Errorf("committing changes failed: %w", err)
 	}
 
 	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush, certs)
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "pushing changes failed")
+		return [20]byte{}, fmt.Errorf("pushing changes failed: %w", err)
 	}
 
 	return commit, nil

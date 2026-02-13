@@ -12,8 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/bmatcuk/doublestar"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -392,19 +393,19 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 		defer os.RemoveAll(tmpFolder) // clean up
 		archive := filepath.Join(tmpFolder, path.Base(url))
 		if err := client.DownloadFile(url, archive, nil, nil); err != nil {
-			return errors.Wrap(err, "Download of sonar-scanner failed")
+			return fmt.Errorf("Download of sonar-scanner failed: %w", err)
 		}
 		// unzip sonar-scanner-cli
 		log.Entry().WithField("source", archive).WithField("target", tmpFolder).Debug("Extracting sonar-scanner")
 		if _, err := fileUtilsUnzip(archive, tmpFolder); err != nil {
-			return errors.Wrap(err, "Extraction of sonar-scanner failed")
+			return fmt.Errorf("Extraction of sonar-scanner failed: %w", err)
 		}
 		// move sonar-scanner-cli to .sonar-scanner/
 		toolPath := ".sonar-scanner"
 		foldername := strings.ReplaceAll(strings.ReplaceAll(archive, ".zip", ""), "cli-", "")
 		log.Entry().WithField("source", foldername).WithField("target", toolPath).Debug("Moving sonar-scanner")
 		if err := osRename(foldername, toolPath); err != nil {
-			return errors.Wrap(err, "Moving of sonar-scanner failed")
+			return fmt.Errorf("Moving of sonar-scanner failed: %w", err)
 		}
 		// update binary path
 		sonar.binary = filepath.Join(getWorkingDir(), toolPath, "bin", sonar.binary)
@@ -442,7 +443,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 		defaultTruststorePath := keytool.GetDefaultTruststorePath()
 		if exists, _ := fileUtilsExists(defaultTruststorePath); exists {
 			if err := keytool.ImportTruststore(runner, truststoreFile, defaultTruststorePath); err != nil {
-				return errors.Wrap(err, "Copying existing keystore failed")
+				return fmt.Errorf("Copying existing keystore failed: %w", err)
 			}
 		}
 		// use local created trust store with downloaded certificates
@@ -451,7 +452,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
-				return errors.Wrap(err, "Download of TLS certificate failed")
+				return fmt.Errorf("Download of TLS certificate failed: %w", err)
 			}
 			// add certificate to keystore
 			if err := keytool.ImportCert(runner, truststoreFile, target); err != nil {

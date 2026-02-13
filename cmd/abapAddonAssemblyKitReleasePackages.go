@@ -2,14 +2,16 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
+
+	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReleasePackages(config abapAddonAssemblyKitReleasePackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) {
@@ -47,7 +49,7 @@ func runAbapAddonAssemblyKitReleasePackages(config *abapAddonAssemblyKitReleaseP
 			}
 		}
 		if numberOfReleasedPackages == 0 {
-			return errors.Wrap(err, "Release of all packages failed/timed out - Aborting as abapEnvironmentAssembleConfirm step is not needed")
+			return fmt.Errorf("Release of all packages failed/timed out - Aborting as abapEnvironmentAssembleConfirm step is not needed: %w", err)
 		} else {
 			log.Entry().WithError(err).Warn("Release of at least one package failed/timed out - Continuing anyway to enable abapEnvironmentAssembleConfirm to run")
 		}

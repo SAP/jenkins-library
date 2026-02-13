@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/google/go-github/v68/github"

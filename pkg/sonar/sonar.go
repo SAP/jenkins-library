@@ -1,10 +1,10 @@
 package sonar
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/magiconair/properties"
-	"github.com/pkg/errors"
 )
 
 // TaskReportData encapsulates information about an executed Sonar scan task.
@@ -30,7 +30,7 @@ func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 	// read content into struct
 	err = reportContent.Decode(&result)
 	if err != nil {
-		err = errors.Wrapf(err, "decode %s", reportFile)
+		err = fmt.Errorf("decode %s: %w", reportFile, err)
 	}
 	return
 }

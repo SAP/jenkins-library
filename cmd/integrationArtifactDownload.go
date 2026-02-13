@@ -12,7 +12,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func integrationArtifactDownload(config integrationArtifactDownloadOptions, telemetryData *telemetry.CustomData) {
@@ -44,22 +43,22 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := "GET"
 	downloadResp, httpErr := httpClient.SendRequest(httpMethod, downloadArtifactURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, downloadArtifactURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, downloadArtifactURL, httpErr)
 	}
 	if downloadResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	contentDisposition := downloadResp.Header.Get("Content-Disposition")
 	disposition, params, err := mime.ParseMediaType(contentDisposition)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition %s", disposition)
+		return fmt.Errorf("failed to read filename from http response headers, Content-Disposition %s: %w", disposition, err)
 	}
 	filename := params["filename"]
 
@@ -71,12 +70,12 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 		workspaceRelativePath := config.DownloadPath
 		err = os.MkdirAll(workspaceRelativePath, 0755)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create workspace directory")
+			return fmt.Errorf("Failed to create workspace directory: %w", err)
 		}
 		zipFileName := filepath.Join(workspaceRelativePath, filename)
 		file, err := os.Create(zipFileName)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create integration flow artifact file")
+			return fmt.Errorf("Failed to create integration flow artifact file: %w", err)
 		}
 		if _, err := io.Copy(file, downloadResp.Body); err != nil {
 			return err
@@ -86,9 +85,9 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	responseBody, readErr := io.ReadAll(downloadResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code : %v: %w", downloadResp.StatusCode, readErr)
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), downloadResp.StatusCode)
-	return errors.Errorf("Integration Flow artifact download failed, Response Status code: %v", downloadResp.StatusCode)
+	return fmt.Errorf("Integration Flow artifact download failed, Response Status code: %v", downloadResp.StatusCode)
 }
