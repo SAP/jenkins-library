@@ -584,7 +584,7 @@ func mtaBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "mbtci-java21-node22:1.2.34"},
+				{Image: "devxci/mbtci-java21-node22:1.2.34"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
