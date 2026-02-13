@@ -407,7 +407,7 @@ boolean isContainerDefined(config) {
 def getContainerDefined(config) {
     def containerMap = ContainerMap.instance.getMap()
     if (containerMap == null) {
-        throw new IllegalStateException("Container map is null")
+        throw new IllegalStateException("Container map is null - ContainerMap.instance may not be properly initialized")
     }
     if (!containerMap.containsKey(env.POD_NAME)) {
         throw new IllegalStateException("POD_NAME not found in container map: ${env.POD_NAME}")

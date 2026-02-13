@@ -292,13 +292,13 @@ private void setGitRefOnCommonPipelineEnvironment(script, String gitCommit, Stri
     }
 
     def mergeOrHead = isMergeCommit?"merge":"head"
-    // PR branches are expected to be in format "PR-<changeId>" where changeId may contain hyphens
-    // Split only on the first hyphen to preserve changeId integrity
+    // At this point, we know gitBranch starts with "PR-" (validated at line 274)
+    // Split only on the first hyphen to preserve changeId integrity (e.g., "PR-JIRA-123" becomes ["PR", "JIRA-123"])
     def branchParts = gitBranch.split("-", 2)
     if(branchParts.length < 2) {
         script.commonPipelineEnvironment.setGitRemoteCommitId("NA")
         script.commonPipelineEnvironment.setGitRef("NA")
-        echo "[${STEP_NAME}] Invalid PR branch format: expected format <prefix>-<changeId>, got: ${gitBranch}"
+        echo "[${STEP_NAME}] Invalid PR branch format: expected format PR-<changeId>, got: ${gitBranch}"
         return
     }
     def changeId = branchParts[1]

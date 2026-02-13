@@ -262,7 +262,7 @@ class TransportManagementService implements Serializable {
         Map mtaExtDescriptor = [:]
         Map responseContent = jsonUtils.jsonStringToGroovyObject(response.content)
         def mtaExtDescriptors = responseContent.get("mtaExtDescriptors")
-        if(mtaExtDescriptors && !mtaExtDescriptors.isEmpty()) {
+        if(mtaExtDescriptors) {
             mtaExtDescriptor = mtaExtDescriptors.get(0)
         }
 
