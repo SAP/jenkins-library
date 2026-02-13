@@ -33,6 +33,7 @@ type gctsExecuteABAPQualityChecksOptions struct {
 	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
 	QueryParameters      map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
+	Proxy                string                 `json:"proxy,omitempty"`
 }
 
 // GctsExecuteABAPQualityChecksCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -207,6 +208,7 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies an output file name for the results of the ABAP Unit tests.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -374,6 +376,15 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "proxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_proxy"),
 					},
 				},
 			},

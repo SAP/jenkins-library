@@ -11,7 +11,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
@@ -123,7 +122,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 			// See https://github.blog/changelog/2022-10-24-npm-v9-0-0-released/
 			// where it states: the presence of auth related settings that are not scoped to a specific registry found in a config file
 			// is no longer supported and will throw errors
-			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), CredentialUtils.EncodeUsernamePassword(username, password))
+			npmrc.Set(fmt.Sprintf("%s:%s", strings.TrimPrefix(registry, "https:"), "_auth"), piperutils.EncodeUsernamePassword(username, password))
 			npmrc.Set("always-auth", "true")
 		}
 		// update .npmrc
@@ -148,11 +147,11 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 
 	if packBeforePublish {
 		// change directory in package json file , since npm pack will run only for that packages
-		if err := exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
+		if err = exec.Utils.Chdir(filepath.Dir(packageJSON)); err != nil {
 			return fmt.Errorf("failed to change into directory for executing script: %w", err)
 		}
 
-		if err := execRunner.RunExecutable("npm", "pack"); err != nil {
+		if err = execRunner.RunExecutable("npm", "pack"); err != nil {
 			return err
 		}
 
@@ -198,20 +197,19 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 		if tag != "" {
 			publishArgs = append(publishArgs, "--tag", tag)
 		}
-		err = execRunner.RunExecutable("npm", publishArgs...)
-		if err != nil {
+
+		if err = execRunner.RunExecutable("npm", publishArgs...); err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
 
 		if projectNpmrcExists {
 			// undo the renaming ot the .npmrc to keep the workspace like before
-			err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc)
-			if err != nil {
+			if err = exec.Utils.FileRename(projectNpmrc+".tmp", projectNpmrc); err != nil {
 				log.Entry().Warnf("unable to rename the .npmrc file : %v", err)
 			}
 		}
 
-		if err := exec.Utils.Chdir(oldWorkingDirectory); err != nil {
+		if err = exec.Utils.Chdir(oldWorkingDirectory); err != nil {
 			return fmt.Errorf("failed to change back into original directory: %w", err)
 		}
 	} else {
@@ -220,8 +218,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 		if tag != "" {
 			publishArgs = append(publishArgs, "--tag", tag)
 		}
-		err = execRunner.RunExecutable("npm", publishArgs...)
-		if err != nil {
+
+		if err = execRunner.RunExecutable("npm", publishArgs...); err != nil {
 			return errors.Wrap(err, "failed publishing artifact")
 		}
 	}
@@ -250,30 +248,36 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 	return nil
 }
 
-func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
+func (exec *Execute) readPackage(packageJSON string) (*npmMinimalPackageDescriptor, error) {
 	b, err := exec.Utils.FileRead(packageJSON)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var pd npmMinimalPackageDescriptor
+	if err = json.Unmarshal(b, &pd); err != nil {
+		return nil, err
+	}
 
-	json.Unmarshal(b, &pd)
+	return &pd, nil
+}
 
+func (exec *Execute) readPackageScope(packageJSON string) (string, error) {
+	pd, err := exec.readPackage(packageJSON)
+	if err != nil {
+		return "", err
+	}
 	return pd.Scope(), nil
 }
 
 // readPackageVersion reads the version from package.json
 func (exec *Execute) readPackageVersion(packageJSON string) (string, error) {
-	b, err := exec.Utils.FileRead(packageJSON)
+	pd, err := exec.readPackage(packageJSON)
 	if err != nil {
 		return "", err
 	}
-
-	var pd npmMinimalPackageDescriptor
-
-	if err := json.Unmarshal(b, &pd); err != nil {
-		return "", err
+	if pd == nil {
+		return "", fmt.Errorf("version not found in package descriptor %s", packageJSON)
 	}
 
 	return pd.Version, nil
