@@ -7,7 +7,6 @@ import (
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/ghodss/yaml"
 	"github.com/package-url/packageurl-go"
-	"github.com/pkg/errors"
 )
 
 type Assessment struct {
@@ -114,7 +113,7 @@ func ReadAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 
 	content, err := io.ReadAll(assessmentFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error reading %v", assessmentFile)
+		return nil, fmt.Errorf("error reading %v: %w", assessmentFile, err)
 	}
 
 	err = yaml.Unmarshal(content, &ignore)

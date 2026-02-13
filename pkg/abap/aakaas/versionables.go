@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"errors"
+
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 const wildCardNext string = "NEXT"
@@ -177,7 +178,7 @@ func (v *versionable) queryVersion(filter string, orderBy string) (*versionable,
 	} else {
 		Versions := versionables{}
 		if err := json.Unmarshal(body, &Versions); err != nil {
-			return &result, errors.Wrap(err, "Unexpected AAKaaS response for Component Version Query: "+string(body))
+			return &result, fmt.Errorf("Unexpected AAKaaS response for Component Version Query: "+string(body), err)
 		}
 		switch len(Versions.Wrapper.Vs) {
 		case 0:

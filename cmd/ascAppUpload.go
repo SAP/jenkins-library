@@ -1,13 +1,15 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/asc"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type ascAppUploadUtils interface {
@@ -57,7 +59,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 	app, err := ascClient.GetAppById(config.AppID)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to get app information")
+		return fmt.Errorf("failed to get app information: %w", err)
 	}
 
 	log.Entry().Debugf("Found App with name %v", app.AppName)
@@ -68,7 +70,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrap(err, "failed to create release")
+		return fmt.Errorf("failed to create release: %w", err)
 	}
 
 	if releaseResponse.Status != "success" {
@@ -81,13 +83,13 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 	jamfAppInformationResponse, err := ascClient.GetJamfAppInfo(app.BundleId, config.JamfTargetSystem)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrap(err, "failed to get jamf app info")
+		return fmt.Errorf("failed to get jamf app info: %w", err)
 	}
 
 	jamfAppId := jamfAppInformationResponse.MobileDeviceApplication.General.Id
 
 	if jamfAppId == 0 {
-		return errors.Errorf("failed to get jamf app id")
+		return fmt.Errorf("failed to get jamf app id")
 	}
 
 	log.Entry().Debugf("Got Jamf info for app %v, jamfId: %v", app.AppName, jamfAppId)
@@ -97,7 +99,7 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 	err = ascClient.UploadIpa(config.FilePath, jamfAppId, config.JamfTargetSystem, app.BundleId, releaseResponse.Data)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrap(err, "failed to upload ipa")
+		return fmt.Errorf("failed to upload ipa: %w", err)
 	}
 
 	log.Entry().Infof("Successfully uploaded %v to ASC (AppId %v) & Jamf (Id %v)", config.FilePath, app.AppId, jamfAppId)

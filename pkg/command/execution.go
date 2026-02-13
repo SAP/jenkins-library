@@ -1,9 +1,10 @@
 package command
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"os/exec"
 	"sync"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // errCopyStdout and errCopyStderr are filled after the command execution after Wait() terminates

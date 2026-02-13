@@ -8,7 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/sirupsen/logrus"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -35,7 +36,7 @@ type Configuration struct {
 func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration Configuration) (string, error) {
 	secrets, err := getSecrets([]string{refName}, client, systemTrustConfiguration)
 	if err != nil {
-		return "", errors.Wrap(err, "couldn't get token from System Trust")
+		return "", fmt.Errorf("couldn't get token from System Trust: %w", err)
 	}
 	for _, s := range secrets {
 		if s.System == refName {
@@ -55,7 +56,7 @@ func getSecrets(refNames []string, client *piperhttp.Client, systemTrustConfigur
 	}
 	response, err := getResponse(systemTrustConfiguration.ServerURL, systemTrustConfiguration.TokenEndPoint, query, client)
 	if err != nil {
-		return secrets, errors.Wrap(err, "getting secrets from System Trust failed")
+		return secrets, fmt.Errorf("getting secrets from System Trust failed: %w", err)
 	}
 	for k, v := range response {
 		secrets = append(secrets, Secret{
@@ -72,7 +73,7 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 
 	rawURL, err := parseURL(serverURL, endpoint, query)
 	if err != nil {
-		return secrets, errors.Wrap(err, "parsing System Trust url failed")
+		return secrets, fmt.Errorf("parsing System Trust url failed: %w", err)
 	}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
@@ -85,16 +86,16 @@ func getResponse(serverURL, endpoint string, query url.Values, client *piperhttp
 			defer response.Body.Close()
 			bodyBytes, bodyErr := io.ReadAll(response.Body)
 			if bodyErr == nil {
-				err = errors.Wrap(err, string(bodyBytes))
+				err = fmt.Errorf(string(bodyBytes), err)
 			}
 		}
-		return secrets, errors.Wrap(err, "getting response from System Trust failed")
+		return secrets, fmt.Errorf("getting response from System Trust failed: %w", err)
 	}
 	defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&secrets)
 	if err != nil {
-		return secrets, errors.Wrap(err, "getting response from System Trust failed")
+		return secrets, fmt.Errorf("getting response from System Trust failed: %w", err)
 	}
 
 	return secrets, nil

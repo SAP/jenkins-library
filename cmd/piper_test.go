@@ -7,11 +7,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"

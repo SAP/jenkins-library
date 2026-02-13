@@ -5,8 +5,6 @@ import (
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/maven"
-
-	"github.com/pkg/errors"
 )
 
 type mavenExecRunner interface {
@@ -71,7 +69,7 @@ func (m *Maven) GetPackaging() (string, error) {
 
 	packaging, err := m.runner.Evaluate(&m.options, "project.packaging", m.utils)
 	if err != nil {
-		return "", errors.Wrap(err, "Maven - getting packaging failed")
+		return "", fmt.Errorf("Maven - getting packaging failed: %w", err)
 	}
 	return packaging, nil
 }
@@ -82,7 +80,7 @@ func (m *Maven) GetGroupID() (string, error) {
 
 	groupID, err := m.runner.Evaluate(&m.options, "project.groupId", m.utils)
 	if err != nil {
-		return "", errors.Wrap(err, "Maven - getting groupId failed")
+		return "", fmt.Errorf("Maven - getting groupId failed: %w", err)
 	}
 	return groupID, nil
 }
@@ -93,7 +91,7 @@ func (m *Maven) GetArtifactID() (string, error) {
 
 	artifactID, err := m.runner.Evaluate(&m.options, "project.artifactId", m.utils)
 	if err != nil {
-		return "", errors.Wrap(err, "Maven - getting artifactId failed")
+		return "", fmt.Errorf("Maven - getting artifactId failed: %w", err)
 	}
 	return artifactID, nil
 }
@@ -104,7 +102,7 @@ func (m *Maven) GetVersion() (string, error) {
 
 	version, err := m.runner.Evaluate(&m.options, "project.version", m.utils)
 	if err != nil {
-		return "", errors.Wrap(err, "Maven - getting version failed")
+		return "", fmt.Errorf("Maven - getting version failed: %w", err)
 	}
 	//ToDo: how to deal with SNAPSHOT replacement?
 	return version, nil
@@ -116,7 +114,7 @@ func (m *Maven) SetVersion(version string) error {
 
 	groupID, err := m.runner.Evaluate(&m.options, "project.groupId", m.utils)
 	if err != nil {
-		return errors.Wrap(err, "Maven - getting groupId failed")
+		return fmt.Errorf("Maven - getting groupId failed: %w", err)
 	}
 	opts := maven.ExecuteOptions{
 		PomPath:             m.options.PomPath,
@@ -134,7 +132,7 @@ func (m *Maven) SetVersion(version string) error {
 	}
 	_, err = m.runner.Execute(&opts, m.utils)
 	if err != nil {
-		return errors.Wrapf(err, "Maven - setting version %v failed", version)
+		return fmt.Errorf("Maven - setting version %v failed: %w", version, err)
 	}
 	return nil
 }

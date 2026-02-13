@@ -1,11 +1,12 @@
 package solman
 
 import (
+	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/SAP/jenkins-library/pkg/config/validation"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
-	"strings"
 )
 
 // FileSystem interface collecting everything which is file system
@@ -117,7 +118,7 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 				// error chaining (the other error is not necessaryly a "predecessor" of this one).
 				// But it is a pragmatic approach for not loosing information for trouble shooting. There
 				// is no possibility to have something like suppressed errors.
-				err = errors.Wrap(err, message)
+				err = fmt.Errorf("%s: %w", message, err)
 			} else {
 				err = errors.New(message)
 			}
@@ -127,10 +128,10 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 	if err == nil {
 		log.Entry().Infof("Deployment succeeded, artifact: '%s', endpoint: '%s'",
 			a.File, a.Connection.Endpoint)
-	} else {
-		log.Entry().WithError(err).Warnf("Deployment failed, artifact: '%s', endpoint: '%s'",
-			a.File, a.Connection.Endpoint)
+		return nil
 	}
+	log.Entry().WithError(err).Warnf("Deployment failed, artifact: '%s', endpoint: '%s'",
+		a.File, a.Connection.Endpoint)
 
-	return errors.Wrapf(err, "cannot upload artifact '%s'", a.File)
+	return fmt.Errorf("cannot upload artifact '%s': %w", a.File, err)
 }

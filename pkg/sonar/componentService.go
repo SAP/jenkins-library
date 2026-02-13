@@ -1,13 +1,15 @@
 package sonar
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	sonargo "github.com/magicsong/sonargo/sonar"
-	"github.com/pkg/errors"
 )
 
 // EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/measures/component
@@ -80,13 +82,13 @@ func (service *ComponentService) GetLinesOfCode() (*SonarLinesOfCode, error) {
 	component, response, err := service.Component(&options)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
+		return nil, fmt.Errorf("Failed to get coverage from Sonar measures/component API: %w", err)
 	}
 
 	// reuse response verification from sonargo
 	err = sonargo.CheckResponse(response)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get lines of code from Sonar measures/component API")
+		return nil, fmt.Errorf("Failed to get lines of code from Sonar measures/component API: %w", err)
 	}
 	measures := component.Component.Measures
 
@@ -119,13 +121,13 @@ func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 	}
 	component, response, err := service.Component(&options)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
+		return nil, fmt.Errorf("Failed to get coverage from Sonar measures/component API: %w", err)
 	}
 
 	// reuse response verification from sonargo
 	err = sonargo.CheckResponse(response)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get coverage from Sonar measures/component API")
+		return nil, fmt.Errorf("Failed to get coverage from Sonar measures/component API: %w", err)
 	}
 	measures := component.Component.Measures
 
@@ -176,7 +178,7 @@ func parseMeasureValuef32(measure sonargo.SonarMeasure) (float32, error) {
 	str := measure.Value
 	f64, err := strconv.ParseFloat(str, 32)
 	if err != nil {
-		return 0.0, errors.Wrap(err, "Invalid value found in measure "+measure.Metric+": "+measure.Value)
+		return 0.0, fmt.Errorf("Invalid value found in measure "+measure.Metric+": "+measure.Value, err)
 	}
 	return float32(f64), nil
 }
@@ -185,7 +187,7 @@ func parseMeasureValueInt(measure sonargo.SonarMeasure) (int, error) {
 	str := measure.Value
 	val, err := strconv.Atoi(str)
 	if err != nil {
-		return 0, errors.Wrap(err, "Invalid value found in measure "+measure.Metric+": "+measure.Value)
+		return 0, fmt.Errorf("Invalid value found in measure "+measure.Metric+": "+measure.Value, err)
 	}
 	return int(val), nil
 }
@@ -205,7 +207,7 @@ func parseMeasureLanguageDistribution(measure sonargo.SonarMeasure) ([]SonarLang
 
 		loc, err := strconv.Atoi(dist[1])
 		if err != nil {
-			return nil, errors.Wrap(err, "Not able to parse value "+dist[1]+" found in measure "+measure.Metric+": "+measure.Value)
+			return nil, fmt.Errorf("Not able to parse value "+dist[1]+" found in measure "+measure.Metric+": "+measure.Value, err)
 		}
 		ld = append(ld, SonarLanguageDistribution{LanguageKey: dist[0], LinesOfCode: loc})
 

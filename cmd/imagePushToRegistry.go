@@ -6,8 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"errors"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -107,30 +108,30 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 	log.Entry().Debug("Handling destination registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, utils); err != nil {
-		return errors.Wrap(err, "failed to handle credentials for target registry")
+		return fmt.Errorf("failed to handle credentials for target registry: %w", err)
 	}
 
 	if config.PushLocalDockerImage {
 		if err := pushLocalImageToTargetRegistry(config, utils); err != nil {
-			return errors.Wrapf(err, "failed to push local image to %q", config.TargetRegistryURL)
+			return fmt.Errorf("failed to push local image to %q: %w", config.TargetRegistryURL, err)
 		}
 		return nil
 	}
 
 	log.Entry().Debug("Handling source registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils); err != nil {
-		return errors.Wrap(err, "failed to handle credentials for source registry")
+		return fmt.Errorf("failed to handle credentials for source registry: %w", err)
 	}
 
 	if config.UseImageNameTags {
 		if err := pushImageNameTagsToTargetRegistry(config, utils); err != nil {
-			return errors.Wrapf(err, "failed to push imageNameTags to target registry")
+			return fmt.Errorf("failed to push imageNameTags to target registry: %w", err)
 		}
 		return nil
 	}
 
 	if err := copyImages(config, utils); err != nil {
-		return errors.Wrap(err, "failed to copy images")
+		return fmt.Errorf("failed to copy images: %w", err)
 	}
 
 	return nil
@@ -143,17 +144,17 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 		}
 
 		if _, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils); err != nil {
-			return errors.Wrap(err, "failed to create new docker config")
+			return fmt.Errorf("failed to create new docker config: %w", err)
 		}
 		return nil
 	}
 
 	if _, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils); err != nil {
-		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
+		return fmt.Errorf("failed to update docker config %q: %w", dockerConfigJsonPath, err)
 	}
 
 	if err := docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils); err != nil {
-		return errors.Wrapf(err, "failed to merge docker config files")
+		return fmt.Errorf("failed to merge docker config files: %w", err)
 	}
 
 	return nil

@@ -12,7 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 const piperDbName string = "piper_step_db.db"
@@ -53,7 +52,7 @@ func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *tel
 		repoUrlOrchestrator := provider.RepoURL()
 		if repoUrlOrchestrator == "n/a" {
 			// Jenkins configuration error
-			configError := errors.New(fmt.Sprintf("Unknown repository URL %s", repoUrlOrchestrator))
+			configError := fmt.Errorf("Unknown repository URL %s", repoUrlOrchestrator)
 			log.Entry().WithError(configError).Error(
 				"Repository URL n/a. Please verify git plugin is installed.")
 			// The repository to scan was not identified. Return an error

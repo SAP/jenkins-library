@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
@@ -69,14 +68,14 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if len(config.ContainerPreparationCommand) > 0 {
 		prepCommand := strings.Split(config.ContainerPreparationCommand, " ")
 		if err := execRunner.RunExecutable(prepCommand[0], prepCommand[1:]...); err != nil {
-			return errors.Wrap(err, "failed to initialize Kaniko container")
+			return fmt.Errorf("failed to initialize Kaniko container: %w", err)
 		}
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
 		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils, "/kaniko/ssl/certs/ca-certificates.crt")
 		if err != nil {
-			return errors.Wrap(err, "failed to update certificates")
+			return fmt.Errorf("failed to update certificates: %w", err)
 		}
 	} else {
 		log.Entry().Info("skipping updation of certificates")
@@ -89,7 +88,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		var err error
 		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read existing docker config json at '%v'", config.DockerConfigJSON)
+			return fmt.Errorf("failed to read existing docker config json at '%v': %w", config.DockerConfigJSON, err)
 		}
 	}
 
@@ -98,27 +97,27 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if len(config.DockerConfigJSON) > 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
 		targetConfigJson, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", config.DockerConfigJSON, fileUtils)
 		if err != nil {
-			return errors.Wrapf(err, "failed to update existing docker config json file '%v'", config.DockerConfigJSON)
+			return fmt.Errorf("failed to update existing docker config json file '%v': %w", config.DockerConfigJSON, err)
 		}
 
 		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read enhanced file '%v'", config.DockerConfigJSON)
+			return fmt.Errorf("failed to read enhanced file '%v': %w", config.DockerConfigJSON, err)
 		}
 	} else if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
 		targetConfigJson, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", "/kaniko/.docker/config.json", fileUtils)
 		if err != nil {
-			return errors.Wrap(err, "failed to create new docker config json at /kaniko/.docker/config.json")
+			return fmt.Errorf("failed to create new docker config json at /kaniko/.docker/config.json: %w", err)
 		}
 
 		dockerConfig, err = fileUtils.FileRead(targetConfigJson)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read new docker config file at /kaniko/.docker/config.json")
+			return fmt.Errorf("failed to read new docker config file at /kaniko/.docker/config.json: %w", err)
 		}
 	}
 
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
+		return fmt.Errorf("failed to write file '/kaniko/.docker/config.json': %w", err)
 	}
 
 	log.Entry().Debugf("preparing build settings information...")
@@ -158,7 +157,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
+			return fmt.Errorf("failed to read registry url %v: %w", config.ContainerRegistryURL, err)
 		}
 
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
@@ -212,7 +211,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		parsedMultipleImages, err := parseMultipleImages(config.MultipleImages)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrap(err, "failed to parse multipleImages param")
+			return fmt.Errorf("failed to parse multipleImages param: %w", err)
 		}
 
 		for _, entry := range parsedMultipleImages {
@@ -223,7 +222,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorConfiguration)
-					return errors.Wrapf(err, "multipleImages: failed to read registry url %v", config.ContainerRegistryURL)
+					return fmt.Errorf("multipleImages: failed to read registry url %v: %w", config.ContainerRegistryURL, err)
 				}
 
 				if entry.ContainerImageTag == "" {
@@ -259,12 +258,12 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				containerImageName, err := docker.ContainerImageNameFromImage(entry.ContainerImage)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorConfiguration)
-					return errors.Wrapf(err, "invalid name part in image %v", entry.ContainerImage)
+					return fmt.Errorf("invalid name part in image %v: %w", entry.ContainerImage, err)
 				}
 				containerImageNameTag, err := docker.ContainerImageNameTagFromImage(entry.ContainerImage)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorConfiguration)
-					return errors.Wrapf(err, "invalid tag part in image %v", entry.ContainerImage)
+					return fmt.Errorf("invalid tag part in image %v: %w", entry.ContainerImage, err)
 				}
 
 				log.Entry().Debugf("multipleImages: image build '%v'", containerImageName)
@@ -324,7 +323,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 				containerRegistry, err := docker.ContainerRegistryFromImage(destination)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorConfiguration)
-					return errors.Wrapf(err, "invalid registry part in image %v", destination)
+					return fmt.Errorf("invalid registry part in image %v: %w", destination, err)
 				}
 				if commonPipelineEnvironment.container.registryURL == "" {
 					commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
@@ -348,7 +347,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
+			return fmt.Errorf("failed to read registry url %v: %w", config.ContainerRegistryURL, err)
 		}
 
 		// Docker image tags don't allow plus signs in tags, thus replacing with dash
@@ -367,7 +366,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
+			return fmt.Errorf("invalid registry part in image %v: %w", config.ContainerImage, err)
 		}
 
 		// errors are already caught with previous call to docker.ContainerRegistryFromImage
@@ -439,13 +438,13 @@ func runKaniko(config *kanikoExecuteOptions, dockerFilepath string, buildOptions
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/kaniko/executor' failed")
+		return fmt.Errorf("execution of '/kaniko/executor' failed: %w", err)
 	}
 
 	if b, err := fileUtils.FileExists(digestFilePath); err == nil && b {
 		digest, err := fileUtils.FileRead(digestFilePath)
 		if err != nil {
-			return errors.Wrap(err, "error while reading image digest")
+			return fmt.Errorf("error while reading image digest: %w", err)
 		}
 
 		digestStr := string(digest)

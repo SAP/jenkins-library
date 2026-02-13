@@ -5,9 +5,10 @@ package systemtrust
 
 import (
 	"fmt"
-	"github.com/jarcoal/httpmock"
 	"net/http"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"

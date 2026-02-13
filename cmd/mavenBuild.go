@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,7 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/pkg/errors"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
@@ -148,13 +148,13 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 
 	_, err := maven.Execute(&mavenOptions, utils)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute maven build for goal(s) '%v'", goals)
+		return fmt.Errorf("failed to execute maven build for goal(s) '%v': %w", goals, err)
 	}
 
 	if config.CreateBOM {
 		// Separate run for makeBOM goal
 		if err := runMakeBOMGoal(config, utils); err != nil {
-			return errors.Wrap(err, "failed to execute makeBOM goal")
+			return fmt.Errorf("failed to execute makeBOM goal: %w", err)
 		}
 	}
 
@@ -187,7 +187,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
 				if err != nil {
-					return errors.Wrap(err, "Could not create or update project settings xml")
+					return fmt.Errorf("Could not create or update project settings xml: %w", err)
 				}
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
@@ -280,13 +280,13 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 	if len(projectSettingsFile) > 0 {
 		projectSettingsFilePath, err := maven.UpdateProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 		if err != nil {
-			return "", errors.Wrap(err, "Could not update settings xml")
+			return "", fmt.Errorf("Could not update settings xml: %w", err)
 		}
 		return projectSettingsFilePath, nil
 	} else {
 		projectSettingsFilePath, err := maven.CreateNewProjectSettingsXML(altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 		if err != nil {
-			return "", errors.Wrap(err, "Could not create settings xml")
+			return "", fmt.Errorf("Could not create settings xml: %w", err)
 		}
 		return projectSettingsFilePath, nil
 	}
@@ -302,11 +302,11 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 
 	exists, err := fileUtils.FileExists(existingJavaCaCerts)
 	if err != nil {
-		return errors.Wrap(err, "Could not find the existing java cacerts")
+		return fmt.Errorf("Could not find the existing java cacerts: %w", err)
 	}
 
 	if !exists {
-		return errors.Wrap(err, "Could not find the existing java cacerts")
+		return fmt.Errorf("Could not find the existing java cacerts: %w", err)
 	}
 
 	trustStore := filepath.Join(".pipeline", "mavenCaCerts")
@@ -315,11 +315,11 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
 
 	if fileUtilserr != nil {
-		return errors.Wrap(err, "Could not copy existing cacerts into new cacerts location ")
+		return fmt.Errorf("Could not copy existing cacerts into new cacerts location : %w", err)
 	}
 
 	if err := fileUtils.Chmod(trustStore, 0666); err != nil {
-		return errors.Wrap(err, "unable to provide correct permission to trust store")
+		return fmt.Errorf("unable to provide correct permission to trust store: %w", err)
 	}
 
 	log.Entry().Infof("using trust store %s", trustStore)
@@ -328,7 +328,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 		maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/mavenCaCerts -Djavax.net.ssl.trustStorePassword=changeit"
 		err := os.Setenv("MAVEN_OPTS", maven_opts)
 		if err != nil {
-			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
+			return fmt.Errorf("Could not create MAVEN_OPTS environment variable : %w", err)
 		}
 		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
 	}
@@ -350,13 +350,13 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
 			// download certificate
 			if err := client.DownloadFile(certificate, target, nil, nil); err != nil {
-				return errors.Wrapf(err, "Download of TLS certificate failed")
+				return fmt.Errorf("Download of TLS certificate failed: %w", err)
 			}
 			options := append(keytoolOptions, "-file", target)
 			options = append(options, "-alias", filename)
 			// add certificate to keystore
 			if err := runner.RunExecutable("keytool", options...); err != nil {
-				return errors.Wrap(err, "Adding certificate to keystore failed")
+				return fmt.Errorf("Adding certificate to keystore failed: %w", err)
 			}
 		}
 		log.Entry().Infof("custom tls certificates successfully added to the trust store %s", trustStore)

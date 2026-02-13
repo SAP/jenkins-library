@@ -3,11 +3,11 @@ package events
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 // type EventType string
@@ -40,7 +40,7 @@ func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
 	if data != "" {
 		err := json.Unmarshal([]byte(data), &dataMap)
 		if err != nil {
-			return e, errors.Wrap(err, "eventData is an invalid JSON")
+			return e, fmt.Errorf("eventData is an invalid JSON: %w", err)
 		}
 	}
 	return e.Create(dataMap, opts...), nil
@@ -74,7 +74,7 @@ func GetUUID(pipelineIdentifier string) string {
 func (e Event) ToBytes() ([]byte, error) {
 	data, err := json.Marshal(e.cloudEvent)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal event data")
+		return nil, fmt.Errorf("failed to marshal event data: %w", err)
 	}
 	return data, nil
 }
@@ -97,13 +97,13 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 	var additionalData map[string]interface{}
 	err := json.Unmarshal([]byte(additionalDataString), &additionalData)
 	if err != nil {
-		errors.Wrap(err, "couldn't add additional data to cloud event")
+		return fmt.Errorf("couldn't add additional data to cloud event: %w", err)
 	}
 
 	var newEventData map[string]interface{}
 	err = json.Unmarshal(e.cloudEvent.DataEncoded, &newEventData)
 	if err != nil {
-		errors.Wrap(err, "couldn't add additional data to cloud event")
+		return fmt.Errorf("couldn't add additional data to cloud event: %w", err)
 	}
 
 	for k, v := range additionalData {

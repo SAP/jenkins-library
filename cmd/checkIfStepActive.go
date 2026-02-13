@@ -6,7 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/spf13/cobra"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -72,12 +73,12 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	projectConfig, err := initializeConfig(&pConfig)
 	if err != nil {
 		log.Entry().Errorf("Failed to load project config: %v", err)
-		return errors.Wrap(err, "Failed to load project config failed")
+		return fmt.Errorf("Failed to load project config failed: %w", err)
 	}
 
 	stageConfigFile, err := checkStepActiveOptions.openFile(checkStepActiveOptions.stageConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
-		return errors.Wrapf(err, "config: open stage configuration file '%v' failed", checkStepActiveOptions.stageConfigFile)
+		return fmt.Errorf("config: open stage configuration file '%v' failed: %w", checkStepActiveOptions.stageConfigFile, err)
 	}
 	defer stageConfigFile.Close()
 
@@ -124,7 +125,7 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	}
 
 	if !runSteps[checkStepActiveOptions.stageName][checkStepActiveOptions.stepName] {
-		return errors.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
+		return fmt.Errorf("Step %s in stage %s is not active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
 	}
 	log.Entry().Infof("Step %s in stage %s is active", checkStepActiveOptions.stepName, checkStepActiveOptions.stageName)
 
@@ -151,7 +152,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		log.Entry().Infof("Project config: '%s'", projectConfigFile)
 		customConfig, err = checkStepActiveOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
-			return nil, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+			return nil, fmt.Errorf("config: open configuration file '%v' failed: %w", projectConfigFile, err)
 		}
 		defer customConfig.Close()
 	} else {
@@ -163,7 +164,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 		fc, err := checkStepActiveOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
-			return nil, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			return nil, fmt.Errorf("config: getting defaults failed: '%v': %w", f, err)
 		}
 		if err == nil {
 			defaultConfig = append(defaultConfig, fc)
@@ -180,7 +181,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 
 	_, err = pConfig.GetStepConfig(flags, "", customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filter, config.StepData{}, nil, "", "")
 	if err != nil {
-		return nil, errors.Wrap(err, "getting step config failed")
+		return nil, fmt.Errorf("getting step config failed: %w", err)
 	}
 	return pConfig, nil
 }

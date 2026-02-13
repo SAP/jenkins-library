@@ -24,7 +24,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
+
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -166,14 +166,14 @@ func extractZip(source, target string) error {
 	err := verifyZip(source)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "'%s' is not a valid archive", source)
+		return fmt.Errorf("'%s' is not a valid archive: %w", source, err)
 	}
 
 	log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
 	_, err = piperutils.Unzip(source, target)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
+		return fmt.Errorf("Extracting archive '%s' to '%s' failed: %w", source, target, err)
 	}
 	return nil
 }
@@ -242,7 +242,7 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (buildpack
 	pwd, err := utils.Getwd()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return "", "", errors.Wrap(err, "failed to get current working directory")
+		return "", "", fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
 	if config.Path == "" {
@@ -251,23 +251,23 @@ func (config *cnbBuildOptions) resolvePath(utils cnbutils.BuildUtils) (buildpack
 	matches, err := utils.Glob(config.Path)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", "", errors.Wrapf(err, "Failed to resolve glob for '%s'", config.Path)
+		return "", "", fmt.Errorf("Failed to resolve glob for '%s': %w", config.Path, err)
 	}
 	numMatches := len(matches)
 	if numMatches != 1 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", "", errors.Errorf("Failed to resolve glob for '%s', matching %d file(s)", config.Path, numMatches)
+		return "", "", fmt.Errorf("Failed to resolve glob for '%s', matching %d file(s)", config.Path, numMatches)
 	}
 	source, err := utils.Abs(matches[0])
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", "", errors.Wrapf(err, "Failed to resolve absolute path for '%s'", matches[0])
+		return "", "", fmt.Errorf("Failed to resolve absolute path for '%s': %w", matches[0], err)
 	}
 
 	dir, err := utils.DirExists(source)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return "", "", errors.Wrapf(err, "Checking file info '%s' failed", source)
+		return "", "", fmt.Errorf("Checking file info '%s' failed: %w", source, err)
 	}
 
 	if dir {
@@ -283,7 +283,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	err := isBuilder(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "the provided dockerImage is not a valid builder")
+		return fmt.Errorf("the provided dockerImage is not a valid builder: %w", err)
 	}
 
 	telemetry := buildpacks.NewTelemetry(telemetryData)
@@ -311,7 +311,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 	err = ensureDockerConfig(config, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to create/rename DockerConfigJSON file")
+		return fmt.Errorf("failed to create/rename DockerConfigJSON file: %w", err)
 	}
 
 	if config.DockerConfigJSONCPE != "" {
@@ -319,13 +319,13 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		err = docker.MergeDockerConfigJSON(config.DockerConfigJSONCPE, config.DockerConfigJSON, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to merge DockerConfigJSON files")
+			return fmt.Errorf("failed to merge DockerConfigJSON files: %w", err)
 		}
 	}
 
 	mergedConfigs, err := processConfigs(*config, config.MultipleImages)
 	if err != nil {
-		return errors.Wrap(err, "failed to process config")
+		return fmt.Errorf("failed to process config: %w", err)
 	}
 
 	buildSummary := cnbutils.NewBuildSummary(dockerImage, utils)
@@ -345,7 +345,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		syftScanner, err := syft.CreateSyftScanner(config.SyftDownloadURL, utils, httpClient)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
-			return errors.Wrap(err, "failed to create syft scanner file")
+			return fmt.Errorf("failed to create syft scanner file: %w", err)
 		}
 		// images produces with cnb have sboms
 		syftScanner.AddArgument("--override-default-catalogers=sbom-cataloger,go-module-binary-cataloger,apk-db-cataloger,dpkg-db-cataloger,rpm-db-cataloger")
@@ -353,7 +353,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 		err = syftScanner.ScanImages(filepath.Dir(config.DockerConfigJSON), utils, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
-			return errors.Wrap(err, "failed to create BOM file")
+			return fmt.Errorf("failed to create BOM file: %w", err)
 		}
 	}
 
@@ -366,29 +366,29 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	err := cleanDir("/layers", utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to clean up layers folder /layers")
+		return fmt.Errorf("failed to clean up layers folder /layers: %w", err)
 	}
 
 	err = cleanDir(platformPath, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("failed to clean up platform folder %s", platformPath))
+		return fmt.Errorf(fmt.Sprintf("failed to clean up platform folder %s", platformPath), err)
 	}
 
 	tempdir, err := utils.TempDir("", "cnbBuild-")
 	if err != nil {
-		return errors.Wrap(err, "failed to create tempdir")
+		return fmt.Errorf("failed to create tempdir: %w", err)
 	}
 	defer utils.RemoveAll(tempdir)
 
 	uid, gid, err := cnbutils.CnbUserInfo()
 	if err != nil {
-		return errors.Wrap(err, "failed to get user information")
+		return fmt.Errorf("failed to get user information: %w", err)
 	}
 
 	err = utils.Chown(tempdir, uid, gid)
 	if err != nil {
-		return errors.Wrap(err, "failed to change tempdir ownership")
+		return fmt.Errorf("failed to change tempdir ownership: %w", err)
 	}
 
 	if config.BuildEnvVars == nil {
@@ -402,7 +402,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	projDescPath, err := project.ResolvePath(config.ProjectDescriptor, config.Path, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to check if project descriptor exists")
+		return fmt.Errorf("failed to check if project descriptor exists: %w", err)
 	}
 	imageSummary.ProjectDescriptor = projDescPath
 
@@ -411,7 +411,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		descriptor, err := project.ParseDescriptor(projDescPath, utils, httpClient)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to parse %s", projDescPath)
+			return fmt.Errorf("failed to parse %s: %w", projDescPath, err)
 		}
 
 		config.mergeEnvVars(descriptor.EnvVars)
@@ -442,7 +442,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	targetImage, err := cnbutils.GetTargetImage(config.ContainerRegistryURL, config.ContainerImageName, config.ContainerImageTag, projectID, GeneralConfig.EnvRootPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to retrieve target image configuration")
+		return fmt.Errorf("failed to retrieve target image configuration: %w", err)
 	}
 
 	if commonPipelineEnvironment.container.imageNameTag == "" {
@@ -466,40 +466,40 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrap(err, "failed to write environment variables to files")
+			return fmt.Errorf("failed to write environment variables to files: %w", err)
 		}
 	}
 
 	err = bindings.ProcessBindings(utils, httpClient, platformPath, config.Bindings)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed process bindings")
+		return fmt.Errorf("failed process bindings: %w", err)
 	}
 
 	pathType, source, err := config.resolvePath(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "could not resolve path")
+		return fmt.Errorf("could not resolve path: %w", err)
 	}
 
 	target := "/workspace"
 	err = cleanDir(target, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "failed to clean up target folder %s", target)
+		return fmt.Errorf("failed to clean up target folder %s: %w", target, err)
 	}
 
 	if pathType != buildpacks.PathEnumArchive {
 		err = cnbutils.CopyProject(source, target, include, exclude, utils, false)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
+			return fmt.Errorf("Copying  '%s' into '%s' failed: %w", source, target, err)
 		}
 	} else {
 		err = extractZip(source, target)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
+			return fmt.Errorf("Copying  '%s' into '%s' failed: %w", source, target, err)
 		}
 	}
 
@@ -529,7 +529,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		defer func() { _ = utils.RemoveAll(orderPath) }()
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
+			return fmt.Errorf("Setting custom buildpacks: %v: %w", config.Buildpacks, err)
 		}
 	}
 
@@ -537,11 +537,11 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 		caCertificates := "/tmp/ca-certificates.crt"
 		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
 		if err != nil {
-			return errors.Wrap(err, "failed to copy certificates")
+			return fmt.Errorf("failed to copy certificates: %w", err)
 		}
 		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, caCertificates)
 		if err != nil {
-			return errors.Wrap(err, "failed to update certificates")
+			return fmt.Errorf("failed to update certificates: %w", err)
 		}
 		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
@@ -551,12 +551,12 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	dockerKeychain, err := cnbutils.ParseDockerConfig(config.DockerConfigJSON, utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to parse dockerConfigJSON")
+		return fmt.Errorf("failed to parse dockerConfigJSON: %w", err)
 	}
 	cnbAuthString, err := dockerKeychain.ToCNBString()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(err, "failed to generate CNB_REGISTRY_AUTH")
+		return fmt.Errorf("failed to generate CNB_REGISTRY_AUTH: %w", err)
 	}
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", cnbAuthString)})
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_PLATFORM_API=%s", platformAPIVersion)})
@@ -602,13 +602,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	err = utils.RunExecutableWithAttrs(creatorPath, attr, creatorArgs...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrapf(err, "execution of '%s' failed", creatorArgs)
+		return fmt.Errorf("execution of '%s' failed: %w", creatorArgs, err)
 	}
 
 	digest, err := cnbutils.DigestFromReport(utils)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "failed to read image digest")
+		return fmt.Errorf("failed to read image digest: %w", err)
 	}
 	commonPipelineEnvironment.container.imageDigest = digest
 	commonPipelineEnvironment.container.imageDigests = append(commonPipelineEnvironment.container.imageDigests, digest)
@@ -619,7 +619,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 			err = cnbutils.CopyProject(target, source, ignore.CompileIgnoreLines(config.PreserveFiles...), nil, utils, true)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
-				return errors.Wrapf(err, "failed to preserve files using glob '%s'", config.PreserveFiles)
+				return fmt.Errorf("failed to preserve files using glob '%s': %w", config.PreserveFiles, err)
 			}
 		} else {
 			log.Entry().Warnf("skipping preserving files because the source '%s' is an archive", source)

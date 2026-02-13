@@ -6,7 +6,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 // RunConfig ...
@@ -123,12 +122,12 @@ func (r *RunConfigV1) LoadConditionsV1() error {
 	defer r.StageConfigFile.Close()
 	content, err := io.ReadAll(r.StageConfigFile)
 	if err != nil {
-		return errors.Wrapf(err, "error: failed to read the stageConfig file")
+		return fmt.Errorf("error: failed to read the stageConfig file: %w", err)
 	}
 
 	err = yaml.Unmarshal(content, &r.PipelineConfig)
 	if err != nil {
-		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
+		return fmt.Errorf("format of configuration is invalid %q: %v", content, err)
 	}
 	return nil
 }

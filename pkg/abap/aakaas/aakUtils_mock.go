@@ -6,11 +6,12 @@ package aakaas
 import (
 	"time"
 
+	"errors"
+
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 type AakBundleMock struct {

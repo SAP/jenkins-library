@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telemetry.CustomData) {
@@ -36,16 +36,16 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	installCommandTokens := strings.Split(config.InstallCommand, " ")
 	if err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
 		log.SetErrorCategory(log.ErrorCustom)
-		return errors.Wrapf(err, "failed to execute install command: %v", config.InstallCommand)
+		return fmt.Errorf("failed to execute install command: %v: %w", config.InstallCommand, err)
 	}
 
 	if config.TestOptions != "" {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Errorf("parameter testOptions no longer supported, please use runOptions parameter instead.")
+		return fmt.Errorf("parameter testOptions no longer supported, please use runOptions parameter instead.")
 	}
 	if err := command.RunExecutable(config.RunCommand, config.RunOptions...); err != nil {
 		log.SetErrorCategory(log.ErrorTest)
-		return errors.Wrapf(err, "failed to execute run command: %v %v", config.RunCommand, strings.Join(config.RunOptions, " "))
+		return fmt.Errorf("failed to execute run command: %v %v: %w", config.RunCommand, strings.Join(config.RunOptions, " "), err)
 	}
 	return nil
 }
