@@ -329,18 +329,17 @@ func runDetectImages(ctx context.Context, config detectExecuteScanOptions, utils
 		log.Entry().Debugf("Scanning image: %q", image)
 
 		options := &containerSaveImageOptions{
-			ContainerRegistryURL:      config.RegistryURL,
-			ContainerImage:            image,
-			ImageFormat:               "legacy",
-			ContainerRegistryUser:     "",
-			ContainerRegistryPassword: "",
+			ContainerRegistryURL: config.RegistryURL,
+			ContainerImage:       image,
+			ImageFormat:          "legacy",
 		}
-		// Only set credentials if both are non-empty and non-whitespace
-		if strings.TrimSpace(config.RepositoryUsername) != "" && strings.TrimSpace(config.RepositoryPassword) != "" {
+		if config.RepositoryUsername != "" {
 			options.ContainerRegistryUser = config.RepositoryUsername
+		}
+		if config.RepositoryPassword != "" {
 			options.ContainerRegistryPassword = config.RepositoryPassword
 		}
-		// Always set fields, but leave empty for public images
+
 		dClientOptions := piperDocker.ClientOptions{ImageName: options.ContainerImage, RegistryURL: options.ContainerRegistryURL, ImageFormat: options.ImageFormat}
 		dClient := utils.GetDockerClient(dClientOptions)
 
