@@ -46,7 +46,7 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 		}
 	}
 
-	log.Entry().Infof("Downloading '%s' to '%s'", config.ContainerImage, tarfilePath)
+	log.Entry().Infof("Downloading '%s' to '%s' with pass '%s' and user '%s'", config.ContainerImage, tarfilePath, config.ContainerRegistryPassword, config.ContainerRegistryUser)
 	if _, err := dClient.DownloadImage(config.ContainerImage, tarfilePath); err != nil {
 		return "", errors.Wrap(err, "failed to download docker image")
 	}
