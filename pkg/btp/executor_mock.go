@@ -2,12 +2,13 @@ package btp
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 func (b *BtpExecutorMock) Stdin(in io.Reader) {
@@ -18,40 +19,49 @@ func (b *BtpExecutorMock) Stdout(out io.Writer) {
 	b.stdout = out
 }
 
+func (b *BtpExecutorMock) Stderr(errOut io.Writer) {
+	b.stderr = errOut
+}
+
 func (b *BtpExecutorMock) GetStdoutValue() string {
 	return b.stdout.(*bytes.Buffer).String()
+}
+
+func (b *BtpExecutorMock) GetStderrValue() string {
+	return b.stderr.(*bytes.Buffer).String()
 }
 
 func (b *BtpExecutorMock) Run(cmdScript []string) (err error) {
 	execCall := BtpExecCall{Exec: cmdScript[0], Params: cmdScript[1:]}
 	b.Calls = append(b.Calls, execCall)
 
-	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout)
+	return b.handleCall(cmdScript, b.StdoutReturn, b.ShouldFailOnCommand, b.stdout, b.stderr)
 }
 
 func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 	err := b.Run(opts.CmdScript)
 	if err != nil {
-		return fmt.Errorf("Initial command execution failed: %w", err)
+		return errors.Wrap(err, "Initial command execution failed")
 	}
 
-	fmt.Printf("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
-
-	fmt.Println("Checking command completion...")
+	log.Entry().Infof("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
+	log.Entry().Info("Checking command completion...")
 
 	// Simulate polling
 	check := opts.CheckFunc()
 
-	if check {
-		fmt.Println("Command execution completed successfully!")
+	if check.successful && check.done {
+		log.Entry().Info("Command execution completed successfully!")
 		return nil
+	} else {
+		log.Entry().Info("Command not yet completed, checking again...")
 	}
 
-	return fmt.Errorf("Command did not complete within the timeout period")
+	return errors.New("Command did not complete within the timeout period")
 }
 
 // Processes command results based on predefined mock data.
-func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer) error {
+func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer, stderr io.Writer) error {
 	// Check if the command should return a specific output
 	if stdoutReturn != nil {
 		for pattern, output := range stdoutReturn {
@@ -66,6 +76,7 @@ func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]stri
 	if shouldFailOnCommand != nil {
 		for pattern, err := range shouldFailOnCommand {
 			if matchCommand(pattern, call) {
+				stderr.Write([]byte(err.Error()))
 				return err
 			}
 		}
