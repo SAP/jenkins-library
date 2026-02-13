@@ -1,0 +1,44 @@
+type {{ .StepName }}{{ .Name | title}} struct {
+	{{- range $notused, $param := .Parameters }}
+	{{- if not $param.Category}}
+	{{ $param.Name | golangName }} {{ $param.Type | resourceFieldType }}
+	{{- end }}
+	{{- end }}
+	{{- range $notused, $category := .Categories }}
+	{{ $category }} struct {
+		{{- range $notused, $param := $.Parameters }}
+		{{- if eq $category $param.Category }}
+		{{ $param.Name | golangName }} {{ $param.Type | resourceFieldType }}
+		{{- end }}
+		{{- end }}
+	}
+	{{- end }}
+}
+
+func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
+	content := []struct{
+		category string
+		name string
+		value interface{}
+	}{
+		{{- range $notused, $param := .Parameters }}
+		{{- if not $param.Category}}
+		{category: "", name: "{{ $param.Name }}", value: p.{{ $param.Name | golangName}}},
+		{{- else }}
+		{category: "{{ $param.Category }}", name: "{{ $param.Name }}", value: p.{{ $param.Category }}.{{ $param.Name | golangName}}},
+		{{- end }}
+		{{- end }}
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Piper environment")
+	}
+}

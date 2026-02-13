@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/SAP/jenkins-library/pkg/generator"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,11 +65,11 @@ func TestGenerator(t *testing.T) {
 	openMetaFile := func(name string) (io.ReadCloser, error) { return os.Open(name) }
 	fileWriter := func(filename string, data []byte, perm os.FileMode) error { return nil }
 
-	stepHelperData := helper.StepHelperData{OpenFile: openMetaFile, WriteFile: fileWriter, ExportPrefix: "piperOsCmd"}
+	stepHelperData := generator.StepHelperData{OpenFile: openMetaFile, WriteFile: fileWriter, ExportPrefix: "piperOsCmd"}
 
-	metadataFiles, err := helper.MetadataFiles(dir)
+	metadataFiles, err := generator.MetadataFiles(dir)
 	assert.NoError(t, err)
 
-	err = helper.ProcessMetaFiles(metadataFiles, "./cmd", stepHelperData)
+	err = generator.ProcessMetaFiles(metadataFiles, "./cmd", stepHelperData)
 	assert.NoError(t, err)
 }
