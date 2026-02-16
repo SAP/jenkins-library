@@ -50,12 +50,6 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 }
 
 func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	binfmtSupported, _ := docker.IsBinfmtMiscSupportedByHost(fileUtils)
-
-	if !binfmtSupported && len(config.TargetArchitectures) > 0 {
-		log.Entry().Warning("Be aware that the host doesn't support binfmt_misc and thus multi archtecture docker builds might not be possible")
-	}
-
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
