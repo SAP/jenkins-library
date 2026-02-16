@@ -32,7 +32,7 @@ type tokenRequestArray = []tokenRequest
 
 type tokenRequest struct {
 	System string `json:"system"`
-	Scope  string `json:"scope,omitempty"` // scope is not mandatory
+	Scope  string `json:"scope"`
 }
 
 const defaultScope = "pipeline"
