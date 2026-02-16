@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -34,7 +32,7 @@ type NPMRC struct {
 
 func (rc *NPMRC) Write() error {
 	if err := propertiesWriteFile(rc.filepath, []byte(rc.content), 0644); err != nil {
-		return errors.Wrapf(err, "failed to write %s", rc.filepath)
+		return fmt.Errorf("failed to write %s: %w", rc.filepath, err)
 	}
 	return nil
 }

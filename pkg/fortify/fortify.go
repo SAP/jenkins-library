@@ -34,7 +34,6 @@ import (
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -220,13 +219,13 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
+		return nil, fmt.Errorf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id)
 	}
 
 	log.Entry().Debugf("Could not find project version with name %v under project %v auto-creating one now...", versionName, projectName)
 	version, err := sys.CreateProjectVersionIfNotExist(projectName, versionName, "Created by Go script")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to auto-create project version: %v for project %v", versionName, projectName)
+		return nil, fmt.Errorf("failed to auto-create project version: %v for project %v: %w", versionName, projectName, err)
 	}
 	log.Entry().Debugf("Successfully created project version %v for project %v", versionName, projectName)
 	return version, nil
@@ -265,11 +264,11 @@ func (sys *SystemInstance) CreateProjectVersionIfNotExist(projectName, projectVe
 	}
 	projectVersion, err := sys.CreateProjectVersion(projectVersionDto)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create new project version %v for projectName %v", projectVersionName, projectName)
+		return nil, fmt.Errorf("Failed to create new project version %v for projectName %v: %w", projectVersionName, projectName, err)
 	}
 	_, err = sys.CommitProjectVersion(projectVersion.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to commit project version %v: %v", projectVersion.ID, err)
+		return nil, fmt.Errorf("Failed to commit project version %v: %v: %w", projectVersion.ID, err, err)
 	}
 	return projectVersion, nil
 }
@@ -294,34 +293,34 @@ func (sys *SystemInstance) LookupOrCreateProjectVersionDetailsForPullRequest(pro
 
 	projectVersion, err := sys.CreateProjectVersion(newVersion)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to create new project version for pull request %v", pullRequestName)
+		return nil, fmt.Errorf("Failed to create new project version for pull request %v: %w", pullRequestName, err)
 	}
 	attributes, err := sys.GetProjectVersionAttributesByProjectVersionID(masterProjectVersion.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to load project version attributes for master project version %v", masterProjectVersion.ID)
+		return nil, fmt.Errorf("Failed to load project version attributes for master project version %v: %w", masterProjectVersion.ID, err)
 	}
 	for _, attribute := range attributes {
 		attribute.ID = 0
 	}
 	_, err = sys.SetProjectVersionAttributesByProjectVersionID(projectVersion.ID, attributes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to update project version attributes for pull request project version %v", projectVersion.ID)
+		return nil, fmt.Errorf("Failed to update project version attributes for pull request project version %v: %w", projectVersion.ID, err)
 	}
 	err = sys.ProjectVersionCopyFromPartial(masterProjectVersion.ID, projectVersion.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to copy from partial of project version %v to %v", masterProjectVersion.ID, projectVersion.ID)
+		return nil, fmt.Errorf("Failed to copy from partial of project version %v to %v: %w", masterProjectVersion.ID, projectVersion.ID, err)
 	}
 	_, err = sys.CommitProjectVersion(projectVersion.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to commit project version %v: %v", projectVersion.ID, err)
+		return nil, fmt.Errorf("Failed to commit project version %v: %v: %w", projectVersion.ID, err, err)
 	}
 	err = sys.ProjectVersionCopyCurrentState(masterProjectVersion.ID, projectVersion.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to copy current state of project version %v to %v", masterProjectVersion.ID, projectVersion.ID)
+		return nil, fmt.Errorf("Failed to copy current state of project version %v to %v: %w", masterProjectVersion.ID, projectVersion.ID, err)
 	}
 	err = sys.ProjectVersionCopyPermissions(masterProjectVersion.ID, projectVersion.ID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to copy permissions of project version %v to %v", masterProjectVersion.ID, projectVersion.ID)
+		return nil, fmt.Errorf("Failed to copy permissions of project version %v to %v: %w", masterProjectVersion.ID, projectVersion.ID, err)
 	}
 	return projectVersion, nil
 }
@@ -471,11 +470,11 @@ func (sys *SystemInstance) MergeProjectVersionStateOfPRIntoMaster(downloadEndpoi
 		log.Entry().Debugf("Found project version with ID '%v', starting transfer", prProjectVersion.ID)
 		data, err := sys.DownloadResultFile(downloadEndpoint, prProjectVersion.ID)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to download current state FPR of PR project version %v", prProjectVersion.ID)
+			return fmt.Errorf("Failed to download current state FPR of PR project version %v: %w", prProjectVersion.ID, err)
 		}
 		err = sys.uploadResultFileContent(uploadEndpoint, "prMergeTransfer.fpr", bytes.NewReader(data), masterProjectVersionID)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to upload PR project version state to master project version %v", masterProjectVersionID)
+			return fmt.Errorf("Failed to upload PR project version state to master project version %v: %w", masterProjectVersionID, err)
 		}
 		_, err = sys.inactivateProjectVersion(prProjectVersion.ID)
 		if err != nil {
@@ -707,7 +706,7 @@ func (sys *SystemInstance) getFileToken(tokenType string) (*models.FileToken, er
 func (sys *SystemInstance) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	fileHandle, err := os.Open(file)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to locate file %v", file)
+		return fmt.Errorf("Unable to locate file %v: %w", file, err)
 	}
 	defer fileHandle.Close()
 
@@ -744,7 +743,7 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType string, fileID int64) ([]byte, error) {
 	token, err := sys.getFileToken(tokenType)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error fetching file token")
+		return nil, fmt.Errorf("Error fetching file token: %w", err)
 	}
 	defer sys.invalidateFileTokens()
 
@@ -769,7 +768,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 	data, err := io.ReadAll(response.Body)
 	defer response.Body.Close()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error reading the response data")
+		return nil, fmt.Errorf("Error reading the response data: %w", err)
 	}
 	return data, nil
 }
@@ -778,7 +777,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 func (sys *SystemInstance) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
 	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", "REPORT_FILE", reportID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error downloading report file")
+		return nil, fmt.Errorf("Error downloading report file: %w", err)
 	}
 	return data, nil
 }
@@ -787,7 +786,7 @@ func (sys *SystemInstance) DownloadReportFile(endpoint string, reportID int64) (
 func (sys *SystemInstance) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
 	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/zip", "DOWNLOAD", projectVersionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error downloading result file")
+		return nil, fmt.Errorf("Error downloading result file: %w", err)
 	}
 	return data, nil
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
+
 	"github.com/spf13/cobra"
 )
 
@@ -401,7 +401,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			if exists, err := piperutils.FileExists(projectConfigFile); exists {
 				log.Entry().Debugf("Project config: '%s'", projectConfigFile)
 				if customConfig, err = openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens); err != nil {
-					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return fmt.Errorf("Cannot read '%s': %w", projectConfigFile, err)
 				}
 			} else {
 				log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
@@ -418,7 +418,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			if err != nil {
 				if projectDefaultFile != ".pipeline/defaults.yaml" {
 					log.Entry().Debugf("Project defaults: '%s'", projectDefaultFile)
-					return errors.Wrapf(err, "Cannot read '%s'", projectDefaultFile)
+					return fmt.Errorf("Cannot read '%s': %w", projectDefaultFile, err)
 				}
 			} else {
 				log.Entry().Debugf("Project defaults: '%s'", projectDefaultFile)
@@ -433,7 +433,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 		}
 		if err != nil {
-			return errors.Wrap(err, "retrieving step configuration failed")
+			return fmt.Errorf("retrieving step configuration failed: %w", err)
 		}
 	}
 

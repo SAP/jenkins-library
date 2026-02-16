@@ -11,7 +11,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func integrationArtifactGetServiceEndpoint(config integrationArtifactGetServiceEndpointOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactGetServiceEndpointCommonPipelineEnvironment) {
@@ -43,7 +42,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
@@ -51,7 +50,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 	serviceEndpointResp, httpErr := httpClient.SendRequest(httpMethod, servieEndpointURL, nil, header, nil)
 
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, servieEndpointURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, servieEndpointURL, httpErr)
 	}
 
 	if serviceEndpointResp != nil && serviceEndpointResp.Body != nil {
@@ -59,17 +58,17 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 	}
 
 	if serviceEndpointResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if serviceEndpointResp.StatusCode == 200 {
 		bodyText, readErr := io.ReadAll(serviceEndpointResp.Body)
 		if readErr != nil {
-			return errors.Wrap(readErr, "HTTP response body could not be read")
+			return fmt.Errorf("HTTP response body could not be read: %w", readErr)
 		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
-			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+			return fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 		}
 
 		for _, child := range jsonResponse.S("d", "results").Children() {
@@ -81,15 +80,15 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 				return nil
 			}
 		}
-		return errors.Errorf("Unable to get integration flow service endpoint '%v', Response body: %v, Response Status code: %v",
+		return fmt.Errorf("Unable to get integration flow service endpoint '%v', Response body: %v, Response Status code: %v",
 			config.IntegrationFlowID, string(bodyText), serviceEndpointResp.StatusCode)
 	}
 	responseBody, readErr := io.ReadAll(serviceEndpointResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", serviceEndpointResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", serviceEndpointResp.StatusCode, readErr)
 	}
 
 	log.Entry().Errorf("a HTTP error occurred!  Response body: %v, Response status code: %v", string(responseBody), serviceEndpointResp.StatusCode)
-	return errors.Errorf("Unable to get integration flow service endpoint, Response Status code: %v", serviceEndpointResp.StatusCode)
+	return fmt.Errorf("Unable to get integration flow service endpoint, Response Status code: %v", serviceEndpointResp.StatusCode)
 }

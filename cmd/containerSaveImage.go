@@ -10,8 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-
-	"github.com/pkg/errors"
 )
 
 func containerSaveImage(config containerSaveImageOptions, telemetryData *telemetry.CustomData) {
@@ -48,7 +46,7 @@ func runContainerSaveImage(config *containerSaveImageOptions, telemetryData *tel
 
 	log.Entry().Infof("Downloading '%s' to '%s'", config.ContainerImage, tarfilePath)
 	if _, err := dClient.DownloadImage(config.ContainerImage, tarfilePath); err != nil {
-		return "", errors.Wrap(err, "failed to download docker image")
+		return "", fmt.Errorf("failed to download docker image: %w", err)
 	}
 
 	return tarfilePath, nil
@@ -64,7 +62,7 @@ func correctContainerDockerConfigEnvVar(config *containerSaveImageOptions, utils
 	dockerConfigDir, err := utils.TempDir("", "docker")
 
 	if err != nil {
-		return errors.Wrap(err, "unable to create docker config dir")
+		return fmt.Errorf("unable to create docker config dir: %w", err)
 	}
 
 	dockerConfigFile := fmt.Sprintf("%s/%s", dockerConfigDir, "config.json")
@@ -74,7 +72,7 @@ func correctContainerDockerConfigEnvVar(config *containerSaveImageOptions, utils
 
 		if exists, _ := utils.FileExists(config.DockerConfigJSON); exists {
 			if _, err = utils.Copy(config.DockerConfigJSON, dockerConfigFile); err != nil {
-				return errors.Wrap(err, "unable to copy docker config")
+				return fmt.Errorf("unable to copy docker config: %w", err)
 			}
 		}
 	} else {

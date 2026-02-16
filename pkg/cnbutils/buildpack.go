@@ -3,11 +3,11 @@ package cnbutils
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 const bpCacheDir = "/tmp/buildpacks_cache"
@@ -34,23 +34,23 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 
 	err := utils.MkdirAll(bpCacheDir, os.ModePerm)
 	if err != nil {
-		return errors.Wrap(err, "failed to create temp directory for buildpack cache")
+		return fmt.Errorf("failed to create temp directory for buildpack cache: %w", err)
 	}
 
 	for _, bpack := range bpacks {
 		imageInfo, err := utils.GetRemoteImageInfo(bpack)
 		if err != nil {
-			return errors.Wrap(err, "failed to get remote image info of buildpack")
+			return fmt.Errorf("failed to get remote image info of buildpack: %w", err)
 		}
 		hash, err := imageInfo.Digest()
 		if err != nil {
-			return errors.Wrap(err, "failed to get image digest")
+			return fmt.Errorf("failed to get image digest: %w", err)
 		}
 		cacheDir := filepath.Join(bpCacheDir, hash.String())
 
 		cacheExists, err := utils.DirExists(cacheDir)
 		if err != nil {
-			return errors.Wrapf(err, "failed to check if cache dir '%s' exists", cacheDir)
+			return fmt.Errorf("failed to check if cache dir '%s' exists: %w", cacheDir, err)
 		}
 
 		if cacheExists {
@@ -58,13 +58,13 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 		} else {
 			err := utils.MkdirAll(cacheDir, os.ModePerm)
 			if err != nil {
-				return errors.Wrap(err, "failed to create temp directory for buildpack cache")
+				return fmt.Errorf("failed to create temp directory for buildpack cache: %w", err)
 			}
 
 			log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, cacheDir)
 			_, err = utils.DownloadImageContent(bpack, cacheDir)
 			if err != nil {
-				return errors.Wrapf(err, "failed download buildpack image '%s'", bpack)
+				return fmt.Errorf("failed download buildpack image '%s': %w", bpack, err)
 			}
 		}
 
@@ -96,7 +96,7 @@ func GetMetadata(bpacks []string, utils BuildUtils) ([]BuildPackMetadata, error)
 
 		imgConf, err := imageInfo.ConfigFile()
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read '%s' image config", bpack)
+			return nil, fmt.Errorf("failed to read '%s' image config: %w", bpack, err)
 		}
 
 		err = json.Unmarshal([]byte(imgConf.Config.Labels["io.buildpacks.buildpackage.metadata"]), &bpackMeta)
