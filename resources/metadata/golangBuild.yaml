@@ -252,7 +252,7 @@ spec:
             param: artifactVersion
       - name: golangciLintUrl
         type: string
-        description: Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.
+        description: "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases. **Notice:** We will soon upgrade to V2 which requires configuration migration if present. Migration guide: https://golangci-lint.run/usage/migration-guide/"
         scope:
           - PARAMETERS
           - STEPS

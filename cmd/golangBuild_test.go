@@ -973,68 +973,68 @@ func TestRunGolangciLint(t *testing.T) {
 	}
 
 	tt := []struct {
-		name               string
-		lintArgs           []string
+		name                string
+		lintArgs            []string
 		shouldFailOnCommand map[string]error
-		fileWriteError     error
-		exitCode           int
-		expectedCommands   [][]string
-		expectedErr        error
-		failOnLintingError bool
+		fileWriteError      error
+		exitCode            int
+		expectedCommands    [][]string
+		expectedErr         error
+		failOnLintingError  bool
 	}{
 		{
-			name:               "success - v1 syntax",
-			lintArgs:           []string{"run", "--out-format", "checkstyle"},
+			name:                "success - v1 syntax",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
-			fileWriteError:     nil,
-			exitCode:           0,
-			expectedCommands:   [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
-			expectedErr:        nil,
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
+			expectedErr:         nil,
 		},
 		{
-			name:               "success - v2 syntax",
-			lintArgs:           []string{"run", "--output.checkstyle.path", lintSettings["reportOutputPath"]},
+			name:                "success - v2 syntax",
+			lintArgs:            []string{"run", "--output.checkstyle.path", lintSettings["reportOutputPath"]},
 			shouldFailOnCommand: map[string]error{},
-			fileWriteError:     nil,
-			exitCode:           0,
-			expectedCommands:   [][]string{{binaryPath, "run", "--output.checkstyle.path", lintSettings["reportOutputPath"]}},
-			expectedErr:        nil,
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommands:    [][]string{{binaryPath, "run", "--output.checkstyle.path", lintSettings["reportOutputPath"]}},
+			expectedErr:         nil,
 		},
 		{
-			name:               "failure - failed to run golangci-lint",
-			lintArgs:           []string{"run", "--out-format", "checkstyle"},
+			name:                "failure - failed to run golangci-lint",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format checkstyle", binaryPath): fmt.Errorf("err")},
-			fileWriteError:     nil,
-			exitCode:           2, // Non-1 exit code should cause error
-			expectedCommands:   [][]string{},
-			expectedErr:        fmt.Errorf("running golangci-lint failed: err"),
+			fileWriteError:      nil,
+			exitCode:            2, // Non-1 exit code should cause error
+			expectedCommands:    [][]string{},
+			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
 		},
 		{
-			name:               "failure - failed to write golangci-lint report",
-			lintArgs:           []string{"run", "--out-format", "checkstyle"},
+			name:                "failure - failed to write golangci-lint report",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
-			fileWriteError:     fmt.Errorf("failed to write golangci-lint report"),
-			exitCode:           0,
-			expectedCommands:   [][]string{},
-			expectedErr:        fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
+			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
+			exitCode:            0,
+			expectedCommands:    [][]string{},
+			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
 		},
 		{
-			name:               "failure - failed with ExitCode == 1 and failOnError true",
-			lintArgs:           []string{"run", "--out-format", "checkstyle"},
+			name:                "failure - failed with ExitCode == 1 and failOnError true",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
-			exitCode:           1,
-			expectedCommands:   [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
-			expectedErr:        fmt.Errorf("golangci-lint found issues, see report above"),
-			failOnLintingError: true,
+			exitCode:            1,
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
+			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
+			failOnLintingError:  true,
 		},
 		{
-			name:               "success - ignore failed with ExitCode == 1 and failOnError false",
-			lintArgs:           []string{"run", "--out-format", "checkstyle"},
+			name:                "success - ignore failed with ExitCode == 1 and failOnError false",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
-			exitCode:           1,
-			expectedCommands:   [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
-			expectedErr:        nil,
-			failOnLintingError: false,
+			exitCode:            1,
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
+			expectedErr:         nil,
+			failOnLintingError:  false,
 		},
 	}
 
