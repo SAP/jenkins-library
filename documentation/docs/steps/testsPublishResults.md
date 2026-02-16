@@ -111,7 +111,7 @@ testsPublishResults(
 ## Example: Jenkins job to run UI5 tests with Karma
 
 ```groovy
-@Library(['piper-lib']) _
+@Library(['piper-lib  ']) _
 pipeline {
   agent any
   tools { nodejs "npm" }
@@ -126,7 +126,7 @@ pipeline {
           // Remove browser-bundle.js class block from coverage.xml for Jenkins compatibility
           sh """
             sed -i '/<class[^>]*filename=".*browser-bundle\\.js"/,/<\\/class>/d' \\
-            ${mainModule}/coverage/coverage.xml
+            centralconfigui/coverage/coverage.xml
           """
           testsPublishResults(
             script: this,
