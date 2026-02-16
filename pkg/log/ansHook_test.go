@@ -7,15 +7,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/ans"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"reflect"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/ans"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestANSHook_Levels(t *testing.T) {

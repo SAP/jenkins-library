@@ -9,8 +9,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/google/go-github/v68/github"
 
-	"github.com/pkg/errors"
-
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
@@ -38,7 +36,7 @@ func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatus
 		if strings.Contains(fmt.Sprint(err), "No commit found for SHA") {
 			log.SetErrorCategory(log.ErrorCustom)
 		}
-		return errors.Wrapf(err, "failed to set status '%v' on commitId '%v'", config.Status, config.CommitID)
+		return fmt.Errorf("failed to set status '%v' on commitId '%v': %w", config.Status, config.CommitID, err)
 	}
 	return nil
 }

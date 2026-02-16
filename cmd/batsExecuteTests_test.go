@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"testing"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/go-git/go-git/v5"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

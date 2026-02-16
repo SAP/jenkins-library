@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 // RunState : Current Status of the Build
@@ -174,17 +175,17 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	}
 	importBody, err := json.Marshal(inputForPost)
 	if err != nil {
-		return errors.Wrap(err, "Generating Post Request Body failed")
+		return fmt.Errorf("Generating Post Request Body failed: %w", err)
 	}
 
 	body, err := b.Connector.Post("/builds", string(importBody))
 	if err != nil {
-		return errors.Wrap(err, "Start of build failed: "+string(body))
+		return fmt.Errorf("Start of build failed: "+string(body), err)
 	}
 
 	var jBuild jsonBuild
 	if err := json.Unmarshal(body, &jBuild); err != nil {
-		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		return fmt.Errorf("Unexpected buildFrameWork response: "+string(body), err)
 	}
 	b.BuildID = jBuild.Build.BuildID
 	b.RunState = jBuild.Build.RunState
@@ -204,7 +205,7 @@ func (b *Build) Poll() error {
 	for {
 		select {
 		case <-timeout:
-			return errors.Errorf("Timed out: (max Runtime %v reached)", b.Connector.MaxRuntime)
+			return fmt.Errorf("Timed out: (max Runtime %v reached)", b.Connector.MaxRuntime)
 		case <-ticker:
 			b.Get()
 			if !b.IsFinished() {
@@ -219,13 +220,13 @@ func (b *Build) Poll() error {
 // EvaluteIfBuildSuccessful : Checks the finale state of the build framework
 func (b *Build) EvaluteIfBuildSuccessful(treatWarningsAsError bool) error {
 	if b.RunState == Failed {
-		return errors.Errorf("Build ended with runState failed")
+		return fmt.Errorf("Build ended with runState failed")
 	}
 	if treatWarningsAsError && b.ResultState == Warning {
-		return errors.Errorf("Build ended with ResultState warning, setting to failed as configured")
+		return fmt.Errorf("Build ended with ResultState warning, setting to failed as configured")
 	}
 	if (b.ResultState == Aborted) || (b.ResultState == Erroneous) {
-		return errors.Errorf("Build ended with ResultState %s", b.ResultState)
+		return fmt.Errorf("Build ended with ResultState %s", b.ResultState)
 	}
 	return nil
 }
@@ -239,7 +240,7 @@ func (b *Build) Get() error {
 	}
 	var jBuild jsonBuild
 	if err := json.Unmarshal(body, &jBuild); err != nil {
-		return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		return fmt.Errorf("Unexpected buildFrameWork response: "+string(body), err)
 	}
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
@@ -279,7 +280,7 @@ func (b *Build) GetValues() error {
 		}
 		var jValues jsonValues
 		if err := json.Unmarshal(body, &jValues); err != nil {
-			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+			return fmt.Errorf("Unexpected buildFrameWork response: "+string(body), err)
 		}
 		b.Values = jValues.ResultValues.Values
 		for i := range b.Values {
@@ -407,7 +408,7 @@ func (t *task) getLogs() error {
 		}
 		var jLogs jsonLogs
 		if err := json.Unmarshal(body, &jLogs); err != nil {
-			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+			return fmt.Errorf("Unexpected buildFrameWork response: "+string(body), err)
 		}
 		t.Logs = jLogs.ResultLogs.Logs
 	}
@@ -423,7 +424,7 @@ func (t *task) getResults() error {
 		}
 		var jResults jsonResults
 		if err := json.Unmarshal(body, &jResults); err != nil {
-			return errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+			return fmt.Errorf("Unexpected buildFrameWork response: "+string(body), err)
 		}
 		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
@@ -447,7 +448,7 @@ func (b *Build) DownloadAllResults(basePath string, filenamePrefix string) error
 		if b.Tasks[i_task].Results[0].Name != dummyResultName {
 			for i_result := range b.Tasks[i_task].Results {
 				if err := b.Tasks[i_task].Results[i_result].DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
-					return errors.Wrapf(err, "Error during the download of file %s", b.Tasks[i_task].Results[i_result].Name)
+					return fmt.Errorf("Error during the download of file %s: %w", b.Tasks[i_task].Results[i_result].Name, err)
 				}
 			}
 		}
@@ -461,10 +462,10 @@ func (b *Build) DownloadResults(filenames []string, basePath string, filenamePre
 		result, err := b.GetResult(name)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "Problems finding the file %s, please check your config whether this file is really a result file", name)
+			return fmt.Errorf("Problems finding the file %s, please check your config whether this file is really a result file: %w", name, err)
 		}
 		if err := result.DownloadWithFilenamePrefixAndTargetDirectory(basePath, filenamePrefix); err != nil {
-			return errors.Wrapf(err, "Error during the download of file %s", name)
+			return fmt.Errorf("Error during the download of file %s: %w", name, err)
 		}
 	}
 	return nil
@@ -495,13 +496,13 @@ func (b *Build) PublishDownloadedResults(stepname string, filenames []string, ut
 		result, err := b.GetResult(filenames[i])
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "Problems finding the file %s, please check your config whether this file is really a result file", filenames[i])
+			return fmt.Errorf("Problems finding the file %s, please check your config whether this file is really a result file: %w", filenames[i], err)
 		}
 		if result.wasDownloaded() {
 			filesToPublish = append(filesToPublish, piperutils.Path{Target: result.DownloadPath, Name: result.SavedFilename, Mandatory: true})
 		} else {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Errorf("Trying to publish the file %s which was not downloaded", result.Name)
+			return fmt.Errorf("Trying to publish the file %s which was not downloaded", result.Name)
 		}
 	}
 	if len(filesToPublish) > 0 {
@@ -523,18 +524,18 @@ func (result *Result) Download(downloadPath string) error {
 func (result *Result) DownloadWithFilenamePrefixAndTargetDirectory(basePath string, filenamePrefix string) error {
 	basePath, err := result.resolveParamter(basePath)
 	if err != nil {
-		return errors.Wrapf(err, "Could not resolve parameter %s for the target directory", basePath)
+		return fmt.Errorf("Could not resolve parameter %s for the target directory: %w", basePath, err)
 	}
 	filenamePrefix, err = result.resolveParamter(filenamePrefix)
 	if err != nil {
-		return errors.Wrapf(err, "Could not resolve parameter %s for the filename prefix", filenamePrefix)
+		return fmt.Errorf("Could not resolve parameter %s for the filename prefix: %w", filenamePrefix, err)
 	}
 	appendum := fmt.Sprint("/results(build_id='", result.BuildID, "',task_id=", result.TaskID, ",name='", result.Name, "')/$value")
 	filename := filenamePrefix + result.Name
 	downloadPath := filepath.Join(path.Base(basePath), path.Base(filename))
 	if err := result.connector.Download(appendum, downloadPath); err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
-		return errors.Wrapf(err, "Could not download %s", result.Name)
+		return fmt.Errorf("Could not download %s: %w", result.Name, err)
 	}
 	result.SavedFilename = filename
 	result.DownloadPath = downloadPath
@@ -555,7 +556,7 @@ func (result *Result) resolveParamter(parameter string) (string, error) {
 			return strconv.Itoa(result.TaskID), nil
 		default:
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return "", errors.Errorf("Unknown parameter %s", parameter)
+			return "", fmt.Errorf("Unknown parameter %s", parameter)
 		}
 	} else {
 		return parameter, nil
@@ -591,7 +592,7 @@ func unmarshalTasks(body []byte, connector Connector) ([]task, error) {
 	var append_task task
 	var jTasks jsonTasks
 	if err := json.Unmarshal(body, &jTasks); err != nil {
-		return tasks, errors.Wrap(err, "Unexpected buildFrameWork response: "+string(body))
+		return tasks, fmt.Errorf("Unexpected buildFrameWork response: "+string(body), err)
 	}
 	for _, jTask := range jTasks.ResultTasks.Tasks {
 		append_task.connector = connector

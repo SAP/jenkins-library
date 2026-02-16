@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"

@@ -9,7 +9,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func apiProxyList(config apiProxyListOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *apiProxyListCommonPipelineEnvironment) {
@@ -37,7 +36,7 @@ func getApiProxyList(config *apiProxyListOptions, apistruct apim.Bundle, commonP
 		Select: config.Select, Expand: config.Expand}
 	odataFilters, urlErr := apim.OdataUtils.MakeOdataQuery(&odataFilterInputs)
 	if urlErr != nil {
-		return errors.Wrap(urlErr, "failed to create odata filter")
+		return fmt.Errorf("failed to create odata filter: %w", urlErr)
 	}
 	getApiProxyListURL := fmt.Sprintf("%s/apiportal/api/1.0/Management.svc/APIProxies%s", apistruct.Host, odataFilters)
 	header := make(http.Header)

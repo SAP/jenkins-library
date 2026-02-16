@@ -2,12 +2,13 @@ package solman
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/config/validation"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"io"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/config/validation"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // CreateAction Collects all the properties we need for creating a transport request
@@ -96,7 +97,7 @@ func (a *CreateAction) Perform(command Exec) (string, error) {
 				// error chaining (the other error is not necessaryly a "predecessor" of this one).
 				// But it is a pragmatic approach for not loosing information for trouble shooting. There
 				// is no possibility to have something like suppressed errors.
-				err = errors.Wrap(err, message)
+				err = fmt.Errorf("%s: %w", message, err)
 			} else {
 				err = errors.New(message)
 			}
@@ -114,14 +115,14 @@ func (a *CreateAction) Perform(command Exec) (string, error) {
 			a.ChangeDocumentID,
 			a.DevelopmentSystemID,
 		)
-	} else {
-		log.Entry().WithError(err).Warnf("Creating transport request '%s' at '%s' failed. ChangeDocumentId: '%s', DevelopmentSystemId: '%s'",
-			transportRequestID,
-			a.Connection.Endpoint,
-			a.ChangeDocumentID,
-			a.DevelopmentSystemID,
-		)
+		return transportRequestID, nil
 	}
+	log.Entry().WithError(err).Warnf("Creating transport request '%s' at '%s' failed. ChangeDocumentId: '%s', DevelopmentSystemId: '%s'",
+		transportRequestID,
+		a.Connection.Endpoint,
+		a.ChangeDocumentID,
+		a.DevelopmentSystemID,
+	)
 
-	return transportRequestID, errors.Wrap(err, "cannot create transport request")
+	return transportRequestID, fmt.Errorf("cannot create transport request: %w", err)
 }

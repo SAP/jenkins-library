@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -14,10 +15,11 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/pkcs12"
 )
 
@@ -63,11 +65,11 @@ func (conn *Connector) GetToken(appendum string) error {
 	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
 	if err != nil {
 		if response == nil {
-			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
+			return fmt.Errorf("Fetching X-CSRF-Token failed: %w", err)
 		}
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", extractErrorStackFromJsonData(errorbody))
+		return fmt.Errorf("Fetching X-CSRF-Token failed: %v: %w", extractErrorStackFromJsonData(errorbody), err)
 
 	}
 	defer response.Body.Close()
@@ -92,11 +94,11 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
 	if err != nil {
 		if response == nil || response.Body == nil {
-			return nil, errors.Wrap(err, "Get failed")
+			return nil, fmt.Errorf("Get failed: %w", err)
 		}
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Get failed: %v", extractErrorStackFromJsonData(errorbody))
+		return errorbody, fmt.Errorf("Get failed: %v: %w", extractErrorStackFromJsonData(errorbody), err)
 
 	}
 	defer response.Body.Close()
@@ -116,11 +118,11 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 	}
 	if err != nil {
 		if response == nil {
-			return nil, errors.Wrap(err, "Post failed")
+			return nil, fmt.Errorf("Post failed: %w", err)
 		}
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errorbody, errors.Wrapf(err, "Post failed: %v", extractErrorStackFromJsonData(errorbody))
+		return errorbody, fmt.Errorf("Post failed: %v: %w", extractErrorStackFromJsonData(errorbody), err)
 
 	}
 	defer response.Body.Close()
@@ -162,7 +164,7 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 
 	tlsCertificates, err := conn.handleLogonCertificate(certFile, certPass)
 	if err != nil {
-		return errors.Wrap(err, "Handling certificates for client logon failed")
+		return fmt.Errorf("Handling certificates for client logon failed: %w", err)
 	}
 
 	conn.Client.SetOptions(piperhttp.ClientOptions{
@@ -189,12 +191,12 @@ func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.
 	if certFile != "" && certPass != "" {
 		certFileInBytes, err := base64.StdEncoding.DecodeString(certFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "Base64 decoding of certificate File string failed")
+			return nil, fmt.Errorf("Base64 decoding of certificate File string failed: %w", err)
 		}
 
 		pemBlocks, err := pkcs12.ToPEM(certFileInBytes, certPass)
 		if err != nil {
-			return nil, errors.Wrap(err, "Decoding certificate File from PKCS12 to PEM failed")
+			return nil, fmt.Errorf("Decoding certificate File from PKCS12 to PEM failed: %w", err)
 		}
 
 		var key []byte
@@ -208,7 +210,7 @@ func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.
 			if pemBlock.Type == "CERTIFICATE" {
 				var tempCert, err = x509.ParseCertificate(pemBlock.Bytes)
 				if err != nil {
-					return nil, errors.Wrap(err, "Parsing x509 Certificate from PEM Block failed")
+					return nil, fmt.Errorf("Parsing x509 Certificate from PEM Block failed: %w", err)
 				}
 
 				if tempCert.IsCA == false { //We ignore the 2 additional CA Certificates
@@ -219,7 +221,7 @@ func (conn *Connector) handleLogonCertificate(certFile, certPass string) ([]tls.
 
 		tlsCertificate, err = tls.X509KeyPair(userCertificate, key)
 		if err != nil {
-			return nil, errors.Wrap(err, "Creating x509 Key Pair failed")
+			return nil, fmt.Errorf("Creating x509 Key Pair failed: %w", err)
 		}
 
 		return []tls.Certificate{tlsCertificate}, nil
@@ -252,7 +254,7 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")
 	if err != nil {
-		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
+		return fmt.Errorf("Parameters for the ABAP Connection not available: %w", err)
 	}
 
 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{
@@ -279,7 +281,7 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 	if err != nil {
 		defer response.Body.Close()
 		errorbody, _ := io.ReadAll(response.Body)
-		return errors.Wrapf(err, "Upload of SAR file failed: %v", extractErrorStackFromJsonData(errorbody))
+		return fmt.Errorf("Upload of SAR file failed: %v: %w", extractErrorStackFromJsonData(errorbody), err)
 	}
 	defer response.Body.Close()
 	return nil
@@ -315,7 +317,7 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 			if response != nil && response.Body != nil {
 				errorbody, _ := io.ReadAll(response.Body)
 				response.Body.Close()
-				return errors.Wrapf(err, "Upload of SAR file failed: %v", extractErrorStackFromJsonData(errorbody))
+				return fmt.Errorf("Upload of SAR file failed: %v: %w", extractErrorStackFromJsonData(errorbody), err)
 			} else {
 				return err
 			}

@@ -9,7 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	"github.com/sirupsen/logrus"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -45,7 +46,7 @@ func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration
 	body := refNameToTokenBody(refName)
 	secrets, err := getSecrets(client, systemTrustConfiguration, body)
 	if err != nil {
-		return "", errors.Wrap(err, "couldn't get token from System Trust")
+		return "", fmt.Errorf("couldn't get token from System Trust: %w", err)
 	}
 	for _, s := range secrets {
 		if s.System == body.System {
@@ -82,7 +83,7 @@ func getSecrets(client *piperhttp.Client, systemTrustConfiguration Configuration
 
 	response, err := getResponse(systemTrustConfiguration.ServerURL, systemTrustConfiguration.TokenEndPoint, client, requests)
 	if err != nil {
-		return secrets, errors.Wrap(err, "getting secrets from System Trust failed")
+		return secrets, fmt.Errorf("getting secrets from System Trust failed: %w", err)
 	}
 	for k, v := range response {
 		secrets = append(secrets, Secret{
@@ -99,7 +100,7 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 
 	rawURL, err := parseURL(serverURL, endpoint)
 	if err != nil {
-		return secrets, errors.Wrap(err, "parsing System Trust url failed")
+		return secrets, fmt.Errorf("parsing System Trust url failed: %w", err)
 	}
 
 	header := make(http.Header)
@@ -107,7 +108,7 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 
 	bodyReader, err := trustTokenRequestToReader(body)
 	if err != nil {
-		return secrets, errors.Wrap(err, "getting body reader failed")
+		return secrets, fmt.Errorf("msg: %w", err)
 	}
 
 	log.Entry().Debugf("  with body %s", body)
@@ -118,10 +119,10 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 			defer response.Body.Close()
 			bodyBytes, bodyErr := io.ReadAll(response.Body)
 			if bodyErr == nil {
-				err = errors.Wrap(err, string(bodyBytes))
+				err = fmt.Errorf(string(bodyBytes), err)
 			}
 		}
-		return secrets, errors.Wrap(err, "getting response from System Trust failed")
+		return secrets, fmt.Errorf("getting response from System Trust failed: %w", err)
 	}
 	defer response.Body.Close()
 
@@ -129,7 +130,7 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 
 	err = json.NewDecoder(response.Body).Decode(&secrets)
 	if err != nil {
-		return secrets, errors.Wrap(err, "getting response from System Trust failed")
+		return secrets, fmt.Errorf("getting response from System Trust failed: %w", err)
 	}
 
 	return secrets, nil

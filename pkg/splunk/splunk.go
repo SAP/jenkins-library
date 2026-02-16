@@ -13,7 +13,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 )
@@ -80,7 +79,7 @@ func (s *Splunk) Send(telemetryData telemetry.Data, logCollector *log.CollectorH
 		// OR Failure run, and we do not want to send the logs
 		err := s.tryPostMessages(preparedTelemetryData, []log.Message{})
 		if err != nil {
-			return errors.Wrap(err, "error while sending logs")
+			return fmt.Errorf("error while sending logs: %w", err)
 		}
 		return nil
 	} else {
@@ -92,7 +91,7 @@ func (s *Splunk) Send(telemetryData telemetry.Data, logCollector *log.CollectorH
 			}
 			err := s.tryPostMessages(preparedTelemetryData, logCollector.Messages[i:upperBound])
 			if err != nil {
-				return errors.Wrap(err, "error while sending logs")
+				return fmt.Errorf("error while sending logs: %w", err)
 			}
 		}
 	}
@@ -188,7 +187,7 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}
 			}
 			err := s.postLogFile(pipelineTelemetryData, splitted[i:upperBound])
 			if err != nil {
-				return errors.Wrap(err, "error while sending logs")
+				return fmt.Errorf("error while sending logs: %w", err)
 			}
 		}
 	}
@@ -208,7 +207,7 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 
 	payload, err := json.Marshal(details)
 	if err != nil {
-		return errors.Wrap(err, "error while marshalling Splunk message details")
+		return fmt.Errorf("error while marshalling Splunk message details: %w", err)
 	}
 	prettyPayload, err := json.MarshalIndent(details, "", "    ")
 	if err != nil {
@@ -218,7 +217,7 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 	log.Entry().Debugf("Sending the follwing payload to Splunk HEC: %s", string(prettyPayload))
 
 	if err != nil {
-		return errors.Wrap(err, "error while marshalling Splunk message details")
+		return fmt.Errorf("error while marshalling Splunk message details: %w", err)
 	}
 
 	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
@@ -230,20 +229,20 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 			body, errRead := io.ReadAll(rdr)
 			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 			if errRead != nil {
-				return errors.Wrap(errRead, "Error reading response body from Splunk.")
+				return fmt.Errorf("Error reading response body from Splunk.: %w", errRead)
 			}
-			return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
+			return fmt.Errorf("%v: Splunk logging failed - %v: %w", resp.Status, string(body), err)
 		}
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "error sending the requests to Splunk")
+		return fmt.Errorf("error sending the requests to Splunk: %w", err)
 	}
 
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			errors.Wrap(err, "closing response body failed")
+			log.Entry().WithError(err).Debug("closing response body failed")
 		}
 	}()
 
@@ -263,7 +262,7 @@ func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []st
 		}
 		marshalledLogMessage, err := json.Marshal(logMessage)
 		if err != nil {
-			return errors.Wrap(err, "error while marshalling Splunk messages")
+			return fmt.Errorf("error while marshalling Splunk messages: %w", err)
 		}
 		logfileEvents = append(logfileEvents, string(marshalledLogMessage))
 	}
@@ -280,20 +279,20 @@ func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []st
 			body, errRead := io.ReadAll(rdr)
 			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 			if errRead != nil {
-				return errors.Wrap(errRead, "Error reading response body from Splunk.")
+				return fmt.Errorf("Error reading response body from Splunk.: %w", errRead)
 			}
-			return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
+			return fmt.Errorf("%v: Splunk logging failed - %v: %w", resp.Status, string(body), err)
 		}
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "error sending the requests to Splunk")
+		return fmt.Errorf("error sending the requests to Splunk: %w", err)
 	}
 
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			errors.Wrap(err, "closing response body failed")
+			log.Entry().WithError(err).Debug("closing response body failed")
 		}
 	}()
 
@@ -315,7 +314,7 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 
 	payload, err := json.Marshal(details)
 	if err != nil {
-		return errors.Wrap(err, "error while marshalling Splunk message details")
+		return fmt.Errorf("error while marshalling Splunk message details: %w", err)
 	}
 
 	resp, err := s.splunkClient.SendRequest(http.MethodPost, s.splunkDsn, bytes.NewBuffer(payload), nil, nil)
@@ -327,20 +326,20 @@ func (s *Splunk) tryPostMessages(telemetryData MonitoringData, messages []log.Me
 			body, errRead := io.ReadAll(rdr)
 			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 			if errRead != nil {
-				return errors.Wrap(errRead, "Error reading response body from Splunk.")
+				return fmt.Errorf("Error reading response body from Splunk.: %w", errRead)
 			}
-			return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
+			return fmt.Errorf("%v: Splunk logging failed - %v: %w", resp.Status, string(body), err)
 		}
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "error sending the requests to Splunk")
+		return fmt.Errorf("error sending the requests to Splunk: %w", err)
 	}
 
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			errors.Wrap(err, "closing response body failed")
+			log.Entry().WithError(err).Debug("closing response body failed")
 		}
 	}()
 

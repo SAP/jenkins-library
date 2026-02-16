@@ -1,9 +1,10 @@
 package piperutils
 
 import (
+	"strings"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"strings"
 )
 
 func Title(in string) string {

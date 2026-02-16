@@ -1,13 +1,14 @@
 package versioning
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // GoMod utility to interact with Go Modules specific versioning
@@ -29,7 +30,7 @@ func (m *GoMod) init() error {
 	if len(m.buildDescriptorContent) == 0 {
 		content, err := m.readFile(m.path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", m.path)
+			return fmt.Errorf("failed to read file '%v': %w", m.path, err)
 		}
 		m.buildDescriptorContent = string(content)
 	}
@@ -45,18 +46,18 @@ func (m *GoMod) GetVersion() (string, error) {
 		if err != nil {
 			err = m.init()
 			if err != nil {
-				return "", errors.Wrapf(err, "failed to read file '%v'", m.path)
+				return "", fmt.Errorf("failed to read file '%v': %w", m.path, err)
 			}
 
 			parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
 			if err != nil {
-				return "", errors.Wrap(err, "failed to parse go.mod file")
+				return "", fmt.Errorf("failed to parse go.mod file: %w", err)
 			}
 			if parsed.Module.Mod.Version != "" {
 				return parsed.Module.Mod.Version, nil
 			}
 
-			return "", errors.Wrap(err, "failed to retrieve version")
+			return "", fmt.Errorf("failed to retrieve version: %w", err)
 		}
 	}
 	artifact := &Versionfile{
@@ -86,7 +87,7 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 
 	parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
 	if err != nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
+		return result, fmt.Errorf("failed to parse go.mod file: %w", err)
 	}
 
 	if parsed.Module == nil {
@@ -95,7 +96,7 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 
 	// validate module path as defined by golang
 	if err = module.CheckPath(parsed.Module.Mod.Path); err != nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
+		return result, fmt.Errorf("failed to parse go.mod file: %w", err)
 	}
 
 	if parsed.Module.Mod.Path != "" {
