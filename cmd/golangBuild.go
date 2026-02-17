@@ -191,13 +191,13 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"additionalParams": "",
 		}
 
-		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
+		if err = runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
 			return err
 		}
 	}
 
 	if config.CreateBOM {
-		if err := runBOMCreation(utils, sbomFilename); err != nil {
+		if err = runBOMCreation(utils, sbomFilename); err != nil {
 			return err
 		}
 	}
@@ -317,7 +317,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			})
 
 			if config.CreateBuildArtifactsMetadata {
-				err, coordinate := createGoBuildArtifactsMetadata(binary, config.TargetRepositoryURL, artifactVersion, utils)
+				coordinate, err := createGoBuildArtifactsMetadata(binary, config.TargetRepositoryURL, artifactVersion, utils)
 				if err != nil {
 					log.Entry().Warnf("unable to create build artifact metadata : %v", err)
 				}
@@ -341,17 +341,22 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
-func createGoBuildArtifactsMetadata(binary string, repositoryURL string, artifactVersion string, utils golangBuildUtils) (error, versioning.Coordinates) {
+func createGoBuildArtifactsMetadata(binary string, repositoryURL string, artifactVersion string, utils golangBuildUtils) (versioning.Coordinates, error) {
 	options := versioning.Options{}
 	builtArtifact, err := versioning.GetArtifact("golang", "", &options, utils)
+	if err != nil {
+		return versioning.Coordinates{}, err
+	}
 	coordinate, err := builtArtifact.GetCoordinates()
+	if err != nil {
+		return versioning.Coordinates{}, err
+	}
 	component := piperutils.GetComponent(filepath.Join(filepath.Dir("go.mod"), sbomFilename))
 
-	purl := component.Purl
-	// golang purls contain the hex code for & with GOOS and GOARC and should be reomved from the PURL
-	purl = strings.ReplaceAll(purl, "\\u0026", "&")
+	// golang purls contain the hex code for & with GOOS and GOARCH and should be removed from the PURL
+	purl := strings.ReplaceAll(component.Purl, "\\u0026", "&")
 	if err != nil {
-		return err, coordinate
+		return coordinate, err
 	}
 	coordinate.ArtifactID = binary
 	coordinate.URL = repositoryURL
@@ -359,12 +364,16 @@ func createGoBuildArtifactsMetadata(binary string, repositoryURL string, artifac
 	coordinate.PURL = purl
 	coordinate.Version = artifactVersion
 
-	return nil, coordinate
+	return coordinate, nil
 }
 
 func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils) error {
 	// configure truststore
 	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
+	if err != nil {
+		log.Entry().Warnf("unable to update certificates: %v", err)
+		// TODO: decide if execution should be stopped in case of certificate update failure, currently only a warning is logged and execution continues which will likely lead to errors later on when trying to access a resource via https with the updated truststore
+	}
 
 	if config.PrivateModules == "" {
 		return nil
@@ -377,8 +386,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// pass private repos to go process
 	os.Setenv("GOPRIVATE", config.PrivateModules)
 
-	err = gitConfigurationForPrivateModules(config.PrivateModules, config.PrivateModulesGitToken, utils)
-	if err != nil {
+	if err = gitConfigurationForPrivateModules(config.PrivateModules, config.PrivateModulesGitToken, utils); err != nil {
 		return err
 	}
 
@@ -541,6 +549,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 			binaryNames = append(binaryNames, binaryName)
 		}
 	} else {
+		if goModFile == nil {
+			return nil, fmt.Errorf("go.mod file not found, unable to determine default binary name")
+		}
 		// use default name in case no name is defined via Output
 		binaryName := path.Base(goModFile.Module.Mod.Path)
 		binaryNames = append(binaryNames, binaryName)
@@ -615,7 +626,7 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
 	}
 
-	if outBuffer.String() != "main" {
+	if strings.TrimSpace(outBuffer.String()) != "main" {
 		return false, nil
 	}
 
