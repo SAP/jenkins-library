@@ -131,11 +131,11 @@ pipeline {
           testsPublishResults(
             script: this,
             failOnError: false,
-            junit: [pattern: "${mainModule}/webapp/test/reports/TESTS.xml"],
+            junit: [pattern: "centralconfigui/webapp/test/reports/TESTS.xml"],
             cobertura: [
               archive: true,
               onlyStableBuilds: false,
-              pattern: "${mainModule}/coverage/coverage.xml",
+              pattern: "centralconfigui/coverage/coverage.xml",
               allowEmptyResults: true
             ]
           )
