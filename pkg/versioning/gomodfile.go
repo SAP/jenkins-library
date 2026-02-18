@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/mod/modfile"
@@ -39,7 +40,7 @@ func (m *GoMod) init() error {
 // GetVersion returns the version from a VERSION file, or falls back to go.mod
 func (m *GoMod) GetVersion() (string, error) {
 	// If path is not go.mod, just read it as a version file
-	if !strings.Contains(m.path, "go.mod") {
+	if filepath.Base(m.path) != "go.mod" {
 		return m.readVersionFile(m.path)
 	}
 

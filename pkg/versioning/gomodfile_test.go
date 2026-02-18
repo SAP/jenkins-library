@@ -140,7 +140,8 @@ func TestGoModGetVersionNonGoMod(t *testing.T) {
 		os.WriteFile(versionPath, []byte("5.0.0"), 0o666)
 
 		gomod := &GoMod{
-			path: versionPath,
+			path:       versionPath,
+			fileExists: func(f string) (bool, error) { return false, nil },
 		}
 
 		version, err := gomod.GetVersion()
