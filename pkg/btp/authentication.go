@@ -7,12 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewBTPUtils(exec ExecRunner) *BTPUtils {
-	b := new(BTPUtils)
-	b.Exec = exec
-	return b
-}
-
 func (btp *BTPUtils) Login(options LoginOptions) error {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
@@ -88,10 +82,6 @@ func (btp *BTPUtils) Logout() error {
 	}
 	log.Entry().Info("Logged out successfully")
 	return nil
-}
-
-type BTPUtils struct {
-	Exec ExecRunner
 }
 
 type LoginOptions struct {
