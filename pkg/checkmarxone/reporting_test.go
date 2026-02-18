@@ -7,7 +7,7 @@ import (
 )
 
 func TestCreateJSONReport(t *testing.T) {
-	resultMap := map[string]interface{}{}
+	resultMap := map[string]any{}
 	resultMap["ToolName"] = `checkmarxone`
 	resultMap["ProjectName"] = `ssba`
 	resultMap["Group"] = `test-group`
@@ -85,7 +85,7 @@ func TestCreateJSONReport(t *testing.T) {
 	lowListLen := len(*lowList)
 	assert.Equal(t, 2, lowListLen)
 
-	for i := 0; i < lowListLen; i++ {
+	for i := range lowListLen {
 		if (*lowList)[i].QueryName == "Low_Query_Name_1" {
 			assert.Equal(t, 0, (*lowList)[i].Audited)
 			assert.Equal(t, 4, (*lowList)[i].Total)

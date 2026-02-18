@@ -430,7 +430,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 
 		var str string
 		if len(resBodyBytes) > 0 {
-			var msg map[string]interface{}
+			var msg map[string]any
 			_ = json.Unmarshal(resBodyBytes, &msg)
 
 			if msg["message"] != nil {
@@ -588,7 +588,7 @@ func (sys *SystemInstance) GetApplicationByName(name string) (Application, error
 
 func (sys *SystemInstance) CreateApplication(appname string) (Application, error) {
 	sys.logger.Debugf("Create Application: %v", appname)
-	data := map[string]interface{}{
+	data := map[string]any{
 		"name":        appname,
 		"description": "",
 		"criticality": 3,
@@ -663,7 +663,7 @@ func (sys *SystemInstance) UpdateProject(project *Project) error {
 	jsonBody, err := json.Marshal(*project)
 
 	// Remove fields that can cause API errors in Cx1 3.30
-	var filteredMap map[string]interface{}
+	var filteredMap map[string]any
 	json.Unmarshal(jsonBody, &filteredMap)
 	delete(filteredMap, "applicationIds")
 	delete(filteredMap, "createdAt")
@@ -830,7 +830,7 @@ func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string
 // Updated for Cx1
 func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) (Project, error) {
 	var project Project
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"name":        projectName,
 		"groups":      groupIDs,
 		"origin":      cxOrigin,
@@ -857,7 +857,7 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 
 func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error) {
 	var project Project
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"name":           projectName,
 		"groups":         groupIDs,
 		"origin":         cxOrigin,
@@ -952,7 +952,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID string, zipFile str
 	return uploadUri, nil
 }
 
-func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan, error) {
+func (sys *SystemInstance) scanProject(scanConfig map[string]any) (Scan, error) {
 	scan := Scan{}
 
 	jsonValue, err := json.Marshal(scanConfig)
@@ -970,10 +970,10 @@ func (sys *SystemInstance) scanProject(scanConfig map[string]interface{}) (Scan,
 }
 
 func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
-	jsonBody := map[string]interface{}{
-		"project": map[string]interface{}{"id": projectID},
+	jsonBody := map[string]any{
+		"project": map[string]any{"id": projectID},
 		"type":    "upload",
-		"handler": map[string]interface{}{
+		"handler": map[string]any{
 			"uploadurl": sourceUrl,
 			"branch":    branch,
 		},
@@ -989,10 +989,10 @@ func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, s
 }
 
 func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, settings []ScanConfiguration, tags map[string]string) (Scan, error) {
-	jsonBody := map[string]interface{}{
-		"project": map[string]interface{}{"id": projectID},
+	jsonBody := map[string]any{
+		"project": map[string]any{"id": projectID},
 		"type":    "git",
-		"handler": map[string]interface{}{
+		"handler": map[string]any{
 			"repoUrl": repoUrl,
 			"branch":  branch,
 		},
@@ -1374,9 +1374,9 @@ func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportTyp
 
 // Use the new V2 Report API to generate a PDF report
 func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string, error) {
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"reportName": "improved-scan-report",
-		"entities": []map[string]interface{}{
+		"entities": []map[string]any{
 			{
 				"entity": "scan",
 				"ids":    []string{scanID},

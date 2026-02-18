@@ -21,7 +21,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 
 	t.Run("success ready true", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": true}
+		data := map[string]any{"ready": true}
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
@@ -38,7 +38,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 
 	t.Run("success ready false", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": false}
+		data := map[string]any{"ready": false}
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
@@ -83,7 +83,7 @@ func TestIsServiceInstanceCreated(t *testing.T) {
 
 	t.Run("logout error", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": true}
+		data := map[string]any{"ready": true}
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
@@ -152,7 +152,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 
 	t.Run("success ready true", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": true}
+		data := map[string]any{"ready": true}
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
@@ -169,7 +169,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 
 	t.Run("success ready false", func(t *testing.T) {
 		//given
-		data := map[string]interface{}{"ready": false}
+		data := map[string]any{"ready": false}
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{
@@ -213,7 +213,7 @@ func TestIsServiceBindingCreated(t *testing.T) {
 	})
 
 	t.Run("logout error", func(t *testing.T) {
-		data := map[string]interface{}{"ready": true}
+		data := map[string]any{"ready": true}
 		jsonData, _ := json.Marshal(data)
 		m := &BtpExecutorMock{
 			StdoutReturn: map[string]string{

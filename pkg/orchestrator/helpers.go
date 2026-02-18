@@ -2,18 +2,14 @@ package orchestrator
 
 import (
 	"os"
+	"slices"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // envVarsAreSet verifies if any envvar from the list has nona non-empty, non-false value
 func envVarsAreSet(envVars []string) bool {
-	for _, v := range envVars {
-		if envVarIsTrue(v) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(envVars, envVarIsTrue)
 }
 
 // envVarIsTrue verifies if the variable is set and has a non-empty, non-false value.

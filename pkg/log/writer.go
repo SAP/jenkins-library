@@ -7,9 +7,9 @@ import (
 )
 
 type logTarget interface {
-	Info(args ...interface{})
-	Warn(args ...interface{})
-	Error(args ...interface{})
+	Info(args ...any)
+	Warn(args ...any)
+	Error(args ...any)
 }
 
 // logrusWriter can be used as the destination for a tool's std output and forwards

@@ -11,7 +11,7 @@ import (
 )
 
 type ContrastHttpClient interface {
-	ExecuteRequest(url string, params map[string]string, dest interface{}) error
+	ExecuteRequest(url string, params map[string]string, dest any) error
 }
 
 type ContrastHttpClientInstance struct {
@@ -26,7 +26,7 @@ func NewContrastHttpClient(apiKey, auth string) *ContrastHttpClientInstance {
 	}
 }
 
-func (c *ContrastHttpClientInstance) ExecuteRequest(url string, params map[string]string, dest interface{}) error {
+func (c *ContrastHttpClientInstance) ExecuteRequest(url string, params map[string]string, dest any) error {
 	req, err := newHttpRequest(url, c.apiKey, c.auth, params)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -74,7 +74,7 @@ func performRequest(req *http.Request) (*http.Response, error) {
 	return response, nil
 }
 
-func parseJsonResponse(response *http.Response, jsonData interface{}) error {
+func parseJsonResponse(response *http.Response, jsonData any) error {
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err

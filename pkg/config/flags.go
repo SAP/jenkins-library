@@ -9,8 +9,8 @@ import (
 )
 
 // AvailableFlagValues returns all flags incl. values which are available to the command.
-func AvailableFlagValues(cmd *cobra.Command, filters *StepFilters) map[string]interface{} {
-	flagValues := map[string]interface{}{}
+func AvailableFlagValues(cmd *cobra.Command, filters *StepFilters) map[string]any {
+	flagValues := map[string]any{}
 	flags := cmd.Flags()
 	//only check flags where value has been set
 	flags.Visit(func(pflag *flag.Flag) {

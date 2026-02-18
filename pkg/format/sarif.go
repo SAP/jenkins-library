@@ -39,7 +39,7 @@ type Results struct {
 	Locations           []Location          `json:"locations,omitempty"`
 	CodeFlows           []CodeFlow          `json:"codeFlows,omitempty"`
 	RelatedLocations    []RelatedLocation   `json:"relatedLocations,omitempty"`
-	PartialFingerprints PartialFingerprints `json:"partialFingerprints,omitempty"`
+	PartialFingerprints PartialFingerprints `json:"partialFingerprints"`
 	Properties          *SarifProperties    `json:"properties,omitempty"`
 }
 
@@ -210,7 +210,7 @@ type SupportedTaxonomies struct {
 
 // DefaultConfiguration
 type DefaultConfiguration struct {
-	Properties DefaultProperties `json:"properties,omitempty"`
+	Properties DefaultProperties `json:"properties"`
 	Level      string            `json:"level,omitempty"` //This exists in the template, but not sure how it is populated. TODO.
 	Enabled    bool              `json:"enabled,omitempty"`
 	Rank       float64           `json:"rank,omitempty"`
@@ -323,6 +323,6 @@ type Taxa struct {
 
 // Conversion object
 type Conversion struct {
-	Tool       Tool       `json:"tool,omitempty"`
-	Invocation Invocation `json:"invocation,omitempty"`
+	Tool       Tool       `json:"tool"`
+	Invocation Invocation `json:"invocation"`
 }

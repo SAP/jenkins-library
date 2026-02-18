@@ -67,8 +67,9 @@ func parameterMandatoryInformation(param config.StepParameters, furtherInfo stri
 }
 
 func createParameterOverview(stepData *config.StepData, executionEnvironment bool) string {
-	var table = "| Name | Mandatory | Additional information |\n"
-	table += "| ---- | --------- | ---------------------- |\n"
+	var table strings.Builder
+	table.WriteString("| Name | Mandatory | Additional information |\n")
+	table.WriteString("| ---- | --------- | ---------------------- |\n")
 
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		furtherInfo, err := parameterFurtherInfo(param.Name, stepData, executionEnvironment)
@@ -77,13 +78,13 @@ func createParameterOverview(stepData *config.StepData, executionEnvironment boo
 			var mandatory bool
 			var mandatoryString string
 			mandatory, mandatoryString, furtherInfo = parameterMandatoryInformation(param, furtherInfo)
-			table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(mandatory, mandatoryString, "no"), furtherInfo)
+			table.WriteString(fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(mandatory, mandatoryString, "no"), furtherInfo))
 		}
 	}
 
-	table += "\n"
+	table.WriteString("\n")
 
-	return table
+	return table.String()
 }
 
 func parameterFurtherInfo(paramName string, stepData *config.StepData, executionEnvironment bool) (string, error) {
@@ -155,70 +156,70 @@ func checkParameterInfo(furtherInfo string, stepParam bool, executionEnvironment
 
 func createParameterDetails(stepData *config.StepData) string {
 
-	details := ""
+	var details strings.Builder
 
 	//jenkinsParameters := append(jenkinsParameters(stepData), "script")
 
 	for _, param := range stepData.Spec.Inputs.Parameters {
-		details += fmt.Sprintf("#### %v\n\n", param.Name)
+		details.WriteString(fmt.Sprintf("#### %v\n\n", param.Name))
 
 		if !contains(stepParameterNames, param.Name) && contains(jenkinsParams, param.Name) {
-			details += "**Jenkins-specific:** Used for proper environment setup.\n\n"
+			details.WriteString("**Jenkins-specific:** Used for proper environment setup.\n\n")
 		}
 
 		if len(param.LongDescription) > 0 {
-			details += param.LongDescription + "\n\n"
+			details.WriteString(param.LongDescription + "\n\n")
 		} else {
-			details += param.Description + "\n\n"
+			details.WriteString(param.Description + "\n\n")
 		}
 
-		details += "[back to overview](#parameters)\n\n"
+		details.WriteString("[back to overview](#parameters)\n\n")
 
-		details += "| Scope | Details |\n"
-		details += "| ---- | --------- |\n"
+		details.WriteString("| Scope | Details |\n")
+		details.WriteString("| ---- | --------- |\n")
 
 		if param.DeprecationMessage != "" {
-			details += fmt.Sprintf("| Deprecated | %v |\n", param.DeprecationMessage)
+			details.WriteString(fmt.Sprintf("| Deprecated | %v |\n", param.DeprecationMessage))
 		}
-		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases))
-		details += fmt.Sprintf("| Type | `%v` |\n", param.Type)
+		details.WriteString(fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases)))
+		details.WriteString(fmt.Sprintf("| Type | `%v` |\n", param.Type))
 		mandatory, mandatoryString, furtherInfo := parameterMandatoryInformation(param, "")
 		if mandatory && len(furtherInfo) > 0 {
 			mandatoryString = furtherInfo
 		}
-		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(mandatory, mandatoryString, "no"))
-		details += fmt.Sprintf("| Default | %v |\n", formatDefault(param, stepParameterNames))
+		details.WriteString(fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(mandatory, mandatoryString, "no")))
+		details.WriteString(fmt.Sprintf("| Default | %v |\n", formatDefault(param, stepParameterNames)))
 		if param.PossibleValues != nil {
-			details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(param.PossibleValues))
+			details.WriteString(fmt.Sprintf("| Possible values | %v |\n", possibleValueList(param.PossibleValues)))
 		}
-		details += fmt.Sprintf("| Secret | %v |\n", ifThenElse(param.Secret, "**yes**", "no"))
-		details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails(param.Scope))
-		details += fmt.Sprintf("| Resource references | %v |\n", resourceReferenceDetails(param.ResourceRef))
+		details.WriteString(fmt.Sprintf("| Secret | %v |\n", ifThenElse(param.Secret, "**yes**", "no")))
+		details.WriteString(fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails(param.Scope)))
+		details.WriteString(fmt.Sprintf("| Resource references | %v |\n", resourceReferenceDetails(param.ResourceRef)))
 
-		details += "\n\n"
+		details.WriteString("\n\n")
 	}
 
 	for _, secret := range stepData.Spec.Inputs.Secrets {
-		details += fmt.Sprintf("#### %v\n\n", secret.Name)
+		details.WriteString(fmt.Sprintf("#### %v\n\n", secret.Name))
 
 		if !contains(stepParameterNames, secret.Name) && contains(jenkinsParams, secret.Name) {
-			details += "**Jenkins-specific:** Used for proper environment setup. See *[using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n"
+			details.WriteString("**Jenkins-specific:** Used for proper environment setup. See *[using credentials](https://www.jenkins.io/doc/book/using/using-credentials/)* for details.\n\n")
 		}
 
-		details += secret.Description + "\n\n"
+		details.WriteString(secret.Description + "\n\n")
 
-		details += "[back to overview](#parameters)\n\n"
+		details.WriteString("[back to overview](#parameters)\n\n")
 
-		details += "| Scope | Details |\n"
-		details += "| ---- | --------- |\n"
-		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases))
-		details += fmt.Sprintf("| Type | `%v` |\n", "string")
-		details += fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails([]string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"}))
+		details.WriteString("| Scope | Details |\n")
+		details.WriteString("| ---- | --------- |\n")
+		details.WriteString(fmt.Sprintf("| Aliases | %v |\n", aliasList(secret.Aliases)))
+		details.WriteString(fmt.Sprintf("| Type | `%v` |\n", "string"))
+		details.WriteString(fmt.Sprintf("| Configuration scope | %v |\n", scopeDetails([]string{"PARAMETERS", "GENERAL", "STEPS", "STAGES"})))
 
-		details += "\n\n"
+		details.WriteString("\n\n")
 	}
 
-	return details
+	return details.String()
 }
 
 func formatDefault(param config.StepParameters, stepParameterNames []string) string {
@@ -243,7 +244,7 @@ func formatDefault(param config.StepParameters, stepParameterNames []string) str
 			}
 		}
 		return strings.Join(defaults, "<br />")
-	case []interface{}:
+	case []any:
 		// handle for example stashes which possibly contain a mixture of fix and conditional values
 		defaults := []string{}
 		for _, def := range v {
@@ -292,7 +293,7 @@ func aliasList(aliases []config.Alias) string {
 	}
 }
 
-func possibleValueList(possibleValues []interface{}) string {
+func possibleValueList(possibleValues []any) string {
 	if len(possibleValues) == 0 {
 		return ""
 	}

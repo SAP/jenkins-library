@@ -277,7 +277,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 	var packagesWithScript []string
 
 	for _, file := range packageJSONFiles {
-		var packageJSON map[string]interface{}
+		var packageJSON map[string]any
 
 		packageRaw, err := exec.Utils.FileRead(file)
 		if err != nil {
@@ -289,7 +289,7 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 			return nil, fmt.Errorf("failed to unmarshal %s to check for existence of %s script: %w", file, script, err)
 		}
 
-		scripts, ok := packageJSON["scripts"].(map[string]interface{})
+		scripts, ok := packageJSON["scripts"].(map[string]any)
 		if ok {
 			_, ok := scripts[script].(string)
 			if ok {

@@ -1187,7 +1187,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 	var fileExtension string
 	fileExtensionLength := 30 - len(objName)
-	for i := 0; i < fileExtensionLength; i++ {
+	for range fileExtensionLength {
 		fileExtension += "="
 	}
 

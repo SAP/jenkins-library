@@ -42,14 +42,14 @@ func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []st
 
 	configuration := config.Config{}
 	stepConfiguration, err := configuration.GetStepConfig(
-		map[string]interface{}{},
+		map[string]any{},
 		"",
 		nil,
 		defaultFiles,
 		false,
 		filters,
 		stepMetadata,
-		map[string]interface{}{},
+		map[string]any{},
 		"",
 		stepMetadata.Metadata.Name,
 	)
@@ -134,8 +134,8 @@ func readContextInformation(contextDetailsPath string, contextDetails *config.St
 	checkError(err)
 }
 
-func getContainerParameters(container config.Container, sidecar bool) map[string]interface{} {
-	containerParams := map[string]interface{}{}
+func getContainerParameters(container config.Container, sidecar bool) map[string]any {
+	containerParams := map[string]any{}
 
 	if len(container.Command) > 0 {
 		containerParams[ifThenElse(sidecar, "sidecarCommand", "containerCommand")] = container.Command[0]
@@ -211,7 +211,7 @@ func setDefaultAndPossisbleValues(stepData *config.StepData) {
 		switch param.Type {
 		case "bool":
 			if param.PossibleValues == nil {
-				param.PossibleValues = []interface{}{true, false}
+				param.PossibleValues = []any{true, false}
 			}
 		}
 
@@ -278,16 +278,17 @@ func createPipelineDocumentation(stageRunConfig *config.RunConfigV1, stageTarget
 
 func createPipelineOverviewDocumentation(stageRunConfig *config.RunConfigV1, stageTargetPath string, utils piperutils.FileUtils) error {
 	overviewFileName := "overview.md"
-	overviewDoc := fmt.Sprintf("# %v\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName)
-	overviewDoc += fmt.Sprintf("%v\n\n", stageRunConfig.PipelineConfig.Metadata.Description)
-	overviewDoc += fmt.Sprintf("The %v comprises following stages\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName)
+	var overviewDoc strings.Builder
+	overviewDoc.WriteString(fmt.Sprintf("# %v\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName))
+	overviewDoc.WriteString(fmt.Sprintf("%v\n\n", stageRunConfig.PipelineConfig.Metadata.Description))
+	overviewDoc.WriteString(fmt.Sprintf("The %v comprises following stages\n\n", stageRunConfig.PipelineConfig.Metadata.DisplayName))
 	for _, stage := range stageRunConfig.PipelineConfig.Spec.Stages {
 		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
-		overviewDoc += fmt.Sprintf("* [%v Stage](%v)\n", stage.DisplayName, stageFilePath)
+		overviewDoc.WriteString(fmt.Sprintf("* [%v Stage](%v)\n", stage.DisplayName, stageFilePath))
 	}
 	overviewFilePath := filepath.Join(stageTargetPath, overviewFileName)
 	fmt.Println("writing file", overviewFilePath)
-	return utils.FileWrite(overviewFilePath, []byte(overviewDoc), 0666)
+	return utils.FileWrite(overviewFilePath, []byte(overviewDoc.String()), 0666)
 }
 
 const stepConditionDetails = `!!! note "Step condition details"
@@ -310,49 +311,50 @@ const overrulingStepActivation = `!!! note "Overruling step activation condition
 
 func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageTargetPath, relativeStepsPath string, utils piperutils.FileUtils) error {
 	for _, stage := range stageRunConfig.PipelineConfig.Spec.Stages {
-		stageDoc := fmt.Sprintf("# %v\n\n", stage.DisplayName)
-		stageDoc += fmt.Sprintf("%v\n\n", stage.Description)
+		var stageDoc strings.Builder
+		stageDoc.WriteString(fmt.Sprintf("# %v\n\n", stage.DisplayName))
+		stageDoc.WriteString(fmt.Sprintf("%v\n\n", stage.Description))
 
 		if len(stage.Steps) > 0 {
-			stageDoc += "## Stage Content\n\nThis stage comprises following steps which are activated depending on your use-case/configuration:\n\n"
+			stageDoc.WriteString("## Stage Content\n\nThis stage comprises following steps which are activated depending on your use-case/configuration:\n\n")
 
 			for i, step := range stage.Steps {
 				if i == 0 {
-					stageDoc += "| step | step description |\n"
-					stageDoc += "| ---- | ---------------- |\n"
+					stageDoc.WriteString("| step | step description |\n")
+					stageDoc.WriteString("| ---- | ---------------- |\n")
 				}
 
-				orchestratorBadges := ""
+				var orchestratorBadges strings.Builder
 				for _, orchestrator := range step.Orchestrators {
-					orchestratorBadges += getBadge(orchestrator) + " "
+					orchestratorBadges.WriteString(getBadge(orchestrator) + " ")
 				}
 
-				stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v%v |\n", step.Name, relativeStepsPath, step.Name, orchestratorBadges, step.Description)
+				stageDoc.WriteString(fmt.Sprintf("| [%v](%v/%v.md) | %v%v |\n", step.Name, relativeStepsPath, step.Name, orchestratorBadges.String(), step.Description))
 			}
 
-			stageDoc += "\n"
+			stageDoc.WriteString("\n")
 
-			stageDoc += "## Stage & Step Activation\n\nThis stage will be active in case one of following conditions are met:\n\n"
-			stageDoc += "* One of the steps is explicitly activated by using `<stepName>: true` in the stage configuration\n"
-			stageDoc += "* At least one of the step conditions is met and steps are not explicitly deactivated by using `<stepName>: false` in the stage configuration\n\n"
+			stageDoc.WriteString("## Stage & Step Activation\n\nThis stage will be active in case one of following conditions are met:\n\n")
+			stageDoc.WriteString("* One of the steps is explicitly activated by using `<stepName>: true` in the stage configuration\n")
+			stageDoc.WriteString("* At least one of the step conditions is met and steps are not explicitly deactivated by using `<stepName>: false` in the stage configuration\n\n")
 
-			stageDoc += stepConditionDetails
-			stageDoc += overrulingStepActivation
+			stageDoc.WriteString(stepConditionDetails)
+			stageDoc.WriteString(overrulingStepActivation)
 
-			stageDoc += "Following conditions apply for activation of steps contained in the stage:\n\n"
+			stageDoc.WriteString("Following conditions apply for activation of steps contained in the stage:\n\n")
 
-			stageDoc += "| step | active if one of following conditions is met |\n"
-			stageDoc += "| ---- | -------------------------------------------- |\n"
+			stageDoc.WriteString("| step | active if one of following conditions is met |\n")
+			stageDoc.WriteString("| ---- | -------------------------------------------- |\n")
 
 			// add step condition details
 			for _, step := range stage.Steps {
-				stageDoc += fmt.Sprintf("| [%v](%v/%v.md) | %v |\n", step.Name, relativeStepsPath, step.Name, getStepConditionDetails(step))
+				stageDoc.WriteString(fmt.Sprintf("| [%v](%v/%v.md) | %v |\n", step.Name, relativeStepsPath, step.Name, getStepConditionDetails(step)))
 			}
 		}
 
 		stageFilePath := filepath.Join(stageTargetPath, fmt.Sprintf("%v.md", stage.Name))
 		fmt.Println("writing file", stageFilePath)
-		if err := utils.FileWrite(stageFilePath, []byte(stageDoc), 0666); err != nil {
+		if err := utils.FileWrite(stageFilePath, []byte(stageDoc.String()), 0666); err != nil {
 			return fmt.Errorf("failed to write stage file '%v': %w", stageFilePath, err)
 		}
 	}
@@ -374,11 +376,11 @@ func getStepConditionDetails(step config.Step) string {
 	}
 
 	if len(step.Orchestrators) > 0 {
-		orchestratorBadges := ""
+		var orchestratorBadges strings.Builder
 		for _, orchestrator := range step.Orchestrators {
-			orchestratorBadges += getBadge(orchestrator) + " "
+			orchestratorBadges.WriteString(getBadge(orchestrator) + " ")
 		}
-		stepConditions = orchestratorBadges + "<br />"
+		stepConditions = orchestratorBadges.String() + "<br />"
 	}
 
 	for _, condition := range step.Conditions {

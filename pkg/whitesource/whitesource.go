@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -50,7 +51,7 @@ type Alert struct {
 	Vulnerability    Vulnerability `json:"vulnerability"`
 	Type             string        `json:"type,omitempty"`
 	Level            string        `json:"level,omitempty"`
-	Library          Library       `json:"library,omitempty"`
+	Library          Library       `json:"library"`
 	Project          string        `json:"project,omitempty"`
 	DirectDependency bool          `json:"directDependency,omitempty"`
 	Description      string        `json:"description,omitempty"`
@@ -268,7 +269,7 @@ type Vulnerability struct {
 	PublishDate       string      `json:"publishDate,omitempty"`
 	URL               string      `json:"url,omitempty"`
 	Description       string      `json:"description,omitempty"`
-	TopFix            Fix         `json:"topFix,omitempty"`
+	TopFix            Fix         `json:"topFix"`
 	AllFixes          []Fix       `json:"allFixes,omitempty"`
 	FixResolutionText string      `json:"fixResolutionText,omitempty"`
 	References        []Reference `json:"references,omitempty"`
@@ -527,11 +528,8 @@ func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Pr
 
 	var projectsMatched []Project
 	for _, project := range projects {
-		for _, projectID := range projectIDs {
-			if projectID == project.ID {
-				projectsMatched = append(projectsMatched, project)
-				break
-			}
+		if slices.Contains(projectIDs, project.ID) {
+			projectsMatched = append(projectsMatched, project)
 		}
 	}
 
@@ -713,12 +711,12 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 	return wsResponse.Libraries, nil
 }
 
-func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
+func (s *System) sendRequestAndDecodeJSON(req Request, result any) error {
 	var count int
 	return s.sendRequestAndDecodeJSONRecursive(req, result, &count)
 }
 
-func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface{}, count *int) error {
+func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result any, count *int) error {
 	respBody, err := s.sendRequest(req)
 	if err != nil {
 		return fmt.Errorf("sending whiteSource request failed: %w", err)

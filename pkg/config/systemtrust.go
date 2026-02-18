@@ -33,8 +33,8 @@ func resolveAllSystemTrustReferences(config *StepConfig, params []StepParameters
 }
 
 // setSystemTrustConfiguration sets the server URL for the System Trust by taking it from the hooks
-func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) error {
-	systemTrustHook, ok := hookConfig["systemtrust"].(map[string]interface{})
+func (c *Config) setSystemTrustConfiguration(hookConfig map[string]any) error {
+	systemTrustHook, ok := hookConfig["systemtrust"].(map[string]any)
 	if !ok {
 		return errors.New("no System Trust hook configuration found")
 	}

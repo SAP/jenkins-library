@@ -49,7 +49,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		DefaultNpmRegistry:          config.DefaultNpmRegistry,
 		DockerImage:                 dockerImage,
 	}
-	var jsonMap map[string][]interface{}
+	var jsonMap map[string][]any
 	var jsonResult []byte
 
 	if config.BuildSettingsInfo != "" {
@@ -60,11 +60,11 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		}
 
 		if build, exist := jsonMap[buildTool]; exist {
-			if reflect.TypeOf(build).Kind() == reflect.Slice {
+			if reflect.TypeFor[[]any]().Kind() == reflect.Slice {
 				jsonMap[buildTool] = append(build, currentBuildSettingsInfo)
 			}
 		} else {
-			var settings []interface{}
+			var settings []any
 			settings = append(settings, currentBuildSettingsInfo)
 			jsonMap[buildTool] = settings
 		}

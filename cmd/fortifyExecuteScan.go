@@ -350,7 +350,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
-		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
+		resultURL := fmt.Appendf(nil, "%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID)
 		if err := os.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0o700); err != nil {
 			log.Entry().WithError(err).Error("failed to write file")
 		}
@@ -874,12 +874,12 @@ func readAllClasspathFiles(file string) string {
 		paths, _ = doublestar.Glob(filepath.Join("**", file))
 		log.Entry().Debugf("Concatenating the class paths from %v", paths)
 	}
-	var contents string
+	var contents strings.Builder
 	const separator = ":"
 	for _, path := range paths {
-		contents += separator + readClasspathFile(path)
+		contents.WriteString(separator + readClasspathFile(path))
 	}
-	return removeDuplicates(contents, separator)
+	return removeDuplicates(contents.String(), separator)
 }
 
 func readClasspathFile(file string) string {
@@ -989,7 +989,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
-func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pythonVersion string) error {
+func appendPythonVersionToTranslate(translateOptions map[string]any, pythonVersion string) error {
 	if pythonVersion == "python2" {
 		translateOptions["pythonVersion"] = "2"
 	} else if pythonVersion == "python3" {
@@ -1006,8 +1006,8 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 		return config.Translate, nil
 	}
 
-	var translateList []map[string]interface{}
-	translateList = append(translateList, make(map[string]interface{}))
+	var translateList []map[string]any
+	translateList = append(translateList, make(map[string]any))
 	separator := getSeparator()
 
 	err := appendPythonVersionToTranslate(translateList[0], config.PythonVersion)
@@ -1032,8 +1032,8 @@ func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath s
 		return config.Translate, nil
 	}
 
-	var translateList []map[string]interface{}
-	translateList = append(translateList, make(map[string]interface{}))
+	var translateList []map[string]any
+	translateList = append(translateList, make(map[string]any))
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
@@ -1229,7 +1229,7 @@ func getSuppliedOrDefaultListAsString(suppliedList, defaultList []string, separa
 // setTranslateEntryIfNotEmpty builds a string from either the user-supplied list, or the default list,
 // by joining the entries with the given separator. If the resulting string is not empty, it will be
 // placed as an entry in the provided map under the given key.
-func setTranslateEntryIfNotEmpty(translate map[string]interface{}, key, separator string, suppliedList, defaultList []string) {
+func setTranslateEntryIfNotEmpty(translate map[string]any, key, separator string, suppliedList, defaultList []string) {
 	value := getSuppliedOrDefaultListAsString(suppliedList, defaultList, separator)
 	if value != "" {
 		translate[key] = value

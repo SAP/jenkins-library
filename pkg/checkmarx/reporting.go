@@ -46,7 +46,7 @@ type LowPerQuery struct {
 	Total     int    `json:"total"`
 }
 
-func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
+func CreateCustomReport(data map[string]any, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
@@ -135,7 +135,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	return scanReport
 }
 
-func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
+func CreateJSONReport(data map[string]any) CheckmarxReportData {
 	checkmarxReportData := CheckmarxReportData{
 		ToolName:         `checkmarx`,
 		ProjectName:      fmt.Sprint(data["ProjectName"]),

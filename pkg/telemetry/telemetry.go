@@ -121,7 +121,7 @@ func (t *Telemetry) GetDataBytes() []byte {
 func (t *Telemetry) LogStepTelemetryData() {
 	log.Entry().Debug("Logging step telemetry data")
 
-	var fatalError map[string]interface{}
+	var fatalError map[string]any
 	if t.data.CustomData.ErrorCode != "0" && log.GetFatalErrorDetail() != nil {
 		// retrieve the error information from the logCollector
 		err := json.Unmarshal(log.GetFatalErrorDetail(), &fatalError)

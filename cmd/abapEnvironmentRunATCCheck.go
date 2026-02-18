@@ -462,7 +462,7 @@ type ATCConfiguration struct {
 	CheckVariant  string              `json:"checkvariant,omitempty"`
 	Configuration string              `json:"configuration,omitempty"`
 	Objects       ATCObjects          `json:"atcobjects"`
-	ObjectSet     abaputils.ObjectSet `json:"objectset,omitempty"`
+	ObjectSet     abaputils.ObjectSet `json:"objectset"`
 }
 
 // ATCObjects in form of packages and software components to be checked

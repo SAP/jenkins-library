@@ -209,7 +209,7 @@ func CreateSarifResultFile(scan *Scan, alerts *[]Alert) *format.SARIF {
 		location := format.Location{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: alert.Library.Filename}}}
 		result.Locations = append(result.Locations, location)
 		partialFingerprints := new(format.PartialFingerprints)
-		partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", alert.Library.ToPackageUrl().ToString(), alert.Vulnerability.Name)))
+		partialFingerprints.PackageURLPlusCVEHash = base64.URLEncoding.EncodeToString(fmt.Appendf(nil, "%v+%v", alert.Library.ToPackageUrl().ToString(), alert.Vulnerability.Name))
 		result.PartialFingerprints = *partialFingerprints
 		result.Properties = getAuditInformation(alert)
 

@@ -14,7 +14,7 @@ import (
 )
 
 type checkmarxOneSystemMock struct {
-	response interface{}
+	response any
 }
 
 func (sys *checkmarxOneSystemMock) DownloadReport(reportID string) ([]byte, error) {

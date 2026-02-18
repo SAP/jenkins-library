@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -624,8 +625,6 @@ func getLanguageList(config *codeqlExecuteScanOptions) []string {
 
 func cloneFlags(src map[string]string) map[string]string {
 	dst := make(map[string]string, len(src))
-	for k, v := range src {
-		dst[k] = v
-	}
+	maps.Copy(dst, src)
 	return dst
 }

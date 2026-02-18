@@ -205,7 +205,7 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 
 		rule.ID = fmt.Sprintf("checkmarxOne-%v/%d", r.Data.LanguageName, r.Data.QueryID)
 		words := strings.Split(r.Data.QueryName, "_")
-		for w := 0; w < len(words); w++ {
+		for w := range words {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")

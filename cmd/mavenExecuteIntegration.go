@@ -74,8 +74,8 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 func validateForkCount(value string) error {
 	var err error
 
-	if strings.HasSuffix(value, "C") {
-		value := strings.TrimSuffix(value, "C")
+	if before, ok := strings.CutSuffix(value, "C"); ok {
+		value := before
 		for _, c := range value {
 			if !unicode.IsDigit(c) && c != '.' {
 				err = fmt.Errorf("only integers or floats allowed with 'C' suffix")

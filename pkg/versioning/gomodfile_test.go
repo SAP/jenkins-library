@@ -27,7 +27,7 @@ func TestGoModGetCoordinates(t *testing.T) {
 			// prepare
 			tmpFolder := t.TempDir()
 			goModFilePath := filepath.Join(tmpFolder, "go.mod")
-			os.WriteFile(goModFilePath, []byte(fmt.Sprintf("module %s\n\ngo 1.24.0", tc.moduleName)), 0666)
+			os.WriteFile(goModFilePath, fmt.Appendf(nil, "module %s\n\ngo 1.24.0", tc.moduleName), 0666)
 			gomod := &GoMod{
 				path: goModFilePath,
 			}

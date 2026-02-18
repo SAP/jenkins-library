@@ -639,7 +639,7 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
+func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]any, insecure bool) error {
 	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
 	if err != nil {
 		return fmt.Errorf("Failed to get orchestrator config provider: %s", err)
@@ -793,7 +793,7 @@ Severity | Number of unaudited findings
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]interface{}) error {
+func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]any) error {
 	links := []piperutils.Path{{Target: (*detailedResults)["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
 	insecure := false
 	var insecureResults []string
@@ -893,7 +893,7 @@ func (c *checkmarxOneExecuteScanHelper) GetReportJSON(scan *checkmarxOne.Scan) e
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map[string]interface{}) error {
+func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map[string]any) error {
 	// This is for the SAP-piper-format short-form JSON report
 	jsonReport := checkmarxOne.CreateJSONHeaderReport(detailedResults)
 	paths, err := checkmarxOne.WriteJSONHeaderReport(jsonReport)
@@ -906,8 +906,8 @@ func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (map[string]interface{}, error) {
-	var detailedResults map[string]interface{}
+func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (map[string]any, error) {
+	var detailedResults map[string]any
 
 	scanmeta, err := c.sys.GetScanMetadata(scan.ScanID)
 	if err != nil {
@@ -1017,10 +1017,10 @@ func (c *checkmarxOneExecuteScanHelper) getNumCoherentIncrementalScans(scans []c
 	return count
 }
 
-func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) (map[string]interface{}, error) {
+func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) (map[string]any, error) {
 	// this converts the JSON format results from Cx1 into the "resultMap" structure used in other parts of this step (influx etc)
 
-	resultMap := map[string]interface{}{}
+	resultMap := map[string]any{}
 	resultMap["InitiatorName"] = scan.Initiator
 	resultMap["Owner"] = "Cx1 Gap: no project owner" // TODO: check for functionality
 	resultMap["ScanId"] = scan.ScanID
@@ -1313,7 +1313,7 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 	return false, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]interface{}) (string, error) {
+func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]any) (string, error) {
 	workspace := c.utils.GetWorkspace()
 	record := toolrecord.New(c.utils, workspace, "checkmarxOne", c.config.ServerURL)
 
@@ -1340,7 +1340,7 @@ func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]i
 	return record.GetFileName(), nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]interface{}) (bool, []string, []string) {
+func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]any) (bool, []string, []string) {
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
@@ -1505,7 +1505,7 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	return insecure, insecureResults, neutralResults
 }
 
-func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]interface{}) {
+func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]any) {
 	c.influx.checkmarxOne_data.fields.critical_issues = (*results)["Critical"].(map[string]int)["Issues"]
 	c.influx.checkmarxOne_data.fields.critical_not_false_postive = (*results)["Critical"].(map[string]int)["NotFalsePositive"]
 	c.influx.checkmarxOne_data.fields.critical_not_exploitable = (*results)["Critical"].(map[string]int)["NotExploitable"]

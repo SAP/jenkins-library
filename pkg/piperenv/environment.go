@@ -14,7 +14,7 @@ import (
 // The content of a written file is the value. For the custom parameters this could for example also be a JSON representation of a more complex value.
 
 // SetResourceParameter sets a resource parameter in the environment stored in the file system
-func SetResourceParameter(path, resourceName, paramName string, value interface{}) error {
+func SetResourceParameter(path, resourceName, paramName string, value any) error {
 	var content []byte
 	paramPath := filepath.Join(path, resourceName, paramName)
 	switch typedValue := value.(type) {

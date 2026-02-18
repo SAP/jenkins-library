@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -36,7 +37,7 @@ func NewEvent(eventType, eventSource string, uuidString string) Event {
 func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
 	// passing a string to e.cloudEvent.SetData will result in the string being marshalled, ending up with double escape characters
 	// therefore pass a map instead
-	var dataMap map[string]interface{}
+	var dataMap map[string]any
 	if data != "" {
 		err := json.Unmarshal([]byte(data), &dataMap)
 		if err != nil {
@@ -94,21 +95,19 @@ func (e *Event) AddToCloudEventData(additionalDataString string) error {
 		return nil
 	}
 
-	var additionalData map[string]interface{}
+	var additionalData map[string]any
 	err := json.Unmarshal([]byte(additionalDataString), &additionalData)
 	if err != nil {
 		return fmt.Errorf("couldn't add additional data to cloud event: %w", err)
 	}
 
-	var newEventData map[string]interface{}
+	var newEventData map[string]any
 	err = json.Unmarshal(e.cloudEvent.DataEncoded, &newEventData)
 	if err != nil {
 		return fmt.Errorf("couldn't add additional data to cloud event: %w", err)
 	}
 
-	for k, v := range additionalData {
-		newEventData[k] = v
-	}
+	maps.Copy(newEventData, additionalData)
 
 	e.cloudEvent.SetData("application/json", newEventData)
 	return nil

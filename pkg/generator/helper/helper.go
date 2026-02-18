@@ -788,17 +788,17 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			influxResource.StepName = stepData.Metadata.Name
 			for _, measurement := range res.Parameters {
 				influxMeasurement := InfluxMeasurement{Name: fmt.Sprintf("%v", measurement["name"])}
-				if fields, ok := measurement["fields"].([]interface{}); ok {
+				if fields, ok := measurement["fields"].([]any); ok {
 					for _, field := range fields {
-						if fieldParams, ok := field.(map[string]interface{}); ok {
+						if fieldParams, ok := field.(map[string]any); ok {
 							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"]), Type: fmt.Sprintf("%v", fieldParams["type"])})
 						}
 					}
 				}
 
-				if tags, ok := measurement["tags"].([]interface{}); ok {
+				if tags, ok := measurement["tags"].([]any); ok {
 					for _, tag := range tags {
-						if tagParams, ok := tag.(map[string]interface{}); ok {
+						if tagParams, ok := tag.(map[string]any); ok {
 							influxMeasurement.Tags = append(influxMeasurement.Tags, InfluxMetric{Name: fmt.Sprintf("%v", tagParams["name"])})
 						}
 					}
@@ -880,7 +880,7 @@ func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
 
-func generateCode(dataObject interface{}, templateName, goTemplate string, funcMap template.FuncMap) []byte {
+func generateCode(dataObject any, templateName, goTemplate string, funcMap template.FuncMap) []byte {
 	tmpl, err := template.New(templateName).Funcs(funcMap).Parse(goTemplate)
 	checkError(err)
 
@@ -939,10 +939,10 @@ func flagType(paramType string) string {
 	return theFlagType
 }
 
-func getStringSliceFromInterface(iSlice interface{}) []string {
+func getStringSliceFromInterface(iSlice any) []string {
 	s := []string{}
 
-	t, ok := iSlice.([]interface{})
+	t, ok := iSlice.([]any)
 	if ok {
 		for _, v := range t {
 			s = append(s, fmt.Sprintf("%v", v))
@@ -955,7 +955,7 @@ func getStringSliceFromInterface(iSlice interface{}) []string {
 }
 
 func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error) {
-	tp := reflect.TypeOf(list).Kind()
+	tp := reflect.TypeFor[[]config.StepParameters]().Kind()
 	switch tp {
 	case reflect.Slice, reflect.Array:
 		l2 := reflect.ValueOf(list)
@@ -964,7 +964,7 @@ func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error)
 		names := []string{}
 		dest := []config.StepParameters{}
 		var item config.StepParameters
-		for i := 0; i < l; i++ {
+		for i := range l {
 			item = l2.Index(i).Interface().(config.StepParameters)
 			if !slices.Contains(names, item.Name) {
 				names = append(names, item.Name)
