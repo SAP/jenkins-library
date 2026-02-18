@@ -298,7 +298,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 			if cxxml.Query[i].Result[j].Remark != "" {
 				remarks := strings.Split(cxxml.Query[i].Result[j].Remark, "\n")
 				messageCandidates := []string{}
-				for cnd := 0; cnd < len(remarks); cnd++ {
+				for cnd := range remarks {
 					candidate := strings.Split(remarks[cnd], "]: ")
 					if len(candidate) == 1 {
 						if len(candidate[0]) != 0 {
@@ -324,7 +324,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 		rule := *new(format.SarifRule)
 		rule.ID = "checkmarx-" + cxxml.Query[i].Language + "/" + cxxml.Query[i].ID
 		words := strings.Split(cxxml.Query[i].Name, "_")
-		for w := 0; w < len(words); w++ {
+		for w := range words {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")
@@ -343,7 +343,7 @@ func Parse(sys System, data []byte, scanID int) (format.SARIF, error) {
 
 			//split categories on ;
 			cats := strings.Split(cxxml.Query[i].Categories, ";")
-			for cat := 0; cat < len(cats); cat++ {
+			for cat := range cats {
 				rule.Properties.Tags = append(rule.Properties.Tags, cats[cat])
 			}
 		}

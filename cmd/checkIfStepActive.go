@@ -170,7 +170,7 @@ func initializeConfig(pConfig *config.Config) (*config.Config, error) {
 			defaultConfig = append(defaultConfig, fc)
 		}
 	}
-	var flags map[string]interface{}
+	var flags map[string]any
 	filter := config.StepFilters{
 		All:     []string{},
 		General: []string{},

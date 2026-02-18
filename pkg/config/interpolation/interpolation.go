@@ -18,7 +18,7 @@ var (
 )
 
 // ResolveMap interpolates every string value of a map and tries to lookup references to other properties of that map
-func ResolveMap(config map[string]interface{}) bool {
+func ResolveMap(config map[string]any) bool {
 	for key, value := range config {
 		if str, ok := value.(string); ok {
 			resolvedStr, ok := ResolveString(str, config)
@@ -31,7 +31,7 @@ func ResolveMap(config map[string]interface{}) bool {
 	return true
 }
 
-func resolveString(str string, lookupMap map[string]interface{}, n int) (string, bool) {
+func resolveString(str string, lookupMap map[string]any, n int) (string, bool) {
 	matches := lookupRegex.FindAllStringSubmatch(str, -1)
 	if len(matches) == 0 {
 		return str, true
@@ -55,7 +55,7 @@ func resolveString(str string, lookupMap map[string]interface{}, n int) (string,
 
 // ResolveString takes a string and replaces all references inside of it with values from the given lookupMap.
 // This is being done recursively until the maxLookupDepth is reached.
-func ResolveString(str string, lookupMap map[string]interface{}) (string, bool) {
+func ResolveString(str string, lookupMap map[string]any) (string, bool) {
 	return resolveString(str, lookupMap, 0)
 }
 

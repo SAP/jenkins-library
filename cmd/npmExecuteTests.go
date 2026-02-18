@@ -81,7 +81,7 @@ func runTestForUrl(url, username, password string, config *npmExecuteTestsOption
 	return nil
 }
 
-func parseURLs(urls []map[string]interface{}) ([]vaultUrl, error) {
+func parseURLs(urls []map[string]any) ([]vaultUrl, error) {
 	parsedUrls := []vaultUrl{}
 
 	for _, url := range urls {

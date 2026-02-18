@@ -85,10 +85,7 @@ func (s *Splunk) Send(telemetryData telemetry.Data, logCollector *log.CollectorH
 	} else {
 		// ErrorCode indicates an error in the step, so we want to send all the logs with telemetry
 		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
-			upperBound := i + s.postMessagesBatchSize
-			if upperBound > messagesLen {
-				upperBound = messagesLen
-			}
+			upperBound := min(i+s.postMessagesBatchSize, messagesLen)
 			err := s.tryPostMessages(preparedTelemetryData, logCollector.Messages[i:upperBound])
 			if err != nil {
 				return fmt.Errorf("error while sending logs: %w", err)
@@ -168,7 +165,7 @@ func (s *Splunk) prepareTelemetry(telemetryData telemetry.Data) MonitoringData {
 	return monitoringData
 }
 
-func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}, logFile *[]byte) error {
+func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]any, logFile *[]byte) error {
 	// Sends telemetry and or additionally logging data to Splunk
 
 	readLogFile := string(*logFile)
@@ -181,10 +178,7 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}
 	if s.sendLogs {
 		log.Entry().Debugf("Sending %v messages to Splunk.", messagesLen)
 		for i := 0; i < messagesLen; i += s.postMessagesBatchSize {
-			upperBound := i + s.postMessagesBatchSize
-			if upperBound > messagesLen {
-				upperBound = messagesLen
-			}
+			upperBound := min(i+s.postMessagesBatchSize, messagesLen)
 			err := s.postLogFile(pipelineTelemetryData, splitted[i:upperBound])
 			if err != nil {
 				return fmt.Errorf("error while sending logs: %w", err)
@@ -194,9 +188,9 @@ func (s *Splunk) SendPipelineStatus(pipelineTelemetryData map[string]interface{}
 	return nil
 }
 
-func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
+func (s *Splunk) postTelemetry(telemetryData map[string]any) error {
 	if telemetryData == nil {
-		telemetryData = map[string]interface{}{"Empty": "No telemetry available."}
+		telemetryData = map[string]any{"Empty": "No telemetry available."}
 	}
 	details := DetailsTelemetry{
 		Host:       s.hostName,
@@ -249,7 +243,7 @@ func (s *Splunk) postTelemetry(telemetryData map[string]interface{}) error {
 	return nil
 }
 
-func (s *Splunk) postLogFile(telemetryData map[string]interface{}, messages []string) error {
+func (s *Splunk) postLogFile(telemetryData map[string]any, messages []string) error {
 
 	var logfileEvents []string
 	for _, message := range messages {

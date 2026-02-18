@@ -283,13 +283,13 @@ func buildATCSystemConfigBatchRequest(confUUID string, atcSystemConfiguartionJso
 
 func buildParsedATCSystemConfigBaseJsonBody(confUUID string, atcSystemConfiguartionJsonFile string) (string, error) {
 
-	var i interface{}
+	var i any
 	var outputString string = ``
 
 	if err := json.Unmarshal([]byte(atcSystemConfiguartionJsonFile), &i); err != nil {
 		return outputString, fmt.Errorf("problem with unmarshall input "+atcSystemConfiguartionJsonFile+": %v", err)
 	}
-	if m, ok := i.(map[string]interface{}); ok {
+	if m, ok := i.(map[string]any); ok {
 		delete(m, "_priorities")
 	}
 

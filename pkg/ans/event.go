@@ -34,23 +34,23 @@ const (
 
 // Event structure of the SAP Alert Notification Service
 type Event struct {
-	EventType      string                 `json:"eventType,omitempty"`
-	EventTimestamp int64                  `json:"eventTimestamp,omitempty" validate:"omitempty,min=0"`
-	Severity       string                 `json:"severity,omitempty" validate:"omitempty,oneof=INFO NOTICE WARNING ERROR FATAL"`
-	Category       string                 `json:"category,omitempty" validate:"omitempty,oneof=EXCEPTION ALERT NOTIFICATION"`
-	Subject        string                 `json:"subject,omitempty"`
-	Body           string                 `json:"body,omitempty"`
-	Priority       int                    `json:"priority,omitempty" validate:"omitempty,min=1,max=1000"`
-	Tags           map[string]interface{} `json:"tags,omitempty"`
-	Resource       *Resource              `json:"resource,omitempty"`
+	EventType      string         `json:"eventType,omitempty"`
+	EventTimestamp int64          `json:"eventTimestamp,omitempty" validate:"omitempty,min=0"`
+	Severity       string         `json:"severity,omitempty" validate:"omitempty,oneof=INFO NOTICE WARNING ERROR FATAL"`
+	Category       string         `json:"category,omitempty" validate:"omitempty,oneof=EXCEPTION ALERT NOTIFICATION"`
+	Subject        string         `json:"subject,omitempty"`
+	Body           string         `json:"body,omitempty"`
+	Priority       int            `json:"priority,omitempty" validate:"omitempty,min=1,max=1000"`
+	Tags           map[string]any `json:"tags,omitempty"`
+	Resource       *Resource      `json:"resource,omitempty"`
 }
 
 // Resource structure of the SAP Alert Notification Service Event
 type Resource struct {
-	ResourceName     string                 `json:"resourceName,omitempty"`
-	ResourceType     string                 `json:"resourceType,omitempty"`
-	ResourceInstance string                 `json:"resourceInstance,omitempty"`
-	Tags             map[string]interface{} `json:"tags,omitempty"`
+	ResourceName     string         `json:"resourceName,omitempty"`
+	ResourceType     string         `json:"resourceType,omitempty"`
+	ResourceInstance string         `json:"resourceInstance,omitempty"`
+	Tags             map[string]any `json:"tags,omitempty"`
 }
 
 // MergeWithJSON unmarshalls an ANS Event JSON string and merges it with the existing receiver Event
@@ -110,7 +110,7 @@ func (event *Event) SetSeverityAndCategory(level logrus.Level) {
 	}
 }
 
-func strictUnmarshal(data []byte, v interface{}) error {
+func strictUnmarshal(data []byte, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
 	return dec.Decode(v)

@@ -46,7 +46,7 @@ type LowPerQuery struct {
 	Confirmed int    `json:"confirmed"`
 }
 
-func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
+func CreateCustomReport(data *map[string]any, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX1 UI</a>`, (*data)["DeepLink"])
 
 	scanReport := reporting.ScanReport{
@@ -142,7 +142,7 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 	return scanReport
 }
 
-func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData {
+func CreateJSONHeaderReport(data *map[string]any) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
 		ToolName:        `CheckmarxOne`,
 		ProjectName:     fmt.Sprint((*data)["ProjectName"]),

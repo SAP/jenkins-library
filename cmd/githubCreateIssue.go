@@ -84,10 +84,7 @@ func getChunks(value []rune, chunkSize int) []string {
 		return []string{""}
 	}
 	for i := 0; i < length; i += chunkSize {
-		to := length
-		if to > i+chunkSize {
-			to = i + chunkSize
-		}
+		to := min(length, i+chunkSize)
 		chunks = append(chunks, string(value[i:to]))
 	}
 	return chunks

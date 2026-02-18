@@ -59,7 +59,7 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 
 	output := []byte{}
 	if len(config.PipelineLink) > 0 {
-		output = []byte(fmt.Sprintf("## Pipeline Source for Details\n\nAs listed results might be incomplete, it is crucial that you check the detailed [pipeline](%v) status.\n\n", config.PipelineLink))
+		output = fmt.Appendf(nil, "## Pipeline Source for Details\n\nAs listed results might be incomplete, it is crucial that you check the detailed [pipeline](%v) status.\n\n", config.PipelineLink)
 	}
 	for _, scanReport := range scanReports {
 		if (config.FailedOnly && !scanReport.SuccessfulScan) || !config.FailedOnly {

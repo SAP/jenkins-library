@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -63,9 +64,7 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 		}
 	}
 
-	for registry, auth := range sourceConfig.GetAuthConfigs() {
-		targetConfig.AuthConfigs[registry] = auth
-	}
+	maps.Copy(targetConfig.AuthConfigs, sourceConfig.GetAuthConfigs())
 
 	buf := bytes.NewBuffer(nil)
 	err = targetConfig.SaveToWriter(buf)
@@ -93,7 +92,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 	}
 
 	dockerConfigContent := []byte{}
-	dockerConfig := map[string]interface{}{}
+	dockerConfig := map[string]any{}
 	if exists, err := utils.FileExists(configPath); exists {
 		dockerConfigContent, err = utils.FileRead(configPath)
 		if err != nil {
@@ -113,13 +112,13 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return targetPath, nil
 	}
 
-	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
+	credentialsBase64 := base64.StdEncoding.EncodeToString(fmt.Appendf(nil, "%v:%v", username, password))
 	dockerAuth := AuthEntry{Auth: credentialsBase64}
 
 	if dockerConfig["auths"] == nil {
 		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
 	} else {
-		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
+		authEntries, ok := dockerConfig["auths"].(map[string]any)
 		if !ok {
 			return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", configPath)
 		}

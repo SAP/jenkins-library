@@ -13,7 +13,7 @@ import (
 type Build interface {
 	GetArtifacts() []gojenkins.Artifact
 	IsRunning(ctx context.Context) bool
-	Poll(ctx context.Context, options ...interface{}) (int, error)
+	Poll(ctx context.Context, options ...any) (int, error)
 }
 
 // WaitForBuildToFinish waits till a build is finished.
@@ -32,7 +32,7 @@ func WaitForBuildToFinish(ctx context.Context, build Build, pollInterval time.Du
 
 		fmt.Printf("Error occurred while waiting for build to finish: %v. Retrying...\n", err)
 
-		for i := 0; i < maxRetries; i++ {
+		for range maxRetries {
 			time.Sleep(pollInterval)
 			_, err = build.Poll(ctx)
 

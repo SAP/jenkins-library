@@ -117,7 +117,7 @@ type Options struct {
 	NodeName                 string
 	MtaPath                  string
 	MtaVersion               string
-	NodeExtDescriptorMapping map[string]interface{}
+	NodeExtDescriptorMapping map[string]any
 	Proxy                    string
 	StashContent             []string
 	Verbose                  bool
@@ -158,7 +158,7 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 	return
 }
 
-func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDescriptorMapping map[string]interface{}, nodes []Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[int64]string, error) {
+func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDescriptorMapping map[string]any, nodes []Node, mtaYamlMap map[string]any, mtaVersion string) (map[int64]string, error) {
 	var wrongMtaIdExtDescriptors []string
 	var wrongExtDescriptorPaths []string
 	var wrongNodeNames []string
@@ -221,8 +221,8 @@ func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDes
 	}
 }
 
-func GetYamlAsMap(utils TmsUtils, yamlPath string) (map[string]interface{}, error) {
-	var result map[string]interface{}
+func GetYamlAsMap(utils TmsUtils, yamlPath string) (map[string]any, error) {
+	var result map[string]any
 	bytes, err := utils.FileRead(yamlPath)
 	if err != nil {
 		return result, err

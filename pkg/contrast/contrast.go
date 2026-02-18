@@ -325,7 +325,7 @@ func (c *Client) GetAppInfo(appUIUrl, server string) (*ApplicationInfo, error) {
 type AsyncReportConfig struct {
 	ReportType         string // "SARIF" or "PDF"
 	URLPattern         string // URL pattern for starting async generation
-	Payload            map[string]interface{}
+	Payload            map[string]any
 	DownloadURLPattern string // Pattern for building download URL
 }
 
@@ -405,7 +405,7 @@ func (c *Client) GenerateSarifReport(appUuid string) ([]byte, error) {
 	config := AsyncReportConfig{
 		ReportType: "SARIF",
 		URLPattern: "%s/Contrast/api/ng/organizations/%s/applications/%s/sarif/async",
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"severities":  []string{"CRITICAL", "HIGH", "MEDIUM", "LOW", "NOTE"},
 			"quickFilter": "OPEN",
 			"toolTypes":   []string{"ASSESS"},
@@ -420,7 +420,7 @@ func (c *Client) GeneratePdfReport(appUuid string) ([]byte, error) {
 	config := AsyncReportConfig{
 		ReportType: "PDF",
 		URLPattern: "%s/Contrast/api/ng/%s/applications/%s/attestation",
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"showVulnerabilitiesDetails": true,
 			"showRouteObservations":      true,
 		},
@@ -434,7 +434,7 @@ func (c *Client) StartAsyncSarifGeneration(appUuid string) (string, error) {
 	config := AsyncReportConfig{
 		ReportType: "SARIF",
 		URLPattern: "%s/Contrast/api/ng/organizations/%s/applications/%s/sarif/async",
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"severities":  []string{"CRITICAL", "HIGH", "MEDIUM", "LOW", "NOTE"},
 			"quickFilter": "OPEN",
 			"toolTypes":   []string{"ASSESS"},
@@ -449,7 +449,7 @@ func (c *Client) StartAsyncPdfGeneration(appUuid string) (string, error) {
 	config := AsyncReportConfig{
 		ReportType: "PDF",
 		URLPattern: "%s/Contrast/api/ng/%s/applications/%s/attestation",
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"showVulnerabilitiesDetails": true,
 			"showRouteObservations":      true,
 		},

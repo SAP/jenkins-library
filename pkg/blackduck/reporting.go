@@ -68,7 +68,7 @@ func CreateSarifResultFile(vulns *Vulnerabilities, projectName, projectVersion, 
 				},
 				Locations: []format.Location{{PhysicalLocation: format.PhysicalLocation{ArtifactLocation: format.ArtifactLocation{URI: v.Name}}}},
 				PartialFingerprints: format.PartialFingerprints{
-					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID))),
+					PackageURLPlusCVEHash: base64.URLEncoding.EncodeToString(fmt.Appendf(nil, "%v+%v", v.Component.ToPackageUrl().ToString(), v.CweID)),
 				},
 				Properties: &format.SarifProperties{
 					Audited:               isAudited,

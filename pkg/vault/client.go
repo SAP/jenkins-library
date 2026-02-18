@@ -32,7 +32,7 @@ type ClientConfig struct {
 // logicalClient interface for mocking
 type logicalClient interface {
 	Read(string) (*vaultAPI.Secret, error)
-	Write(string, map[string]interface{}) (*vaultAPI.Secret, error)
+	Write(string, map[string]any) (*vaultAPI.Secret, error)
 }
 
 func newClient(cfg *ClientConfig) (*Client, error) {

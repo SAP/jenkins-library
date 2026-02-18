@@ -114,8 +114,8 @@ func (d *Docker) SetVersion(version string) error {
 }
 
 func (d *Docker) versionFromEnv(env string) string {
-	lines := strings.Split(string(d.content), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(d.content), "\n")
+	for line := range lines {
 		if strings.HasPrefix(line, "ENV") && strings.Fields(line)[1] == env {
 			return strings.Fields(line)[2]
 		}
@@ -124,8 +124,8 @@ func (d *Docker) versionFromEnv(env string) string {
 }
 
 func (d *Docker) versionFromBaseImageTag() string {
-	lines := strings.Split(string(d.content), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(d.content), "\n")
+	for line := range lines {
 		if strings.HasPrefix(line, "FROM") {
 			imageParts := strings.Split(line, ":")
 			partsCount := len(imageParts)

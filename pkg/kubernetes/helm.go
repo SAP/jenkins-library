@@ -78,7 +78,7 @@ func NewHelmExecutor(config HelmExecuteOptions, utils DeployUtils, verbose bool,
 
 // runHelmInit is used to set up env for executing helm command
 func (h *HelmExecute) runHelmInit() error {
-	helmLogFields := map[string]interface{}{}
+	helmLogFields := map[string]any{}
 	helmLogFields["Chart Path"] = h.config.ChartPath
 	helmLogFields["Namespace"] = h.config.Namespace
 	helmLogFields["Deployment Name"] = h.config.DeploymentName

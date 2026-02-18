@@ -287,7 +287,7 @@ func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCo
 		return errors.New("mtarGroup, version not found and must be present")
 	}
 
-	credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
+	credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString(fmt.Appendf(nil, "%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword))
 	headers := http.Header{}
 	headers.Add("Authorization", credentialsEncoded)
 
@@ -455,7 +455,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 		return fmt.Errorf("package.json file does not exist")
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	pContent, err := utils.FileRead("package.json")
 	if err != nil {
 		return err
@@ -523,7 +523,7 @@ func generateMta(id, applicationName, version string) (string, error) {
 }
 
 func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
-	var result map[string]interface{}
+	var result map[string]any
 	p, err := utils.FileRead(mtaYamlFile)
 	if err != nil {
 		return "", err

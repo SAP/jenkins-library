@@ -24,7 +24,7 @@ func writeData(config *influxWriteDataOptions, influxClient influxdb2.Client) er
 	log.Entry().Info("influxWriteData step")
 
 	client := influx.NewClient(influxClient, config.Organization, config.Bucket)
-	var dataMap map[string]map[string]interface{}
+	var dataMap map[string]map[string]any
 	if err := json.Unmarshal([]byte(config.DataMap), &dataMap); err != nil {
 		return fmt.Errorf("Failed to unmarshal dataMap: %v", err)
 	}

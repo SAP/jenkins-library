@@ -106,7 +106,7 @@ allprojects {
 
 // PublishedArtifacts contains information about published artifacts
 type PublishedArtifacts struct {
-	Info     Component `json:"component,omitempty"`
+	Info     Component `json:"component"`
 	Elements []Element `json:"variants,omitempty"`
 }
 

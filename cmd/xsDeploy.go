@@ -428,7 +428,7 @@ func complete(mode DeployMode, action Action, operationID string, s command.Shel
 	return nil
 }
 
-func executeCmd(templateID string, commandPattern string, properties interface{}, s command.ShellRunner) error {
+func executeCmd(templateID string, commandPattern string, properties any, s command.ShellRunner) error {
 
 	tmpl, e := template.New(templateID).Parse(commandPattern)
 	if e != nil {

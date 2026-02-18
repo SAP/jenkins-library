@@ -463,16 +463,16 @@ func generateHTMLDocumentAUnit(parsedXML *AUnitResult) (htmlDocumentString strin
 type AUnitConfig struct {
 	Title     string              `json:"title,omitempty"`
 	Context   string              `json:"context,omitempty"`
-	Options   AUnitOptions        `json:"options,omitempty"`
-	ObjectSet abaputils.ObjectSet `json:"objectset,omitempty"`
+	Options   AUnitOptions        `json:"options"`
+	ObjectSet abaputils.ObjectSet `json:"objectset"`
 }
 
 // AUnitOptions in form of packages and software components to be checked
 type AUnitOptions struct {
 	Measurements string    `json:"measurements,omitempty"`
-	Scope        Scope     `json:"scope,omitempty"`
-	RiskLevel    RiskLevel `json:"risklevel,omitempty"`
-	Duration     Duration  `json:"duration,omitempty"`
+	Scope        Scope     `json:"scope"`
+	RiskLevel    RiskLevel `json:"risklevel"`
+	Duration     Duration  `json:"duration"`
 }
 
 // Scope in form of packages and software components to be checked

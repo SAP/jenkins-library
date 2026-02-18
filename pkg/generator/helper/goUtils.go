@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/ghodss/yaml"
@@ -46,8 +47,8 @@ func (c *ContextDefaultData) readPipelineContextDefaultData(metadata io.ReadClos
 }
 
 // ReadContextDefaultMap maps the default descriptions into a map
-func (c *ContextDefaultData) readContextDefaultMap() map[string]interface{} {
-	var m map[string]interface{} = make(map[string]interface{})
+func (c *ContextDefaultData) readContextDefaultMap() map[string]any {
+	var m map[string]any = make(map[string]any)
 
 	for _, param := range c.Parameters {
 		m[param.Name] = param
@@ -73,12 +74,7 @@ func checkError(err error) {
 }
 
 func contains(v []string, s string) bool {
-	for _, i := range v {
-		if i == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(v, s)
 }
 
 func ifThenElse(condition bool, positive string, negative string) string {

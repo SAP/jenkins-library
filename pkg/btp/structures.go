@@ -45,13 +45,13 @@ type ServiceInstanceData struct {
 		CrmCustomerID   string `json:"crm_customer_id"`
 		GlobalAccountID string `json:"global_account_id"`
 	} `json:"context"`
-	Usable       bool        `json:"usable"`
-	SubaccountID string      `json:"subaccount_id"`
-	Protected    interface{} `json:"protected"`
-	CreatedBy    string      `json:"created_by"`
-	CreatedAt    time.Time   `json:"created_at"`
-	UpdatedAt    time.Time   `json:"updated_at"`
-	Labels       string      `json:"labels"`
+	Usable       bool      `json:"usable"`
+	SubaccountID string    `json:"subaccount_id"`
+	Protected    any       `json:"protected"`
+	CreatedBy    string    `json:"created_by"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Labels       string    `json:"labels"`
 }
 
 type ServiceBindingData struct {

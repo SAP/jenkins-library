@@ -409,7 +409,7 @@ func (sys *SystemInstance) GetProjectsByNameAndTeam(projectName, teamID string) 
 // CreateProject creates a new project in the Checkmarx backend
 func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCreateResult, error) {
 	var result ProjectCreateResult
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"name":       projectName,
 		"owningTeam": teamID,
 		"isPublic":   true,
@@ -434,7 +434,7 @@ func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCre
 
 // CreateBranch creates a branch of an existing project in the Checkmarx backend
 func (sys *SystemInstance) CreateBranch(projectID int, branchName string) int {
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"name": branchName,
 	}
 
@@ -578,7 +578,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 		engineConfigID = projectScanSettings.EngineConfiguration.EngineConfigurationID
 	}
 
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"projectId":             projectID,
 		"presetId":              presetID,
 		"engineConfigurationId": engineConfigID,
@@ -601,7 +601,7 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 // ScanProject triggers a scan on the project addressed by projectID
 func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, forceScan bool) (Scan, error) {
 	scan := Scan{}
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"projectId":     projectID,
 		"isIncremental": isIncremental,
 		"isPublic":      isPublic,
@@ -676,7 +676,7 @@ func (sys *SystemInstance) GetResults(scanID int) ResultsStatistics {
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
 func (sys *SystemInstance) RequestNewReport(scanID int, reportType string) (Report, error) {
 	report := Report{}
-	jsonData := map[string]interface{}{
+	jsonData := map[string]any{
 		"scanId":     scanID,
 		"reportType": reportType,
 		"comment":    "Scan report triggered by Piper",

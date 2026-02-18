@@ -224,7 +224,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 			metadata.Spec.Inputs.Parameters = []config.StepParameters{}
 		}
 
-		var flagValues map[string]interface{}
+		var flagValues map[string]any
 		if cmd != nil {
 			flagValues = config.AvailableFlagValues(cmd, &paramFilter)
 		}
@@ -257,7 +257,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 }
 
 func generateConfigWrapper(cmd *cobra.Command) error {
-	var formatter func(interface{}) (string, error)
+	var formatter func(any) (string, error)
 	switch strings.ToLower(configOptions.Output) {
 	case "yaml", "yml":
 		formatter = config.GetYAML
@@ -269,7 +269,7 @@ func generateConfigWrapper(cmd *cobra.Command) error {
 	return GenerateConfig(cmd, formatter)
 }
 
-func GenerateConfig(cmd *cobra.Command, formatter func(interface{}) (string, error)) error {
+func GenerateConfig(cmd *cobra.Command, formatter func(any) (string, error)) error {
 	utils := newGetConfigUtilsUtils()
 
 	stepConfig, err := getConfigWithFlagValues(cmd)

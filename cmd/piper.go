@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -52,11 +53,11 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
-	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
-	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
-	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
-	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
+	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub"`
+	SentryConfig      SentryConfiguration      `json:"sentry"`
+	SplunkConfig      SplunkConfiguration      `json:"splunk"`
+	OIDCConfig        OIDCConfiguration        `json:"oidc"`
+	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust"`
 }
 
 type GCPPubSubConfiguration struct {
@@ -329,7 +330,7 @@ func initStageName(outputToLog bool) {
 		return
 	}
 
-	var params map[string]interface{}
+	var params map[string]any
 	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
 	if err != nil {
 		if outputToLog {
@@ -350,7 +351,7 @@ func initStageName(outputToLog bool) {
 }
 
 // PrepareConfig reads step configuration from various sources and merges it (defaults, config file, flags, ...)
-func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options interface{}, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
+func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName string, options any, openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
 	log.SetFormatter(GeneralConfig.LogFormat)
 
 	initStageName(true)
@@ -460,7 +461,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
+func retrieveHookConfig(source map[string]any, target *HookConfiguration) {
 	if source != nil {
 		log.Entry().Debug("Retrieving hook configuration")
 		b, err := json.Marshal(source)
@@ -476,7 +477,7 @@ func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration
 
 var errIncompatibleTypes = fmt.Errorf("incompatible types")
 
-func checkTypes(config map[string]interface{}, options interface{}) map[string]interface{} {
+func checkTypes(config map[string]any, options any) map[string]any {
 	optionsType := getStepOptionsStructType(options)
 
 	for paramName := range config {
@@ -521,7 +522,7 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 	return config
 }
 
-func convertValueFromString(config map[string]interface{}, optionsField *reflect.StructField, paramName, paramValue string) error {
+func convertValueFromString(config map[string]any, optionsField *reflect.StructField, paramName, paramValue string) error {
 	switch optionsField.Type.Kind() {
 	case reflect.Slice, reflect.Array:
 		// Could do automatic conversion for those types in theory,
@@ -543,7 +544,7 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 	return errIncompatibleTypes
 }
 
-func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
+func convertValueFromFloat(config map[string]any, optionsField *reflect.StructField, paramName string, paramValue float64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
 		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
@@ -581,7 +582,7 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	return errIncompatibleTypes
 }
 
-func convertValueFromInt(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue int64) error {
+func convertValueFromInt(config map[string]any, optionsField *reflect.StructField, paramName string, paramValue int64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
 		config[paramName] = strconv.FormatInt(paramValue, 10)
@@ -608,9 +609,9 @@ func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect
 	return nil
 }
 
-func getStepOptionsStructType(stepOptions interface{}) reflect.Type {
+func getStepOptionsStructType(stepOptions any) reflect.Type {
 	typedOptions := reflect.ValueOf(stepOptions)
-	if typedOptions.Kind() == reflect.Ptr {
+	if typedOptions.Kind() == reflect.Pointer {
 		typedOptions = typedOptions.Elem()
 	}
 	return typedOptions.Type()
@@ -634,12 +635,10 @@ func getProjectConfigFile(name string) string {
 	return name
 }
 
-func mergeResourceParameters(resParams ...map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func mergeResourceParameters(resParams ...map[string]any) map[string]any {
+	result := make(map[string]any)
 	for _, m := range resParams {
-		for k, v := range m {
-			result[k] = v
-		}
+		maps.Copy(result, m)
 	}
 	return result
 }

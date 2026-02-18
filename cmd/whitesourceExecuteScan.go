@@ -961,11 +961,11 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	var versionWideAlerts []ws.Alert // all alerts for a given project version
-	projectNames := ``               // holds all project tokens considered a part of the report for debugging
+	var projectNames strings.Builder // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.Version {
-			projectNames += project.Name + "\n"
+			projectNames.WriteString(project.Name + "\n")
 			alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 			if err != nil {
 				return fmt.Errorf("failed to get project alerts by type: %w", err)
@@ -977,7 +977,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	reportPath := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
-	if err := utils.FileWrite(reportPath, []byte(projectNames), 0o666); err != nil {
+	if err := utils.FileWrite(reportPath, []byte(projectNames.String()), 0o666); err != nil {
 		return fmt.Errorf("failed to write report: %s: %w", reportPath, err)
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -1037,14 +1037,14 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 		{"F1", "Resolution"},
 	}
 	for _, row := range rows {
-		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
+		err := streamWriter.SetRow(row.axis, []any{excelize.Cell{StyleID: styleID, Value: row.title}})
 		if err != nil {
 			return err
 		}
 	}
 
 	for i, alert := range alerts {
-		row := make([]interface{}, 6)
+		row := make([]any, 6)
 		vuln := alert.Vulnerability
 		row[0] = vuln.CVSS3Severity
 		row[1] = alert.Library.Filename
@@ -1062,11 +1062,12 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 
 // outputs an slice of libraries to an excel file based on projects with version == config.Version
 func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
-	output := "Library Name, Project Name\n"
+	var output strings.Builder
+	output.WriteString("Library Name, Project Name\n")
 	for projectName, libraries := range libraries {
 		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)
 		for _, library := range libraries {
-			output += library.Name + ", " + projectName + "\n"
+			output.WriteString(library.Name + ", " + projectName + "\n")
 		}
 	}
 
@@ -1078,7 +1079,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", ws.ReportsDirectory,
 		utils.Now().Format(wsReportTimeStampLayout))
-	if err := utils.FileWrite(fileName, []byte(output), 0o666); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output.String()), 0o666); err != nil {
 		return fmt.Errorf("failed to write file: %s: %w", fileName, err)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
@@ -1210,8 +1211,8 @@ func renameTarfilePath(tarFilepath string) error {
 		return fmt.Errorf("file %s does not exist", tarFilepath)
 	}
 	newFileName := ""
-	if index := strings.Index(tarFilepath, ":"); index != -1 {
-		newFileName = tarFilepath[:index]
+	if before, _, ok := strings.Cut(tarFilepath, ":"); ok {
+		newFileName = before
 		newFileName += ".tar"
 	}
 	if err := os.Rename(tarFilepath, newFileName); err != nil {

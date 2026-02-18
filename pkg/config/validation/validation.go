@@ -8,7 +8,7 @@ import (
 
 // FindEmptyStringsInConfigStruct finds empty strings in a struct.
 // In case the struct contains other nested structs, these struct are also checked.
-func FindEmptyStringsInConfigStruct(v interface{}) ([]string, error) {
+func FindEmptyStringsInConfigStruct(v any) ([]string, error) {
 	emptyStrings := []string{}
 	if reflect.ValueOf(v).Kind() != reflect.Struct {
 		return emptyStrings, fmt.Errorf("'%v' (%T) is not a struct", v, v)
@@ -17,7 +17,7 @@ func FindEmptyStringsInConfigStruct(v interface{}) ([]string, error) {
 	return emptyStrings, err
 }
 
-func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []string) error {
+func findNestedEmptyStrings(v any, emptyStrings *[]string, prefix []string) error {
 	fields := reflect.TypeOf(v)
 	values := reflect.ValueOf(v)
 	for i := 0; i < fields.NumField(); i++ {

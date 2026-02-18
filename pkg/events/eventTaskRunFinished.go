@@ -12,7 +12,7 @@ func NewEventTaskRunFinished(eventTypePrefix, eventSource string, payload Payloa
 	event := NewEvent(eventType, eventSource, "").Create(payload)
 	log.Entry().Debugf("event %+v", event)
 	// log event payload
-	var newEventData map[string]interface{}
+	var newEventData map[string]any
 	event.cloudEvent.DataAs(&newEventData)
 	log.Entry().Debugf("event data %+v", newEventData)
 	// convert event to bytes

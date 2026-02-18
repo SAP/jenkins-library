@@ -84,7 +84,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 		return fmt.Errorf("failed to process deployment values: %w", err)
 	}
 
-	helmLogFields := map[string]interface{}{}
+	helmLogFields := map[string]any{}
 	helmLogFields["Chart Path"] = config.ChartPath
 	helmLogFields["Namespace"] = config.Namespace
 	helmLogFields["Deployment Name"] = config.DeploymentName
@@ -312,7 +312,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 		}
 
-		var dockerRegistrySecretData map[string]interface{}
+		var dockerRegistrySecretData map[string]any
 
 		if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
 			log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
@@ -392,7 +392,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 }
 
 type deploymentValues struct {
-	mapping     map[string]interface{}
+	mapping     map[string]any
 	singleImage bool
 	values      []struct {
 		key, value string
@@ -454,7 +454,7 @@ func (dv deploymentValues) marshal() []string {
 	return result
 }
 
-func (dv *deploymentValues) asHelmValues() map[string]interface{} {
+func (dv *deploymentValues) asHelmValues() map[string]any {
 	valuesOpts := values.Options{
 		Values: dv.marshal(),
 	}
@@ -462,7 +462,7 @@ func (dv *deploymentValues) asHelmValues() map[string]interface{} {
 	if err != nil {
 		log.Entry().WithError(err).Fatal("failed to process deployment values")
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"Values": mergedValues,
 	}
 }

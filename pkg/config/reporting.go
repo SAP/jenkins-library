@@ -39,8 +39,8 @@ var ReportingParameters = ReportingParams{
 }
 
 // GetResourceParameters retrieves reporting parameters from a named pipeline resource with a defined path
-func (r ReportingParams) GetResourceParameters(path, name string) map[string]interface{} {
-	resourceParams := map[string]interface{}{}
+func (r ReportingParams) GetResourceParameters(path, name string) map[string]any {
+	resourceParams := map[string]any{}
 
 	for _, param := range r.Parameters {
 		for _, res := range param.ResourceRef {
@@ -73,7 +73,7 @@ func (r ReportingParams) getReportingFilter() []string {
 	return reportingFilter
 }
 
-func (s *StepConfig) mixinReportingConfig(configs ...map[string]interface{}) {
+func (s *StepConfig) mixinReportingConfig(configs ...map[string]any) {
 	reportingFilter := ReportingParameters.getReportingFilter()
 	for _, config := range configs {
 		s.mixIn(config, reportingFilter, StepData{})

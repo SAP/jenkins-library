@@ -37,7 +37,7 @@ type Toolrecord struct {
 	Keys []keydataset
 
 	// place for additional context information
-	Context map[string]interface{}
+	Context map[string]any
 
 	// internal - not exported to the json
 	workspace      string
@@ -58,7 +58,7 @@ func New(fileUtils fileWriteUtils, workspace, toolName, toolInstance string) *To
 	tr.ToolName = toolName
 	tr.ToolInstance = toolInstance
 	tr.Keys = []keydataset{}
-	tr.Context = make(map[string]interface{})
+	tr.Context = make(map[string]any)
 
 	tr.workspace = workspace
 
@@ -91,7 +91,7 @@ func (tr *Toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) err
 
 // AddContext - add additional context information
 // second call with the same label will overwrite the first call's data
-func (tr *Toolrecord) AddContext(label string, data interface{}) error {
+func (tr *Toolrecord) AddContext(label string, data any) error {
 	if label == "" {
 		return errors.New("TR_ADD_CONTEXT: no label supplied")
 	}

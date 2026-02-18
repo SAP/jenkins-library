@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 )
@@ -94,10 +95,8 @@ func createDescriptionSection(stepData *config.StepData) string {
 
 func getNames(stepName string) (string, string) {
 	for _, library := range CustomLibrarySteps {
-		for _, customStepName := range library.Steps {
-			if stepName == customStepName {
-				return library.LibraryName, library.BinaryName
-			}
+		if slices.Contains(library.Steps, stepName) {
+			return library.LibraryName, library.BinaryName
 		}
 	}
 	return defaultLibraryName, defaultBinaryName

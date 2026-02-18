@@ -581,7 +581,7 @@ type multipleImageConf struct {
 	ContainerImage     string `json:"containerImage,omitempty"`
 }
 
-func parseMultipleImages(src []map[string]interface{}) ([]multipleImageConf, error) {
+func parseMultipleImages(src []map[string]any) ([]multipleImageConf, error) {
 	var result []multipleImageConf
 
 	for _, conf := range src {

@@ -457,7 +457,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	return err
 }
 
-func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) (updated, containsUnresolved bool, err error) {
+func handleMtaExtensionCredentials(extFile string, credentials map[string]any) (updated, containsUnresolved bool, err error) {
 
 	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
 
@@ -554,7 +554,7 @@ func toMap(keyValue []string, separator string) (map[string]string, error) {
 func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []string) {
 	var result = []string{}
 	var extFiles = []string{}
-	for _, part := range strings.Fields(strings.Trim(mtaExtensionDescriptor, " ")) {
+	for part := range strings.FieldsSeq(strings.Trim(mtaExtensionDescriptor, " ")) {
 		if part == "-e" || part == "" {
 			continue
 		}

@@ -121,10 +121,10 @@ func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
 }
 
 func splitSchemeAndHost(url string) (scheme, host string) {
-	schemeEnd := strings.Index(url, "://")
-	if schemeEnd >= 0 {
-		scheme = url[0:schemeEnd]
-		host = url[schemeEnd+3:]
+	before, after, ok := strings.Cut(url, "://")
+	if ok {
+		scheme = before
+		host = after
 	} else {
 		scheme = "https"
 		host = url
@@ -133,10 +133,10 @@ func splitSchemeAndHost(url string) (scheme, host string) {
 }
 
 func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
-	hostEnd := strings.Index(urlWithoutScheme, "/")
-	if hostEnd >= 0 {
-		host = urlWithoutScheme[0:hostEnd]
-		endpoint = urlWithoutScheme[hostEnd+1:]
+	before, after, ok := strings.Cut(urlWithoutScheme, "/")
+	if ok {
+		host = before
+		endpoint = after
 	} else {
 		host = urlWithoutScheme
 		endpoint = ""

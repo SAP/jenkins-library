@@ -655,7 +655,7 @@ func getWorkingDirForTrustStore() (string, error) {
 }
 
 // ParseHTTPResponseBodyXML parses an XML http response into a given interface
-func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
+func ParseHTTPResponseBodyXML(resp *http.Response, response any) error {
 	if resp == nil {
 		return fmt.Errorf("cannot parse HTTP response with value <nil>")
 	}
@@ -674,7 +674,7 @@ func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 }
 
 // ParseHTTPResponseBodyJSON parses a JSON http response into a given interface
-func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
+func ParseHTTPResponseBodyJSON(resp *http.Response, response any) error {
 	if resp == nil {
 		return fmt.Errorf("cannot parse HTTP response with value <nil>")
 	}

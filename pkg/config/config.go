@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,11 +23,11 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults           []string                          `json:"customDefaults,omitempty"`
-	General                  map[string]interface{}            `json:"general"`
-	Stages                   map[string]map[string]interface{} `json:"stages"`
-	Steps                    map[string]map[string]interface{} `json:"steps"`
-	Hooks                    map[string]interface{}            `json:"hooks,omitempty"`
+	CustomDefaults           []string                  `json:"customDefaults,omitempty"`
+	General                  map[string]any            `json:"general"`
+	Stages                   map[string]map[string]any `json:"stages"`
+	Steps                    map[string]map[string]any `json:"steps"`
+	Hooks                    map[string]any            `json:"hooks,omitempty"`
 	defaults                 PipelineDefaults
 	initialized              bool
 	accessTokens             map[string]string
@@ -37,8 +38,8 @@ type Config struct {
 
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
-	Config     map[string]interface{}
-	HookConfig map[string]interface{}
+	Config     map[string]any
+	HookConfig map[string]any
 }
 
 // ReadConfig loads config and returns its content
@@ -91,7 +92,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 	}
 }
 
-func setParamValueFromAlias(stepName string, configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
+func setParamValueFromAlias(stepName string, configMap map[string]any, filter []string, name string, aliases []Alias) map[string]any {
 	if configMap != nil && configMap[name] == nil && sliceContains(filter, name) {
 		for _, a := range aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
@@ -109,7 +110,7 @@ func setParamValueFromAlias(stepName string, configMap map[string]interface{}, f
 	return configMap
 }
 
-func getDeepAliasValue(configMap map[string]interface{}, key string) interface{} {
+func getDeepAliasValue(configMap map[string]any, key string) any {
 	parts := strings.Split(key, "/")
 	if len(parts) > 1 {
 		if configMap[parts[0]] == nil {
@@ -121,7 +122,7 @@ func getDeepAliasValue(configMap map[string]interface{}, key string) interface{}
 			log.Entry().Debugf("Ignoring alias '%v' as '%v' is not pointing to a map.", key, parts[0])
 			return nil
 		}
-		return getDeepAliasValue(configMap[parts[0]].(map[string]interface{}), strings.Join(parts[1:], "/"))
+		return getDeepAliasValue(configMap[parts[0]].(map[string]any), strings.Join(parts[1:], "/"))
 	}
 	return configMap[key]
 }
@@ -134,7 +135,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 			}
 			for paramName, paramValue := range c.Steps[stepAlias.Name] {
 				if c.Steps[stepName] == nil {
-					c.Steps[stepName] = map[string]interface{}{}
+					c.Steps[stepName] = map[string]any{}
 				}
 				if c.Steps[stepName][paramName] == nil {
 					c.Steps[stepName][paramName] = paramValue
@@ -176,7 +177,7 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 }
 
 // GetStepConfig provides merged step configuration using defaults, config, if available
-func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, metadata StepData, envParameters map[string]interface{}, stageName, stepName string) (StepConfig, error) {
+func (c *Config) GetStepConfig(flagValues map[string]any, paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, filters StepFilters, metadata StepData, envParameters map[string]any, stageName, stepName string) (StepConfig, error) {
 	parameters := metadata.Spec.Inputs.Parameters
 	secrets := metadata.Spec.Inputs.Secrets
 	stepAliases := metadata.Metadata.Aliases
@@ -225,11 +226,11 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// merge parameters provided via env vars
 	stepConfig.mixIn(envValues(filters.All), filters.All, metadata)
 
-	vaultParams := map[string]interface{}{}
+	vaultParams := map[string]any{}
 
 	// if parameters are provided in JSON format merge them
 	if len(paramJSON) != 0 {
-		var params map[string]interface{}
+		var params map[string]any
 		err := json.Unmarshal([]byte(paramJSON), &params)
 		if err != nil {
 			log.Entry().Warnf("failed to parse parameters from environment: %v", err)
@@ -313,7 +314,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 					// so far string-equals condition is assumed here
 					// if so and if no config applied yet, then try to apply the value
 					if cmp.Equal(dependentValue, param.Value) && stepConfig.Config[p.Name] == nil {
-						subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+						subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]any)
 						if ok && subMap[p.Name] != nil {
 							stepConfig.Config[p.Name] = subMap[p.Name]
 						}
@@ -337,10 +338,10 @@ func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultTok
 }
 
 // GetStepConfigWithJSON provides merged step configuration using a provided stepConfigJSON with additional flags provided
-func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON string, filters StepFilters) StepConfig {
+func GetStepConfigWithJSON(flagValues map[string]any, stepConfigJSON string, filters StepFilters) StepConfig {
 	var stepConfig StepConfig
 
-	stepConfigMap := map[string]interface{}{}
+	stepConfigMap := map[string]any{}
 
 	err := json.Unmarshal([]byte(stepConfigJSON), &stepConfigMap)
 	if err != nil {
@@ -365,11 +366,11 @@ func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, d
 		Parameters: acceptedParams,
 		Env:        []string{},
 	}
-	return c.GetStepConfig(map[string]interface{}{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, StepData{}, map[string]interface{}{}, stageName, "")
+	return c.GetStepConfig(map[string]any{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, StepData{}, map[string]any{}, stageName, "")
 }
 
 // GetJSON returns JSON representation of an object
-func GetJSON(data interface{}) (string, error) {
+func GetJSON(data any) (string, error) {
 	result, err := json.Marshal(data)
 	if err != nil {
 		return "", fmt.Errorf("error marshalling json: %v: %w", err, err)
@@ -378,7 +379,7 @@ func GetJSON(data interface{}) (string, error) {
 }
 
 // GetYAML returns YAML representation of an object
-func GetYAML(data interface{}) (string, error) {
+func GetYAML(data any) (string, error) {
 	result, err := yaml.Marshal(data)
 	if err != nil {
 		return "", fmt.Errorf("error marshalling yaml: %v: %w", err, err)
@@ -427,8 +428,8 @@ func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, e
 	return response.Body, nil
 }
 
-func envValues(filter []string) map[string]interface{} {
-	vals := map[string]interface{}{}
+func envValues(filter []string) map[string]any {
+	vals := map[string]any{}
 	for _, param := range filter {
 		if envVal := os.Getenv("PIPER_" + param); len(envVal) != 0 {
 			vals[param] = os.Getenv("PIPER_" + param)
@@ -437,17 +438,17 @@ func envValues(filter []string) map[string]interface{} {
 	return vals
 }
 
-func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string, metadata StepData) {
+func (s *StepConfig) mixIn(mergeData map[string]any, filter []string, metadata StepData) {
 	if s.Config == nil {
-		s.Config = map[string]interface{}{}
+		s.Config = map[string]any{}
 	}
 
 	s.Config = merge(s.Config, filterMap(mergeData, filter), metadata)
 }
 
-func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}, metadata StepData) {
+func (s *StepConfig) mixInHookConfig(mergeData map[string]any, metadata StepData) {
 	if s.HookConfig == nil {
-		s.HookConfig = map[string]interface{}{}
+		s.HookConfig = map[string]any{}
 	}
 
 	s.HookConfig = merge(s.HookConfig, mergeData, metadata)
@@ -455,7 +456,7 @@ func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}, metadata 
 
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 	if s.Config == nil {
-		s.Config = map[string]interface{}{}
+		s.Config = map[string]any{}
 	}
 
 	// conditional defaults need to be written to a sub map
@@ -468,7 +469,7 @@ func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 			} else {
 				for _, cond := range p.Conditions {
 					for _, param := range cond.Params {
-						s.Config[param.Value] = map[string]interface{}{p.Name: p.Default}
+						s.Config[param.Value] = map[string]any{p.Name: p.Default}
 					}
 				}
 			}
@@ -482,9 +483,9 @@ func ApplyContainerConditions(containers []Container, stepConfig *StepConfig) {
 		if len(container.Conditions) > 0 {
 			for _, param := range container.Conditions[0].Params {
 				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
-					var containerConf map[string]interface{}
+					var containerConf map[string]any
 					if stepConfig.Config[param.Value] != nil {
-						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
+						containerConf = stepConfig.Config[param.Value].(map[string]any)
 						for key, value := range containerConf {
 							if stepConfig.Config[key] == nil {
 								stepConfig.Config[key] = value
@@ -498,11 +499,11 @@ func ApplyContainerConditions(containers []Container, stepConfig *StepConfig) {
 	}
 }
 
-func filterMap(data map[string]interface{}, filter []string) map[string]interface{} {
-	result := map[string]interface{}{}
+func filterMap(data map[string]any, filter []string) map[string]any {
+	result := map[string]any{}
 
 	if data == nil {
-		data = map[string]interface{}{}
+		data = map[string]any{}
 	}
 
 	for key, value := range data {
@@ -513,21 +514,19 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 	return result
 }
 
-func merge(base, overlay map[string]interface{}, metadata StepData) map[string]interface{} {
-	result := map[string]interface{}{}
+func merge(base, overlay map[string]any, metadata StepData) map[string]any {
+	result := map[string]any{}
 
 	if base == nil {
-		base = map[string]interface{}{}
+		base = map[string]any{}
 	}
 
-	for key, value := range base {
-		result[key] = value
-	}
+	maps.Copy(result, base)
 
 	for key, value := range overlay {
-		if val, ok := value.(map[string]interface{}); ok {
-			if valBaseKey, ok := base[key].(map[string]interface{}); !ok {
-				result[key] = merge(map[string]interface{}{}, val, metadata)
+		if val, ok := value.(map[string]any); ok {
+			if valBaseKey, ok := base[key].(map[string]any); !ok {
+				result[key] = merge(map[string]any{}, val, metadata)
 			} else {
 				result[key] = merge(valBaseKey, val, metadata)
 			}
@@ -538,7 +537,7 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 				if v.Name == key && tVal != v.Type {
 					if tVal == "[]interface {}" && v.Type == "[]string" {
 						// json Unmarshal genertes arrays of interface{} for string arrays
-						for _, interfaceValue := range value.([]interface{}) {
+						for _, interfaceValue := range value.([]any) {
 							arrayValueType := reflect.TypeOf(interfaceValue).String()
 							if arrayValueType != "string" {
 								log.Entry().Warnf("config id %s should only contain strings but contains a %s", v.Name, arrayValueType)

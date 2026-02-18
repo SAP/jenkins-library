@@ -28,11 +28,11 @@ type Env struct {
 }
 
 type Project struct {
-	ID            string                 `toml:"id"`
-	Name          string                 `toml:"name"`
-	Licenses      []types.License        `toml:"licenses"`
-	Metadata      map[string]interface{} `toml:"metadata"`
-	SchemaVersion string                 `toml:"schema-version"`
+	ID            string          `toml:"id"`
+	Name          string          `toml:"name"`
+	Licenses      []types.License `toml:"licenses"`
+	Metadata      map[string]any  `toml:"metadata"`
+	SchemaVersion string          `toml:"schema-version"`
 }
 
 type IO struct {

@@ -299,7 +299,7 @@ func getProjectNameFromPackageJSON(packageJSONPath string, utils Utils) (string,
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %v: %w", packageJSONPath, err)
 	}
-	var packageJSON = make(map[string]interface{})
+	var packageJSON = make(map[string]any)
 	if err := json.Unmarshal(fileContents, &packageJSON); err != nil {
 		return "", fmt.Errorf("failed to read file content of %v: %w", packageJSONPath, err)
 	}
