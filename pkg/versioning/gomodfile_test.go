@@ -9,6 +9,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGoModGetVersion(t *testing.T) {
+	t.Run("no version in go.mod returns error", func(t *testing.T) {
+		// prepare
+		tmpFolder := t.TempDir()
+		goModFilePath := filepath.Join(tmpFolder, "go.mod")
+		os.WriteFile(goModFilePath, []byte("module github.com/test/module\n\ngo 1.21"), 0666)
+		gomod := &GoMod{
+			path:       goModFilePath,
+			fileExists: func(f string) (bool, error) { return false, nil },
+		}
+		// test
+		version, err := gomod.GetVersion()
+		// assert
+		assert.Empty(t, version)
+		assert.ErrorContains(t, err, "no version found in go.mod")
+	})
+}
+
 func TestGoModGetCoordinates(t *testing.T) {
 	testCases := []struct {
 		name       string

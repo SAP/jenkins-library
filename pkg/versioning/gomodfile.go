@@ -1,14 +1,13 @@
 package versioning
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
-
-	"errors"
 )
 
 // GoMod utility to interact with Go Modules specific versioning
@@ -44,20 +43,20 @@ func (m *GoMod) GetVersion() (string, error) {
 	if strings.Contains(m.path, "go.mod") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, m.fileExists)
 		if err != nil {
-			err = m.init()
-			if err != nil {
-				return "", fmt.Errorf("failed to read file '%v': %w", m.path, err)
+			gmiError := m.init()
+			if gmiError != nil {
+				return "", fmt.Errorf("failed to read file '%v' (%v): %w", m.path, err, gmiError)
 			}
 
-			parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse go.mod file: %w", err)
+			parsed, pErr := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
+			if pErr != nil {
+				return "", fmt.Errorf("failed to parse go.mod file (%v): %w", err, pErr)
 			}
 			if parsed.Module.Mod.Version != "" {
 				return parsed.Module.Mod.Version, nil
 			}
 
-			return "", fmt.Errorf("failed to retrieve version: %w", err)
+			return "", fmt.Errorf("no version found in go.mod: %w", err)
 		}
 	}
 	artifact := &Versionfile{
