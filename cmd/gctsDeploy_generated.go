@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -33,6 +34,7 @@ type gctsDeployOptions struct {
 	Configuration       map[string]interface{} `json:"configuration,omitempty"`
 	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
+	Proxy               string                 `json:"proxy,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git repository to a local repository and then to an ABAP system
@@ -145,14 +147,31 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
@@ -187,6 +206,7 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -363,6 +383,15 @@ func gctsDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "proxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_proxy"),
 					},
 				},
 			},

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -32,6 +33,7 @@ type npmExecuteScriptsOptions struct {
 	BuildDescriptorList          []string `json:"buildDescriptorList,omitempty"`
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
 	Publish                      bool     `json:"publish,omitempty"`
+	PublishTag                   string   `json:"publishTag,omitempty"`
 	RepositoryURL                string   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword           string   `json:"repositoryPassword,omitempty"`
 	RepositoryUsername           string   `json:"repositoryUsername,omitempty"`
@@ -236,14 +238,31 @@ If your build has scoped/unscoped dependencies from a private repository you can
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
@@ -272,6 +291,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorList, "buildDescriptorList", []string{}, "List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Create a BOM xml using CycloneDX.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures npm to publish the artifact to a repository.")
+	cmd.Flags().StringVar(&stepConfig.PublishTag, "publishTag", os.Getenv("PIPER_publishTag"), "Value of --tag flag that is passed to `npm publish` command. If not specified, it will be determined automatically depending on semver2 version (e.g., 1.0.0-202601012233 will be 'prerelease', 1.0.0 will be 'latest').")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
@@ -424,6 +444,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "publishTag",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_publishTag"),
 					},
 					{
 						Name: "repositoryUrl",

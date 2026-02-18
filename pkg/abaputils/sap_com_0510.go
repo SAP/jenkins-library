@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -146,16 +147,16 @@ func (api *SAP_COM_0510) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 
 	marshallError := json.Unmarshal(bodyText, &abapResp)
 	if marshallError != nil {
-		return nil, 0, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, 0, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 	marshallError = json.Unmarshal(*abapResp["d"], &body)
 	if marshallError != nil {
-		return nil, 0, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, 0, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 
 	count, errConv := strconv.Atoi(body.Count)
 	if errConv != nil {
-		return nil, 0, errors.Wrap(errConv, "Could not parse response from the ABAP Environment system")
+		return nil, 0, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", errConv)
 	}
 
 	return body.Results, count, nil
@@ -180,11 +181,11 @@ func (api *SAP_COM_0510) GetLogOverview() (result []LogResultsV2, err error) {
 
 	marshallError := json.Unmarshal(bodyText, &abapResp)
 	if marshallError != nil {
-		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 	marshallError = json.Unmarshal(*abapResp["d"], &body)
 	if marshallError != nil {
-		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 
 	if reflect.DeepEqual(ActionEntity{}, body) {
@@ -326,7 +327,7 @@ func (api *SAP_COM_0510) initialRequest() error {
 	// Configuring the HTTP Client and CookieJar
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
-		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
+		return fmt.Errorf("Could not create a Cookie Jar: %w", errorCookieJar)
 	}
 
 	api.client.SetOptions(piperhttp.ClientOptions{

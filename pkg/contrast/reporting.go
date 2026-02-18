@@ -1,13 +1,12 @@
 package contrast
 
 import (
-	"encoding/json"
+	"fmt"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/pkg/errors"
 )
 
 type ContrastAudit struct {
@@ -27,26 +26,6 @@ type ApplicationInfo struct {
 	Id     string
 	Name   string
 	Server string
-}
-
-func WriteJSONReport(jsonReport ContrastAudit, modulePath string) ([]piperutils.Path, error) {
-	utils := piperutils.Files{}
-	reportPaths := []piperutils.Path{}
-
-	reportsDirectory := filepath.Join(modulePath, "contrast")
-	jsonComplianceReportData := filepath.Join(reportsDirectory, "piper_contrast_report.json")
-	if err := utils.MkdirAll(reportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
-	}
-
-	file, _ := json.Marshal(jsonReport)
-	if err := utils.FileWrite(jsonComplianceReportData, file, 0666); err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write contrast json compliance report")
-	}
-
-	reportPaths = append(reportPaths, piperutils.Path{Name: "Contrast JSON Compliance Report", Target: jsonComplianceReportData})
-	return reportPaths, nil
 }
 
 func CreateAndPersistToolRecord(utils piperutils.FileUtils, appInfo *ApplicationInfo, modulePath string) (string, error) {
@@ -86,4 +65,21 @@ func persistToolRecord(toolrecord *toolrecord.Toolrecord) (string, error) {
 		return "", err
 	}
 	return toolrecord.GetFileName(), nil
+}
+
+// SaveReportFile saves report data to the contrast reports directory
+func SaveReportFile(utils piperutils.FileUtils, fileName, displayName string, data []byte) ([]piperutils.Path, error) {
+	reportsDirectory := filepath.Join("./", "contrast")
+	reportPath := filepath.Join(reportsDirectory, fileName)
+
+	if err := utils.MkdirAll(reportsDirectory, 0777); err != nil {
+		return nil, fmt.Errorf("failed to create contrast directory: %w", err)
+	}
+
+	if err := utils.FileWrite(reportPath, data, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write %s file: %w", fileName, err)
+	}
+
+	log.Entry().Infof("Report saved to %s", reportPath)
+	return []piperutils.Path{{Name: displayName, Target: reportPath}}, nil
 }

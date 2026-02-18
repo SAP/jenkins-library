@@ -1,16 +1,18 @@
 package gcs
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
+	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 	"io"
 	"os"
 	"path/filepath"
+
+	"cloud.google.com/go/storage"
+	"github.com/SAP/jenkins-library/pkg/log"
+
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 // Client is an interface to mock gcsClient
@@ -81,7 +83,7 @@ func (cl *gcsClient) DownloadFile(ctx context.Context, bucketID, sourcePath, tar
 
 	target, err := cl.createFile(targetPath)
 	if err != nil {
-		return errors.Wrapf(err, "could not create target file: %v", err)
+		return fmt.Errorf("could not create target file: %v: %w", err, err)
 	}
 	defer target.Close()
 
@@ -112,7 +114,7 @@ func (cl *gcsClient) ListFiles(ctx context.Context, bucketID string) ([]string, 
 			break
 		}
 		if err != nil {
-			return nil, errors.Wrap(err, "could not list files")
+			return nil, fmt.Errorf("could not list files: %w", err)
 		}
 		fileNames = append(fileNames, attrs.Name)
 	}

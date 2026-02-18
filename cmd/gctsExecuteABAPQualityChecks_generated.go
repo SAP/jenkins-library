@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -32,6 +33,7 @@ type gctsExecuteABAPQualityChecksOptions struct {
 	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
 	QueryParameters      map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
+	Proxy                string                 `json:"proxy,omitempty"`
 }
 
 // GctsExecuteABAPQualityChecksCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -147,14 +149,31 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
@@ -184,18 +203,18 @@ func addGctsExecuteABAPQualityChecksFlags(cmd *cobra.Command, stepConfig *gctsEx
 	cmd.Flags().StringVar(&stepConfig.AtcVariant, "atcVariant", `DEFAULT`, "Variant for ATC checks")
 	cmd.Flags().StringVar(&stepConfig.Scope, "scope", `repository`, "Scope of objects for which you want to execute the checks:\n<br/>\n- `localChangedObjects`: The object scope is derived from the last activity in the local repository. The checks are executed for the individual objects.\n<br/>\n- `remoteChangedObjects`: The object scope is the delta between the commit that triggered the pipeline and the current commit in the remote repository. The checks are executed for the individual objects.\n<br/>\n- `localChangedPackages`: The object scope is derived from the last activity in the local repository. All objects are resolved into packages. The checks are executed for the packages.\n<br/>\n- `remoteChangedPackages`: The object scope is the delta between the commit that triggered the pipeline and the current commit in the remote repository. All objects are resolved into packages. The checks are executed for the packages.\n<br/>\n- `repository`: The object scope comprises all objects that are part of the local repository. The checks are executed for the individual objects. Packages (DEVC) are excluded. This is the default scope.\n<br/>\n- `packages`: The object scope comprises all packages that are part of the local repository. The checks are executed for the packages.\n")
 	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of the commit that triggered the pipeline or any other commit used to calculate the object scope. Specifying a commit is mandatory for the `remoteChangedObjects` and `remoteChangedPackages` scopes.")
-	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins, the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.")
+	cmd.Flags().StringVar(&stepConfig.Workspace, "workspace", os.Getenv("PIPER_workspace"), "Absolute path to the directory that contains the source code that your CI/CD tool checks out. For example, in Jenkins the workspace parameter is `/var/jenkins_home/workspace/<jobName>/`. As an alternative, you can use Jenkins's predefined environmental variable `WORKSPACE`.")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies an output file name for the results of the ATC checks.")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies an output file name for the results of the ABAP Unit tests.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("client")
-	cmd.MarkFlagRequired("workspace")
 }
 
 // retrieve step metadata
@@ -319,7 +338,7 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_workspace"),
 					},
@@ -357,6 +376,15 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "proxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_proxy"),
 					},
 				},
 			},

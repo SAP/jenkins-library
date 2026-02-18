@@ -124,15 +124,12 @@ def publishCoberturaReport(Map settings = [:]) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
-        cobertura(
-            coberturaReportFile: pattern,
-            onlyStable: settings.get('onlyStableBuilds'),
-            failNoReports: !allowEmpty,
-            failUnstable: false,
-            failUnhealthy: false,
-            autoUpdateHealth: false,
-            autoUpdateStability: false,
-            maxNumberOfBuilds: 0
+        recordCoverage(
+            tools: [[
+                parser: 'COBERTURA', 
+                pattern: pattern
+            ]],
+            failNoReports: !allowEmpty
         )
         archiveResults(settings.get('archive'), pattern, allowEmpty)
     }

@@ -13,9 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -364,12 +365,12 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 	if APIKey != "" {
 		token, err = sys.getAPIToken()
 		if err != nil {
-			return sys, errors.Wrap(err, fmt.Sprintf("Error fetching oAuth token using API Key: %v", shortenGUID(APIKey)))
+			return sys, fmt.Errorf("Error fetching oAuth token using API Key %v: %w", shortenGUID(APIKey), err)
 		}
 	} else if client_id != "" && client_secret != "" {
 		token, err = sys.getOAuth2Token()
 		if err != nil {
-			return sys, errors.Wrap(err, fmt.Sprintf("Error fetching oAuth token using OIDC client: %v/%v", shortenGUID(client_id), shortenGUID(client_secret)))
+			return sys, fmt.Errorf(fmt.Sprintf("Error fetching oAuth token using OIDC client: %v/%v", shortenGUID(client_id), shortenGUID(client_secret)), err)
 		}
 	} else {
 		return sys, errors.New("No APIKey or client_id/client_secret provided.")
@@ -718,7 +719,7 @@ func (sys *SystemInstance) GetGroupByName(groupName string) (Group, error) {
 		}
 	}
 
-	return group, errors.New(fmt.Sprintf("No group matching %v", groupName))
+	return group, fmt.Errorf("No group matching %v", groupName)
 }
 
 // New for Cx1
@@ -736,7 +737,7 @@ func (sys *SystemInstance) GetGroupByID(groupID string) (Group, error) {
 		}
 	}
 
-	return group, errors.New(fmt.Sprintf("No group with ID %v", groupID))
+	return group, fmt.Errorf("No group with ID %v", groupID)
 }
 
 // GetProjects returns the projects defined in the Checkmarx backend which the user has access to
@@ -752,7 +753,7 @@ func (sys *SystemInstance) GetProjectByID(projectID string) (Project, error) {
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, http.Header{}, []int{})
 	if err != nil {
-		return project, errors.Wrapf(err, "fetching project %v failed", projectID)
+		return project, fmt.Errorf("fetching project %v failed: %w", projectID, err)
 	}
 
 	err = json.Unmarshal(data, &project)
@@ -781,7 +782,7 @@ func (sys *SystemInstance) GetProjectsByName(projectName string) ([]Project, err
 	data, err = sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/?%v", body.Encode()), nil, header, []int{404})
 
 	if err != nil {
-		return []Project{}, errors.Wrapf(err, "fetching project %v failed", projectName)
+		return []Project{}, fmt.Errorf("fetching project %v failed: %w", projectName, err)
 	}
 
 	err = json.Unmarshal(data, &projectResponse)
@@ -818,7 +819,7 @@ func (sys *SystemInstance) GetProjectsByNameAndGroup(projectName, groupID string
 		data, err = sendRequest(sys, http.MethodGet, "/projects/", nil, header, []int{404})
 	}
 	if err != nil {
-		return projectResponse.Projects, errors.Wrapf(err, "fetching project %v failed", projectName)
+		return projectResponse.Projects, fmt.Errorf("fetching project %v failed: %w", projectName, err)
 	}
 
 	err = json.Unmarshal(data, &projectResponse)
@@ -839,7 +840,7 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		return project, errors.Wrapf(err, "failed to marshal project data")
+		return project, fmt.Errorf("failed to marshal project data: %w", err)
 	}
 
 	header := http.Header{}
@@ -847,7 +848,7 @@ func (sys *SystemInstance) CreateProject(projectName string, groupIDs []string) 
 
 	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
-		return project, errors.Wrapf(err, "failed to create project %v", projectName)
+		return project, fmt.Errorf("failed to create project %v: %w", projectName, err)
 	}
 
 	err = json.Unmarshal(data, &project)
@@ -867,7 +868,7 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		return project, errors.Wrapf(err, "failed to marshal project data")
+		return project, fmt.Errorf("failed to marshal project data: %w", err)
 	}
 
 	header := http.Header{}
@@ -875,12 +876,12 @@ func (sys *SystemInstance) CreateProjectInApplication(projectName, applicationID
 	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewReader(jsonValue), header, []int{})
 
 	if err != nil {
-		return project, errors.Wrapf(err, "failed to create project %v under %v", projectName, applicationID)
+		return project, fmt.Errorf("failed to create project %v under %v: %w", projectName, applicationID, err)
 	}
 
 	err = json.Unmarshal(data, &project)
 	if err != nil {
-		return project, errors.Wrapf(err, "failed to unmarshal project data")
+		return project, fmt.Errorf("failed to unmarshal project data: %w", err)
 	}
 
 	// since there is a delay to assign a project to an application, adding a check to ensure project is ready after creation
@@ -910,7 +911,7 @@ func (sys *SystemInstance) GetUploadURI() (string, error) {
 	resp, err := sendRequest(sys, http.MethodPost, "/uploads", nil, header, []int{})
 
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get an upload uri")
+		return "", fmt.Errorf("failed to get an upload uri: %w", err)
 	}
 
 	responseData := make(map[string]string)
@@ -982,7 +983,7 @@ func (sys *SystemInstance) ScanProjectZip(projectID, sourceUrl, branch string, s
 
 	scan, err := sys.scanProject(jsonBody)
 	if err != nil {
-		return scan, errors.Wrapf(err, "Failed to start a zip scan for project %v", projectID)
+		return scan, fmt.Errorf("Failed to start a zip scan for project %v: %w", projectID, err)
 	}
 	return scan, err
 }
@@ -1001,7 +1002,7 @@ func (sys *SystemInstance) ScanProjectGit(projectID, repoUrl, branch string, set
 
 	scan, err := sys.scanProject(jsonBody)
 	if err != nil {
-		return scan, errors.Wrapf(err, "Failed to start a git scan for project %v", projectID)
+		return scan, fmt.Errorf("Failed to start a git scan for project %v: %w", projectID, err)
 	}
 	return scan, err
 }
@@ -1117,7 +1118,7 @@ func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v", scanID), nil, http.Header{}, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scan with ID %v: %s", scanID, err)
-		return scan, errors.Wrapf(err, "failed to fetch scan with ID %v", scanID)
+		return scan, fmt.Errorf("failed to fetch scan with ID %v: %w", scanID, err)
 	}
 
 	json.Unmarshal(data, &scan)
@@ -1134,7 +1135,7 @@ func (sys *SystemInstance) GetScanMetadatas(scanIDs []string) ([]ScanMetadata, e
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata?%v", params.Encode()), nil, http.Header{}, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch metadata for scans %s, error was: %s", fmt.Sprintf("%v", strings.Join(scanIDs, ",")), err)
-		return scans, errors.Wrapf(err, "failed to fetch metadata for scans")
+		return scans, fmt.Errorf("failed to fetch metadata for scans: %w", err)
 	}
 
 	json.Unmarshal(data, &scanmetadatalistresp)
@@ -1149,7 +1150,7 @@ func (sys *SystemInstance) GetScanMetadata(scanID string) (ScanMetadata, error) 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata/%v", scanID), nil, http.Header{}, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch metadata for scan with ID %v: %s", scanID, err)
-		return scanmeta, errors.Wrapf(err, "failed to fetch metadata for scan with ID %v", scanID)
+		return scanmeta, fmt.Errorf("failed to fetch metadata for scan with ID %v: %w", scanID, err)
 	}
 
 	json.Unmarshal(data, &scanmeta)
@@ -1162,7 +1163,7 @@ func (sys *SystemInstance) GetScanWorkflow(scanID string) ([]WorkflowLog, error)
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/%v/workflow", scanID), nil, http.Header{}, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scan with ID %v: %s", scanID, err)
-		return []WorkflowLog{}, errors.Wrapf(err, "failed to fetch scan with ID %v", scanID)
+		return []WorkflowLog{}, fmt.Errorf("failed to fetch scan with ID %v: %w", scanID, err)
 	}
 
 	json.Unmarshal(data, &workflow)
@@ -1198,7 +1199,7 @@ func (sys *SystemInstance) GetLastScans(projectID, branch string, limit int) ([]
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/?%v", body.Encode()), nil, header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
-		return []Scan{}, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
+		return []Scan{}, fmt.Errorf("failed to fetch scans of project %v: %w", projectID, err)
 	}
 
 	err = json.Unmarshal(data, &scanResponse)
@@ -1233,7 +1234,7 @@ func (sys *SystemInstance) GetLastScansByStatus(projectID, branch string, limit 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scans/?%v", body.Encode()), nil, nil, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
-		return []Scan{}, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
+		return []Scan{}, fmt.Errorf("failed to fetch scans of project %v: %w", projectID, err)
 	}
 
 	err = json.Unmarshal(data, &scanResponse)
@@ -1249,7 +1250,7 @@ func (s *Scan) IsIncremental() (bool, error) {
 			}
 		}
 	}
-	return false, errors.New(fmt.Sprintf("Scan %v did not have a sast-engine incremental flag set", s.ScanID))
+	return false, fmt.Errorf("Scan %v did not have a sast-engine incremental flag set", s.ScanID)
 }
 
 func (sys *SystemInstance) GetScanResults(scanID string, limit uint64) ([]ScanResult, error) {
@@ -1316,7 +1317,7 @@ func (sys *SystemInstance) GetScanSummary(scanID string) (ScanSummary, error) {
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/scan-summary/?%v", params.Encode()), nil, nil, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch metadata for scan with ID %v: %s", scanID, err)
-		return ScanSummary{}, errors.Wrapf(err, "failed to fetch metadata for scan with ID %v", scanID)
+		return ScanSummary{}, fmt.Errorf("failed to fetch metadata for scan with ID %v: %w", scanID, err)
 	}
 
 	err = json.Unmarshal(data, &ScansSummaries)
@@ -1325,7 +1326,7 @@ func (sys *SystemInstance) GetScanSummary(scanID string) (ScanSummary, error) {
 		return ScanSummary{}, err
 	}
 	if ScansSummaries.TotalCount == 0 {
-		return ScanSummary{}, errors.New(fmt.Sprintf("Failed to retrieve scan summary for scan ID %v", scanID))
+		return ScanSummary{}, fmt.Errorf("Failed to retrieve scan summary for scan ID %v", scanID)
 	}
 
 	if len(ScansSummaries.ScanSum) == 0 {
@@ -1408,7 +1409,7 @@ func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string
 	header.Set("Content-Type", "application/json")
 	data, err := sendRequest(sys, http.MethodPost, "/reports/v2", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
+		return "", fmt.Errorf("Failed to trigger report generation for scan %v: %w", scanID, err)
 	} else {
 		sys.logger.Infof("Generating report %v", string(data))
 	}
@@ -1431,7 +1432,7 @@ func (sys *SystemInstance) GetReportStatus(reportID string) (ReportStatus, error
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/%v?returnUrl=true", reportID), nil, header, []int{})
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
-		return response, errors.Wrapf(err, "failed to fetch report status for reportID %v", reportID)
+		return response, fmt.Errorf("failed to fetch report status for reportID %v: %w", reportID, err)
 	}
 
 	json.Unmarshal(data, &response)
@@ -1464,7 +1465,7 @@ func (sys *SystemInstance) DownloadReport(reportUrl string) ([]byte, error) {
 	header.Set("Accept", "application/json")
 	data, err := sendRequestInternal(sys, http.MethodGet, reportUrl, nil, header, []int{})
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "failed to download report from url: %v", reportUrl)
+		return []byte{}, fmt.Errorf("failed to download report from url: %v: %w", reportUrl, err)
 	}
 	return data, nil
 }

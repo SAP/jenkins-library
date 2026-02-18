@@ -29,8 +29,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
+	"errors"
+
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 )
 
 const NO_VERSION_SUFFIX = ""
@@ -278,7 +279,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 		if imageError != nil {
 			if err != nil {
-				err = errors.Wrapf(err, "error during scanning images: %q", imageError.Error())
+				err = fmt.Errorf("error during scanning images: %q: %w", imageError.Error(), err)
 			} else {
 				err = imageError
 			}
@@ -316,7 +317,7 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		} else {
 			// Error code mapping with more human readable text
-			err = errors.Wrap(err, exitCodeMapping(utils.GetExitCode()))
+			err = fmt.Errorf(exitCodeMapping(utils.GetExitCode()), err)
 		}
 	}
 	return err
@@ -584,7 +585,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 		err := utils.MkdirAll(".pipeline/blackduckDiagnostics", 0o755)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+			return nil, fmt.Errorf("failed to create diagnostics directory: %w", err)
 		}
 
 		log.Entry().Info("Diagnostics enabled, output will be stored in .pipeline/blackduckDiagnostics")
@@ -809,7 +810,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 			strings.Contains(err.Error(), "No Components found for project version") {
 			log.Entry().Debug(err.Error())
 		} else {
-			return errors.Wrap(err, "failed to fetch vulnerabilities")
+			return fmt.Errorf("failed to fetch vulnerabilities: %w", err)
 		}
 	}
 
@@ -981,7 +982,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	htmlReportPath := "piper_detect_policy_violation_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0o666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrap(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
 
@@ -989,11 +990,11 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0o777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return reportPaths, fmt.Errorf("failed to create reporting directory: %w", err)
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0o666); err != nil {
-		return reportPaths, errors.Wrap(err, "failed to write json report")
+		return reportPaths, fmt.Errorf("failed to write json report: %w", err)
 	}
 
 	return reportPaths, nil
@@ -1002,7 +1003,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		return errors.Wrap(err, "failed to get License Policy Violations"), 0
+		return fmt.Errorf("failed to get License Policy Violations: %w", err), 0
 	}
 
 	violationCount := getActivePolicyViolations(components)

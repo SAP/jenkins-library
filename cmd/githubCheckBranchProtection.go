@@ -9,8 +9,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/google/go-github/v68/github"
 
-	"github.com/pkg/errors"
-
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
 
@@ -34,7 +32,7 @@ func githubCheckBranchProtection(config githubCheckBranchProtectionOptions, tele
 func runGithubCheckBranchProtection(ctx context.Context, config *githubCheckBranchProtectionOptions, telemetryData *telemetry.CustomData, ghRepositoriesService gitHubBranchProtectionRepositoriesService) error {
 	ghProtection, _, err := ghRepositoriesService.GetBranchProtection(ctx, config.Owner, config.Repository, config.Branch)
 	if err != nil {
-		return errors.Wrap(err, "failed to read branch protection information")
+		return fmt.Errorf("failed to read branch protection information: %w", err)
 	}
 
 	// validate required status checks

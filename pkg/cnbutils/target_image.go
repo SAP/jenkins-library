@@ -7,8 +7,9 @@ import (
 	"regexp"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/pkg/errors"
 )
 
 type TargetImage struct {
@@ -32,7 +33,7 @@ func GetTargetImage(imageRegistry, imageName, imageTag, projectID, envRootPath s
 
 	url, err := url.ParseRequestURI(imageRegistry)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid registry url")
+		return nil, fmt.Errorf("invalid registry url: %w", err)
 	}
 	targetImage.ContainerRegistry = url
 

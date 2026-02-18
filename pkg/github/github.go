@@ -2,13 +2,14 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
+
 	"golang.org/x/oauth2"
 )
 
@@ -75,12 +76,12 @@ func (b *ClientBuilder) WithMaxRetries(maxRetries int) *ClientBuilder {
 func (b *ClientBuilder) Build() (context.Context, *github.Client, error) {
 	baseURL, err := url.Parse(b.baseURL)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse baseURL")
+		return nil, nil, fmt.Errorf("failed to parse baseURL: %w", err)
 	}
 
 	uploadURL, err := url.Parse(b.uploadURL)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse uploadURL")
+		return nil, nil, fmt.Errorf("failed to parse uploadURL: %w", err)
 	}
 
 	if b.timeout == 0 {

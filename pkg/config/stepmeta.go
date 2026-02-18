@@ -9,8 +9,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 
+	"errors"
+
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 const SupportedVolumeName = "volume"
@@ -174,12 +175,12 @@ func (m *StepData) ReadPipelineStepData(metadata io.ReadCloser) error {
 	defer metadata.Close()
 	content, err := io.ReadAll(metadata)
 	if err != nil {
-		return errors.Wrapf(err, "error reading %v", metadata)
+		return fmt.Errorf("error reading %v: %w", metadata, err)
 	}
 
 	err = yaml.Unmarshal(content, &m)
 	if err != nil {
-		return errors.Wrapf(err, "error unmarshalling: %v", err)
+		return fmt.Errorf("error unmarshalling: %v: %w", err, err)
 	}
 	return nil
 }
@@ -400,7 +401,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
 	JSON, err := yaml.Marshal(c)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create context defaults")
+		return nil, fmt.Errorf("failed to create context defaults: %w", err)
 	}
 
 	r := io.NopCloser(bytes.NewReader(JSON))
@@ -542,12 +543,12 @@ func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map
 	if stepMetadata != "" {
 		metadataFile, err := OpenPiperFile(stepMetadata, gitHubTokens)
 		if err != nil {
-			return metadata, errors.Wrap(err, "open failed")
+			return metadata, fmt.Errorf("open failed: %w", err)
 		}
 
 		err = metadata.ReadPipelineStepData(metadataFile)
 		if err != nil {
-			return metadata, errors.Wrap(err, "read failed")
+			return metadata, fmt.Errorf("read failed: %w", err)
 		}
 	} else {
 		if stepName != "" {
@@ -558,10 +559,10 @@ func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map
 			var ok bool
 			metadata, ok = metadataMap[stepName]
 			if !ok {
-				return metadata, errors.Errorf("could not retrieve by stepName %v", stepName)
+				return metadata, fmt.Errorf("could not retrieve by stepName %v", stepName)
 			}
 		} else {
-			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
+			return metadata, fmt.Errorf("either one of stepMetadata or stepName parameter has to be passed")
 		}
 	}
 	return metadata, nil

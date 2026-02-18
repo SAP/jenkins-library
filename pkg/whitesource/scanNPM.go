@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 const whiteSourceConfig = "whitesource.config.json"
@@ -154,7 +153,7 @@ func getNpmProjectName(modulePath string, utils Utils) (string, error) {
 	var packageJSON = make(map[string]interface{})
 	err = json.Unmarshal(fileContents, &packageJSON)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to unmarshall the file '%s'", modulePath)
+		return "", fmt.Errorf("failed to unmarshall the file '%s': %w", modulePath, err)
 	}
 
 	projectNameEntry, exists := packageJSON["name"]

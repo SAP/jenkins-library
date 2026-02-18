@@ -2,7 +2,8 @@
 package project
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 
 	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
@@ -49,7 +50,7 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 	var versionDescriptor versionDescriptor
 	_, err = toml.Decode(string(descriptorContent), &versionDescriptor)
 	if err != nil {
-		return &Descriptor{}, errors.Wrapf(err, "parsing schema version")
+		return &Descriptor{}, fmt.Errorf("parsing schema version: %w", err)
 	}
 
 	version := versionDescriptor.Project.Version

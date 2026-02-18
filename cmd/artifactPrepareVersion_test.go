@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -22,8 +25,6 @@ import (
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	gitHttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 )
 
 type artifactVersioningMock struct {
@@ -164,6 +165,7 @@ func (w *gitWorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 	w.checkoutOpts = opts
 	return nil
 }
+
 func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
 	if len(w.commitError) > 0 {
 		return plumbing.Hash{}, fmt.Errorf("%s", w.commitError)
@@ -171,6 +173,21 @@ func (w *gitWorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.
 	w.commitMsg = msg
 	w.commitOpts = opts
 	return w.commitHash, nil
+}
+
+func (w *gitWorktreeMock) AddWithOptions(opts *git.AddOptions) error {
+	if len(w.commitError) > 0 {
+		return fmt.Errorf("%s", w.commitError)
+	}
+	w.commitMsg = opts.Path
+	return nil
+}
+
+func (w *gitWorktreeMock) Status() (git.Status, error) {
+	if len(w.commitError) > 0 {
+		return git.Status{}, fmt.Errorf("%s", w.commitError)
+	}
+	return git.Status{}, nil
 }
 
 type artifactPrepareVersionMockUtils struct {
@@ -915,5 +932,73 @@ func TestTruncateString(t *testing.T) {
 	t.Run("input string is empty", func(t *testing.T) {
 		outputStr := truncateString("", 5)
 		assert.Equal(t, outputStr, "")
+	})
+}
+
+func TestPushChanges_WithExcludeFiles(t *testing.T) {
+	newVersion := "1.2.3"
+	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	conf := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"https://my.test.server"}}
+	remote := git.NewRemote(nil, &conf)
+
+	t.Run("success - excludes are not staged nor committed", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			Username:       "testUser",
+			Password:       "****",
+			CommitUserName: "Project Piper",
+			ExcludeFiles:   []string{".npmrc"},
+		}
+		repo := gitRepositoryMock{remote: remote}
+
+		commitHash := plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})
+		worktree := gitWorktreeMock{
+			commitHash: commitHash,
+		}
+
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
+		assert.Equal(t, &git.CommitOptions{All: false, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, "1.2.3", repo.tag)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
+	})
+
+	t.Run("error - Status fails while excluding", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			ExcludeFiles: []string{".npmrc"},
+		}
+		repo := gitRepositoryMock{remote: remote}
+
+		worktree := gitWorktreeMock{
+			commitError: "commit error",
+			commitHash:  plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+		}
+
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+		assert.Equal(t, "0000000000000000000000000000000000000000", commitID)
+		assert.EqualError(t, err, "failed to read worktree status: commit error")
+	})
+
+	t.Run("success - excludes empty list behaves like before", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			CommitUserName: "Project Piper",
+			ExcludeFiles:   nil,
+			Username:       "testUser",
+			Password:       "****",
+		}
+		repo := gitRepositoryMock{remote: remote}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{7, 8, 9})}
+
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "068fd174b3586155b4ee7d2269bd22e7098a3836", commitID) // adjust if your mock uses a deterministic hash
+		assert.Equal(t, "update version 1.2.3", worktree.commitMsg)
+		assert.Equal(t, &git.CommitOptions{All: true, AllowEmptyCommits: true, Author: &object.Signature{Name: "Project Piper", When: testTime}}, worktree.commitOpts)
+		assert.Equal(t, "1.2.3", repo.tag)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
 	})
 }

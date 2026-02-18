@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
@@ -35,7 +35,7 @@ func runGithubCommentIssue(ctx context.Context, config *githubCommentIssueOption
 	newcomment, resp, err := ghIssueCommentService.CreateComment(ctx, config.Owner, config.Repository, config.Number, &issueComment)
 	if err != nil {
 		log.Entry().Errorf("GitHub response code %v", resp.Status)
-		return errors.Wrapf(err, "Error occurred when creating comment on issue %v", config.Number)
+		return fmt.Errorf("Error occurred when creating comment on issue %v: %w", config.Number, err)
 	}
 	log.Entry().Debugf("New issue comment created for issue %v: %v", config.Number, newcomment)
 

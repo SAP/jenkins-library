@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -43,6 +44,7 @@ type artifactPrepareVersionOptions struct {
 	VersioningTemplate          string   `json:"versioningTemplate,omitempty"`
 	VersioningType              string   `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
 	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
+	ExcludeFiles                []string `json:"excludeFiles,omitempty"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -152,19 +154,21 @@ Define ` + "`" + `buildTool: custom` + "`" + ` as well as ` + "`" + `filePath: <
 
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.txt` + "`" + ` file or to a file without extension.
 
+**Warning:** Using a plain version file may lead to issues in later pipeline steps, as some steps expect structured files (ini, yaml, json) for version extraction.
+
 #### ` + "`" + `ini` + "`" + ` file containing the version:
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your ini-file>` + "`" + ` as well as parameters ` + "`" + `versionSection` + "`" + ` and ` + "`" + `versionSource` + "`" + ` to point to the version location (section & parameter name) within the file.
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your ini-file>` + "`" + ` as well as parameters ` + "`" + `customVersionSection` + "`" + ` and ` + "`" + `customVersionField` + "`" + ` to point to the version location (section & parameter name) within the file.
 
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.cfg` + "`" + ` or a ` + "`" + `*.ini` + "`" + ` file.
 
 #### ` + "`" + `json` + "`" + ` file containing the version:
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.json file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.json file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.
 
 #### ` + "`" + `yaml` + "`" + ` file containing the version
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.`,
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -257,14 +261,31 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
@@ -308,6 +329,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
 	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludeFiles, "excludeFiles", []string{}, "List of files to exclude when committing changes into created tag. You need to provide full path to the file from the project root. (Useful when using versioningType: cloud with npm or maven.)")
 
 	cmd.MarkFlagRequired("buildTool")
 }
@@ -572,6 +594,15 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     []string{},
 						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}, {Name: "buildTool", Value: "gradle"}}}},
+					},
+					{
+						Name:        "excludeFiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

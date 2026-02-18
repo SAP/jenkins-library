@@ -9,10 +9,11 @@ import (
 	"path"
 	"testing"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

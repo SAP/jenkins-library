@@ -5,10 +5,11 @@ package ans
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestEvent_MergeWithJSON(t *testing.T) {
