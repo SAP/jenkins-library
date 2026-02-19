@@ -558,11 +558,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	if !checkIfArgumentIsInScanProperties(config, "detect.source.path") {
-		if len(config.DependencyPath) > 0 {
-			args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
-		} else {
-			args = append(args, "--detect.source.path='.'")
-		}
+		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {
