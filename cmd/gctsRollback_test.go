@@ -354,7 +354,7 @@ func TestGetRepoInfoSuccess(t *testing.T) {
 				Branch:        "master",
 				URL:           "https://github.com/testUser/testRepo",
 				Version:       "",
-				Objects:       2,
+				Objects:       float64(2),
 				CurrentCommit: "c316a4af470991f9a3ca51a12c44354e72729e3d",
 				Connection:    "ssl",
 				Config: []struct {
