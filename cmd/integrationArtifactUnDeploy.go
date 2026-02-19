@@ -9,7 +9,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func integrationArtifactUnDeploy(config integrationArtifactUnDeployOptions, telemetryData *telemetry.CustomData) {
@@ -40,14 +39,14 @@ func runIntegrationArtifactUnDeploy(config *integrationArtifactUnDeployOptions, 
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := "DELETE"
 	unDeployResp, httpErr := httpClient.SendRequest(httpMethod, unDeployURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, unDeployURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, unDeployURL, httpErr)
 	}
 
 	if unDeployResp != nil && unDeployResp.Body != nil {
@@ -55,7 +54,7 @@ func runIntegrationArtifactUnDeploy(config *integrationArtifactUnDeployOptions, 
 	}
 
 	if unDeployResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response")
+		return fmt.Errorf("did not retrieve a HTTP response")
 	}
 
 	if unDeployResp.StatusCode == http.StatusAccepted {
@@ -67,8 +66,8 @@ func runIntegrationArtifactUnDeploy(config *integrationArtifactUnDeployOptions, 
 	responseBody, readErr := io.ReadAll(unDeployResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", unDeployResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", unDeployResp.StatusCode, readErr)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), unDeployResp.StatusCode)
-	return errors.Errorf("integration flow undeployment failed, response Status code: %v", unDeployResp.StatusCode)
+	return fmt.Errorf("integration flow undeployment failed, response Status code: %v", unDeployResp.StatusCode)
 }

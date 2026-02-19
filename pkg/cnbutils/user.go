@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 func CnbUserInfo() (int, int, error) {

@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -46,12 +45,12 @@ func ReadManifest(name string) (Manifest, error) {
 
 	content, err := _readFile(name)
 	if err != nil {
-		return m, errors.Wrapf(err, "cannot read file '%v'", m.name)
+		return m, fmt.Errorf("cannot read file '%v': %w", m.name, err)
 	}
 
 	err = yaml.Unmarshal(content, &m.self)
 	if err != nil {
-		return m, errors.Wrapf(err, "Cannot parse yaml file '%s': %s", m.name, string(content))
+		return m, fmt.Errorf("Cannot parse yaml file '%s': %s: %w", m.name, string(content), err)
 	}
 
 	log.Entry().Infof("Manifest file '%s' has been parsed", m.name)

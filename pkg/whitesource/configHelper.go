@@ -10,7 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/magiconair/properties"
-	"github.com/pkg/errors"
 )
 
 // ConfigOption defines a dedicated WhiteSource config which can be enforced if required
@@ -69,12 +68,12 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 	var configContent bytes.Buffer
 	_, err = newConfig.Write(&configContent, properties.UTF8)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to write properties")
+		return "", fmt.Errorf("failed to write properties: %w", err)
 	}
 
 	err = utils.FileWrite(newConfigFilePath, configContent.Bytes(), 0666)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to write file")
+		return "", fmt.Errorf("failed to write file: %w", err)
 	}
 
 	return newConfigFilePath, nil

@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"errors"
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 const retryCount = 14
@@ -77,14 +78,14 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := "POST"
 	deployResp, httpErr := httpClient.SendRequest(httpMethod, deployURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, deployURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, deployURL, httpErr)
 	}
 
 	if deployResp != nil && deployResp.Body != nil {
@@ -92,7 +93,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	}
 
 	if deployResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response")
+		return fmt.Errorf("did not retrieve a HTTP response")
 	}
 
 	if deployResp.StatusCode == http.StatusAccepted {
@@ -101,7 +102,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 			Info("successfully deployed into CPI runtime")
 		taskId, readErr := io.ReadAll(deployResp.Body)
 		if readErr != nil {
-			return errors.Wrap(readErr, "Task Id not found. HTTP response body could not be read.")
+			return fmt.Errorf("Task Id not found. HTTP response body could not be read.: %w", readErr)
 		}
 		deploymentError := pollIFlowDeploymentStatus(string(taskId), retryCount, config, httpClient, serviceKey.OAuth.Host)
 		return deploymentError
@@ -109,10 +110,10 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	responseBody, readErr := io.ReadAll(deployResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", deployResp.StatusCode, readErr)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), deployResp.StatusCode)
-	return errors.Errorf("integration flow deployment failed, response Status code: %v", deployResp.StatusCode)
+	return fmt.Errorf("integration flow deployment failed, response Status code: %v", deployResp.StatusCode)
 }
 
 // pollIFlowDeploymentStatus - Poll the integration flow deployment status, return status or error details
@@ -156,10 +157,10 @@ func pollIFlowDeploymentStatus(taskId string, retryCount int, config *integratio
 func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, statusURL string) (string, error) {
 	responseBody, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
-		return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", response.StatusCode)
+		return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", response.StatusCode, readErr)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, response status code: %v", string(responseBody), response.StatusCode)
-	return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, statusURL, responseBody)
+	return "", fmt.Errorf("HTTP %v request to %v failed with error: %v: %w", httpMethod, statusURL, responseBody, httpErr)
 }
 
 // getIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
@@ -176,7 +177,7 @@ func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 	}
 
 	if deployStatusResp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if deployStatusResp.StatusCode == http.StatusOK {
@@ -186,11 +187,11 @@ func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 
 		bodyText, readErr := io.ReadAll(deployStatusResp.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployStatusResp.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", deployStatusResp.StatusCode, readErr)
 		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
-			return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+			return "", fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 		}
 		deployStatus := jsonResponse.Path("d.Status").Data().(string)
 		return deployStatus, nil
@@ -198,7 +199,7 @@ func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 	if httpErr != nil {
 		return getHTTPErrorMessage(httpErr, deployStatusResp, httpMethod, deployStatusURL)
 	}
-	return "", errors.Errorf("failed to get Integration Flow artefact runtime status, response Status code: %v", deployStatusResp.StatusCode)
+	return "", fmt.Errorf("failed to get Integration Flow artefact runtime status, response Status code: %v", deployStatusResp.StatusCode)
 }
 
 // getIntegrationArtifactDeployError - Get integration artifact deploy error details
@@ -214,7 +215,7 @@ func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 	}
 
 	if errorStatusResp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if errorStatusResp.StatusCode == http.StatusOK {
@@ -223,7 +224,7 @@ func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 			Info("Successfully retrieved Integration Flow artefact deploy error details")
 		responseBody, readErr := io.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", errorStatusResp.StatusCode, readErr)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
 		errorDetails := string(responseBody)
@@ -232,5 +233,5 @@ func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 	if httpErr != nil {
 		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
 	}
-	return "", errors.Errorf("failed to get Integration Flow artefact deploy error details, response Status code: %v", errorStatusResp.StatusCode)
+	return "", fmt.Errorf("failed to get Integration Flow artefact deploy error details, response Status code: %v", errorStatusResp.StatusCode)
 }

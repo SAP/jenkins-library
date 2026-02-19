@@ -1,12 +1,12 @@
 package contrast
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/pkg/errors"
 )
 
 type ContrastAudit struct {
@@ -73,11 +73,11 @@ func SaveReportFile(utils piperutils.FileUtils, fileName, displayName string, da
 	reportPath := filepath.Join(reportsDirectory, fileName)
 
 	if err := utils.MkdirAll(reportsDirectory, 0777); err != nil {
-		return nil, errors.Wrap(err, "failed to create contrast directory")
+		return nil, fmt.Errorf("failed to create contrast directory: %w", err)
 	}
 
 	if err := utils.FileWrite(reportPath, data, 0644); err != nil {
-		return nil, errors.Wrapf(err, "failed to write %s file", fileName)
+		return nil, fmt.Errorf("failed to write %s file: %w", fileName, err)
 	}
 
 	log.Entry().Infof("Report saved to %s", reportPath)

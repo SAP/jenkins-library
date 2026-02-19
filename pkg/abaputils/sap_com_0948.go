@@ -12,9 +12,10 @@ import (
 
 	"net/url" // add
 
+	"errors"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -79,7 +80,7 @@ func (api *SAP_COM_0948) GetExecutionLog() (execLog ExecutionLog, err error) {
 
 	marshallError := json.Unmarshal(bodyText, &execLog)
 	if marshallError != nil {
-		return execLog, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return execLog, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 
 	if reflect.DeepEqual(ExecutionLog{}, execLog) {
@@ -174,7 +175,7 @@ func (api *SAP_COM_0948) GetLogProtocol(logOverviewEntry LogResultsV2, page int)
 
 	marshallError := json.Unmarshal(bodyText, &body)
 	if marshallError != nil {
-		return nil, 0, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, 0, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 
 	return body.Results, body.Count, nil
@@ -198,11 +199,11 @@ func (api *SAP_COM_0948) GetLogOverview() (result []LogResultsV2, err error) {
 
 	marshallError := json.Unmarshal(bodyText, &abapResp)
 	if marshallError != nil {
-		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 	marshallError = json.Unmarshal(*abapResp["value"], &result)
 	if marshallError != nil {
-		return nil, errors.Wrap(marshallError, "Could not parse response from the ABAP Environment system")
+		return nil, fmt.Errorf("Could not parse response from the ABAP Environment system: %w", marshallError)
 	}
 
 	if reflect.DeepEqual(LogResultsV2{}, result) {
@@ -304,7 +305,7 @@ func (api *SAP_COM_0948) Clone() error {
 	cloneConnectionDetails.URL = api.con.URL + api.path + api.softwareComponentEntity + api.getRepoNameForPath() + api.cloneAction
 	body, err := api.repository.GetCloneRequestBody()
 	if err != nil {
-		return errors.Wrap(err, "Failed to clone repository")
+		return fmt.Errorf("Failed to clone repository: %w", err)
 	}
 
 	return api.triggerRequest(cloneConnectionDetails, []byte(body))
@@ -374,7 +375,7 @@ func (api *SAP_COM_0948) initialRequest() error {
 	// Configuring the HTTP Client and CookieJar
 	cookieJar, errorCookieJar := cookiejar.New(nil)
 	if errorCookieJar != nil {
-		return errors.Wrap(errorCookieJar, "Could not create a Cookie Jar")
+		return fmt.Errorf("Could not create a Cookie Jar: %w", errorCookieJar)
 	}
 
 	api.client.SetOptions(piperhttp.ClientOptions{
@@ -490,8 +491,8 @@ func handleHTTPError(resp *http.Response, err error, message string, connectionD
 		if parsingError != nil {
 			return "", err
 		}
-		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
-		err = errors.Wrap(abapError, err.Error())
+		abapError := fmt.Errorf("%s - %s", errorCode, errorText)
+		err = fmt.Errorf("%s: %w", err.Error(), abapError)
 
 	}
 	return errorCode, err

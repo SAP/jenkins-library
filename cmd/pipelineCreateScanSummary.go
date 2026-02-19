@@ -9,7 +9,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type pipelineCreateScanSummaryUtils interface {
@@ -49,11 +48,11 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 		reportContent, err := utils.FileRead(report)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read report %v", report)
+			return fmt.Errorf("failed to read report %v: %w", report, err)
 		}
 		scanReport := reporting.ScanReport{}
 		if err = json.Unmarshal(reportContent, &scanReport); err != nil {
-			return errors.Wrapf(err, "failed to parse report %v", report)
+			return fmt.Errorf("failed to parse report %v: %w", report, err)
 		}
 		scanReports = append(scanReports, scanReport)
 	}
@@ -71,7 +70,7 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 
 	if err := utils.FileWrite(config.OutputFilePath, output, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to write %v", config.OutputFilePath)
+		return fmt.Errorf("failed to write %v: %w", config.OutputFilePath, err)
 	}
 
 	return nil

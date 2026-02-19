@@ -16,7 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
+
 	"golang.org/x/sync/errgroup"
 )
 
@@ -61,7 +61,7 @@ func (g *githubActionsConfigProvider) Configure(opts *Options) error {
 	var err error
 	g.ctx, g.client, err = piperGithub.NewClientBuilder(opts.GitHubToken, getEnv("GITHUB_API_URL", "")).Build()
 	if err != nil {
-		return errors.Wrap(err, "failed to create github client")
+		return fmt.Errorf("failed to create github client: %w", err)
 	}
 
 	log.Entry().Debug("Successfully initialized GitHubActions config provider")
@@ -125,14 +125,14 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 				// GitHub API returns redirect URL instead of plain text logs. See:
 				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
 				if err.Error() != "unexpected status code: 200 OK" {
-					return errors.Wrap(err, "fetching job logs failed")
+					return fmt.Errorf("fetching job logs failed: %w", err)
 				}
 			}
 			defer resp.Body.Close()
 
 			b, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return errors.Wrap(err, "failed to read response body")
+				return fmt.Errorf("failed to read response body: %w", err)
 			}
 
 			fullLogs.Lock()
@@ -143,7 +143,7 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 		})
 	}
 	if err := wg.Wait(); err != nil {
-		return nil, errors.Wrap(err, "failed to fetch all logs")
+		return nil, fmt.Errorf("failed to fetch all logs: %w", err)
 	}
 
 	return bytes.Join(fullLogs.b, []byte("")), nil
@@ -294,7 +294,7 @@ func (g *githubActionsConfigProvider) fetchJobs() error {
 
 	jobs, resp, err := g.client.Actions.ListWorkflowJobs(g.ctx, g.owner, g.repo, g.runIdInt64(), nil)
 	if err != nil || resp.StatusCode != 200 {
-		return errors.Wrap(err, "failed to get API data")
+		return fmt.Errorf("failed to get API data: %w", err)
 	}
 	if len(jobs.Jobs) == 0 {
 		return fmt.Errorf("no jobs found in response")

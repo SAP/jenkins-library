@@ -11,13 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/yaml"
-	"github.com/pkg/errors"
 )
 
 type cfFileUtil interface {
@@ -205,7 +206,7 @@ func handleMTADeployment(config *cloudFoundryDeployOptions, command command.Exec
 		exists, err := fileUtils.FileExists(mtarFilePath)
 
 		if err != nil {
-			return errors.Wrapf(err, "Cannot check if file path '%s' exists", mtarFilePath)
+			return fmt.Errorf("Cannot check if file path '%s' exists: %w", mtarFilePath, err)
 		}
 
 		if !exists {
@@ -242,7 +243,7 @@ func handleCFNativeDeployment(config *cloudFoundryDeployOptions, command command
 	} else if config.DeployType == "standard" {
 		deployCommand, deployOptions, err = prepareCfPushCfNativeDeploy(config)
 		if err != nil {
-			return errors.Wrapf(err, "Cannot prepare cf push native deployment. DeployType '%s'", config.DeployType)
+			return fmt.Errorf("Cannot prepare cf push native deployment. DeployType '%s': %w", config.DeployType, err)
 		}
 	} else {
 		return fmt.Errorf("Invalid deploy type received: '%s'. Supported value: standard", config.DeployType)
@@ -337,7 +338,7 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 
 	fileExists, err := fileUtils.FileExists(manifestFile)
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot check if file '%s' exists", manifestFile)
+		return "", fmt.Errorf("Cannot check if file '%s' exists: %w", manifestFile, err)
 	}
 	if !fileExists {
 		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", manifestFile)
@@ -381,7 +382,7 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 	deployOptions := []string{}
 	varOptions, err := _getVarsOptions(config.ManifestVariables)
 	if err != nil {
-		return "", []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
+		return "", []string{}, fmt.Errorf("Cannot prepare var-options: '%v': %w", config.ManifestVariables, err)
 	}
 
 	varFileOptions, err := _getVarsFileOptions(config.ManifestVariablesFiles)
@@ -391,7 +392,7 @@ func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []s
 				log.Entry().Warningf("We skip adding not-existing file '%s' as a vars-file to the cf create-service-push call", missingVarFile)
 			}
 		} else {
-			return "", []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+			return "", []string{}, fmt.Errorf("Cannot prepare var-file-options: '%v': %w", config.ManifestVariablesFiles, err)
 		}
 	}
 
@@ -462,13 +463,13 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 
 	b, err := fileUtils.FileRead(extFile)
 	if err != nil {
-		return false, false, errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
+		return false, false, fmt.Errorf("Cannot handle credentials for mta extension file '%s': %w", extFile, err)
 	}
 	content := string(b)
 
 	env, err := toMap(_environ(), "=")
 	if err != nil {
-		return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
+		return false, false, fmt.Errorf("Cannot handle mta extension credentials.: %w", err)
 	}
 
 	missingCredentials := []string{}
@@ -513,11 +514,11 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		fInfo, err := fileUtils.Stat(extFile)
 		fMode := fInfo.Mode()
 		if err != nil {
-			return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
+			return false, false, fmt.Errorf("Cannot handle mta extension credentials.: %w", err)
 		}
 		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
 		if err != nil {
-			return false, false, errors.Wrap(err, "Cannot handle mta extension credentials.")
+			return false, false, fmt.Errorf("Cannot handle mta extension credentials.: %w", err)
 		}
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}

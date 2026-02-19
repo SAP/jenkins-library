@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
+
+	"errors"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -10,7 +13,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentAssembleConfirm(config abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) {
@@ -98,7 +100,7 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			if releasePackagesFailed == nil {
 				releasePackagesFailed = errors.New(errormessage)
 			} else {
-				releasePackagesFailed = errors.Wrap(releasePackagesFailed, errormessage)
+				releasePackagesFailed = fmt.Errorf("%s: %w", errormessage, releasePackagesFailed)
 			}
 		} else {
 			log.Entry().Infof("Packages %s was not assembled in this pipeline run, thus no need to confirm", repo.PackageName)

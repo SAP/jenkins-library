@@ -6,7 +6,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 )
 
 // CreateIssueOptions to configure the creation
@@ -26,7 +25,7 @@ type CreateIssueOptions struct {
 func CreateIssue(options *CreateIssueOptions) (*github.Issue, error) {
 	ctx, client, err := NewClientBuilder(options.Token, options.APIURL).WithTrustedCerts(options.TrustedCerts).Build()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get GitHub client")
+		return nil, fmt.Errorf("failed to get GitHub client: %w", err)
 	}
 	return createIssueLocal(ctx, options, client.Issues, client.Search, client.Issues)
 }
@@ -65,7 +64,7 @@ func createIssueLocal(
 				if resp != nil {
 					log.Entry().Errorf("GitHub search issue returned response code %v", resp.Status)
 				}
-				return nil, errors.Wrap(err, "error occurred when looking for existing issue")
+				return nil, fmt.Errorf("error occurred when looking for existing issue: %w", err)
 			} else {
 				for _, value := range searchResult.Issues {
 					if value != nil && *value.Title == options.Title {
@@ -82,7 +81,7 @@ func createIssueLocal(
 				if resp != nil {
 					log.Entry().Errorf("GitHub create comment returned response code %v", resp.Status)
 				}
-				return nil, errors.Wrap(err, "error occurred when adding comment to existing issue")
+				return nil, fmt.Errorf("error occurred when adding comment to existing issue: %w", err)
 			}
 		}
 	}
@@ -93,7 +92,7 @@ func createIssueLocal(
 			if resp != nil {
 				log.Entry().Errorf("GitHub create issue returned response code %v", resp.Status)
 			}
-			return nil, errors.Wrap(err, "error occurred when creating issue")
+			return nil, fmt.Errorf("error occurred when creating issue: %w", err)
 		}
 		log.Entry().Debugf("New issue created: %v", newIssue)
 		existingIssue = newIssue
