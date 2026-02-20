@@ -1,9 +1,9 @@
 //go:build unit
-// +build unit
 
 package helper
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -57,7 +57,7 @@ spec:
         type: stash
     params:
       - name: param0
-        aliases: 
+        aliases:
         - name: oldparam0
         type: string
         description: param0 description
@@ -67,7 +67,7 @@ spec:
         - PARAMETERS
         mandatory: true
       - name: param1
-        aliases: 
+        aliases:
         - name: oldparam1
           deprecated: true
         type: string
@@ -112,6 +112,7 @@ spec:
 	return io.NopCloser(strings.NewReader(r)), nil
 }
 
+var updateGolden = flag.Bool("update-golden", false, "update golden files")
 var files map[string][]byte
 
 func writeFileMock(filename string, data []byte, perm os.FileMode) error {
@@ -129,22 +130,29 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		//t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
 	})
 
@@ -153,13 +161,16 @@ func TestProcessMetaFiles(t *testing.T) {
 		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		//t.Log(string(files[resultFilePath]))
 	})
 }
 
@@ -198,11 +209,9 @@ func TestSetDefaultParameters(t *testing.T) {
 			"1",
 		}
 
-		osImport, err := setDefaultParameters(&stepData)
+		err := setDefaultParameters(&stepData)
 
 		assert.NoError(t, err, "error occurred but none expected")
-
-		assert.Equal(t, true, osImport, "import of os package required")
 
 		for k, v := range expected {
 			assert.Equal(t, v, stepData.Spec.Inputs.Parameters[k].Default, fmt.Sprintf("default not correct for parameter %v", k))
@@ -233,7 +242,7 @@ func TestSetDefaultParameters(t *testing.T) {
 		}
 
 		for k, v := range stepData {
-			_, err := setDefaultParameters(&v)
+			err := setDefaultParameters(&v)
 			assert.Error(t, err, fmt.Sprintf("error expected but none occurred for parameter %v", k))
 		}
 	})
@@ -256,7 +265,7 @@ func TestGetStepInfo(t *testing.T) {
 		},
 	}
 
-	myStepInfo, err := getStepInfo(&stepData, true, "")
+	myStepInfo, err := getStepInfo(&stepData, "")
 
 	assert.NoError(t, err)
 

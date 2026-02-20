@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package helper
 
@@ -56,20 +55,20 @@ func TestInfluxResource_StructString(t *testing.T) {
 }
 
 func (i *TestStepTestInflux) persist(path, resourceName string) {
-	measurementContent := []struct{
+	measurementContent := []struct {
 		measurement string
 		valType     string
 		name        string
 		value       interface{}
 	}{
-		{valType: config.InfluxField, measurement: "m1" , name: "field1_1", value: i.m1.fields.field1_1},
-		{valType: config.InfluxField, measurement: "m1" , name: "field1_2", value: i.m1.fields.field1_2},
-		{valType: config.InfluxTag, measurement: "m1" , name: "tag1_1", value: i.m1.tags.tag1_1},
-		{valType: config.InfluxTag, measurement: "m1" , name: "tag1_2", value: i.m1.tags.tag1_2},
-		{valType: config.InfluxField, measurement: "m2" , name: "field2_1", value: i.m2.fields.field2_1},
-		{valType: config.InfluxField, measurement: "m2" , name: "field2_2", value: i.m2.fields.field2_2},
-		{valType: config.InfluxTag, measurement: "m2" , name: "tag2_1", value: i.m2.tags.tag2_1},
-		{valType: config.InfluxTag, measurement: "m2" , name: "tag2_2", value: i.m2.tags.tag2_2},
+		{valType: config.InfluxField, measurement: "m1", name: "field1_1", value: i.m1.fields.field1_1},
+		{valType: config.InfluxField, measurement: "m1", name: "field1_2", value: i.m1.fields.field1_2},
+		{valType: config.InfluxTag, measurement: "m1", name: "tag1_1", value: i.m1.tags.tag1_1},
+		{valType: config.InfluxTag, measurement: "m1", name: "tag1_2", value: i.m1.tags.tag1_2},
+		{valType: config.InfluxField, measurement: "m2", name: "field2_1", value: i.m2.fields.field2_1},
+		{valType: config.InfluxField, measurement: "m2", name: "field2_2", value: i.m2.fields.field2_2},
+		{valType: config.InfluxTag, measurement: "m2", name: "tag2_1", value: i.m2.tags.tag2_1},
+		{valType: config.InfluxTag, measurement: "m2", name: "tag2_2", value: i.m2.tags.tag2_2},
 	}
 
 	errCount := 0
@@ -137,7 +136,7 @@ func (p *testStepReports) persist(stepConfig testStepOptions, gcpJsonKeyFilePath
 	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
 	if err != nil {
 		log.Entry().Errorf("creation of GCS client failed: %v", err)
-        	return
+		return
 	}
 	defer gcsClient.Close()
 	structVal := reflect.ValueOf(&stepConfig).Elem()
