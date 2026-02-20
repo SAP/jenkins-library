@@ -17,6 +17,14 @@ const (
 	Jenkins
 )
 
+// Orchestrator type name constants for use in OrchestratorType() return values
+const (
+	OrchestratorTypeUnknown       = "Unknown"
+	OrchestratorTypeAzure         = "Azure"
+	OrchestratorTypeGitHubActions = "GitHubActions"
+	OrchestratorTypeJenkins       = "Jenkins"
+)
+
 const (
 	BuildStatusSuccess    = "SUCCESS"
 	BuildStatusAborted    = "ABORTED"

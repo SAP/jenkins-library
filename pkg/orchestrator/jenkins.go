@@ -41,7 +41,7 @@ func (j *jenkinsConfigProvider) OrchestratorVersion() string {
 
 // OrchestratorType returns the orchestrator type Jenkins
 func (j *jenkinsConfigProvider) OrchestratorType() string {
-	return "Jenkins"
+	return OrchestratorTypeJenkins
 }
 
 func (j *jenkinsConfigProvider) fetchAPIInformation() {
