@@ -20,6 +20,7 @@ import (
 const (
 	defaultMaxRetries     = 3
 	defaultInitialBackoff = 5 * time.Second
+	defaultMaxBackoff     = 60 * time.Second
 	defaultBackoffFactor  = 2.0
 )
 
@@ -123,6 +124,9 @@ func (c *CraneUtilsBundle) retryOperation(ctx context.Context, operation string,
 		}
 
 		backoff = time.Duration(float64(backoff) * factor)
+		if backoff > defaultMaxBackoff {
+			backoff = defaultMaxBackoff
+		}
 	}
 	return lastErr
 }
