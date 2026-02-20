@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"gopkg.in/ini.v1"
 )
 
@@ -33,11 +32,11 @@ func (i *INIfile) init() error {
 	if i.content == nil {
 		conf, err := i.readFile(i.path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", i.path)
+			return fmt.Errorf("failed to read file '%v': %w", i.path, err)
 		}
 		i.content, err = ini.Load(conf)
 		if err != nil {
-			return errors.Wrapf(err, "failed to load content from file '%v'", i.path)
+			return fmt.Errorf("failed to load content from file '%v': %w", i.path, err)
 		}
 	}
 	return nil
@@ -80,7 +79,7 @@ func (i *INIfile) SetVersion(version string) error {
 	i.content.WriteTo(&buf)
 	err := i.writeFile(i.path, buf.Bytes(), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", i.path)
+		return fmt.Errorf("failed to write file '%v': %w", i.path, err)
 	}
 	return nil
 }

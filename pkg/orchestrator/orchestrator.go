@@ -1,10 +1,11 @@
 package orchestrator
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -115,7 +116,7 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 
 	// This allows configuration of the provider during initialization and/or after it (reconfiguration)
 	if cfgErr := provider.Configure(opts); cfgErr != nil {
-		return provider, errors.Wrap(cfgErr, "provider configuration failed")
+		return provider, fmt.Errorf("provider configuration failed: %w", cfgErr)
 	}
 
 	return provider, nil

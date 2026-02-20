@@ -5,12 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentCreateTag(config abapEnvironmentCreateTagOptions, _ *telemetry.CustomData) {
@@ -38,7 +39,7 @@ func runAbapEnvironmentCreateTag(config *abapEnvironmentCreateTagOptions, com ab
 
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(convertTagConfig(config), "")
 	if errorGetInfo != nil {
-		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
+		return fmt.Errorf("Parameters for the ABAP Connection not available: %w", errorGetInfo)
 	}
 	connectionDetails.CertificateNames = config.CertificateNames
 
@@ -89,12 +90,12 @@ func createSingleTag(item abaputils.CreateTagBacklog, index int, con abaputils.C
 
 	api, errGetAPI := apiManager.GetAPI(con, abaputils.Repository{Name: item.RepositoryName, CommitID: item.CommitID})
 	if errGetAPI != nil {
-		return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
+		return fmt.Errorf("Could not initialize the connection to the system: %w", errGetAPI)
 	}
 
 	createTagError := api.CreateTag(item.Tags[index])
 	if createTagError != nil {
-		return errors.Wrap(err, "Creation of Tag failed on the ABAP system")
+		return fmt.Errorf("Creation of Tag failed on the ABAP system: %w", err)
 	}
 
 	logOutputManager := abaputils.LogOutputManager{

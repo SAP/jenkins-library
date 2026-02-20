@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"errors"
+
 	"github.com/google/shlex"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -485,7 +486,7 @@ func uploadSarifResults(config *codeqlExecuteScanOptions, token string, repoInfo
 
 		codeqlSarifUploader := codeql.NewCodeqlSarifUploaderInstance(sarifUrl, token)
 		if err := codeql.WaitSarifUploaded(config.SarifCheckMaxRetries, config.SarifCheckRetryInterval, &codeqlSarifUploader); err != nil {
-			return errors.Wrapf(err, "failed to upload sarif %s", sarifPath)
+			return fmt.Errorf("failed to upload sarif %s: %w", sarifPath, err)
 		}
 	}
 	return nil
@@ -512,7 +513,7 @@ func uploadProjectToGitHub(config *codeqlExecuteScanOptions, repoInfo *codeql.Re
 	}
 	targetCommitId, err := repoUploader.UploadProjectToGithub()
 	if err != nil {
-		return errors.Wrap(err, "failed uploading db sources from non-GitHub SCM to GitHub")
+		return fmt.Errorf("failed uploading db sources from non-GitHub SCM to GitHub: %w", err)
 	}
 	repoInfo.CommitId = targetCommitId
 	log.Entry().Info("DB sources were successfully uploaded to target GitHub repo")

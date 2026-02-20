@@ -10,12 +10,14 @@ import (
 	"net/url"
 	"strings"
 
+	"errors"
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 const repoStateExists = "RepoExists"
@@ -41,20 +43,14 @@ func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 }
 
 func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
-	maxRetries := -1
-	cookieJar, cookieErr := cookiejar.New(nil)
 	repoState := repoStateExists
 	branchRollbackRequired := false
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
+
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                maxRetries,
-		TransportSkipVerification: config.SkipSSLVerification,
-	}
+
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)
 	configurationMetadata, getConfigMetadataErr := getConfigurationMetadata(config, httpClient)
@@ -365,7 +361,7 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 	reqBody := deployRequestBody
 	jsonBody, marshalErr := json.Marshal(reqBody)
 	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "Deploying repository to abap system failed json body marshalling")
+		return fmt.Errorf("Deploying repository to abap system failed json body marshalling: %w", marshalErr)
 	}
 	header := make(http.Header)
 	header.Set("Content-Type", "application/json")
@@ -482,7 +478,7 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 	reqBody := configToSet
 	jsonBody, marshalErr := json.Marshal(reqBody)
 	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "Setting config key: %v and value: %v on the ABAP system %v failed", configToSet.Key, configToSet.Value, deployConfig.Host)
+		return fmt.Errorf("Setting config key: %v and value: %v on the ABAP system %v failed: %w", configToSet.Key, configToSet.Value, deployConfig.Host, marshalErr)
 	}
 	header := make(http.Header)
 	header.Set("Content-Type", "application/json")
@@ -508,17 +504,9 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 }
 
 func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
-
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                -1,
-		TransportSkipVerification: config.SkipSSLVerification,
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -561,13 +549,13 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 	bodyText, readErr := io.ReadAll(resp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read")
+		return fmt.Errorf("HTTP response body could not be read: %w", readErr)
 	}
 
 	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
 
 	if parsingErr != nil {
-		return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+		return fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 	}
 
 	log.Entry().
@@ -580,7 +568,7 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
-		return errors.Wrapf(cookieErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, cookieErr)
 	}
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar:                 cookieJar,
@@ -621,7 +609,7 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 	jsonBody, marshalErr := json.Marshal(reqBody)
 
 	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, marshalErr)
 	}
 
 	header := make(http.Header)
@@ -646,7 +634,7 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 	}()
 
 	if resp == nil {
-		return errors.Errorf("creating repository on the ABAP system %v failed: %v", config.Host, httpErr)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %v", config.Host, httpErr)
 	}
 
 	if httpErr != nil {
@@ -663,7 +651,7 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 			}
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
-		return errors.Wrapf(httpErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
 	}
 
 	log.Entry().

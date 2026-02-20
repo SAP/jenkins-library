@@ -5,13 +5,14 @@ import (
 	"reflect"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions, _ *telemetry.CustomData) {
@@ -62,11 +63,11 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	repositories := []abaputils.Repository{}
 	err = checkCheckoutBranchRepositoryConfiguration(*options)
 	if err != nil {
-		return errors.Wrap(err, "Configuration is not consistent")
+		return fmt.Errorf("Configuration is not consistent: %w", err)
 	}
 	repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: options.BranchName, RepositoryName: options.RepositoryName, Repositories: options.Repositories}, true)
 	if err != nil {
-		return errors.Wrap(err, "Could not read repositories")
+		return fmt.Errorf("Could not read repositories: %w", err)
 	}
 
 	err = checkoutBranches(repositories, connectionDetails, apiManager, logOutputManager)
@@ -120,7 +121,7 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 
 	api, errGetAPI := apiManager.GetAPI(checkoutConnectionDetails, repo)
 	if errGetAPI != nil {
-		return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
+		return fmt.Errorf("Could not initialize the connection to the system: %w", errGetAPI)
 	}
 
 	err = api.CheckoutBranch()

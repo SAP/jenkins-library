@@ -107,3 +107,41 @@ testsPublishResults(
   cobertura: [pattern: '**/target/coverage/cobertura-coverage.xml']
 )
 ```
+
+## Example: Jenkins job to run UI5 tests with Karma
+
+```groovy
+@Library(['piper-lib  ']) _
+pipeline {
+  agent any
+  tools { nodejs "npm" }
+  environment {
+    mainModule = "centralconfigui"
+  }
+  stages {
+    stage('Karma Tests') {
+      steps {
+        script {
+          karmaExecuteTests script: this, installCommand: 'npm install --quiet --no-package-lock'
+          // Remove browser-bundle.js class block from coverage.xml for Jenkins compatibility
+          sh """
+            sed -i '/<class[^>]*filename=".*browser-bundle\\.js"/,/<\\/class>/d' \\
+            centralconfigui/coverage/coverage.xml
+          """
+          testsPublishResults(
+            script: this,
+            failOnError: false,
+            junit: [pattern: "centralconfigui/webapp/test/reports/TESTS.xml"],
+            cobertura: [
+              archive: true,
+              onlyStableBuilds: false,
+              pattern: "centralconfigui/coverage/coverage.xml",
+              allowEmptyResults: true
+            ]
+          )
+        }
+      }
+    }
+  }
+}
+```

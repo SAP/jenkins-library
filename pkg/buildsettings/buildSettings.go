@@ -2,11 +2,11 @@ package buildsettings
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type BuildSettings struct {
@@ -56,7 +56,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 
 		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
+			return "", fmt.Errorf("failed to unmarshal existing build settings json '%v': %w", config.BuildSettingsInfo, err)
 		}
 
 		if build, exist := jsonMap[buildTool]; exist {
@@ -71,7 +71,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 
 		jsonResult, err = json.Marshal(&jsonMap)
 		if err != nil {
-			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
+			return "", fmt.Errorf("Creating build settings failed with json marshalling: %w", err)
 		}
 	} else {
 		var settings []BuildOptions
@@ -119,7 +119,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			return "", nil
 		}
 		if err != nil {
-			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
+			return "", fmt.Errorf("Creating build settings failed with json marshalling: %w", err)
 		}
 	}
 

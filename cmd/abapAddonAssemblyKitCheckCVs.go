@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) {
@@ -50,7 +51,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		log.Entry().Infof("CommitId %s", repo.CommitID)
 
 		if !repo.UseClassicCTS && repo.CommitID == "" {
-			return errors.Errorf("CommitID missing in repo '%s' of the addon.yml", repo.Name)
+			return fmt.Errorf("CommitID missing in repo '%s' of the addon.yml", repo.Name)
 		}
 	}
 

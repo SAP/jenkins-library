@@ -10,7 +10,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func apiKeyValueMapDownload(config apiKeyValueMapDownloadOptions, telemetryData *telemetry.CustomData) {
@@ -43,17 +42,17 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 		Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := http.MethodGet
 	downloadResp, httpErr := httpClient.SendRequest(httpMethod, downloadkeyValueMapArtifactURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, downloadkeyValueMapArtifactURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, downloadkeyValueMapArtifactURL, httpErr)
 	}
 	if downloadResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	if downloadResp != nil && downloadResp.Body != nil {
 		defer downloadResp.Body.Close()
@@ -62,7 +61,7 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 		csvFilePath := config.DownloadPath
 		file, err := os.Create(csvFilePath)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create api key value map CSV file")
+			return fmt.Errorf("Failed to create api key value map CSV file: %w", err)
 		}
 		_, err = io.Copy(file, downloadResp.Body)
 		if err != nil {
@@ -73,8 +72,8 @@ func runApiKeyValueMapDownload(config *apiKeyValueMapDownloadOptions, telemetryD
 	responseBody, readErr := io.ReadAll(downloadResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", downloadResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code : %v: %w", downloadResp.StatusCode, readErr)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, downloadResp.StatusCode)
-	return errors.Errorf("api Key value map download failed, Response Status code: %v", downloadResp.StatusCode)
+	return fmt.Errorf("api Key value map download failed, Response Status code: %v", downloadResp.StatusCode)
 }
