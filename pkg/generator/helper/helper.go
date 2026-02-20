@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/format"
 	"log"
 	"os"
 	"path/filepath"
@@ -599,7 +600,11 @@ func generateCode(dataObject any, templateName, goTemplate string, funcMap templ
 		log.Fatalf("Error occurred: %v\n", err)
 	}
 
-	return generatedCode.Bytes()
+	formatted, err := format.Source(generatedCode.Bytes())
+	if err != nil {
+		log.Fatalf("Error formatting generated code: %v\n", err)
+	}
+	return formatted
 }
 
 func longName(long string) string {
