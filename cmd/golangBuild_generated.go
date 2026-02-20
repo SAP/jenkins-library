@@ -12,7 +12,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
-	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -205,8 +204,10 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -236,35 +237,14 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					log.Entry().Debug("publishing event to GCP Pub/Sub...")
-					// prepare event payload
-					payload := events.NewPayloadTaskRunFinished(
-						telemetryClient.GetData().StageName,
-						STEP_NAME,
-						stepTelemetryData.ErrorCode,
-					)
-					// create event
-					eventData, err := events.NewEventTaskRunFinished(
-						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-						payload,
-					)
-					// publish cloud event via GCP Pub/Sub
-					err = gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(
-						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
-						eventData,
-					)
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
-					}
+				if err := events.PublishTaskRunFinishedEvent(
+					oidcTokenProvider,
+					GeneralConfig,
+					telemetryClient.GetData().StageName,
+					STEP_NAME,
+					stepTelemetryData.ErrorCode,
+				); err != nil {
+					log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 				}
 			}
 			log.DeferExitHandler(handler)

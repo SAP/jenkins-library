@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	piperConfig "github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,7 +18,7 @@ type gcpPublishEventUtils interface {
 
 type gcpPublishEventUtilsBundle struct {
 	config *gcpPublishEventOptions
-	piperConfig.VaultClient
+	config.VaultClient
 }
 
 func (g *gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
@@ -26,13 +26,13 @@ func (g *gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
 }
 
 func (g *gcpPublishEventUtilsBundle) NewPubsubClient(projectNumber, pool, provider, key, oidcRoleId string) gcp.PubsubClient {
-	return gcp.NewGcpPubsubClient(g.VaultClient, projectNumber, pool, provider, key, oidcRoleId)
+	return gcp.NewGcpPubsubClient(g.VaultClient.GetOIDCTokenByValidation, projectNumber, pool, provider, key, oidcRoleId)
 }
 
-func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
+func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
 	utils := &gcpPublishEventUtilsBundle{
-		config:      &config,
-		VaultClient: piperConfig.GlobalVaultClient(),
+		config:      &cfg,
+		VaultClient: config.GlobalVaultClient(),
 	}
 
 	if err := runGcpPublishEvent(utils); err != nil {
@@ -47,24 +47,24 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 	}
 
-	config := utils.GetConfig()
-	data, err := createNewEvent(config)
+	cfg := utils.GetConfig()
+	data, err := createNewEvent(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
 
 	err = utils.NewPubsubClient(
-		config.GcpProjectNumber,
-		config.GcpWorkloadIDentityPool,
-		config.GcpWorkloadIDentityPoolProvider,
+		cfg.GcpProjectNumber,
+		cfg.GcpWorkloadIDentityPool,
+		cfg.GcpWorkloadIDentityPoolProvider,
 		provider.BuildURL(),
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
-	).Publish(config.Topic, data)
+	).Publish(cfg.Topic, data)
 	if err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 
-	log.Entry().Infof("Event published successfully! With topic: %s", config.Topic)
+	log.Entry().Infof("Event published successfully! With topic: %s", cfg.Topic)
 	return nil
 }
 
@@ -74,8 +74,7 @@ func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
 		return []byte{}, fmt.Errorf("failed to create new event: %w", err)
 	}
 
-	err = event.AddToCloudEventData(config.AdditionalEventData)
-	if err != nil {
+	if err = event.AddToCloudEventData(config.AdditionalEventData); err != nil {
 		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
 	}
 
