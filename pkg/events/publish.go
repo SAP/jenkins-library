@@ -8,9 +8,12 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+type publisher interface {
+	Publish(topic string, data []byte) error
+}
+
 // GCPPubSubOptions holds the configuration needed to publish task run events via GCP Pub/Sub.
 type GCPPubSubOptions struct {
-	Enabled          bool
 	ProjectNumber    string
 	IdentityPool     string
 	IdentityProvider string
@@ -23,9 +26,11 @@ type GCPPubSubOptions struct {
 
 // PublishTaskRunFinishedEvent constructs and publishes a TaskRunFinished CloudEvent
 // via GCP Pub/Sub. It is a no-op if opts.Enabled is false.
-func PublishTaskRunFinishedEvent(vaultClient config.VaultClient, GeneralConfig config.GeneralConfigOptions, stageName, stepName, errorCode string) error {
+func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, GeneralConfig config.GeneralConfigOptions, stageName, stepName, errorCode string) error {
+	if !GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+		return nil
+	}
 	opts := GCPPubSubOptions{
-		Enabled:          GeneralConfig.HookConfig.GCPPubSubConfig.Enabled,
 		ProjectNumber:    GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 		IdentityPool:     GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 		IdentityProvider: GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
@@ -35,8 +40,9 @@ func PublishTaskRunFinishedEvent(vaultClient config.VaultClient, GeneralConfig c
 		CorrelationID:    GeneralConfig.CorrelationID,
 		OIDCRoleID:       GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	}
-	if !opts.Enabled {
-		return nil
+
+	if tokenProvider == nil {
+		return fmt.Errorf("MSB event publishing is enabled but no OIDC token provider is available")
 	}
 
 	log.Entry().Debug("publishing event to GCP Pub/Sub...")
@@ -50,7 +56,7 @@ func PublishTaskRunFinishedEvent(vaultClient config.VaultClient, GeneralConfig c
 
 	topic := fmt.Sprintf("%spipelinetaskrun-finished", opts.TopicPrefix)
 	err = gcp.NewGcpPubsubClient(
-		vaultClient,
+		tokenProvider,
 		opts.ProjectNumber,
 		opts.IdentityPool,
 		opts.IdentityProvider,

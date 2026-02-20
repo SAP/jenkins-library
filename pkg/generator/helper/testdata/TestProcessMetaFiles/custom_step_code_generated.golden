@@ -217,8 +217,10 @@ func TestStepCommand() *cobra.Command {
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -250,7 +252,7 @@ func TestStepCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if err := events.PublishTaskRunFinishedEvent(
-					vaultClient,
+					oidcTokenProvider,
 					piperOsCmd.GeneralConfig,
 					telemetryClient.GetData().StageName,
 					STEP_NAME,

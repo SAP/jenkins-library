@@ -8,10 +8,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcp"
 )
 
-func Publish(vaultClient config.VaultClient, GeneralConfig config.GeneralConfigOptions, eventData []byte) error {
+func Publish(tokenProvider gcp.OIDCTokenProvider, GeneralConfig config.GeneralConfigOptions, eventData []byte) error {
 	// publish cloud event via GCP Pub/Sub
 	err := gcp.NewGcpPubsubClient(
-		vaultClient,
+		tokenProvider,
 		GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 		GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 		GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
