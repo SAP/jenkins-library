@@ -65,7 +65,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: {{.Short | quote }},
-		Long: {{ $tick := "`" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
+		Long: {{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

@@ -26,7 +26,6 @@ type stepInfo struct {
 	Long              string
 	StepParameters    []config.StepParameters
 	StepAliases       []config.Alias
-	OSImport          bool
 	OutputResources   []OutputResource
 	Short             string
 	StepFunc          string
@@ -259,13 +258,11 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 			}
 		}
 
-		osImport := false
-		osImport, err = setDefaultParameters(&stepData)
-		if err != nil {
+		if err = setDefaultParameters(&stepData); err != nil {
 			log.Fatalf("Error occurred: %v\n", err)
 		}
 
-		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
+		myStepInfo, err := getStepInfo(&stepData, stepHelperData.ExportPrefix)
 		if err != nil {
 			log.Fatalf("Error occurred: %v\n", err)
 		}
@@ -306,9 +303,8 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 	return nil
 }
 
-func setDefaultParameters(stepData *config.StepData) (bool, error) {
+func setDefaultParameters(stepData *config.StepData) error {
 	// ToDo: custom function for default handling, support all relevant parameter types
-	osImportRequired := false
 	for k, param := range stepData.Spec.Inputs.Parameters {
 
 		if param.Default == nil {
@@ -320,7 +316,6 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				param.Default = "0"
 			case "string":
 				param.Default = fmt.Sprintf("os.Getenv(\"PIPER_%v\")", param.Name)
-				osImportRequired = true
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
@@ -329,7 +324,7 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				// is never used. Needs to be changed in case we enable cli parameter handling
 				// for that type.
 			default:
-				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
+				return fmt.Errorf("meta data type not set or not known: '%v'", param.Type)
 			}
 		} else {
 			switch param.Type {
@@ -349,11 +344,11 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 					param.Default = fmt.Sprintf("%d", int(v))
 				case string:
 					if _, err := strconv.Atoi(v); err != nil {
-						return false, fmt.Errorf("parameter %q: invalid int default %q", param.Name, v)
+						return fmt.Errorf("parameter %q: invalid int default %q", param.Name, v)
 					}
 					param.Default = v
 				default:
-					return false, fmt.Errorf("parameter %q: expected int, got %T", param.Name, param.Default)
+					return fmt.Errorf("parameter %q: expected int, got %T", param.Name, param.Default)
 				}
 			case "string":
 				param.Default = fmt.Sprintf("`%v`", param.Default)
@@ -364,16 +359,16 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				// is never used. Needs to be changed in case we enable cli parameter handling
 				// for that type.
 			default:
-				return false, fmt.Errorf("meta data type not set or not known: '%v'", param.Type)
+				return fmt.Errorf("meta data type not set or not known: '%v'", param.Type)
 			}
 		}
 
 		stepData.Spec.Inputs.Parameters[k] = param
 	}
-	return osImportRequired, nil
+	return nil
 }
 
-func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) (stepInfo, error) {
+func getStepInfo(stepData *config.StepData, exportPrefix string) (stepInfo, error) {
 	oRes, err := getOutputResourceDetails(stepData)
 
 	// Pre-compute output resource type flags for template
@@ -398,7 +393,6 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			StepParameters:    stepData.Spec.Inputs.Parameters,
 			StepAliases:       stepData.Metadata.Aliases,
 			FlagsFunc:         fmt.Sprintf("add%vFlags", piperutils.Title(stepData.Metadata.Name)),
-			OSImport:          osImport,
 			OutputResources:   oRes,
 			HasReportsOutput:  hasReports,
 			HasInfluxOutput:   hasInflux,
