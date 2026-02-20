@@ -94,7 +94,7 @@ func TestIsRetryableError(t *testing.T) {
 
 func TestRetryOperation(t *testing.T) {
 	t.Run("succeeds on first attempt", func(t *testing.T) {
-		bundle := &CraneUtilsBundle{
+		bundle := &craneUtilsBundle{
 			MaxRetries:     3,
 			InitialBackoff: 10 * time.Millisecond,
 			BackoffFactor:  2.0,
@@ -111,7 +111,7 @@ func TestRetryOperation(t *testing.T) {
 	})
 
 	t.Run("retries on retryable error and succeeds", func(t *testing.T) {
-		bundle := &CraneUtilsBundle{
+		bundle := &craneUtilsBundle{
 			MaxRetries:     3,
 			InitialBackoff: 10 * time.Millisecond,
 			BackoffFactor:  2.0,
@@ -131,7 +131,7 @@ func TestRetryOperation(t *testing.T) {
 	})
 
 	t.Run("does not retry non-retryable error", func(t *testing.T) {
-		bundle := &CraneUtilsBundle{
+		bundle := &craneUtilsBundle{
 			MaxRetries:     3,
 			InitialBackoff: 10 * time.Millisecond,
 			BackoffFactor:  2.0,
@@ -149,7 +149,7 @@ func TestRetryOperation(t *testing.T) {
 	})
 
 	t.Run("fails after max retries", func(t *testing.T) {
-		bundle := &CraneUtilsBundle{
+		bundle := &craneUtilsBundle{
 			MaxRetries:     3,
 			InitialBackoff: 10 * time.Millisecond,
 			BackoffFactor:  2.0,
@@ -166,7 +166,7 @@ func TestRetryOperation(t *testing.T) {
 	})
 
 	t.Run("respects context cancellation", func(t *testing.T) {
-		bundle := &CraneUtilsBundle{
+		bundle := &craneUtilsBundle{
 			MaxRetries:     5,
 			InitialBackoff: 100 * time.Millisecond,
 			BackoffFactor:  2.0,
@@ -190,7 +190,7 @@ func TestRetryOperation(t *testing.T) {
 	})
 
 	t.Run("uses default values when not configured", func(t *testing.T) {
-		bundle := &CraneUtilsBundle{}
+		bundle := &craneUtilsBundle{}
 
 		attempts := 0
 		err := bundle.retryOperation(context.Background(), "test", func() error {
