@@ -240,6 +240,16 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 							{{- nindent 24 ""}}
 {{- end -}}
 
+{{- define "containerEntry" }}
+				{
+					{{- if .Name -}} Name: {{ .Name | quote }},{{- end }}
+					{{- if .Image -}} Image: {{ .Image | quote }},{{- end }}
+					{{- if .EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := .EnvVars }} {Name: {{ $env.Name | quote }}, Value: {{ $env.Value | quote }}}, {{ end -}}  },{{- end }}
+					{{- if .WorkingDir -}} WorkingDir: {{ .WorkingDir | quote }},{{- end }}
+					{{- if .Options -}} Options: []config.Option{ {{- range $i, $option := .Options }} {Name: {{ $option.Name | quote }}, Value: {{ $option.Value | quote }}}, {{ end -}} },{{- end }}
+					{{- if .Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := .Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{- end }}
+				}, {{- end -}}
+
 // retrieve step metadata
 func {{ .StepName }}Metadata() config.StepData {
 	var theMetaData = config.StepData{
@@ -302,28 +312,12 @@ func {{ .StepName }}Metadata() config.StepData {
 			},
 			{{ if .Containers -}}
 			Containers: []config.Container{
-				{{- range $container := .Containers }}
-				{
-					{{- if $container.Name -}} Name: {{ $container.Name | quote }},{{- end }}
-					{{- if $container.Image -}} Image: {{ $container.Image | quote }},{{- end }}
-					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: {{ $env.Name | quote }}, Value: {{ $env.Value | quote }}}, {{ end -}}  },{{- end }}
-					{{- if $container.WorkingDir -}} WorkingDir: {{ $container.WorkingDir | quote }},{{- end }}
-					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: {{ $option.Name | quote }}, Value: {{ $option.Value | quote }}}, {{ end -}} },{{ end }}
-					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} },{{ end }}
-				}, {{ end }}
+				{{- range $container := .Containers }}{{ template "containerEntry" $container }}{{ end }}
 			},
 			{{ end -}}
 			{{ if .Sidecars -}}
 			Sidecars: []config.Container{
-				{{- range $container := .Sidecars }}
-				{
-					{{- if $container.Name -}} Name: {{ $container.Name | quote }}, {{- end }}
-					{{- if $container.Image -}} Image: {{ $container.Image | quote }}, {{- end }}
-					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: {{ $env.Name | quote }}, Value: {{ $env.Value | quote }}}, {{ end -}}  }, {{- end }}
-					{{- if $container.WorkingDir -}} WorkingDir: {{ $container.WorkingDir | quote }}, {{- end }}
-					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: {{ $option.Name | quote }}, Value: {{ $option.Value | quote }}}, {{ end -}} }, {{- end }}
-					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: {{ $cond.ConditionRef | quote }}, Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: {{ $p.Name | quote }}, Value: {{ $p.Value | quote }} }, {{end -}} } }, {{ end -}} }, {{- end }}
-				}, {{ end }}
+				{{- range $container := .Sidecars }}{{ template "containerEntry" $container }}{{ end }}
 			},
 			{{ end -}}
 			{{- if .Outputs.Resources -}}
