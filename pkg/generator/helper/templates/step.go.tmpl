@@ -137,10 +137,10 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ $oRes.Name }}.persist(
 				{{- if eq $oRes.Type "reports" -}}stepConfig,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCPJsonKeyFilePath,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSBucketId,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSFolderPath,
-					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSSubFolder
+					{{- configPrefix $.ExportPrefix }}GeneralConfig.GCPJsonKeyFilePath,
+					{{- configPrefix $.ExportPrefix }}GeneralConfig.GCSBucketId,
+					{{- configPrefix $.ExportPrefix }}GeneralConfig.GCSFolderPath,
+					{{- configPrefix $.ExportPrefix }}GeneralConfig.GCSSubFolder
 				{{- else -}}
 					{{ configPrefix $.ExportPrefix }}GeneralConfig.EnvRootPath, {{ $oRes.Name | quote }}{{- end -}}
 				){{- end }}
