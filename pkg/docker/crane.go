@@ -55,35 +55,26 @@ func isRetryableError(err error) bool {
 		return false
 	}
 	errMsg := err.Error()
-	// HTTP/2 stream errors
-	if strings.Contains(errMsg, "stream error") {
+
+	switch {
+	case strings.Contains(errMsg, "stream error"), // HTTP/2 stream errors
+		strings.Contains(errMsg, "connection reset"), // Connection reset errors
+		strings.Contains(errMsg, "unexpected EOF"),   // EOF during transfer
+		strings.Contains(errMsg, "timeout"),          // Timeout errors
+		strings.Contains(errMsg, "Timeout"),
+		strings.Contains(errMsg, "network"), // Network errors
+		strings.Contains(errMsg, "connection refused"),
+		strings.Contains(errMsg, "502"), // Server unavailable
+		strings.Contains(errMsg, "503"),
+		strings.Contains(errMsg, "504"):
 		return true
+	default:
+		return false
 	}
-	// Connection reset errors
-	if strings.Contains(errMsg, "connection reset") {
-		return true
-	}
-	// EOF during transfer
-	if strings.Contains(errMsg, "unexpected EOF") {
-		return true
-	}
-	// Timeout errors
-	if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "Timeout") {
-		return true
-	}
-	// Generic network errors
-	if strings.Contains(errMsg, "network") || strings.Contains(errMsg, "connection refused") {
-		return true
-	}
-	// Server temporarily unavailable
-	if strings.Contains(errMsg, "503") || strings.Contains(errMsg, "502") || strings.Contains(errMsg, "504") {
-		return true
-	}
-	return false
 }
 
 // retryOperation executes an operation with exponential backoff retry logic
-func (c *CraneUtilsBundle) retryOperation(ctx context.Context, operation string, fn func() error) error {
+func (c *CraneUtilsBundle) retryOperation(ctx context.Context, operation string, task func() error) error {
 	maxRetries := c.MaxRetries
 	if maxRetries <= 0 {
 		maxRetries = defaultMaxRetries
@@ -99,7 +90,7 @@ func (c *CraneUtilsBundle) retryOperation(ctx context.Context, operation string,
 
 	var lastErr error
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		lastErr = fn()
+		lastErr = task()
 		if lastErr == nil {
 			return nil
 		}
