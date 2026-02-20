@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"net/http"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -54,8 +56,17 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	errMsg := err.Error()
 
+	// Check for registry transport errors (e.g., 5xx status codes)
+	// TODO: go 1.26 supports AsType
+	var transportErr *transport.Error
+	if errors.As(err, &transportErr) && transportErr.Temporary() {
+		return true
+	}
+
+	// Fallback to string matching for errors not wrapped as transport.Error
+	// (e.g., HTTP/2 stream errors which are plain string errors)
+	errMsg := err.Error()
 	switch {
 	case strings.Contains(errMsg, "stream error"), // HTTP/2 stream errors
 		strings.Contains(errMsg, "connection reset"), // Connection reset errors
@@ -63,10 +74,7 @@ func isRetryableError(err error) bool {
 		strings.Contains(errMsg, "timeout"),          // Timeout errors
 		strings.Contains(errMsg, "Timeout"),
 		strings.Contains(errMsg, "network"), // Network errors
-		strings.Contains(errMsg, "connection refused"),
-		strings.Contains(errMsg, "502"), // Server unavailable
-		strings.Contains(errMsg, "503"),
-		strings.Contains(errMsg, "504"):
+		strings.Contains(errMsg, "connection refused"):
 		return true
 	default:
 		return false

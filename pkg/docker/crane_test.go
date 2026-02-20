@@ -3,9 +3,11 @@ package docker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -47,18 +49,23 @@ func TestIsRetryableError(t *testing.T) {
 		},
 		{
 			name:     "503 service unavailable",
-			err:      errors.New(`unexpected status code 503`),
+			err:      fmt.Errorf("request failed: %w", &transport.Error{StatusCode: 503}),
 			expected: true,
 		},
 		{
 			name:     "502 bad gateway",
-			err:      errors.New(`unexpected status code 502`),
+			err:      fmt.Errorf("request failed: %w", &transport.Error{StatusCode: 502}),
 			expected: true,
 		},
 		{
 			name:     "504 gateway timeout",
-			err:      errors.New(`unexpected status code 504`),
+			err:      fmt.Errorf("request failed: %w", &transport.Error{StatusCode: 504}),
 			expected: true,
+		},
+		{
+			name:     "401 unauthorized - not retryable",
+			err:      fmt.Errorf("request failed: %w", &transport.Error{StatusCode: 401}),
+			expected: false,
 		},
 		{
 			name:     "authentication error - not retryable",
