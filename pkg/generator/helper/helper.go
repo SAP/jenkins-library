@@ -27,7 +27,7 @@ type stepInfo struct {
 	StepParameters   []config.StepParameters
 	StepAliases      []config.Alias
 	OSImport         bool
-	OutputResources  []map[string]string
+	OutputResources  []OutputResource
 	Short            string
 	StepFunc         string
 	StepName         string
@@ -38,6 +38,14 @@ type stepInfo struct {
 	Resources        []config.StepResources
 	Secrets          []config.StepSecrets
 	StepErrors       []config.StepError
+}
+
+// OutputResource represents a generated output resource (piperEnvironment, influx, reports).
+type OutputResource struct {
+	Name       string // Variable name in generated code
+	Type       string // "piperEnvironment", "influx", or "reports"
+	Def        string // Struct definition code
+	ObjectName string // Type name of the struct
 }
 
 // StepTestGoTemplate ...
@@ -399,13 +407,14 @@ func getSecretFields(stepData *config.StepData) []string {
 	return secretFields
 }
 
-func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, error) {
-	outputResources := []map[string]string{}
+func getOutputResourceDetails(stepData *config.StepData) ([]OutputResource, error) {
+	var outputResources []OutputResource
 
 	for _, res := range stepData.Spec.Outputs.Resources {
-		currentResource := map[string]string{}
-		currentResource["name"] = res.Name
-		currentResource["type"] = res.Type
+		currentResource := OutputResource{
+			Name: res.Name,
+			Type: res.Type,
+		}
 
 		switch res.Type {
 		case "piperEnvironment":
@@ -430,8 +439,8 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			if err != nil {
 				return outputResources, err
 			}
-			currentResource["def"] = def
-			currentResource["objectname"] = envResource.StructName()
+			currentResource.Def = def
+			currentResource.ObjectName = envResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "influx":
 			var influxResource InfluxResource
@@ -460,8 +469,8 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			if err != nil {
 				return outputResources, err
 			}
-			currentResource["def"] = def
-			currentResource["objectname"] = influxResource.StructName()
+			currentResource.Def = def
+			currentResource.ObjectName = influxResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		case "reports":
 			var reportsResource ReportsResource
@@ -481,8 +490,8 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 			if err != nil {
 				return outputResources, err
 			}
-			currentResource["def"] = def
-			currentResource["objectname"] = reportsResource.StructName()
+			currentResource.Def = def
+			currentResource.ObjectName = reportsResource.StructName()
 			outputResources = append(outputResources, currentResource)
 		}
 	}

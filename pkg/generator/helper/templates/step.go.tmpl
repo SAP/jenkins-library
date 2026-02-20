@@ -7,9 +7,9 @@ package cmd
 {{ $piperEnvironmentOutputExists := false -}}
 {{ if .OutputResources -}}
 	{{ range $notused, $oRes := .OutputResources -}}
-		{{ if eq (index $oRes "type") "reports" -}}{{ $reportsOutputExists = true -}}{{ end -}}
-		{{ if eq (index $oRes "type") "influx" -}}{{ $influxOutputExists = true -}}{{ end -}}
-		{{ if eq (index $oRes "type") "piperEnvironment" -}}{{ $piperEnvironmentOutputExists = true -}}{{ end -}}
+		{{ if eq $oRes.Type "reports" -}}{{ $reportsOutputExists = true -}}{{ end -}}
+		{{ if eq $oRes.Type "influx" -}}{{ $influxOutputExists = true -}}{{ end -}}
+		{{ if eq $oRes.Type "piperEnvironment" -}}{{ $piperEnvironmentOutputExists = true -}}{{ end -}}
 	{{ end -}}
 {{ end -}}
 
@@ -57,7 +57,7 @@ type {{ .StepName }}Options struct {
 }
 
 {{ range $notused, $oRes := .OutputResources }}
-{{ index $oRes "def"}}
+{{ $oRes.Def }}
 {{ end }}
 
 // {{.CobraCmdFuncName}} {{.Short}}
@@ -68,7 +68,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var stepConfig {{.StepName}}Options
 	var startTime time.Time
 	{{- range $notused, $oRes := .OutputResources }}
-	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
+	var {{ $oRes.Name }} {{ $oRes.ObjectName }}{{ end }}
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -147,14 +147,14 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				{{- range $notused, $oRes := .OutputResources }}
-				{{ index $oRes "name" }}.persist(
-				{{- if eq (index $oRes "type") "reports" -}}stepConfig,
+				{{ $oRes.Name }}.persist(
+				{{- if eq $oRes.Type "reports" -}}stepConfig,
 					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCPJsonKeyFilePath,
 					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSBucketId,
 					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSFolderPath,
 					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSSubFolder
 				{{- else -}}
-					{{ configPrefix $.ExportPrefix }}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
+					{{ configPrefix $.ExportPrefix }}GeneralConfig.EnvRootPath, {{ $oRes.Name | quote }}{{- end -}}
 				){{- end }}
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -212,7 +212,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(STEP_NAME)
-			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne (index $oRes "type") "reports" }}, &{{ index $oRes "name" }}{{ end }}{{ end }})
+			{{.StepName}}(stepConfig, &stepTelemetryData{{ range $notused, $oRes := .OutputResources}}{{ if ne $oRes.Type "reports" }}, &{{ $oRes.Name }}{{ end }}{{ end }})
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
