@@ -52,7 +52,6 @@ type OutputResource struct {
 
 // StepTestGoTemplate ...
 const stepTestGoTemplate = `//go:build unit
-// +build unit
 
 package cmd
 
@@ -114,7 +113,7 @@ func new{{.StepName | title}}Utils() {{.StepName}}Utils {
 	return &utils
 }
 
-func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }}{{ end }}) {
+func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ $oRes.Name }} *{{ $oRes.ObjectName }}{{ end }}) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := new{{.StepName | title}}Utils()
@@ -125,13 +124,13 @@ func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.Custo
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := run{{.StepName | title}}(&config, telemetryData, utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }}{{ end }})
+	err := run{{.StepName | title}}(&config, telemetryData, utils{{ range $notused, $oRes := .OutputResources}}, {{ $oRes.Name }}{{ end }})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, utils {{.StepName}}Utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
+func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, utils {{.StepName}}Utils{{ range $notused, $oRes := .OutputResources}}, {{ $oRes.Name }} *{{ $oRes.ObjectName }} {{ end }}) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
 	// Example of calling methods from external dependencies directly on utils:
