@@ -1,30 +1,40 @@
 package btp
 
 import (
-	"errors"
-	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
-
-func NewBTPUtils(exec ExecRunner) *BTPUtils {
-	b := new(BTPUtils)
-	b.Exec = exec
-
-	configOptions := ConfigOptions{
-		Format: "json",
-	}
-	b.SetConfig(configOptions)
-	return b
-}
 
 func (btp *BTPUtils) Login(options LoginOptions) error {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
 	}
 
-	if options.Url == "" || options.Subdomain == "" || options.User == "" || options.Password == "" {
-		return fmt.Errorf("Failed to login to BTP: %w", errors.New("Parameters missing. Please provide the CLI URL, Subdomain, Space, User and Password"))
+	parametersCheck := options.Url == "" ||
+		options.Subdomain == "" ||
+		options.User == "" ||
+		options.Password == ""
+
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Url == "" {
+			missingParams = append(missingParams, "Url")
+		}
+		if options.Subdomain == "" {
+			missingParams = append(missingParams, "Subdomain")
+		}
+		if options.User == "" {
+			missingParams = append(missingParams, "User")
+		}
+		if options.Password == "" {
+			missingParams = append(missingParams, "Password")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return errors.Wrap(errors.New(errorMsg), "Failed to login to BTP")
 	}
 
 	log.Entry().Info("Logging in to BTP")
@@ -36,18 +46,18 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		WithUser(options.User).
 		WithPassword(options.Password)
 
-	if options.Tenant != "" {
-		builder = builder.WithTenant(options.Tenant)
+	if options.IdentityProvider != "" {
+		builder = builder.WithIdentityProvider(options.IdentityProvider)
 	}
 
 	btpLoginScript, _ := builder.Build()
 
-	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("Tenant", options.Tenant)
+	log.Entry().WithField("CLI URL:", options.Url).WithField("Subdomain", options.Subdomain).WithField("User", options.User).WithField("IdentityProvider", options.IdentityProvider)
 
 	err := btp.Exec.Run(btpLoginScript)
 
 	if err != nil {
-		return fmt.Errorf("Failed to login to BTP: %w", err)
+		return errors.Wrap(err, "Failed to login to BTP")
 	}
 	log.Entry().Info("Logged in successfully to BTP.")
 	return nil
@@ -68,53 +78,16 @@ func (btp *BTPUtils) Logout() error {
 	err := btp.Exec.Run(btpLogoutScript)
 
 	if err != nil {
-		return fmt.Errorf("Failed to Logout of BTP: %w", err)
+		return errors.Wrap(err, "Failed to Logout of BTP")
 	}
 	log.Entry().Info("Logged out successfully")
 	return nil
 }
 
-func (btp *BTPUtils) SetConfig(options ConfigOptions) error {
-	if btp.Exec == nil {
-		btp.Exec = &Executor{}
-	}
-
-	if options.Format == "" {
-		return fmt.Errorf("Failed to set the configuration of the BTP CLI: %w", errors.New("Parameters missing. Please provide the Format"))
-	}
-
-	builder := NewBTPCommandBuilder().
-		WithAction("set config").
-		WithFormat(options.Format).
-		WithVerbose()
-
-	btpConfigScript, _ := builder.Build()
-
-	log.Entry().WithField("Format:", options.Format)
-
-	err := btp.Exec.Run(btpConfigScript)
-
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("Failed to define the configuration of the BTP CLI: %w", err)
-	}
-	log.Entry().Info("Configuration successfully defined.")
-	return nil
-}
-
-type BTPUtils struct {
-	Exec ExecRunner
-}
-
 type LoginOptions struct {
-	Url       string
-	Subdomain string
-	User      string
-	Password  string
-	Tenant    string
-}
-
-type ConfigOptions struct {
-	Format  string
-	Verbose bool
+	Url              string
+	Subdomain        string
+	User             string
+	Password         string
+	IdentityProvider string
 }

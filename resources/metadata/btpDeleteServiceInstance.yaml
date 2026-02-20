@@ -1,0 +1,124 @@
+metadata:
+  name: btpDeleteServiceInstance
+  description: Delete a service instance in BTP
+  longDescription: |
+    Delete a service instance in SAP Business Technology Platform (BTP) using `btp delete services/instance` ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-delete-services-instance.html?locale=en-US&version=Cloud)).
+spec:
+  inputs:
+    secrets:
+      - name: btpCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.
+        type: jenkins
+        aliases:
+          - name: btp/credentialsId
+    params:
+      - name: url
+        type: string
+        description: BTP API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/url
+        default: "https://cli.btp.cloud.sap"
+      - name: subdomain
+        type: string
+        description: BTP subdomain (Global Account). It will be used during login.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/subdomain
+      - name: idp
+        type: string
+        description: BTP idp (Identity Provider) (optional). It will be used during login.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: btp/idp
+      - name: subaccount
+        type: string
+        description: BTP subaccount where the service instance will be deleted
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/subaccount
+      - name: serviceInstanceName
+        type: string
+        description: Name of the service instance to delete
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/instanceName
+      - name: timeout
+        type: int
+        description: Timeout in seconds for deletion operation
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        default: 3600
+        aliases:
+          - name: btp/timeout
+      - name: pollInterval
+        type: int
+        description: Poll interval in seconds for checking instance readiness
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        default: 30
+        aliases:
+          - name: btp/pollInterval
+      - name: user
+        type: string
+        description: User or E-Mail for BTP
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: btpCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password for BTP
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: btpCredentialsId
+            type: secret
+            param: password
+  containers:
+    - name: btp
+      image: ppiper/cf-cli:latest
+      workingDir: "/home/piper"

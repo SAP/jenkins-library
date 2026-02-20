@@ -19,14 +19,14 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 		builder := NewBTPCommandBuilder().WithAction("list")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp list", strings.Join(cmd, " "))
+		assert.Equal(t, "btp --format json list", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with action and target", func(t *testing.T) {
 		builder := NewBTPCommandBuilder().WithAction("get").WithTarget("subaccount")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp get subaccount", strings.Join(cmd, " "))
+		assert.Equal(t, "btp --format json get subaccount", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with action, target, options, and params", func(t *testing.T) {
@@ -38,7 +38,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithParam("my-instance")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp --global delete service-instance --force my-instance", strings.Join(cmd, " "))
+		assert.Equal(t, "btp --format json --global delete service-instance --force my-instance", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with multiple options and params", func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithParam("standard")
 		cmd, err := builder.Build()
 		assert.NoError(t, err)
-		assert.Equal(t, "btp --global --json create service-instance --name test --plan standard", strings.Join(cmd, " "))
+		assert.Equal(t, "btp --format json --global --json create service-instance --name test --plan standard", strings.Join(cmd, " "))
 	})
 
 	t.Run("builds with specific parameter methods", func(t *testing.T) {
@@ -81,13 +81,13 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 			WithPassword("pass").
 			WithFormat("json").
 			WithVerbose().
-			WithTenant("tenant-1")
+			WithIdentityProvider("idProvider-1")
 
 		cmd, err := builder.Build()
 
 		cmdString := strings.Join(cmd, " ")
 		assert.NoError(t, err)
-		assert.Contains(t, cmdString, "btp get subaccount")
+		assert.Contains(t, cmdString, "btp --format json get subaccount")
 		assert.Contains(t, cmdString, "--subaccount 123")
 		assert.Contains(t, cmdString, "--id my-id")
 		assert.Contains(t, cmdString, "--name my-name")
@@ -109,7 +109,7 @@ func TestBTPCommandBuilder_Build(t *testing.T) {
 		assert.Contains(t, cmdString, "--password pass")
 		assert.Contains(t, cmdString, "--format json")
 		assert.Contains(t, cmdString, "--verbose")
-		assert.Contains(t, cmdString, "--idp tenant-1")
+		assert.Contains(t, cmdString, "--idp idProvider-1")
 	})
 
 	t.Run("reset clears all fields", func(t *testing.T) {

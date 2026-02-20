@@ -2,7 +2,7 @@ package btp
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,21 +21,21 @@ func TestBTPLogin(t *testing.T) {
 	}
 
 	m.Stdout(new(bytes.Buffer))
+	m.Stderr(new(bytes.Buffer))
 
 	t.Run("BTP Login: missing parameter", func(t *testing.T) {
-
 		defer loginMockCleanup(m)
 
 		btpConfig := LoginOptions{}
 		btp := BTPUtils{Exec: m}
 		err := btp.Login(btpConfig)
-		assert.EqualError(t, err, "Failed to login to BTP: Parameters missing. Please provide the CLI URL, Subdomain, Space, User and Password")
+		assert.EqualError(t, err, "Failed to login to BTP: Parameters missing. Please provide: Url, Subdomain, User, Password")
 	})
-	t.Run("BTP Login: failure", func(t *testing.T) {
 
+	t.Run("BTP Login: failure", func(t *testing.T) {
 		defer loginMockCleanup(m)
 
-		m.ShouldFailOnCommand = map[string]error{"btp login .*": fmt.Errorf("wrong password or account does not exist")}
+		m.ShouldFailOnCommand = map[string]error{"btp .* login .+": errors.New("wrong password or account does not exist")}
 
 		btpConfig := LoginOptions{
 			Url:       "https://api.endpoint.com",
@@ -53,7 +53,7 @@ func TestBTPLogin(t *testing.T) {
 
 		defer loginMockCleanup(m)
 
-		m.StdoutReturn = map[string]string{"btp login .*": "Authentication successful"}
+		m.StdoutReturn = map[string]string{"btp .* login .+": "Authentication successful"}
 
 		btpConfig := LoginOptions{
 			Url:       "https://api.endpoint.com",
