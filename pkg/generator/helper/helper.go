@@ -19,25 +19,28 @@ import (
 )
 
 type stepInfo struct {
-	CobraCmdFuncName string
-	CreateCmdVar     string
-	ExportPrefix     string
-	FlagsFunc        string
-	Long             string
-	StepParameters   []config.StepParameters
-	StepAliases      []config.Alias
-	OSImport         bool
-	OutputResources  []OutputResource
-	Short            string
-	StepFunc         string
-	StepName         string
-	StepSecrets      []string
-	Containers       []config.Container
-	Sidecars         []config.Container
-	Outputs          config.StepOutputs
-	Resources        []config.StepResources
-	Secrets          []config.StepSecrets
-	StepErrors       []config.StepError
+	CobraCmdFuncName  string
+	CreateCmdVar      string
+	ExportPrefix      string
+	FlagsFunc         string
+	Long              string
+	StepParameters    []config.StepParameters
+	StepAliases       []config.Alias
+	OSImport          bool
+	OutputResources   []OutputResource
+	Short             string
+	StepFunc          string
+	StepName          string
+	StepSecrets       []string
+	Containers        []config.Container
+	Sidecars          []config.Container
+	Outputs           config.StepOutputs
+	Resources         []config.StepResources
+	Secrets           []config.StepSecrets
+	StepErrors        []config.StepError
+	HasReportsOutput  bool
+	HasInfluxOutput   bool
+	HasPiperEnvOutput bool
 }
 
 // OutputResource represents a generated output resource (piperEnvironment, influx, reports).
@@ -373,25 +376,41 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) (stepInfo, error) {
 	oRes, err := getOutputResourceDetails(stepData)
 
+	// Pre-compute output resource type flags for template
+	var hasReports, hasInflux, hasPiperEnv bool
+	for _, res := range oRes {
+		switch res.Type {
+		case "reports":
+			hasReports = true
+		case "influx":
+			hasInflux = true
+		case "piperEnvironment":
+			hasPiperEnv = true
+		}
+	}
+
 	return stepInfo{
-			StepName:         stepData.Metadata.Name,
-			CobraCmdFuncName: fmt.Sprintf("%vCommand", piperutils.Title(stepData.Metadata.Name)),
-			CreateCmdVar:     fmt.Sprintf("create%vCmd", piperutils.Title(stepData.Metadata.Name)),
-			Short:            stepData.Metadata.Description,
-			Long:             stepData.Metadata.LongDescription,
-			StepParameters:   stepData.Spec.Inputs.Parameters,
-			StepAliases:      stepData.Metadata.Aliases,
-			FlagsFunc:        fmt.Sprintf("add%vFlags", piperutils.Title(stepData.Metadata.Name)),
-			OSImport:         osImport,
-			OutputResources:  oRes,
-			ExportPrefix:     exportPrefix,
-			StepSecrets:      getSecretFields(stepData),
-			Containers:       stepData.Spec.Containers,
-			Sidecars:         stepData.Spec.Sidecars,
-			Outputs:          stepData.Spec.Outputs,
-			Resources:        stepData.Spec.Inputs.Resources,
-			Secrets:          stepData.Spec.Inputs.Secrets,
-			StepErrors:       stepData.Metadata.Errors,
+			StepName:          stepData.Metadata.Name,
+			CobraCmdFuncName:  fmt.Sprintf("%vCommand", piperutils.Title(stepData.Metadata.Name)),
+			CreateCmdVar:      fmt.Sprintf("create%vCmd", piperutils.Title(stepData.Metadata.Name)),
+			Short:             stepData.Metadata.Description,
+			Long:              stepData.Metadata.LongDescription,
+			StepParameters:    stepData.Spec.Inputs.Parameters,
+			StepAliases:       stepData.Metadata.Aliases,
+			FlagsFunc:         fmt.Sprintf("add%vFlags", piperutils.Title(stepData.Metadata.Name)),
+			OSImport:          osImport,
+			OutputResources:   oRes,
+			HasReportsOutput:  hasReports,
+			HasInfluxOutput:   hasInflux,
+			HasPiperEnvOutput: hasPiperEnv,
+			ExportPrefix:      exportPrefix,
+			StepSecrets:       getSecretFields(stepData),
+			Containers:        stepData.Spec.Containers,
+			Sidecars:          stepData.Spec.Sidecars,
+			Outputs:           stepData.Spec.Outputs,
+			Resources:         stepData.Spec.Inputs.Resources,
+			Secrets:           stepData.Spec.Inputs.Secrets,
+			StepErrors:        stepData.Metadata.Errors,
 		},
 		err
 }

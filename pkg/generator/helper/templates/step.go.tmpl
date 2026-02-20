@@ -2,25 +2,14 @@
 
 package cmd
 
-{{ $reportsOutputExists := false -}}
-{{ $influxOutputExists := false -}}
-{{ $piperEnvironmentOutputExists := false -}}
-{{ if .OutputResources -}}
-	{{ range $notused, $oRes := .OutputResources -}}
-		{{ if eq $oRes.Type "reports" -}}{{ $reportsOutputExists = true -}}{{ end -}}
-		{{ if eq $oRes.Type "influx" -}}{{ $influxOutputExists = true -}}{{ end -}}
-		{{ if eq $oRes.Type "piperEnvironment" -}}{{ $piperEnvironmentOutputExists = true -}}{{ end -}}
-	{{ end -}}
-{{ end -}}
-
 import (
 	"fmt"
 	"os"
-	{{ if $reportsOutputExists -}}
+	{{ if .HasReportsOutput -}}
 	"reflect"
 	"strings"
 	{{ end -}}
-	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}
+	{{ if or .HasInfluxOutput .HasPiperEnvOutput -}}
 	"path/filepath"
 	{{ end -}}
 	"time"
@@ -30,11 +19,11 @@ import (
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	{{ if $reportsOutputExists -}}
+	{{ if .HasReportsOutput -}}
 	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	{{ end -}}
-	{{ if or $influxOutputExists $piperEnvironmentOutputExists -}}
+	{{ if or .HasInfluxOutput .HasPiperEnvOutput -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/events"
