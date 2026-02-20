@@ -108,7 +108,7 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 
 	bodyReader, err := trustTokenRequestToReader(body)
 	if err != nil {
-		return secrets, fmt.Errorf("msg: %w", err)
+		return secrets, fmt.Errorf("failed to marshal token request body: %w", err)
 	}
 
 	log.Entry().Debugf("  with body %s", body)
@@ -139,7 +139,7 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 func trustTokenRequestToReader(body tokenRequestArray) (io.Reader, error) {
 	b, err := json.Marshal(body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal token request body: %w", err)
 	}
 	return bytes.NewReader(b), nil
 }
