@@ -65,9 +65,11 @@ func refNameToTokenBody(refName string) tokenRequest {
 	if strings.Contains(refName, marker) {
 		parts := strings.SplitN(refName, marker, 2)
 
-		if parts[0] != "" && parts[1] != "" {
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
 			system = parts[0]
 			scope = parts[1]
+		} else {
+			log.Entry().Warnf("invalid scope format in refName '%s', using defaults", refName)
 		}
 	}
 
