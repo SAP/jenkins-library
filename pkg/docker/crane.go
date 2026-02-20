@@ -28,18 +28,28 @@ type CraneUtilsBundle struct {
 	MaxRetries     int
 	InitialBackoff time.Duration
 	BackoffFactor  float64
+	DisableHTTP2   bool
 }
 
-// newHTTPTransport creates an HTTP transport optimized for large file transfers
-// with settings to mitigate HTTP/2 stream errors
-func newHTTPTransport() *http.Transport {
+// NewCraneUtilsBundle creates a new CraneUtilsBundle with default retry settings.
+func NewCraneUtilsBundle() *CraneUtilsBundle {
+	return &CraneUtilsBundle{
+		MaxRetries:     defaultMaxRetries,
+		InitialBackoff: defaultInitialBackoff,
+		BackoffFactor:  defaultBackoffFactor,
+		DisableHTTP2:   false,
+	}
+}
+
+// newHTTPTransport creates an HTTP transport optimized for large file transfers.
+func newHTTPTransport(disableHTTP2 bool) *http.Transport {
 	return &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
 			Timeout:   30 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
-		ForceAttemptHTTP2:     true,
+		ForceAttemptHTTP2:     !disableHTTP2,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   10,
 		IdleConnTimeout:       90 * time.Second,
@@ -132,10 +142,10 @@ func (c *CraneUtilsBundle) retryOperation(ctx context.Context, operation string,
 }
 
 // getCraneOptions returns common crane options with custom transport
-func getCraneOptions(ctx context.Context, platform *v1.Platform) []crane.Option {
+func (c *CraneUtilsBundle) getCraneOptions(ctx context.Context, platform *v1.Platform) []crane.Option {
 	opts := []crane.Option{
 		crane.WithContext(ctx),
-		crane.WithTransport(newHTTPTransport()),
+		crane.WithTransport(newHTTPTransport(c.DisableHTTP2)),
 	}
 	if platform != nil {
 		opts = append(opts, crane.WithPlatform(platform))
@@ -149,7 +159,7 @@ func (c *CraneUtilsBundle) CopyImage(ctx context.Context, src, dest, platform st
 		return err
 	}
 	return c.retryOperation(ctx, "CopyImage", func() error {
-		return crane.Copy(src, dest, getCraneOptions(ctx, p)...)
+		return crane.Copy(src, dest, c.getCraneOptions(ctx, p)...)
 	})
 }
 
@@ -159,7 +169,7 @@ func (c *CraneUtilsBundle) PushImage(ctx context.Context, im v1.Image, dest, pla
 		return err
 	}
 	return c.retryOperation(ctx, "PushImage", func() error {
-		return crane.Push(im, dest, getCraneOptions(ctx, p)...)
+		return crane.Push(im, dest, c.getCraneOptions(ctx, p)...)
 	})
 }
 

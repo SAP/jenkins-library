@@ -36,6 +36,7 @@ type imagePushToRegistryOptions struct {
 	PushLocalDockerImage   bool                   `json:"pushLocalDockerImage,omitempty"`
 	LocalDockerImagePath   string                 `json:"localDockerImagePath,omitempty" validate:"required_if=PushLocalDockerImage true"`
 	TargetArchitecture     string                 `json:"targetArchitecture,omitempty"`
+	DisableHTTP2           bool                   `json:"disableHTTP2,omitempty"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -213,6 +214,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().BoolVar(&stepConfig.PushLocalDockerImage, "pushLocalDockerImage", false, "Defines if the local image should be pushed to registry")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
+	cmd.Flags().BoolVar(&stepConfig.DisableHTTP2, "disableHTTP2", false, "Disables HTTP/2 for registry communication. Set to true if you encounter HTTP/2 stream errors during image push/pull operations.")
 
 	cmd.MarkFlagRequired("targetRegistryUrl")
 	cmd.MarkFlagRequired("targetRegistryUser")
@@ -458,6 +460,15 @@ func imagePushToRegistryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_targetArchitecture"),
+					},
+					{
+						Name:        "disableHTTP2",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

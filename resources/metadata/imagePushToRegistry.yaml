@@ -241,6 +241,14 @@ spec:
         scope:
           - STEPS
           - PARAMETERS
+      - name: disableHTTP2
+        type: bool
+        default: false
+        description: Disables HTTP/2 for registry communication. Set to true if you encounter HTTP/2 stream errors during image push/pull operations.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - image: gcr.io/go-containerregistry/crane:debug
       command:

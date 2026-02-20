@@ -204,13 +204,24 @@ func TestRetryOperation(t *testing.T) {
 }
 
 func TestNewHTTPTransport(t *testing.T) {
-	transport := newHTTPTransport()
+	t.Run("HTTP/2 enabled by default", func(t *testing.T) {
+		transport := newHTTPTransport(false)
+		assert.NotNil(t, transport)
+		assert.True(t, transport.ForceAttemptHTTP2)
+	})
 
-	assert.NotNil(t, transport)
-	assert.True(t, transport.ForceAttemptHTTP2)
-	assert.Equal(t, 100, transport.MaxIdleConns)
-	assert.Equal(t, 10, transport.MaxIdleConnsPerHost)
-	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
-	assert.Equal(t, time.Duration(0), transport.ResponseHeaderTimeout) // No timeout for large uploads
-	assert.NotNil(t, transport.TLSClientConfig)
+	t.Run("HTTP/2 disabled when requested", func(t *testing.T) {
+		transport := newHTTPTransport(true)
+		assert.NotNil(t, transport)
+		assert.False(t, transport.ForceAttemptHTTP2)
+	})
+
+	t.Run("common settings", func(t *testing.T) {
+		transport := newHTTPTransport(false)
+		assert.Equal(t, 100, transport.MaxIdleConns)
+		assert.Equal(t, 10, transport.MaxIdleConnsPerHost)
+		assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
+		assert.Equal(t, time.Duration(0), transport.ResponseHeaderTimeout)
+		assert.NotNil(t, transport.TLSClientConfig)
+	})
 }
