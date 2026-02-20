@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/build"
@@ -190,8 +191,13 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"reportOutputPath": "golangci-lint-report.xml",
 			"additionalParams": "",
 		}
+		// Detect golangci-lint version to use appropriate command syntax
+		lintArgs, err := getGolangciLintArgs(config.GolangciLintURL, lintSettings)
+		if err != nil {
+			return fmt.Errorf("failed to determine golangci-lint command syntax: %w", err)
+		}
 
-		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
+		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings, lintArgs); err != nil {
 			return err
 		}
 	}
@@ -474,12 +480,43 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintU
 	return nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string) error {
+func getGolangciLintArgs(golangciLintURL string, lintSettings map[string]string) ([]string, error) {
+	// Extract version from golangci-lint URL to determine command syntax
+	version, err := extractVersionFromURL(golangciLintURL)
+	if err != nil {
+		// If version extraction fails, fall back to v1 syntax
+		log.Entry().Debugf("Could not extract golangci-lint version from URL, using v1 syntax: %v", err)
+		return []string{"run", "--out-format", lintSettings["reportStyle"]}, nil
+	}
+	log.Entry().Debugf("golangci-lint version from URL: %s", version)
+
+	// Check if this is v1.x
+	if strings.HasPrefix(version, "v1.") {
+		return []string{"run", "--out-format", lintSettings["reportStyle"]}, nil
+	} else {
+		// support golangci-lint v2 and later
+		return []string{"run", fmt.Sprintf("--output.%s.path", lintSettings["reportStyle"]), lintSettings["reportOutputPath"]}, nil
+	}
+}
+
+// extractVersionFromURL extracts the version from golangci-lint download URL using regex
+// URL format: https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz
+func extractVersionFromURL(url string) (string, error) {
+	// Use regex to match version pattern like v1.51.2
+	versionRegex := regexp.MustCompile(`/v(\d+\.\d+\.\d+)/`)
+	matches := versionRegex.FindStringSubmatch(url)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("could not extract version from URL: %s", url)
+	}
+	return "v" + matches[1], nil
+}
+
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string, lintArgs []string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
-	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	err := utils.RunExecutable(binaryPath, lintArgs...)
 	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}

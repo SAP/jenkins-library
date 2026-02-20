@@ -313,6 +313,7 @@ go 1.17`
 		assert.NoError(t, err)
 
 		assert.Equal(t, []byte("content"), b)
+		// Should run linting directly with v1 syntax (no version command)
 		assert.Equal(t, binaryPath, utils.Calls[0].Exec)
 		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[0].Params)
 	})
@@ -973,50 +974,65 @@ func TestRunGolangciLint(t *testing.T) {
 
 	tt := []struct {
 		name                string
+		lintArgs            []string
 		shouldFailOnCommand map[string]error
 		fileWriteError      error
 		exitCode            int
-		expectedCommand     []string
+		expectedCommands    [][]string
 		expectedErr         error
 		failOnLintingError  bool
 	}{
 		{
-			name:                "success",
+			name:                "success - v1 syntax",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success - v2 syntax",
+			lintArgs:            []string{"run", "--output.checkstyle.path", lintSettings["reportOutputPath"]},
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommands:    [][]string{{binaryPath, "run", "--output.checkstyle.path", lintSettings["reportOutputPath"]}},
 			expectedErr:         nil,
 		},
 		{
 			name:                "failure - failed to run golangci-lint",
-			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format checkstyle", binaryPath): fmt.Errorf("err")},
 			fileWriteError:      nil,
-			exitCode:            0,
-			expectedCommand:     []string{},
+			exitCode:            2, // Non-1 exit code should cause error
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
 		},
 		{
 			name:                "failure - failed to write golangci-lint report",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
 			exitCode:            0,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
 		},
 		{
-			name:                "failure - failed with ExitCode == 1",
+			name:                "failure - failed with ExitCode == 1 and failOnError true",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
 			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
 			failOnLintingError:  true,
 		},
 		{
-			name:                "success - ignore failed with ExitCode == 1",
+			name:                "success - ignore failed with ExitCode == 1 and failOnError false",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
 			expectedErr:         nil,
 			failOnLintingError:  false,
 		},
@@ -1030,11 +1046,17 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
+
+			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings, test.lintArgs)
 
 			if test.expectedErr == nil {
-				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
-				assert.Equal(t, test.expectedCommand[1:], utils.Calls[0].Params)
+				assert.NoError(t, err)
+				if len(test.expectedCommands) > 0 {
+					for i, expectedCmd := range test.expectedCommands {
+						assert.Equal(t, expectedCmd[0], utils.Calls[i].Exec)
+						assert.Equal(t, expectedCmd[1:], utils.Calls[i].Params)
+					}
+				}
 			} else {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			}
@@ -1072,6 +1094,165 @@ func TestGoCreateBuildArtifactMetadata(t *testing.T) {
 	err, version := createGoBuildArtifactsMetadata("testBin", config.TargetRepositoryURL, "1.0.0", utils)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, version.ArtifactID, "testBin")
+}
+
+func TestGetGolangciLintArgs(t *testing.T) {
+	t.Parallel()
+
+	lintSettings := map[string]string{
+		"reportStyle":      "checkstyle",
+		"reportOutputPath": "golangci-lint-report.xml",
+		"additionalParams": "",
+	}
+
+	tt := []struct {
+		name            string
+		golangciLintURL string
+		expectedArgs    []string
+		expectedErr     error
+	}{
+		{
+			name:            "success - v1.51.2 version (v1 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v1.50.1 version (v1 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - default URL v1.64.8 (v1 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v2.0.0 version (v2 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.0.0/golangci-lint-2.0.0-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v2.1.5 version (v2 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.1.5/golangci-lint-2.1.5-windows-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v3.0.0 version (v2 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v3.0.0/golangci-lint-3.0.0-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "fallback - invalid URL format (fallback to v1 syntax)",
+			golangciLintURL: "https://invalid-url-without-version/golangci-lint.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "fallback - URL without version pattern (fallback to v1 syntax)",
+			golangciLintURL: "https://example.com/downloads/golangci-lint-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "fallback - empty URL (fallback to v1 syntax)",
+			golangciLintURL: "",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+	}
+
+	for _, test := range tt {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			args, err := getGolangciLintArgs(test.golangciLintURL, lintSettings)
+
+			if test.expectedErr != nil {
+				assert.EqualError(t, err, test.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedArgs, args)
+			}
+		})
+	}
+}
+
+func TestExtractVersionFromURL(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		name            string
+		url             string
+		expectedVersion string
+		expectedErr     error
+	}{
+		{
+			name:            "success - v1.51.2",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz",
+			expectedVersion: "v1.51.2",
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v2.0.0",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v2.0.0/golangci-lint-2.0.0-linux-amd64.tar.gz",
+			expectedVersion: "v2.0.0",
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v1.50.1",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz",
+			expectedVersion: "v1.50.1",
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v3.15.7",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v3.15.7/golangci-lint-3.15.7-windows-amd64.tar.gz",
+			expectedVersion: "v3.15.7",
+			expectedErr:     nil,
+		},
+		{
+			name:            "failure - no version in URL",
+			url:             "https://example.com/downloads/golangci-lint-linux-amd64.tar.gz",
+			expectedVersion: "",
+			expectedErr:     fmt.Errorf("could not extract version from URL: https://example.com/downloads/golangci-lint-linux-amd64.tar.gz"),
+		},
+		{
+			name:            "failure - invalid version format",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/invalid-version/golangci-lint.tar.gz",
+			expectedVersion: "",
+			expectedErr:     fmt.Errorf("could not extract version from URL: https://github.com/golangci/golangci-lint/releases/download/invalid-version/golangci-lint.tar.gz"),
+		},
+		{
+			name:            "failure - empty URL",
+			url:             "",
+			expectedVersion: "",
+			expectedErr:     fmt.Errorf("could not extract version from URL: "),
+		},
+	}
+
+	for _, test := range tt {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			version, err := extractVersionFromURL(test.url)
+
+			if test.expectedErr != nil {
+				assert.EqualError(t, err, test.expectedErr.Error())
+				assert.Equal(t, test.expectedVersion, version)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedVersion, version)
+			}
+		})
+	}
 }
 
 func TestRetrieveGolangciLint(t *testing.T) {
