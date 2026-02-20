@@ -1,0 +1,8 @@
+_schema-version: "2.0.0"
+ID: "<Id of your MTA>"
+version: <version number of your application>
+
+modules:
+  - name: "<Name of your Fiori application>"
+    type: html5
+    path: .

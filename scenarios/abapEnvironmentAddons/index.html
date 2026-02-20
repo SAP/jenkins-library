@@ -1,0 +1,4080 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../images/favicon.ico">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+    
+    
+      
+        <title>Build and Publish Add-on Products on SAP BTP, ABAP Environment - Project "Piper": Continuous Delivery for the SAP Ecosystem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#009485">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../css/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#build-and-publish-add-on-products-on-sap-btp-abap-environment" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Project &#34;Piper&#34;: Continuous Delivery for the SAP Ecosystem" class="md-header__button md-logo" aria-label="Project "Piper": Continuous Delivery for the SAP Ecosystem" data-md-component="logo">
+      
+  <img src="../../images/piper_400_white.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Project "Piper": Continuous Delivery for the SAP Ecosystem
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Build and Publish Add-on Products on SAP BTP, ABAP Environment
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/SAP/jenkins-library" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Project &#34;Piper&#34;: Continuous Delivery for the SAP Ecosystem" class="md-nav__button md-logo" aria-label="Project "Piper": Continuous Delivery for the SAP Ecosystem" data-md-component="logo">
+      
+  <img src="../../images/piper_400_white.png" alt="logo">
+
+    </a>
+    Project "Piper": Continuous Delivery for the SAP Ecosystem
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/SAP/jenkins-library" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guidedtour/" class="md-nav__link">
+        Getting Started With Project "Piper"
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Infrastructure
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Infrastructure" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Infrastructure
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/customjenkins/" class="md-nav__link">
+        Custom Jenkins Setup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/vault/" class="md-nav__link">
+        Vault For Pipline Secrets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../infrastructure/docker-rate-limit/" class="md-nav__link">
+        Fixing docker rate limit
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Pipelines
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Pipelines" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Pipelines
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1" type="checkbox" id="__nav_5_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1">
+          ABAP Environment pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="ABAP Environment pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_1">
+          <span class="md-nav__icon md-icon"></span>
+          ABAP Environment pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/introduction/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/configuration/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/extensibility/" class="md-nav__link">
+        Extensibility
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_1_4" type="checkbox" id="__nav_5_1_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_1_4">
+          Stages
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stages" data-md-level="3">
+        <label class="md-nav__title" for="__nav_5_1_4">
+          <span class="md-nav__icon md-icon"></span>
+          Stages
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/initialChecks/" class="md-nav__link">
+        Initial Checks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/prepareSystem/" class="md-nav__link">
+        Prepare System
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/cloneRepositories/" class="md-nav__link">
+        Clone Repositories
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/test/" class="md-nav__link">
+        Test
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/build/" class="md-nav__link">
+        Build
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/integrationTest/" class="md-nav__link">
+        Integration Tests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/confirm/" class="md-nav__link">
+        Confirm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/publish/" class="md-nav__link">
+        Publish
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../pipelines/abapEnvironment/stages/post/" class="md-nav__link">
+        Post
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2">
+          General purpose pipeline
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="General purpose pipeline" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          General purpose pipeline
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/introduction/" class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/examples/" class="md-nav__link">
+        Examples
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2_3" type="checkbox" id="__nav_5_2_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2_3">
+          Stages
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Stages" data-md-level="3">
+        <label class="md-nav__title" for="__nav_5_2_3">
+          <span class="md-nav__icon md-icon"></span>
+          Stages
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/init/" class="md-nav__link">
+        Init Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/prvoting/" class="md-nav__link">
+        Pull-Request Voting Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/build/" class="md-nav__link">
+        Build Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/additionalunittests/" class="md-nav__link">
+        Additional Unit Test Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/integration/" class="md-nav__link">
+        Integration Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/acceptance/" class="md-nav__link">
+        Acceptance Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/security/" class="md-nav__link">
+        Security Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/performance/" class="md-nav__link">
+        Performance Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/compliance/" class="md-nav__link">
+        Compliance
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/confirm/" class="md-nav__link">
+        Confirm Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/promote/" class="md-nav__link">
+        Promote Stage
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../stages/release/" class="md-nav__link">
+        Release Stage
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Scenarios
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Scenarios" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Scenarios
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changeManagement/" class="md-nav__link">
+        Build and Deploy Hybrid Applications with SAP Solution Manager
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ui5-sap-cp/Readme/" class="md-nav__link">
+        Build and Deploy SAPUI5/SAP Fiori Applications on SAP BTP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CAP_Scenario/" class="md-nav__link">
+        Build and Deploy SAP Cloud Application Programming Model Applications
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TMS_Extension/" class="md-nav__link">
+        Integrate SAP Cloud Transport Management Into Your CI/CD Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../xsa-deploy/Readme/" class="md-nav__link">
+        Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upload-to-transportrequest/Readme/" class="md-nav__link">
+        Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Build and Publish Add-on Products on SAP BTP, ABAP Environment
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Build and Publish Add-on Products on SAP BTP, ABAP Environment
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-add-on-product" class="md-nav__link">
+    The Add-on Product
+  </a>
+  
+    <nav class="md-nav" aria-label="The Add-on Product">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-on-product-version" class="md-nav__link">
+    Add-on Product Version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#software-component-version" class="md-nav__link">
+    Software Component Version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-vector" class="md-nav__link">
+    Target Vector
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-add-on-product" class="md-nav__link">
+    Building the Add-on Product
+  </a>
+  
+    <nav class="md-nav" aria-label="Building the Add-on Product">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#delivery-tools" class="md-nav__link">
+    Delivery Tools
+  </a>
+  
+    <nav class="md-nav" aria-label="Delivery Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#assembly-system" class="md-nav__link">
+    Assembly System
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-on-assembly-kit-as-a-service-aakaas" class="md-nav__link">
+    Add-on Assembly Kit as a Service (=AAKaaS)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-tools" class="md-nav__link">
+    Deployment Tools
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation-test-system" class="md-nav__link">
+    Installation Test System
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jenkins-server" class="md-nav__link">
+    Jenkins Server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-repository" class="md-nav__link">
+    Git Repository
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-on-assembly-kit-as-a-service-aakaas_1" class="md-nav__link">
+    Add-on Assembly Kit as a Service (=AAKaaS)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloud-foundry-access" class="md-nav__link">
+    Cloud Foundry Access
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#register-add-on-product-for-a-global-account" class="md-nav__link">
+    Register Add-on Product for a Global Account
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#atc" class="md-nav__link">
+    ATC
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-on-descriptor-file" class="md-nav__link">
+    Add-on descriptor file
+  </a>
+  
+    <nav class="md-nav" aria-label="Add-on descriptor file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#versioning-rules" class="md-nav__link">
+    Versioning Rules
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    Common Issues
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#support-components" class="md-nav__link">
+    Support Components
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../abapEnvironmentTest/" class="md-nav__link">
+        Continuous Testing on SAP BTP, ABAP Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gCTS_Scenario/" class="md-nav__link">
+        Set up a Pipeline-Based ABAP Development and Testing Process Using Git-Enabled Change and Transport System
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../extensibility/" class="md-nav__link">
+        Extensibility
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Library steps
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Library steps" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Library steps
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8_1" type="checkbox" id="__nav_8_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_8_1">
+          abapAddonAssemblyKit
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="abapAddonAssemblyKit" data-md-level="2">
+        <label class="md-nav__title" for="__nav_8_1">
+          <span class="md-nav__icon md-icon"></span>
+          abapAddonAssemblyKit
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitCheck/" class="md-nav__link">
+        Check
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitCheckCVs/" class="md-nav__link">
+        CheckCVs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitCheckPV/" class="md-nav__link">
+        CheckPV
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitCreateTargetVector/" class="md-nav__link">
+        CreateTargetVector
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitPublishTargetVector/" class="md-nav__link">
+        PublishTargetVector
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitRegisterPackages/" class="md-nav__link">
+        RegisterPackages
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitReleasePackages/" class="md-nav__link">
+        ReleasePackages
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapAddonAssemblyKitReserveNextPackages/" class="md-nav__link">
+        ReserveNextPackages
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentBuild/" class="md-nav__link">
+        abapEnvironmentBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentAssemblePackages/" class="md-nav__link">
+        abapEnvironmentAssemblePackages
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentAssembleConfirm/" class="md-nav__link">
+        abapEnvironmentAssembleConfirm
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentCheckoutBranch/" class="md-nav__link">
+        abapEnvironmentCheckoutBranch
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentCloneGitRepo/" class="md-nav__link">
+        abapEnvironmentCloneGitRepo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentCreateSystem/" class="md-nav__link">
+        abapEnvironmentCreateSystem
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentCreateTag/" class="md-nav__link">
+        abapEnvironmentCreateTag
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentPullGitRepo/" class="md-nav__link">
+        abapEnvironmentPullGitRepo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentPushATCSystemConfig/" class="md-nav__link">
+        abapEnvironmentPushATCSystemConfig
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentRunATCCheck/" class="md-nav__link">
+        abapEnvironmentRunATCCheck
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/abapEnvironmentRunAUnitTest/" class="md-nav__link">
+        abapEnvironmentRunAUnitTest
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiKeyValueMapDownload/" class="md-nav__link">
+        apiKeyValueMapDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiKeyValueMapUpload/" class="md-nav__link">
+        apiKeyValueMapUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiProxyDownload/" class="md-nav__link">
+        apiProxyDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiProxyList/" class="md-nav__link">
+        apiProxyList
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiProviderDownload/" class="md-nav__link">
+        apiProviderDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiProviderList/" class="md-nav__link">
+        apiProviderList
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiProviderUpload/" class="md-nav__link">
+        apiProviderUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/apiProxyUpload/" class="md-nav__link">
+        apiProxyUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/artifactPrepareVersion/" class="md-nav__link">
+        artifactPrepareVersion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/awsS3Upload/" class="md-nav__link">
+        awsS3Upload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/azureBlobUpload/" class="md-nav__link">
+        azureBlobUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/batsExecuteTests/" class="md-nav__link">
+        batsExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/buildExecute/" class="md-nav__link">
+        buildExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/checkmarxExecuteScan/" class="md-nav__link">
+        checkmarxExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/checkmarxOneExecuteScan/" class="md-nav__link">
+        checkmarxOneExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/checksPublishResults/" class="md-nav__link">
+        checksPublishResults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/cfManifestSubstituteVariables/" class="md-nav__link">
+        cfManifestSubstituteVariables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/cloudFoundryCreateService/" class="md-nav__link">
+        cloudFoundryCreateService
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/cloudFoundryCreateServiceKey/" class="md-nav__link">
+        cloudFoundryCreateServiceKey
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/cloudFoundryDeleteService/" class="md-nav__link">
+        cloudFoundryDeleteService
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/cloudFoundryDeploy/" class="md-nav__link">
+        cloudFoundryDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/cnbBuild/" class="md-nav__link">
+        cnbBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/codeqlExecuteScan/" class="md-nav__link">
+        codeqlExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/commonPipelineEnvironment/" class="md-nav__link">
+        commonPipelineEnvironment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/containerExecuteStructureTests/" class="md-nav__link">
+        containerExecuteStructureTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/containerPushToRegistry/" class="md-nav__link">
+        containerPushToRegistry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/contrastExecuteScan/" class="md-nav__link">
+        contrastExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/credentialdiggerScan/" class="md-nav__link">
+        credentialdiggerScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/debugReportArchive/" class="md-nav__link">
+        debugReportArchive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/detectExecuteScan/" class="md-nav__link">
+        detectExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/dockerExecute/" class="md-nav__link">
+        dockerExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/dockerExecuteOnKubernetes/" class="md-nav__link">
+        dockerExecuteOnKubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/dubExecute/" class="md-nav__link">
+        dubExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/durationMeasure/" class="md-nav__link">
+        durationMeasure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/fortifyExecuteScan/" class="md-nav__link">
+        fortifyExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gatlingExecuteTests/" class="md-nav__link">
+        gatlingExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gaugeExecuteTests/" class="md-nav__link">
+        gaugeExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gctsCloneRepository/" class="md-nav__link">
+        gctsCloneRepository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gctsCreateRepository/" class="md-nav__link">
+        gctsCreateRepository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gctsDeploy/" class="md-nav__link">
+        gctsDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gctsExecuteABAPQualityChecks/" class="md-nav__link">
+        gctsExecuteABAPQualityChecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gctsRollback/" class="md-nav__link">
+        gctsRollback
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/githubCheckBranchProtection/" class="md-nav__link">
+        githubCheckBranchProtection
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/githubCommentIssue/" class="md-nav__link">
+        githubCommentIssue
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/githubCreateIssue/" class="md-nav__link">
+        githubCreateIssue
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/githubCreatePullRequest/" class="md-nav__link">
+        githubCreatePullRequest
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/githubPublishRelease/" class="md-nav__link">
+        githubPublishRelease
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/githubSetCommitStatus/" class="md-nav__link">
+        githubSetCommitStatus
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gitopsUpdateDeployment/" class="md-nav__link">
+        gitopsUpdateDeployment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/golangBuild/" class="md-nav__link">
+        golangBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gradleExecuteBuild/" class="md-nav__link">
+        gradleExecuteBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/hadolintExecute/" class="md-nav__link">
+        hadolintExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/handlePipelineStepErrors/" class="md-nav__link">
+        handlePipelineStepErrors
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/healthExecuteCheck/" class="md-nav__link">
+        healthExecuteCheck
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/helmExecute/" class="md-nav__link">
+        helmExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/imagePushToRegistry/" class="md-nav__link">
+        imagePushToRegistry
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/influxWriteData/" class="md-nav__link">
+        influxWriteData
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactDeploy/" class="md-nav__link">
+        integrationArtifactDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactDownload/" class="md-nav__link">
+        integrationArtifactDownload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactGetMplStatus/" class="md-nav__link">
+        integrationArtifactGetMplStatus
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactGetServiceEndpoint/" class="md-nav__link">
+        integrationArtifactGetServiceEndpoint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactResource/" class="md-nav__link">
+        integrationArtifactResource
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactTransport/" class="md-nav__link">
+        integrationArtifactTransport
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactUnDeploy/" class="md-nav__link">
+        integrationArtifactUnDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactUpdateConfiguration/" class="md-nav__link">
+        integrationArtifactUpdateConfiguration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/integrationArtifactUpload/" class="md-nav__link">
+        integrationArtifactUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/isChangeInDevelopment/" class="md-nav__link">
+        isChangeInDevelopment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/jenkinsMaterializeLog/" class="md-nav__link">
+        jenkinsMaterializeLog
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/kanikoExecute/" class="md-nav__link">
+        kanikoExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/karmaExecuteTests/" class="md-nav__link">
+        karmaExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/kubernetesDeploy/" class="md-nav__link">
+        kubernetesDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/mailSendNotification/" class="md-nav__link">
+        mailSendNotification
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/malwareExecuteScan/" class="md-nav__link">
+        malwareExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/mavenBuild/" class="md-nav__link">
+        mavenBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/mavenExecute/" class="md-nav__link">
+        mavenExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/mavenExecuteIntegration/" class="md-nav__link">
+        mavenExecuteIntegration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/mavenExecuteStaticCodeChecks/" class="md-nav__link">
+        mavenExecuteStaticCodeChecks
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/mtaBuild/" class="md-nav__link">
+        mtaBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/multicloudDeploy/" class="md-nav__link">
+        multicloudDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/neoDeploy/" class="md-nav__link">
+        neoDeploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/newmanExecute/" class="md-nav__link">
+        newmanExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/nexusUpload/" class="md-nav__link">
+        nexusUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/npmExecuteEndToEndTests/" class="md-nav__link">
+        npmExecuteEndToEndTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/npmExecuteLint/" class="md-nav__link">
+        npmExecuteLint
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/npmExecuteScripts/" class="md-nav__link">
+        npmExecuteScripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/npmExecuteTests/" class="md-nav__link">
+        npmExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/pipelineExecute/" class="md-nav__link">
+        pipelineExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/pipelineRestartSteps/" class="md-nav__link">
+        pipelineRestartSteps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/pipelineStashFiles/" class="md-nav__link">
+        pipelineStashFiles
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/pipelineStashFilesAfterBuild/" class="md-nav__link">
+        pipelineStashFilesAfterBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/pipelineStashFilesBeforeBuild/" class="md-nav__link">
+        pipelineStashFilesBeforeBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/piperLoadGlobalExtensions/" class="md-nav__link">
+        piperLoadGlobalExtensions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/piperPublishWarnings/" class="md-nav__link">
+        piperPublishWarnings
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/prepareDefaultValues/" class="md-nav__link">
+        prepareDefaultValues
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/protecodeExecuteScan/" class="md-nav__link">
+        protecodeExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/pythonBuild/" class="md-nav__link">
+        pythonBuild
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/seleniumExecuteTests/" class="md-nav__link">
+        seleniumExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/setupCommonPipelineEnvironment/" class="md-nav__link">
+        setupCommonPipelineEnvironment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/shellExecute/" class="md-nav__link">
+        shellExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/slackSendNotification/" class="md-nav__link">
+        slackSendNotification
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/snykExecute/" class="md-nav__link">
+        snykExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/sonarExecuteScan/" class="md-nav__link">
+        sonarExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/spinnakerTriggerPipeline/" class="md-nav__link">
+        spinnakerTriggerPipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/testsPublishResults/" class="md-nav__link">
+        testsPublishResults
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/tmsUpload/" class="md-nav__link">
+        tmsUpload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/tmsExport/" class="md-nav__link">
+        tmsExport
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestDocIDFromGit/" class="md-nav__link">
+        transportRequestDocIDFromGit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestReqIDFromGit/" class="md-nav__link">
+        transportRequestReqIDFromGit
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestUploadCTS/" class="md-nav__link">
+        transportRequestUploadCTS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestUploadRFC/" class="md-nav__link">
+        transportRequestUploadRFC
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestUploadSOLMAN/" class="md-nav__link">
+        transportRequestUploadSOLMAN
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/uiVeri5ExecuteTests/" class="md-nav__link">
+        uiVeri5ExecuteTests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/vaultRotateSecretId/" class="md-nav__link">
+        vaultRotateSecretId
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/whitesourceExecuteScan/" class="md-nav__link">
+        whitesourceExecuteScan
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/writeTemporaryCredentials/" class="md-nav__link">
+        writeTemporaryCredentials
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/xsDeploy/" class="md-nav__link">
+        xsDeploy
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_9">
+          Library Steps (deprecated)
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Library Steps (deprecated)" data-md-level="1">
+        <label class="md-nav__title" for="__nav_9">
+          <span class="md-nav__icon md-icon"></span>
+          Library Steps (deprecated)
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/artifactSetVersion/" class="md-nav__link">
+        artifactSetVersion
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/checkChangeInDevelopment/" class="md-nav__link">
+        checkChangeInDevelopment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/npmExecute/" class="md-nav__link">
+        npmExecute
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestCreate/" class="md-nav__link">
+        transportRequestCreate
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestRelease/" class="md-nav__link">
+        transportRequestRelease
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/transportRequestUploadFile/" class="md-nav__link">
+        transportRequestUploadFile
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../steps/gctsExecuteABAPUnitTests/" class="md-nav__link">
+        gctsExecuteABAPUnitTests
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        Command line tool
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-add-on-product" class="md-nav__link">
+    The Add-on Product
+  </a>
+  
+    <nav class="md-nav" aria-label="The Add-on Product">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-on-product-version" class="md-nav__link">
+    Add-on Product Version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#software-component-version" class="md-nav__link">
+    Software Component Version
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#target-vector" class="md-nav__link">
+    Target Vector
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-add-on-product" class="md-nav__link">
+    Building the Add-on Product
+  </a>
+  
+    <nav class="md-nav" aria-label="Building the Add-on Product">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#delivery-tools" class="md-nav__link">
+    Delivery Tools
+  </a>
+  
+    <nav class="md-nav" aria-label="Delivery Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#assembly-system" class="md-nav__link">
+    Assembly System
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-on-assembly-kit-as-a-service-aakaas" class="md-nav__link">
+    Add-on Assembly Kit as a Service (=AAKaaS)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-tools" class="md-nav__link">
+    Deployment Tools
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation-test-system" class="md-nav__link">
+    Installation Test System
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#jenkins-server" class="md-nav__link">
+    Jenkins Server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-repository" class="md-nav__link">
+    Git Repository
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-on-assembly-kit-as-a-service-aakaas_1" class="md-nav__link">
+    Add-on Assembly Kit as a Service (=AAKaaS)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cloud-foundry-access" class="md-nav__link">
+    Cloud Foundry Access
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#register-add-on-product-for-a-global-account" class="md-nav__link">
+    Register Add-on Product for a Global Account
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#atc" class="md-nav__link">
+    ATC
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add-on-descriptor-file" class="md-nav__link">
+    Add-on descriptor file
+  </a>
+  
+    <nav class="md-nav" aria-label="Add-on descriptor file">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#versioning-rules" class="md-nav__link">
+    Versioning Rules
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    Troubleshooting
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    Common Issues
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#support-components" class="md-nav__link">
+    Support Components
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  <a href="https://github.com/SAP/jenkins-library/edit/master/documentation/docs/scenarios/abapEnvironmentAddons.md" title="Edit this page" class="md-content__button md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+<h1 id="build-and-publish-add-on-products-on-sap-btp-abap-environment">Build and Publish Add-on Products on SAP BTP, ABAP Environment<a class="headerlink" href="#build-and-publish-add-on-products-on-sap-btp-abap-environment" title="Permanent link">&para;</a></h1>
+<div class="admonition caution">
+<p class="admonition-title">Current limitations</p>
+<ul>
+<li>gCTS-related restrictions apply, please refer to <a href="https://launchpad.support.sap.com/#/notes/2888887">gCTS: restrictions in supported object types</a></li>
+<li><strong>Table entries are currently delivered during add-on build with generic keys</strong> – thus it is strongly recommended to transport TABUs only with the software component the table definition belongs to and not in foreign software components to prevent loss of data. The possibility to deliver individual table keys as part of add-on build might be supported at a later point in time.</li>
+</ul>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">Required project "Piper" library version</p>
+<p>The recommended project "Piper" library version can be found in <a href="https://launchpad.support.sap.com/#/notes/3032800">SAP Note 3032800</a>.<br>
+A specific version can be used by referencing the version number in the <a href="../../pipelines/abapEnvironment/configuration/#2-jenkinsfile">Jenkinsfile</a>.</p>
+</div>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see <a href="https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html">SAP PartnerEdge Test, Demo &amp; Development Price List</a>) is required. This page aims to provide an overview of the build process of the add-on.</p>
+<p>The development on SAP BTP, ABAP environment systems is done within <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html">“software components”</a> (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP environment pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.</p>
+<p>Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html">multitenant application in ABAP environment</a>.</p>
+<p>A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e3c38ebaefc44523b679e7a0c375bc86.html">here</a>.</p>
+<h2 id="the-add-on-product">The Add-on Product<a class="headerlink" href="#the-add-on-product" title="Permanent link">&para;</a></h2>
+<p>The installation and maintenance of ABAP software is controlled via add-on product versions. An <strong>add-on product version</strong> is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the delivery view on a software portfolio.</p>
+<h3 id="add-on-product-version">Add-on Product Version<a class="headerlink" href="#add-on-product-version" title="Permanent link">&para;</a></h3>
+<p>An add-on product version is defined by a name and a version string. The name of an add-on product is a string with a maximum of 30 characters and consists of the <a href="https://launchpad.support.sap.com/#/notes/84282">namespace</a> and a freely chooseble part - <code>/NAMESPC/PRODUCTX</code>. The add-on product name should only include uppercase characters.</p>
+<p>The version string consists of three numbers separated by a dot - <code>1.2.0</code>. The numbers in the version string have a hierarchic relationship:</p>
+<ul>
+<li>The first number denotes the <strong>release</strong>. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.</li>
+<li>The second number denotes the <strong>support package stack level</strong>. A support package stack consists of support package deliveries of the contained software component versions.</li>
+<li>The third number denotes the <strong>patch level</strong>. A Patch delivery contains patch deliveries of the contained software component versions.</li>
+</ul>
+<h3 id="software-component-version">Software Component Version<a class="headerlink" href="#software-component-version" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Development on SAP BTP, ABAP environment</p>
+<p>As you may know, the development in the SAP BTP, ABAP environment is done within <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html">software components</a>. A software component is self-contained, and a reduced set of <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html">objects and features of the ABAP programming language</a> can be used.
+The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. <a href="https://launchpad.support.sap.com/#/notes/105132">SAP Note 105132</a> describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.</p>
+</div>
+<p>A <strong>software component version</strong> is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an <a href="#add-on-product-version">add-on product version</a>.
+A software component version is defined by a name and a version string. The name of a software component is a string with a maximum of 30 characters and consists of the <a href="https://launchpad.support.sap.com/#/notes/84282">namespace</a> and a freely chooseble part - <code>/NAMESPC/COMPONENTA</code>. The version consists of three numbers separated by a dot - <code>1.2.0</code>. The numbers in the version string have a hierarchic relationship:</p>
+<ul>
+<li>The first number denotes the <strong>release</strong>. Release deliveries contain the whole software component and should be used to deliver new functionalities or feature enhancements. They are provided with delivery packages of type <em>Add-on Installation</em> (AOI) and are usually created on a regular basis (e.g. quarterly).</li>
+<li>The second number denotes the <strong>support package level</strong>. Support package deliveries contain either the objects that were changed since the previous release delivery or since the previous support package delivery. They should be used to deliver a collection of patch deliveries or to deliver smaller functional enhancements. They are provided with delivery packages of type <em>Component Support Package</em> (CSP) and are usually created on a regular basis (e.g. bi-weekly).</li>
+<li>The third number denotes the <strong>patch level</strong>. Patch deliveries contain only those objects that were changed since the previous patch delivery. They should be used to deliver bugfixes and are only created when necessary (e.g. emergency patch).</li>
+</ul>
+<p>The type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.</p>
+<p>Software Component Versions are uniquely created and independent from the add-on product versions where they are included.
+This means that once a software component version was built, it will be reused in any following add-on product versions.</p>
+<h3 id="target-vector">Target Vector<a class="headerlink" href="#target-vector" title="Permanent link">&para;</a></h3>
+<p>As explained above, the shipment of a software takes place via add-on product versions. The delivered content of an add-on product version is defined in a target vector, which is used by the deployment tools. The target vector is derived from the addon.yml (more on that below) and contains the following information:</p>
+<ul>
+<li>Product name</li>
+<li>Product release</li>
+<li>Product Support Package stack and Patch level</li>
+<li>A list of contained software component versions with<ul>
+<li>Software component name</li>
+<li>Software component release</li>
+<li>Delivery Package, which delivers the software component version</li>
+</ul>
+</li>
+</ul>
+<p>In ABAP Environment Pipeline stage <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/build/"><em>Build</em></a> a target vector for the particular add-on product version is published in test scope. This makes it possible to perform an add-on test installation in stage <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/"><em>Integration Tests</em></a>. At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning in the <em>Integration Tests</em> stage.</p>
+<p>In stage <em>Publish</em> the target vector is then published in production scope, so that the new version will become available for add-on update and installation during system provisioning.</p>
+<h2 id="building-the-add-on-product">Building the Add-on Product<a class="headerlink" href="#building-the-add-on-product" title="Permanent link">&para;</a></h2>
+<p>The build process of an add-on product is orchestrated by a Jenkins Pipeline, the <a href="https://www.project-piper.io/pipelines/abapEnvironment/introduction/">ABAP Environment Pipeline</a> provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.</p>
+<p><img alt="ABAP Environment Pipeline Build" src="../../images/abapEnvironmentBuildPipeline.png" /></p>
+<p>The pipeline consists of different steps responsible for a single task. The steps themselves are grouped thematically into different stages. For example, early in the pipeline, an ABAP environment system needs to be created and the communication needs to be set up. This is done in the “Prepare System” stage. You can read more about the different stages in the ABAP environment pipeline <a href="https://sap.github.io/jenkins-library/pipelines/abapEnvironment/introduction/">documentation</a>.</p>
+<p>Different services and systems are required for the add-on build process.</p>
+<h3 id="delivery-tools">Delivery Tools<a class="headerlink" href="#delivery-tools" title="Permanent link">&para;</a></h3>
+<p>With the following tools the add-on deliveries are created.</p>
+<h4 id="assembly-system">Assembly System<a class="headerlink" href="#assembly-system" title="Permanent link">&para;</a></h4>
+<div class="admonition caution">
+<p class="admonition-title">Minimum Platform Version</p>
+<p>The ABAP Environment platform version of the assembly system is used to determine the minimum platform version for the add-on product version that is created.
+Such a system should not be nominated for the pre-upgrade option of ABAP Environment since then the add-on production could only be installed in systems with the pre-upgrade release.</p>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">API Snapshots</p>
+<p>During the add-on build any changes to released APIs will be checked for compatibility. The corresponding ATC check can only function properly if there is an API snapshot available in the assembly system. Therefore, make sure to use a permanent system for the assembly if you need to fulfill consistency and stability criteria for your released APIs. Refer to <a href="https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/checking-compatibility-of-released-apis">Checking the Compatibility of Released APIs</a>.</p>
+</div>
+<p>The ABAP system responsible for building packages based on software components in the systems. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP test cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP environment system: <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html">Test Integration</a> and <a href="https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html">Software Assembly Integration</a>.
+The assembly system should be of service <em>abap/standard</em> and be provisioned with parameter <code>is_development_allowed = false</code> to prevent local changes.</p>
+<h4 id="add-on-assembly-kit-as-a-service-aakaas">Add-on Assembly Kit as a Service (=AAKaaS)<a class="headerlink" href="#add-on-assembly-kit-as-a-service-aakaas" title="Permanent link">&para;</a></h4>
+<p>The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP Service &amp; Support systems (thus access is granted via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA) as part of the <a href="https://help.sap.com/viewer/product/SAP_ADD-ON_ASSEMBLY_KIT/">SAP Add-On Assembly Kit</a>, packs the deliveries into an importable package format.</p>
+<h3 id="deployment-tools">Deployment Tools<a class="headerlink" href="#deployment-tools" title="Permanent link">&para;</a></h3>
+<p>With these SAP tools the assembled add-on deliveries are deployed to ABAP systems, for example into the <a href="#installation-test-system">installation test system</a>.</p>
+<h4 id="installation-test-system">Installation Test System<a class="headerlink" href="#installation-test-system" title="Permanent link">&para;</a></h4>
+<p>In order to verify that the delivery packages included in the add-on product version are installable, a target vector is published in "test" scope. In the <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/"><em>Integration Tests</em></a> stage an ABAP system of service <code>abap/saas_oem</code> is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter <code>is_development_allowed = false</code> to prevent local changes.</p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h3>
+<p>There are several prerequisites  to run the pipeline for building an ABAP Environment add-on:</p>
+<h4 id="jenkins-server">Jenkins Server<a class="headerlink" href="#jenkins-server" title="Permanent link">&para;</a></h4>
+<p>The pipeline responsible for building ABAP add-ons has been created specifically for <a href="https://www.jenkins.io">Jenkins</a>. Therefore, a Jenkins Server is required. Please follow these instructions to <a href="https://sap.github.io/jenkins-library/infrastructure/customjenkins/">configure an existing server</a>.</p>
+<h4 id="git-repository">Git Repository<a class="headerlink" href="#git-repository" title="Permanent link">&para;</a></h4>
+<p>The pipeline configuration is done in a git repository (for example on GitHub). This repository needs to be accessed by the Jenkins Server. If the repository is password protected, the user and password (or access token) should be stored in the Jenkins Credentials Store (Manage Jenkins &rightarrow; Manage Credentials).</p>
+<h4 id="add-on-assembly-kit-as-a-service-aakaas_1">Add-on Assembly Kit as a Service (=AAKaaS)<a class="headerlink" href="#add-on-assembly-kit-as-a-service-aakaas_1" title="Permanent link">&para;</a></h4>
+<p>The communication with the AAKaaS needs a technical communication user. The creation and activation of such a user is described in <a href="https://launchpad.support.sap.com/#/notes/2174416">SAP note 2174416</a>. Make sure that this technical communication user is assigned to the customer number under which the SAP BTP, ABAP Environment instances are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.</p>
+<h4 id="cloud-foundry-access">Cloud Foundry Access<a class="headerlink" href="#cloud-foundry-access" title="Permanent link">&para;</a></h4>
+<p>ABAP environment systems are created in the SAP BTP cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry command line interface: <a href="https://docs.cloudfoundry.org/cf-cli/">cf CLI</a>. For this to work, two things need to be configured:</p>
+<ul>
+<li>Cloud Foundry needs to be enabled on subaccount level. This can be done on the Subaccount Overview page. The subaccount is then mapped to a “Cloud Foundry Organization”, for which you must provide a suitable name during the creation. Have a look at the <a href="https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/dc18bac42270468d84b6c030a668e003.html">documentation</a> for more details.</li>
+<li>A (technical) platform user is required to access the Cloud Foundry Org and Space via the cf CLI. The user needs to be assigned as space member including <a href="https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html">Space Developer</a> role in order to create/read service instances and service keys. The user and password need to be stored in the Jenkins Credentials Store.</li>
+</ul>
+<p>Later, during the pipeline configuration, you will specify the service plan, which will be used for the creation of an ABAP environment system. Please make sure that there are <a href="https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html">enough entitlements for this assigned to the subaccount</a>.</p>
+<h4 id="register-add-on-product-for-a-global-account">Register Add-on Product for a Global Account<a class="headerlink" href="#register-add-on-product-for-a-global-account" title="Permanent link">&para;</a></h4>
+<p>The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems in your global accounts for development and production. Therefore, the product needs to be created and global accounts need to be registered with SAP using Landscape Portal. See <a href="https://help.sap.com/docs/BTP/65de2977205c403bbc107264b8eccf4b/dc15fb4ebab5453fa4641b98190b1f85.html">Register Product</a>.</p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>In the following subsections, the pipeline configuration for this scenario is explained.
+Please refer to the <a href="../../pipelines/abapEnvironment/configuration/">configuration page</a> for general configuration.</p>
+<h4 id="atc">ATC<a class="headerlink" href="#atc" title="Permanent link">&para;</a></h4>
+<div class="admonition caution">
+<p>We recommend to configure the add-on build pipeline with a <strong>quality gate to block any error and warning ATC findings</strong>.</p>
+<p>This can be configured with a quality gate configuration <code>[threshold: 1, type: 'TOTAL_ERROR', unstable: false]</code> and <code>[threshold: 1, type: 'TOTAL_NORMAL', unstable: false]</code> in the <code>recordIssues</code> pipeline step shown in <a href="https://www.project-piper.io/pipelines/abapEnvironment/extensibility/#1-extend-the-atc-stage-via-the-checkstylewarnings-next-generation-plugin">Extend the ATC stage via the Checkstyle/Warnings Next Generation Plugin</a>.</p>
+<p>Created delivery packages for an add-on product version are final, so to fix any errors in these packages, another add-on product version would have to be built.
+ATC findings should be resolved during development as early as possible, e.g. <a href="https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html">during transport release</a> and by using an additional pipeline configured for the <a href="../abapEnvironmentTest/">Continuous Testing on SAP BTP, ABAP Environment scenario</a>.</p>
+<p>Please include all software components configured in <a href="#add-on-descriptor-file">addon.yml</a> file also in the <a href="https://www.project-piper.io/steps/abapEnvironmentRunATCCheck/#atc-config-file-example">atcConfig.yml</a> file. In case not all software components are included, some errors might not be found.</p>
+</div>
+<h4 id="add-on-descriptor-file">Add-on descriptor file<a class="headerlink" href="#add-on-descriptor-file" title="Permanent link">&para;</a></h4>
+<p>The build process is controlled by an add-on descriptor file called <code>addon.yml</code>. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered <a href="#add-on-product-version">add-on product version</a> and the contained <a href="#software-component-version">software component versions</a>. Below, you see an example:</p>
+<div class="highlight"><pre><span></span><code><span class="nn">---</span><span class="w"></span>
+<span class="nt">addonProduct</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/NAMESPC/PRODUCTX&quot;</span><span class="w"></span>
+<span class="nt">addonVersion</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.2.0&quot;</span><span class="w"></span>
+<span class="nt">repositories</span><span class="p">:</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/NAMESPC/COMPONENTA&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">branch</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v1.2.0&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.2.0&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">commitID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;7d4516e9&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">languages</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DE</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EN</span><span class="w"></span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/NAMESPC/COMPONENTB&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">branch</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;v2.0.0&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2.0.0&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">commitID</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;9f102ffb&quot;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">languages</span><span class="p">:</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DE</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EN</span><span class="w"></span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FR</span><span class="w"></span>
+</code></pre></div>
+<p>Explanation of the keys:</p>
+<ul>
+<li><code>addonProduct</code>: this is the technical name of the add-on product</li>
+<li><code>addonVersion</code>: This is the technical version of the add-on product <code>&lt;product version&gt;.&lt;support package stack level&gt;.&lt;patch level&gt;</code></li>
+</ul>
+<p>The section <code>repositories</code> contains one or multiple software component versions:</p>
+<ul>
+<li><code>name</code>: the technical name of the software component</li>
+<li><code>branch</code>: this is the branch from the git repository</li>
+<li><code>version</code>: this is the technical software component version <code>&lt;software component version&gt;.&lt;support package level&gt;.&lt;patch level&gt;</code></li>
+<li><code>commitID</code>: this is the commitID from the git repository</li>
+<li><code>languages</code>: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.</li>
+</ul>
+<p><code>addonVersion</code> influences solely the creation of the <a href="#target-vector">target vector</a>. Without target vector nothing can be deployed. But it is possible to deploy combinations which have been build in the past (especially if the same software component version is part of multiple add-on products).</p>
+<p>As a rule of thumb, the <code>addonVersion</code> should be increased analogous to the <code>version</code> of the leading software component.
+An exception can be the patch level in the <code>addonVersion</code> string: In case of an add-on product with a reuse software component, the patch level of the <code>addonVersion</code> might be higher than the patch level of the leading software component <code>version</code>.</p>
+<p>The leading software component is the software component that is, as opposed to a reuse software component, exclusively used as part of one add-on product.
+In the <code>repositories</code> section of the add-on descriptor file the reuse software component should be the first, whereas a leading software component would be the last in order.
+This is to make sure that that the software components are imported in the correct order, making sure to adhere to dependencies.</p>
+<div class="admonition caution">
+<p class="admonition-title">Software Component Dependencies</p>
+<p>In case the involved software components have dependencies between them, define them in <a href="https://help.sap.com/docs/abap-cloud/abap-development-tools-user-guide/software-component-relations">software component relations</a>.</p>
+</div>
+<p>The <code>version</code> of a software component influcences two aspects:</p>
+<ul>
+<li>The given version will be used as part of the <a href="#target-vector">target vector</a></li>
+<li>If there exists <strong>no delivery package</strong> with the given version in AAKaaS the build of this package is performed</li>
+</ul>
+<p>As a result, if the <code>addonVersion</code> is increased but references a software component <code>version</code> for which a delivery package has already been created, no new delivery package is built but only a new target vector is created. During add-on update such a <a href="#target-vector">target vector</a> does not reference any new software component versions and the update of software components is skipped.</p>
+<p>If the <code>version</code> of a software component is increased but not the <code>addonVersion</code>, a package is built but no new target vector is created, meaning the new package cannot be deployed.</p>
+<p>If the add-on product consists of multiple software component versions, but only for one of them the <code>version</code> is increased (together with a new <code>commitID</code>), only for this software component version a new package will be created. If, at the same time, the <code>addonVersion</code> is increased a new <a href="#target-vector">target vector</a> will be created.</p>
+<p>The <code>commitID</code> identifies a specific state of a software component and should only be changed while also adjusting the <code>version</code> number of a software component.</p>
+<h5 id="versioning-rules">Versioning Rules<a class="headerlink" href="#versioning-rules" title="Permanent link">&para;</a></h5>
+<p>For the development and the provisioning of product-/software component versions, it is necessary to ensure, that there are no gaps within the version and level counters. Therefore, only a continuous increase in version numbers is allowed. The following examples show valid and invalid cases, respectively:</p>
+<p>Valid increase:</p>
+<ul>
+<li>1.0.0 to 2.0.0</li>
+<li>1.1.2 to 2.0.0</li>
+<li>2.0.0 to 2.0.1</li>
+<li>2.1.0 to 2.2.0</li>
+<li>2.1.1 to 2.1.2</li>
+</ul>
+<p>Invalid increase:</p>
+<ul>
+<li>1.0.0 to 3.0.0 (version 2.0.0 is missing; therefore, a product/component version is missing)</li>
+<li>1.1.2 to 2.1.0 (version 2.0.0 is missing; therefore, a product/component version is missing)</li>
+<li>2.0.0 to 2.0.2 (version 2.0.1 is missing; therefore, a patch level is missing)</li>
+<li>2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)</li>
+<li>2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)</li>
+</ul>
+<p>Technically, the allowed number range for add-on product version and software component version is 1.0.0 to 9999.9999.9999.</p>
+<p>The support package level of software component version can only go up until 369 because of technical limitations.
+For the patch level, there is a technical limit of 36³, limited to 9999.</p>
+<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
+<p>Please have a look at the configuration example to <a href="https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build">build and publish add-on products using a transient assembly system</a>.
+As an alternative you can refer to the <a href="https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build-static">example using a permanent assembly system</a>.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<p>If you encounter an issue with the pipeline itself, please open an issue in <a href="https://github.com/SAP/jenkins-library/issues">GitHub</a>.</p>
+<p>Once execution of the <code>Build</code> stage, in particular the <code>abapAddonAssemblyKitRegisterPackages</code> step, has been completed, errors must be resolved by creating new software component versions with the correct configuration.
+Pipeline steps can be restarted without causing double execution of already perfomed steps (intermediate results are stored).</p>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
+<p>In case of an error during execution of the pipeline steps:</p>
+<ul>
+<li>Stage: <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/">Prepare System</a></li>
+<li>Step: <a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/">abapEnvironmentCreateSystem</a><ul>
+<li><strong><code>A service instance for the selected plan cannot be created in this organization</code> or <code>Quota is not sufficient for this request.</code></strong>
+<br>ABAP System provisioning requires sufficient entitlements for <code>abap/standard</code> as well as <code>abap/hana_compute_unit</code> and <code>abap/abap_compute_unit</code> to be assigned to the subaccount.</li>
+</ul>
+</li>
+<li>Stage: <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/">Clone Repositories</a></li>
+<li>Step: <a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/">abapEnvironmentPullGitRepo</a><ul>
+<li><strong>e.g. <code>A4C_A2G/000 - Branch checkout for /NAMESPC/COMPONENTA is currently performed; Try again later...</code></strong>
+<br>Parallel execution of multiple actions on the same software component (like checkout, pull etc.) is not supported.</li>
+</ul>
+</li>
+<li>Stage: <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/">ATC</a></li>
+<li>Step: <a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/">abapEnvironmentRunATCCheck</a><ul>
+<li><strong><em>Long-running step execution</em></strong>
+<br><a href="https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/4ca1896148fe47b5a4507e1f5fb2aa8c.html">Create a custom check variant</a> and utilize <a href="https://help.sap.com/viewer/c238d694b825421f940829321ffa326a/202110.000/en-US/b317b37b06304f99a8cf36e0ebf30861.html">ATC Exemptions</a> to reduce the test scope and irrelevant findings. Resolve ATC findings early on during development, e.g. by <a href="https://help.sap.com/viewer/5371047f1273405bb46725a417f95433/Cloud/en-US/c0d95a9263da476eb5b6ae03225ce7ba.html">working with ATC during transport release</a>.</li>
+</ul>
+</li>
+<li>Stage: <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/build/">Build</a></li>
+<li>Step: <a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/">abapAddonAssemblyKitReserveNextPackages</a><ul>
+<li><strong>e.g. <code>Package SAPK00C001CPITAPC1 was already build but with commit d5ffb9717a57c9e65d9e4c8366ea45be958b56cc, not with 86d70dc3</code></strong>
+<br>New <code>commitID</code>, but no new software component <code>version</code> in add-on descriptor: Only by changing the <code>version</code> a new delivery package is created.</li>
+<li><strong>e.g. <code>CommitID of package SAPK00C002CPITAPC1 is the same as the one of the predecessor package.</code></strong>
+<br>New Patch Level of software component, but same <code>commitID</code> in add-on descriptor: The same <code>commitID</code> cannot be used as previous/current commit id for a correction package.</li>
+</ul>
+</li>
+<li>Stage: <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/">Integration Tests</a></li>
+<li>Step: <a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/">abapEnvironmentCreateSystem</a><ul>
+<li><strong><code>A service instance for the selected plan cannot be created in this organization</code> or <code>Quota is not sufficient for this request.</code></strong>
+<br>ABAP System provisioning requires sufficient entitlements for abap/saas_oem as well as abap/hana_compute_unit and abap/abap_compute_unit to be assigned to the subaccount.</li>
+<li><strong><code>Product installation failed because AddOn XYZ has not been registered in PPMS for productive development</code></strong>
+<br>The add-on product is not yet registered for add-on installation, please follow steps in <a href="https://www.project-piper.io/scenarios/abapEnvironmentAddons/">Register Add-on Product for a Global Account</a>#register-add-on-product-for-a-global-account</li>
+</ul>
+</li>
+<li>Stage: <a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/post/">Post</a></li>
+<li>Step: <a href="https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/">cloudFoundryDeleteService</a><ul>
+<li><strong><em>Add-on assembly system is deleted unexpectedly</em></strong>
+<br>Create a Piper extension of the <code>Post</code> stage, similar to <a href="https://github.com/SAP-samples/abap-platform-ci-cd-samples/blob/addon-build-static/.pipeline/extensions/Post.groovy">Post.groovy</a></li>
+</ul>
+</li>
+</ul>
+<h3 id="support-components">Support Components<a class="headerlink" href="#support-components" title="Permanent link">&para;</a></h3>
+<p>If issues cannot be resolved, please open a <a href="https://launchpad.support.sap.com/#/notes/1296527">support incident</a> on the respective support component:</p>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Steps</th>
+<th>Support Component</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/initialChecks/">Initial Checks</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/">abapAddonAssemblyKitCheckPV</a>, <a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/">abapAddonAssemblyKitCheckCVs</a></td>
+<td>BC-UPG-OCS</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/prepareSystem/">Prepare System</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/">abapEnvironmentCreateSystem</a>, <a href="https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/">cloudFoundryCreateServiceKey</a></td>
+<td>BC-CP-ABA</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/cloneRepositories/">Clone Repositories</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/">abapEnvironmentPullGitRepo</a></td>
+<td>BC-CP-ABA-SC</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/">ATC</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/">abapEnvironmentRunATCCheck</a></td>
+<td>BC-DWB-TOO-ATF</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/Test/">AUnit</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentRunAUnitTest/">abapEnvironmentRunAUnitTest</a></td>
+<td>BC-DWB-TOO-ATF</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/build/">Build</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/">cloudFoundryCreateServiceKey</a></td>
+<td>BC-CP-ABA</td>
+</tr>
+<tr>
+<td></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/">abapAddonAssemblyKitReserveNextPackages</a></td>
+<td>BC-UPG-OCS</td>
+</tr>
+<tr>
+<td></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/">abapEnvironmentAssemblePackages</a>, <a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentBuild/">abapEnvironmentBuild</a></td>
+<td>BC-UPG-ADDON</td>
+</tr>
+<tr>
+<td></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/">abapAddonAssemblyKitRegisterPackages</a></td>
+<td>BC-UPG-OCS</td>
+</tr>
+<tr>
+<td></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentAssembleConfirm/">abapEnvironmentAssembleConfirm</a></td>
+<td>BC-UPG-ADDON</td>
+</tr>
+<tr>
+<td></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/">abapAddonAssemblyKitReleasePackages</a>,  <a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector/">abapAddonAssemblyKitCreateTargetVector</a>, <a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/">abapAddonAssemblyKitPublishTargetVector</a></td>
+<td>BC-UPG-OCS</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/integrationTest/">Integration Tests</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/">abapEnvironmentCreateSystem</a>, <a href="https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/">cloudFoundryDeleteService</a></td>
+<td>BC-CP-ABA</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/publish/">Publish</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/">abapAddonAssemblyKitPublishTargetVector</a></td>
+<td>BC-UPG-OCS</td>
+</tr>
+<tr>
+<td><a href="https://www.project-piper.io/pipelines/abapEnvironment/stages/post/">Post</a></td>
+<td><a href="https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/">cloudFoundryDeleteService</a></td>
+<td>BC-CP-ABA</td>
+</tr>
+</tbody>
+</table>
+<p><em>Note:</em> Always attach the pipeline execution log ouput to the support incident, if possible including timestamps by using the <a href="https://plugins.jenkins.io/timestamper/">Timestamper Jenkins plugin</a>.</p>
+<p>For troubleshooting purposes, the add-on descriptor file as well as build logs are archived as pipeline artifacts in the <a href="https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/">abapEnvironmentAssemblePackages</a> step.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../upload-to-transportrequest/Readme/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../abapEnvironmentTest/" class="md-footer__link md-footer__link--next" aria-label="Next: Continuous Testing on SAP BTP, ABAP Environment" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Continuous Testing on SAP BTP, ABAP Environment
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      
+    
+    
+  </body>
+</html>
