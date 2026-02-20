@@ -61,7 +61,7 @@ spec:
           - STEPS
         default:
           "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
-          **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts"
+          **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts"
       - name: fullScanCycle
         type: string
         description: Indicates how often a full scan should happen between the incremental scans when activated
