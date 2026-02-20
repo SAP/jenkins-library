@@ -38,7 +38,7 @@ func TestAzure(t *testing.T) {
 		assert.Equal(t, "https://pogo.sap/foo/bar/_build/results?buildId=42", p.BuildURL())
 		assert.Equal(t, "abcdef42713", p.CommitSHA())
 		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
-		assert.Equal(t, "Azure", p.OrchestratorType())
+		assert.Equal(t, OrchestratorTypeAzure, p.OrchestratorType())
 		assert.Equal(t, "https://pogo.sap/foo/bar/_build?definitionId=1234", p.JobURL())
 	})
 
