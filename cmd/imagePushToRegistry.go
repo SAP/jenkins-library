@@ -50,13 +50,15 @@ type imagePushToRegistryUtilsBundle struct {
 	// imagePushToRegistryUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newImagePushToRegistryUtils() imagePushToRegistryUtils {
+func newImagePushToRegistryUtils(disableHTTP2 bool) imagePushToRegistryUtils {
+	craneBundle := docker.NewCraneUtilsBundle()
+	craneBundle.DisableHTTP2 = disableHTTP2
 	utils := imagePushToRegistryUtilsBundle{
 		Command: &command.Command{
 			StepName: "imagePushToRegistry",
 		},
 		Files:            &piperutils.Files{},
-		dockerImageUtils: &docker.CraneUtilsBundle{},
+		dockerImageUtils: craneBundle,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -67,7 +69,7 @@ func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newImagePushToRegistryUtils()
+	utils := newImagePushToRegistryUtils(config.DisableHTTP2)
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
