@@ -80,18 +80,18 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
-			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
+			log.SetVerbose({{ configPrefix .ExportPrefix }}GeneralConfig.Verbose)
 
-			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
+			{{ configPrefix .ExportPrefix }}GeneralConfig.GitHubAccessTokens = {{ configPrefix .ExportPrefix }}ResolveAccessTokens({{ configPrefix .ExportPrefix }}GeneralConfig.GitHubTokens)
 
 			path, err := os.Getwd()
 			if err != nil {
 				return err
 			}
-			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
+			fatalHook := &log.FatalHook{CorrelationID: {{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = {{ configPrefix .ExportPrefix }}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
@@ -111,18 +111,18 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
 
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
-				sentryHook := log.NewSentryHook({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SentryConfig.Dsn, {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID)
+			if len({{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
+				sentryHook := log.NewSentryHook({{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SentryConfig.Dsn, {{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID)
 				log.RegisterHook(&sentryHook)
 			}
 
-			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+			if len({{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 || len({{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
 				splunkClient = &splunk.Splunk{}
-				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
+				logCollector = &log.CollectorHook{CorrelationID: {{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
 			}
 
-			if err = log.RegisterANSHookIfConfigured({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID); err != nil {
+			if err = log.RegisterANSHookIfConfigured({{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID); err != nil {
 				log.Entry().WithError(err).Warn("failed to set up SAP Alert Notification Service log hook")
 			}
 
@@ -154,31 +154,31 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSFolderPath,
 					{{- if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.GCSSubFolder
 				{{- else -}}
-					{{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
+					{{ configPrefix $.ExportPrefix }}GeneralConfig.EnvRootPath, {{ index $oRes "name" | quote }}{{- end -}}
 				){{- end }}
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
-				stepTelemetryData.PiperCommitHash = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GitCommit
+				stepTelemetryData.PiperCommitHash = {{ configPrefix .ExportPrefix }}GitCommit
 				telemetryClient.SetData(&stepTelemetryData)
 				telemetryClient.LogStepTelemetryData()
-				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
-					splunkClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Token,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+				if len({{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunkClient.Initialize({{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.Token,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.Index,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
-					splunkClient.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
-					{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+				if len({{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint) > 0 {
+					splunkClient.Initialize({{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.ProdCriblEndpoint,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.ProdCriblToken,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.ProdCriblIndex,
+					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+				if {{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
 					log.Entry().Debug("publishing event to GCP Pub/Sub...")
 					// prepare event payload
 					payload := events.NewPayloadTaskRunFinished(
@@ -188,20 +188,20 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					)
 					// create event
 					eventData, err := events.NewEventTaskRunFinished(
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.Source,
 						payload,
 					)
 					// publish cloud event via GCP Pub/Sub
 					err = gcp.NewGcpPubsubClient(
 						vaultClient,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
-						{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.OIDCConfig.RoleID,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.CorrelationID,
+						{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.OIDCConfig.RoleID,
 					).Publish(
-						fmt.Sprintf("%spipelinetaskrun-finished", {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						fmt.Sprintf("%spipelinetaskrun-finished", {{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
 						eventData,
 					)
 					if err != nil {

@@ -517,8 +517,18 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
 	funcMap["isCLIParam"] = isCLIParam
+	funcMap["configPrefix"] = configPrefix
 
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
+}
+
+// configPrefix returns "prefix." if prefix is non-empty, otherwise empty string.
+// Used in templates to simplify repeated {{if .ExportPrefix}}{{.ExportPrefix}}.{{end}} patterns.
+func configPrefix(prefix string) string {
+	if prefix != "" {
+		return prefix + "."
+	}
+	return ""
 }
 
 func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []byte {
