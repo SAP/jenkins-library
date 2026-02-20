@@ -3,6 +3,7 @@
 package helper
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -111,6 +112,7 @@ spec:
 	return io.NopCloser(strings.NewReader(r)), nil
 }
 
+var updateGolden = flag.Bool("update-golden", false, "update golden files")
 var files map[string][]byte
 
 func writeFileMock(filename string, data []byte, perm os.FileMode) error {
@@ -128,22 +130,29 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		//t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
 	})
 
@@ -152,13 +161,16 @@ func TestProcessMetaFiles(t *testing.T) {
 		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		//t.Log(string(files[resultFilePath]))
 	})
 }
 

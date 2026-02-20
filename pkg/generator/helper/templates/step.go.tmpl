@@ -167,14 +167,16 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					{{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if err := events.PublishTaskRunFinishedEvent(
-					oidcTokenProvider,
-					{{ configPrefix .ExportPrefix }}GeneralConfig,
-					telemetryClient.GetData().StageName,
-					STEP_NAME,
-					stepTelemetryData.ErrorCode,
-				); err != nil {
-					log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
+				if {{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					if err := events.PublishTaskRunFinishedEvent(
+						oidcTokenProvider,
+						{{ configPrefix .ExportPrefix }}GeneralConfig,
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
