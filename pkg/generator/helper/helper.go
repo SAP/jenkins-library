@@ -540,8 +540,36 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap["uniqueName"] = mustUniqName
 	funcMap["isCLIParam"] = isCLIParam
 	funcMap["configPrefix"] = configPrefix
+	funcMap["structTag"] = structTag
 
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
+}
+
+// structTag generates the struct field tag for a step parameter.
+// Example output: `json:"paramName,omitempty" validate:"possible-values=a b c"`
+func structTag(param config.StepParameters) string {
+	tag := fmt.Sprintf(`json:"%s,omitempty"`, param.Name)
+
+	var validators []string
+	if len(param.PossibleValues) > 0 {
+		var values []string
+		for _, v := range param.PossibleValues {
+			values = append(values, fmt.Sprintf("%v", v))
+		}
+		validators = append(validators, "possible-values="+strings.Join(values, " "))
+	}
+	if len(param.MandatoryIf) > 0 {
+		var conditions []string
+		for _, m := range param.MandatoryIf {
+			conditions = append(conditions, piperutils.Title(m.Name)+" "+m.Value)
+		}
+		validators = append(validators, "required_if="+strings.Join(conditions, " "))
+	}
+	if len(validators) > 0 {
+		tag += fmt.Sprintf(` validate:"%s"`, strings.Join(validators, ","))
+	}
+
+	return "`" + tag + "`"
 }
 
 // configPrefix returns "prefix." if prefix is non-empty, otherwise empty string.

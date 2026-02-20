@@ -36,10 +36,9 @@ import (
 
 type {{ .StepName }}Options struct {
 	{{- $names := list ""}}
-	{{- $tick := "`" -}}
 	{{- range $key, $value := uniqueName .StepParameters }}
 	{{ if ne (has $value.Name $names) true -}}
-	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} {{ $tick }}json:"{{$value.Name}},omitempty"{{ if or $value.PossibleValues $value.MandatoryIf}} validate:"{{ if $value.PossibleValues }}possible-values={{ range $i,$a := $value.PossibleValues }}{{if gt $i 0 }} {{ end }}{{.}}{{ end }}{{ end }}{{ if and $value.PossibleValues $value.MandatoryIf }},{{ end }}{{ if $value.MandatoryIf }}required_if={{ range $i,$a := $value.MandatoryIf }}{{ if gt $i 0 }} {{ end }}{{ $a.Name | title }} {{ $a.Value }}{{ end }}{{ end }}"{{ end }}{{ $tick }}
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} {{ structTag $value }}
 	{{- else -}}
 	{{- $names = append $names $value.Name }} {{ end -}}
 	{{ end }}
@@ -65,7 +64,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: {{.Short | quote }},
-		Long: {{ $tick }}{{.Long | longName }}{{ $tick }},
+		Long: {{ $tick := "`" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
