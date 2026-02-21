@@ -28,7 +28,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-golang-
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: 🚀 Run tests
@@ -56,7 +56,7 @@ jobs:
             ${{ runner.os }}-golang-format
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: format
         run: go fmt ./...
       - name: verify
@@ -68,7 +68,7 @@ jobs:
         with:
           go-version: '1.24.0'
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: staticcheck
@@ -91,7 +91,7 @@ jobs:
             ${{ runner.os }}-golang-generate
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: generate
         run: go run pkg/generator/step-metadata.go
       - name: verify
@@ -111,7 +111,7 @@ jobs:
             ${{ runner.os }}-golang-dependencies
             ${{ runner.os }}-golang-
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: cleanup dependencies
         run: go mod tidy
       - name: verify
