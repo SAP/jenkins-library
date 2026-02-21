@@ -261,8 +261,9 @@ class TransportManagementService implements Serializable {
         // because the API is called with params, the return is always a map with either a empty list or a list containing one element
         Map mtaExtDescriptor = [:]
         Map responseContent = jsonUtils.jsonStringToGroovyObject(response.content)
-        if(responseContent.get("mtaExtDescriptors")) {
-            mtaExtDescriptor = responseContent.get("mtaExtDescriptors").get(0);
+        def mtaExtDescriptors = responseContent.get("mtaExtDescriptors")
+        if(mtaExtDescriptors) {
+            mtaExtDescriptor = mtaExtDescriptors.get(0)
         }
 
         echo("Get MTA Extension Descriptor successful.")
