@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	generator "github.com/SAP/jenkins-library/pkg/documentation/generator"
-	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	docgenerator "github.com/SAP/jenkins-library/pkg/documentation/generator"
+	"github.com/SAP/jenkins-library/pkg/generator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 )
@@ -60,7 +60,7 @@ func main() {
 		fmt.Println("using relative steps path:", relativeStepsPath)
 
 		utils := &piperutils.Files{}
-		err := generator.GenerateStageDocumentation(stageMetadataPath, stageTargetPath, relativeStepsPath, utils)
+		err := docgenerator.GenerateStageDocumentation(stageMetadataPath, stageTargetPath, relativeStepsPath, utils)
 		checkError(err)
 
 	} else {
@@ -74,14 +74,14 @@ func main() {
 			fmt.Println("Reading custom library step mapping..")
 			content, err := os.ReadFile(customLibraryStepFile)
 			checkError(err)
-			err = yaml.Unmarshal(content, &generator.CustomLibrarySteps)
+			err = yaml.Unmarshal(content, &docgenerator.CustomLibrarySteps)
 			checkError(err)
-			fmt.Println(generator.CustomLibrarySteps)
+			fmt.Println(docgenerator.CustomLibrarySteps)
 		}
 
-		metadataFiles, err := helper.MetadataFiles(metadataPath)
+		metadataFiles, err := generator.MetadataFiles(metadataPath)
 		checkError(err)
-		err = generator.GenerateStepDocumentation(metadataFiles, customDefaultFiles.list, generator.DocuHelperData{
+		err = docgenerator.GenerateStepDocumentation(metadataFiles, customDefaultFiles.list, docgenerator.DocuHelperData{
 			DocTemplatePath:     docTemplatePath,
 			OpenDocTemplateFile: openDocTemplateFile,
 			DocFileWriter:       writeFile,
