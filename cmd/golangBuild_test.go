@@ -1069,7 +1069,7 @@ func TestGoCreateBuildArtifactMetadata(t *testing.T) {
 	defer binaryFile.Close()
 	defer os.Remove("testBin") // Delete the file when the function exits
 
-	err, version := createGoBuildArtifactsMetadata("testBin", config.TargetRepositoryURL, "1.0.0", utils)
+	version, err := createGoBuildArtifactsMetadata("testBin", config.TargetRepositoryURL, "1.0.0", utils)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, version.ArtifactID, "testBin")
 }
