@@ -94,7 +94,11 @@ spec:
           - STAGES
           - STEPS
       - name: dependencyPath
-        description: Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project
+        description: Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. **This parameter is ignored if '--detect.source.path' option is included in the scanProperties parameter.**
+        longDescription: |
+          Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. 
+          If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project.
+          **This parameter is ignored if '--detect.source.path' option is included in the scanProperties parameter.**
         aliases:
           - name: detect/dependencyPath
         type: "string"

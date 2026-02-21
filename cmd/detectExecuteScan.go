@@ -557,10 +557,8 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if len(config.DependencyPath) > 0 {
+	if !checkIfArgumentIsInScanProperties(config, "detect.source.path") {
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
-	} else {
-		args = append(args, "--detect.source.path='.'")
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {
