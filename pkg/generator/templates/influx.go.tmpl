@@ -1,0 +1,46 @@
+type {{ .StepName }}{{ .Name | title}} struct {
+	{{- range $notused, $measurement := .Measurements }}
+	{{ $measurement.Name }} struct {
+		fields struct {
+			{{- range $notused, $field := $measurement.Fields }}
+			{{ $field.Name | golangName }} {{ $field.Type | resourceFieldType }}
+			{{- end }}
+		}
+		tags struct {
+			{{- range $notused, $tag := $measurement.Tags }}
+			{{ $tag.Name | golangName }} {{ $tag.Type | resourceFieldType }}
+			{{- end }}
+		}
+	}
+	{{- end }}
+}
+
+func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
+	measurementContent := []struct{
+		measurement string
+		valType     string
+		name        string
+		value       interface{}
+	}{
+		{{- range $notused, $measurement := .Measurements }}
+		{{- range $notused, $field := $measurement.Fields }}
+		{valType: config.InfluxField, measurement: "{{ $measurement.Name }}" , name: "{{ $field.Name }}", value: i.{{ $measurement.Name }}.fields.{{ $field.Name | golangName }}},
+		{{- end }}
+		{{- range $notused, $tag := $measurement.Tags }}
+		{valType: config.InfluxTag, measurement: "{{ $measurement.Name }}" , name: "{{  $tag.Name }}", value: i.{{ $measurement.Name }}.tags.{{  $tag.Name | golangName }}},
+		{{- end }}
+		{{- end }}
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Error("failed to persist Influx environment")
+	}
+}
