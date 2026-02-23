@@ -21,12 +21,8 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		outcome = "success"
 	}
 
-	eventType := fmt.Sprintf("%seventTypeTaskRunFinished", cfg.TypePrefix)
-	eventData, err := newEvent(eventType, cfg.Source, taskRunFinishedPayload{
-		TaskName:  stepName,
-		StageName: stageName,
-		Outcome:   outcome,
-	})
+	// TODO: pass a real pipeline URL (e.g. from orchestrator config) instead of empty string
+	eventData, err := NewTaskRunFinishedCDEvent(cfg.Source, stepName, "", outcome)
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
 	}
