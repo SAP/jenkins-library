@@ -33,6 +33,8 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 		InstanceName:     config.ServiceInstanceName,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
+		MaxRetries:       6,
+		MaxBadRequests:   10,
 	}
 
 	err := utils.DeleteServiceInstance(btpConfig)

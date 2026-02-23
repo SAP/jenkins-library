@@ -83,7 +83,14 @@ func handlePolling(opts RunSyncOptions) error {
 	badRequestCount := 0
 
 	maxRetries := 6
+	if opts.maxRetries > 0 {
+		maxRetries = opts.maxRetries
+	}
+
 	maxBadRequests := 10
+	if opts.maxBadRequests > 0 {
+		maxBadRequests = opts.maxBadRequests
+	}
 
 	// Poll to check completion
 	timeoutDuration := time.Duration(opts.TimeoutSeconds) * time.Second
@@ -117,7 +124,7 @@ func handlePolling(opts RunSyncOptions) error {
 				log.Entry().Info("Command not yet completed, waiting for status ready...")
 			}
 		} else {
-			err := handlePollingCheck(opts, check)
+			err := handlePollingCheck(check)
 			if err != nil {
 				return err
 			}
@@ -142,7 +149,7 @@ func handlePolling(opts RunSyncOptions) error {
 	return errors.New("command did not completed within the timeout period")
 }
 
-func handlePollingCheck(opts RunSyncOptions, check CheckResponse) error {
+func handlePollingCheck(check CheckResponse) error {
 	if check.errorData.Error == "Conflict" {
 		return errors.Wrap(errors.New(check.errorData.Description), "command check returned a conflict error.")
 	}

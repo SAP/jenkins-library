@@ -115,6 +115,8 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 			})
 		},
 		IgnoreErrorOnFirstCall: true,
+		maxRetries:             options.MaxRetries,
+		maxBadRequests:         options.MaxBadRequests,
 	})
 
 	if err != nil {
@@ -360,6 +362,8 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 				BindingId:        options.BindingName,
 			})
 		},
+		maxRetries:     options.MaxRetries,
+		maxBadRequests: options.MaxBadRequests,
 	})
 
 	if err != nil {
@@ -473,6 +477,8 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 				InstanceName:     options.InstanceName,
 			})
 		},
+		maxRetries:     options.MaxRetries,
+		maxBadRequests: options.MaxBadRequests,
 	})
 
 	if err != nil {
@@ -677,6 +683,8 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 				InstanceId:       instanceData.ID,
 			})
 		},
+		maxRetries:     options.MaxRetries,
+		maxBadRequests: options.MaxBadRequests,
 	})
 
 	if err != nil {
@@ -750,6 +758,8 @@ type CreateServiceBindingOptions struct {
 	IdentityProvider string
 	Timeout          int
 	PollInterval     int
+	MaxRetries       int
+	MaxBadRequests   int
 }
 
 type GetServiceBindingOptions struct {
@@ -776,6 +786,8 @@ type DeleteServiceBindingOptions struct {
 	Timeout          int
 	PollInterval     int
 	ServiceInstance  string
+	MaxRetries       int
+	MaxBadRequests   int
 }
 
 type CreateServiceInstanceOptions struct {
@@ -791,6 +803,8 @@ type CreateServiceInstanceOptions struct {
 	Parameters       string
 	Timeout          int
 	PollInterval     int
+	MaxRetries       int
+	MaxBadRequests   int
 }
 
 type GetServiceInstanceOptions struct {
@@ -814,4 +828,6 @@ type DeleteServiceInstanceOptions struct {
 	InstanceName     string
 	Timeout          int
 	PollInterval     int
+	MaxRetries       int
+	MaxBadRequests   int
 }

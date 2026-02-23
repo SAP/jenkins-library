@@ -36,6 +36,8 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 		Parameters:       config.Parameters,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
+		MaxRetries:       6,
+		MaxBadRequests:   10,
 	}
 
 	_, err := utils.CreateServiceInstance(btpConfig)
