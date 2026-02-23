@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -17,8 +17,8 @@ type gcpPublishEventUtils interface {
 }
 
 type gcpPublishEventUtilsBundle struct {
-	config *gcpPublishEventOptions
-	config.VaultClient
+	config        *gcpPublishEventOptions
+	tokenProvider gcp.OIDCTokenProvider
 }
 
 func (g *gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
@@ -26,13 +26,19 @@ func (g *gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
 }
 
 func (g *gcpPublishEventUtilsBundle) NewPubsubClient(projectNumber, pool, provider, key, oidcRoleId string) gcp.PubsubClient {
-	return gcp.NewGcpPubsubClient(g.VaultClient.GetOIDCTokenByValidation, projectNumber, pool, provider, key, oidcRoleId)
+	return gcp.NewGcpPubsubClient(g.tokenProvider, projectNumber, pool, provider, key, oidcRoleId)
 }
 
 func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
+	vaultClient := config.GlobalVaultClient()
+	var tokenProvider gcp.OIDCTokenProvider
+	if vaultClient != nil {
+		tokenProvider = vaultClient.GetOIDCTokenByValidation
+	}
+
 	utils := &gcpPublishEventUtilsBundle{
-		config:      &cfg,
-		VaultClient: config.GlobalVaultClient(),
+		config:        &cfg,
+		tokenProvider: tokenProvider,
 	}
 
 	if err := runGcpPublishEvent(utils); err != nil {
@@ -48,10 +54,11 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 	}
 
 	cfg := utils.GetConfig()
-	data, err := createNewEvent(cfg)
+	data, err := eventing.NewEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
+	log.Entry().Debugf("CloudEvent created: %s", string(data))
 
 	err = utils.NewPubsubClient(
 		cfg.GcpProjectNumber,
@@ -66,22 +73,4 @@ func runGcpPublishEvent(utils gcpPublishEventUtils) error {
 
 	log.Entry().Infof("Event published successfully! With topic: %s", cfg.Topic)
 	return nil
-}
-
-func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
-	event, err := events.NewEvent(config.EventType, config.EventSource, "").CreateWithJSONData(config.EventData)
-	if err != nil {
-		return []byte{}, fmt.Errorf("failed to create new event: %w", err)
-	}
-
-	if err = event.AddToCloudEventData(config.AdditionalEventData); err != nil {
-		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
-	}
-
-	eventBytes, err := event.ToBytes()
-	if err != nil {
-		return []byte{}, fmt.Errorf("casting event to bytes failed: %w", err)
-	}
-	log.Entry().Debugf("CloudEvent created: %s", string(eventBytes))
-	return eventBytes, nil
 }
