@@ -22,7 +22,7 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 	}
 
 	eventType := fmt.Sprintf("%seventTypeTaskRunFinished", cfg.TypePrefix)
-	eventData, err := NewEvent(eventType, cfg.Source, TaskRunFinishedPayload{
+	eventData, err := newEvent(eventType, cfg.Source, taskRunFinishedPayload{
 		TaskName:  stepName,
 		StageName: stageName,
 		Outcome:   outcome,

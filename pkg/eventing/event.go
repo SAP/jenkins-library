@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 )
 
-// NewEvent creates a CloudEvent v1.0 with the given type, source, and data payload,
+// newEvent creates a CloudEvent v1.0 with the given type, source, and data payload,
 // and returns its JSON-serialized bytes.
-func NewEvent(eventType, source string, data any) ([]byte, error) {
+func newEvent(eventType, source string, data any) ([]byte, error) {
 	event := cloudevents.NewEvent("1.0")
 	event.SetID(uuid.New().String())
 	event.SetType(eventType)

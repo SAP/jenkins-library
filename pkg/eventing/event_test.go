@@ -12,7 +12,7 @@ import (
 func TestNewEvent(t *testing.T) {
 	t.Run("creates valid CloudEvent with map data", func(t *testing.T) {
 		data := map[string]string{"key": "value"}
-		bytes, err := NewEvent("test.type", "test/source", data)
+		bytes, err := newEvent("test.type", "test/source", data)
 		assert.NoError(t, err)
 
 		var result map[string]interface{}
@@ -29,12 +29,12 @@ func TestNewEvent(t *testing.T) {
 	})
 
 	t.Run("creates valid CloudEvent with struct data", func(t *testing.T) {
-		payload := TaskRunFinishedPayload{
+		payload := taskRunFinishedPayload{
 			TaskName:  "build",
 			StageName: "dev",
 			Outcome:   "success",
 		}
-		bytes, err := NewEvent("test.type", "test/source", payload)
+		bytes, err := newEvent("test.type", "test/source", payload)
 		assert.NoError(t, err)
 
 		var result map[string]interface{}
@@ -48,7 +48,7 @@ func TestNewEvent(t *testing.T) {
 	})
 
 	t.Run("handles nil data", func(t *testing.T) {
-		bytes, err := NewEvent("test.type", "test/source", nil)
+		bytes, err := newEvent("test.type", "test/source", nil)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, bytes)
 	})
