@@ -10,14 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// type EventType string
-
-type EventData struct {
-	URL           string `json:"url"`
-	CommitId      string `json:"commitId"`
-	RepositoryURL string `json:"repositoryUrl"`
-}
-
 type Event struct {
 	cloudEvent  cloudevents.Event
 	eventType   string
@@ -33,20 +25,19 @@ func NewEvent(eventType, eventSource string, uuidString string) Event {
 	}
 }
 
-func (e Event) CreateWithJSONData(data string, opts ...Option) (Event, error) {
+func (e Event) CreateWithJSONData(data string) (Event, error) {
 	// passing a string to e.cloudEvent.SetData will result in the string being marshalled, ending up with double escape characters
 	// therefore pass a map instead
 	var dataMap map[string]interface{}
 	if data != "" {
-		err := json.Unmarshal([]byte(data), &dataMap)
-		if err != nil {
+		if err := json.Unmarshal([]byte(data), &dataMap); err != nil {
 			return e, fmt.Errorf("eventData is an invalid JSON: %w", err)
 		}
 	}
-	return e.Create(dataMap, opts...), nil
+	return e.Create(dataMap), nil
 }
 
-func (e Event) Create(data any, opts ...Option) Event {
+func (e Event) Create(data any) Event {
 	e.cloudEvent = cloudevents.NewEvent("1.0")
 
 	if e.uuidData != "" {
@@ -61,9 +52,6 @@ func (e Event) Create(data any, opts ...Option) Event {
 	e.cloudEvent.SetSource(e.eventSource)
 	e.cloudEvent.SetData("application/json", data)
 
-	for _, applyOpt := range opts {
-		applyOpt(e.cloudEvent.Context.AsV1())
-	}
 	return e
 }
 
