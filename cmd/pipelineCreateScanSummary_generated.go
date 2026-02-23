@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -129,14 +129,16 @@ It is for example used to create a markdown file which can be used to create a G
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if err := events.PublishTaskRunFinishedEvent(
-					oidcTokenProvider,
-					GeneralConfig,
-					telemetryClient.GetData().StageName,
-					STEP_NAME,
-					stepTelemetryData.ErrorCode,
-				); err != nil {
-					log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
+				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
+					if err := eventing.PublishTaskRunFinishedEvent(
+						oidcTokenProvider,
+						GeneralConfig,
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
+					}
 				}
 			}
 			log.DeferExitHandler(handler)
