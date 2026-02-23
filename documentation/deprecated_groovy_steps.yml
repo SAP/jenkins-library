@@ -1,0 +1,3 @@
+steps:
+  - apiProxyUpload
+  # Add more deprecated steps here as needed
