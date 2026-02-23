@@ -1,4 +1,3 @@
-// Package eventing is a placeholder for eventing related code, e.g. publish cloud events to GCP Pub/Sub might be deleted
 package eventing
 
 import (
@@ -6,23 +5,46 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-func Publish(tokenProvider gcp.OIDCTokenProvider, GeneralConfig config.GeneralConfigOptions, eventData []byte) error {
-	// publish cloud event via GCP Pub/Sub
-	err := gcp.NewGcpPubsubClient(
-		tokenProvider,
-		GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-		GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-		GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-		GeneralConfig.CorrelationID,
-		GeneralConfig.HookConfig.OIDCConfig.RoleID,
-	).Publish(
-		fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
-		eventData,
-	)
-	if err != nil {
-		return err
+// PublishTaskRunFinishedEvent creates and publishes a TaskRunFinished CloudEvent via GCP Pub/Sub.
+func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalConfig config.GeneralConfigOptions, stageName, stepName, errorCode string) error {
+	if tokenProvider == nil {
+		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
 	}
+
+	cfg := generalConfig.HookConfig.GCPPubSubConfig
+
+	outcome := "failure"
+	if errorCode == "0" {
+		outcome = "success"
+	}
+
+	eventType := fmt.Sprintf("%seventTypeTaskRunFinished", cfg.TypePrefix)
+	eventData, err := NewEvent(eventType, cfg.Source, TaskRunFinishedPayload{
+		TaskName:  stepName,
+		StageName: stageName,
+		Outcome:   outcome,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create event: %w", err)
+	}
+
+	log.Entry().Debugf("publishing TaskRunFinished event to GCP Pub/Sub...")
+
+	topic := fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix)
+	publisher := gcp.NewGcpPubsubClient(
+		tokenProvider,
+		cfg.ProjectNumber,
+		cfg.IdentityPool,
+		cfg.IdentityProvider,
+		generalConfig.CorrelationID,
+		generalConfig.HookConfig.OIDCConfig.RoleID,
+	)
+	if err = publisher.Publish(topic, eventData); err != nil {
+		return fmt.Errorf("event publish failed: %w", err)
+	}
+
 	return nil
 }
