@@ -57,7 +57,7 @@ groovy -cp "target/classes:$(cat $CLASSPATH_FILE)" "${d}createDocu" "${@}"
 
 # Append deprecation notice to all steps listed in deprecated_steps.yaml
 DEPR_TITLE='!!! warning "Deprecation notice: This step is deprecated or will be deprecated by December 2026. Read FAQ -> What is Piper Open source sunset?"'
-DEPRECATED_STEPS_FILE="documentation/deprecated_steps.yaml"
+DEPRECATED_STEPS_FILE="documentation/deprecated_groovy_steps.yaml"
 DOCS_DIR="documentation/docs/steps"
 
 if [ -f "$DEPRECATED_STEPS_FILE" ]; then
