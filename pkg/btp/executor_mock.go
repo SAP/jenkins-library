@@ -41,7 +41,7 @@ func (b *BtpExecutorMock) Run(cmdScript []string) (err error) {
 func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 	err := b.Run(opts.CmdScript)
 	if err != nil {
-		return errors.Wrap(err, "Initial command execution failed")
+		return errors.Wrap(err, "initial command execution failed")
 	}
 
 	log.Entry().Infof("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
@@ -57,28 +57,24 @@ func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 		log.Entry().Info("Command not yet completed, checking again...")
 	}
 
-	return errors.New("Command did not complete within the timeout period")
+	return errors.New("command did not complete within the timeout period")
 }
 
 // Processes command results based on predefined mock data.
 func (e *BtpExecutorMock) handleCall(call []string, stdoutReturn map[string]string, shouldFailOnCommand map[string]error, stdout io.Writer, stderr io.Writer) error {
 	// Check if the command should return a specific output
-	if stdoutReturn != nil {
-		for pattern, output := range stdoutReturn {
-			if matchCommand(pattern, call) {
-				stdout.Write([]byte(output))
-				return nil
-			}
+	for pattern, output := range stdoutReturn {
+		if matchCommand(pattern, call) {
+			stdout.Write([]byte(output))
+			return nil
 		}
 	}
 
 	// Check if the command should fail
-	if shouldFailOnCommand != nil {
-		for pattern, err := range shouldFailOnCommand {
-			if matchCommand(pattern, call) {
-				stderr.Write([]byte(err.Error()))
-				return err
-			}
+	for pattern, err := range shouldFailOnCommand {
+		if matchCommand(pattern, call) {
+			stderr.Write([]byte(err.Error()))
+			return err
 		}
 	}
 

@@ -35,7 +35,7 @@ func (e *Executor) GetStderrValue() string {
 
 func (e *Executor) Run(cmdScript []string) (err error) {
 	if err := e.Cmd.RunExecutable(cmdScript[0], cmdScript[1:]...); err != nil {
-		return errors.Wrap(err, "Failed to execute BTP CLI")
+		return errors.Wrap(err, "failed to execute BTP CLI")
 	}
 	return nil
 }
@@ -62,14 +62,14 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 func handleInitialCheck(e *Executor, opts RunSyncOptions) error {
 	errorData, err := GetErrorInfos(e.GetStderrValue())
 	if err != nil {
-		return errors.Wrap(err, "Failed to extract error code from JSON response")
+		return errors.Wrap(err, "failed to extract error code from JSON response")
 	}
 
 	if errorData.Error == "Conflict" {
-		return errors.Wrap(errors.New(errorData.Description), "Command returned a conflict error.")
+		return errors.Wrap(errors.New(errorData.Description), "command returned a conflict error.")
 	} else {
 		if !opts.IgnoreErrorOnFirstCall {
-			return errors.Wrap(err, "Failed to execute BTP CLI (Sync)")
+			return errors.Wrap(err, "failed to execute BTP CLI (Sync)")
 		}
 	}
 	return nil
@@ -81,6 +81,7 @@ func handlePolling(opts RunSyncOptions) error {
 
 	retryCount := 0
 	badRequestCount := 0
+
 	maxRetries := 6
 	maxBadRequests := 10
 
@@ -93,16 +94,15 @@ func handlePolling(opts RunSyncOptions) error {
 
 	for time.Since(startTime) < timeoutDuration {
 		if retryCount >= maxRetries {
-			return errors.New("Maximum number of retries reached while polling for command completion")
+			return errors.New("maximum number of retries reached while polling for command completion")
 		}
 		if badRequestCount >= maxBadRequests {
-			return errors.New("Too many bad request errors received while polling for command completion")
+			return errors.New("too many bad request errors received while polling for command completion")
 		}
 
 		// Wait before the next check
-		additionalTime := time.Duration(retryCount/3) * time.Minute
-		additionalTime += time.Duration(badRequestCount/3) * time.Minute
-		time.Sleep(pollIntervall + additionalTime)
+		waitingDuration := computeWaitingDuration(pollIntervall, retryCount, badRequestCount)
+		time.Sleep(waitingDuration)
 
 		check := opts.CheckFunc()
 
@@ -139,14 +139,20 @@ func handlePolling(opts RunSyncOptions) error {
 		}
 	}
 
-	return errors.New("Command did not completed within the timeout period")
+	return errors.New("command did not completed within the timeout period")
 }
 
 func handlePollingCheck(opts RunSyncOptions, check CheckResponse) error {
 	if check.errorData.Error == "Conflict" {
-		return errors.Wrap(errors.New(check.errorData.Description), "Command check returned a conflict error.")
+		return errors.Wrap(errors.New(check.errorData.Description), "command check returned a conflict error.")
 	}
 	return nil
+}
+
+func computeWaitingDuration(pollIntervall time.Duration, retryCount int, badRequestCount int) time.Duration {
+	additionalTime := time.Duration(retryCount/3) * time.Minute
+	additionalTime += time.Duration(badRequestCount/3) * time.Minute
+	return pollIntervall + additionalTime
 }
 
 type Executor struct {

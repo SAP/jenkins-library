@@ -70,6 +70,8 @@ func IsServiceBindingDeleted(btp *BTPUtils, options GetServiceBindingOptions) Ch
 	if err != nil {
 		errorData, err := GetErrorInfos(btp.Exec.GetStderrValue())
 		if err != nil {
+			// If we can't extract structured error info, check if errorData is empty
+			// An empty errorData likely means "not found" which indicates successful deletion
 			if errorData.Error == "" {
 				return CheckResponse{successful: true, done: true}
 			} else {

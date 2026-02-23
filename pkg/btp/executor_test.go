@@ -14,7 +14,7 @@ func TestRun(t *testing.T) {
 			"btp login": "Login successful",
 		},
 		ShouldFailOnCommand: map[string]error{
-			"btp logout": errors.New("Logout failed"),
+			"btp logout": errors.New("logout failed"),
 		},
 	}
 
@@ -56,7 +56,7 @@ func TestRunSync_Success(t *testing.T) {
 func TestRunSync_Erro_On_Check(t *testing.T) {
 	m := &BtpExecutorMock{
 		ShouldFailOnCommand: map[string]error{
-			"btp check": errors.New("Bad Request"),
+			"btp check": errors.New("bad Request"),
 		},
 	}
 

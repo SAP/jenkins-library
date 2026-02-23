@@ -18,7 +18,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		options.Password == ""
 
 	if parametersCheck {
-		errorMsg := "Parameters missing. Please provide: "
+		errorMsg := "parameters missing. Please provide: "
 		missingParams := []string{}
 		if options.Url == "" {
 			missingParams = append(missingParams, "Url")
@@ -34,7 +34,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return errors.Wrap(errors.New(errorMsg), "Failed to login to BTP")
+		return errors.Wrap(errors.New(errorMsg), "failed to login to BTP")
 	}
 
 	log.Entry().Info("Logging in to BTP")
@@ -57,7 +57,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 	err := btp.Exec.Run(btpLoginScript)
 
 	if err != nil {
-		return errors.Wrap(err, "Failed to login to BTP")
+		return errors.Wrap(err, "failed to login to BTP")
 	}
 	log.Entry().Info("Logged in successfully to BTP.")
 	return nil
@@ -78,7 +78,7 @@ func (btp *BTPUtils) Logout() error {
 	err := btp.Exec.Run(btpLogoutScript)
 
 	if err != nil {
-		return errors.Wrap(err, "Failed to Logout of BTP")
+		return errors.Wrap(err, "failed to Logout of BTP")
 	}
 	log.Entry().Info("Logged out successfully")
 	return nil

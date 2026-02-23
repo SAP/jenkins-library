@@ -9,6 +9,8 @@ type RunSyncOptions struct {
 	LoginFunc              func() error
 	CheckFunc              func() CheckResponse // Function to check the command status
 	IgnoreErrorOnFirstCall bool                 // Whether to ignore error on the first call before polling
+	maxRetries             int
+	maxBadRequests         int
 }
 
 type ServiceInstanceData struct {
