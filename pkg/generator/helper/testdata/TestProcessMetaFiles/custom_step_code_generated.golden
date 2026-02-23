@@ -12,7 +12,7 @@ import (
 
 	piperOsCmd "github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -250,7 +250,7 @@ func TestStepCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if piperOsCmd.GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := events.PublishTaskRunFinishedEvent(
+					if err := eventing.PublishTaskRunFinishedEvent(
 						oidcTokenProvider,
 						piperOsCmd.GeneralConfig,
 						telemetryClient.GetData().StageName,

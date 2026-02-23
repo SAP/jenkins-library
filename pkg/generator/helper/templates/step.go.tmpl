@@ -26,7 +26,7 @@ import (
 	{{ if or .HasInfluxOutput .HasPiperEnvOutput -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
-	"github.com/SAP/jenkins-library/pkg/events"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/validation"
@@ -168,7 +168,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if {{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := events.PublishTaskRunFinishedEvent(
+					if err := eventing.PublishTaskRunFinishedEvent(
 						oidcTokenProvider,
 						{{ configPrefix .ExportPrefix }}GeneralConfig,
 						telemetryClient.GetData().StageName,
