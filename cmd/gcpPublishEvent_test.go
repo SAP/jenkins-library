@@ -1,37 +1,20 @@
+//go:build unit
+
 package cmd
 
 import (
-	"testing"
-
-	"github.com/SAP/jenkins-library/pkg/gcp"
-
 	"errors"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type mockGcpPublishEventUtilsBundle struct {
-	config *gcpPublishEventOptions
-}
-
-func (g *mockGcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
-	return g.config
-}
-
-func (g *mockGcpPublishEventUtilsBundle) NewPubsubClient(_, _, _, _, _ string) gcp.PubsubClient {
-	return &mockPubsubClient{}
-}
-
 type mockPubsubClient struct {
+	publishErr error
 }
 
-func (p *mockPubsubClient) Publish(topic string, _ []byte) error {
-	if topic == "goodTestCase" {
-		return nil
-	} else if topic == "badTestCase" {
-		return errors.New("failed to send request")
-	}
-	return nil
+func (p *mockPubsubClient) Publish(_ string, _ []byte) error {
+	return p.publishErr
 }
 
 func TestRunGcpPublishEvent(t *testing.T) {
@@ -39,35 +22,27 @@ func TestRunGcpPublishEvent(t *testing.T) {
 
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
-		// init
-		mock := &mockGcpPublishEventUtilsBundle{
-			config: &gcpPublishEventOptions{
-				EventType:   "PipelineRunStarted",
-				EventSource: "unittest",
-				Topic:       "goodTestCase",
-			}}
+		publisher := &mockPubsubClient{}
+		cfg := &gcpPublishEventOptions{
+			EventType:   "PipelineRunStarted",
+			EventSource: "unittest",
+			Topic:       "test-topic",
+		}
 
-		// test
-		err := runGcpPublishEvent(mock)
-
-		// assert
+		err := runGcpPublishEvent(publisher, cfg)
 		assert.NoError(t, err)
 	})
 
 	t.Run("error path", func(t *testing.T) {
 		t.Parallel()
-		// init
-		mock := &mockGcpPublishEventUtilsBundle{
-			config: &gcpPublishEventOptions{
-				EventType:   "PipelineRunStarted",
-				EventSource: "unittest",
-				Topic:       "badTestCase",
-			}}
+		publisher := &mockPubsubClient{publishErr: errors.New("failed to send request")}
+		cfg := &gcpPublishEventOptions{
+			EventType:   "PipelineRunStarted",
+			EventSource: "unittest",
+			Topic:       "test-topic",
+		}
 
-		// test
-		err := runGcpPublishEvent(mock)
-
-		// assert
+		err := runGcpPublishEvent(publisher, cfg)
 		assert.EqualError(t, err, "failed to publish event: failed to send request")
 	})
 }
