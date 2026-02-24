@@ -20,21 +20,23 @@ import (
 )
 
 type pythonBuildOptions struct {
-	BuildFlags               []string `json:"buildFlags,omitempty"`
-	SetupFlags               []string `json:"setupFlags,omitempty"`
-	CreateBOM                bool     `json:"createBOM,omitempty"`
-	Publish                  bool     `json:"publish,omitempty"`
-	TargetRepositoryPassword string   `json:"targetRepositoryPassword,omitempty"`
-	TargetRepositoryUser     string   `json:"targetRepositoryUser,omitempty"`
-	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
-	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
-	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
-	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
+	BuildFlags                   []string `json:"buildFlags,omitempty"`
+	SetupFlags                   []string `json:"setupFlags,omitempty"`
+	CreateBOM                    bool     `json:"createBOM,omitempty"`
+	Publish                      bool     `json:"publish,omitempty"`
+	TargetRepositoryPassword     string   `json:"targetRepositoryPassword,omitempty"`
+	TargetRepositoryUser         string   `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryURL          string   `json:"targetRepositoryURL,omitempty"`
+	BuildSettingsInfo            string   `json:"buildSettingsInfo,omitempty"`
+	VirtualEnvironmentName       string   `json:"virtualEnvironmentName,omitempty"`
+	RequirementsFilePath         string   `json:"requirementsFilePath,omitempty"`
+	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo    string
+		pythonBuildArtifacts string
 	}
 }
 
@@ -45,6 +47,7 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 		value    interface{}
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "pythonBuildArtifacts", value: p.custom.pythonBuildArtifacts},
 	}
 
 	errCount := 0
@@ -233,6 +236,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -357,6 +361,15 @@ func pythonBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `requirements.txt`,
 					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -369,6 +382,7 @@ func pythonBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/pythonBuildArtifacts"},
 						},
 					},
 				},
