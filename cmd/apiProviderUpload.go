@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"os"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/apim"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func apiProviderUpload(config apiProviderUploadOptions, telemetryData *telemetry.CustomData) {

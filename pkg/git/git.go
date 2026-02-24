@@ -1,14 +1,16 @@
 package git
 
 import (
+	"fmt"
 	"time"
+
+	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/pkg/errors"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -39,7 +41,7 @@ func CommitSingleFile(filePath, commitMessage, author string, worktree *git.Work
 func commitSingleFile(filePath, commitMessage, author string, worktree utilsWorkTree) (plumbing.Hash, error) {
 	_, err := worktree.Add(filePath)
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "failed to add file to git")
+		return [20]byte{}, fmt.Errorf("failed to add file to git: %w", err)
 	}
 
 	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
@@ -47,7 +49,7 @@ func commitSingleFile(filePath, commitMessage, author string, worktree utilsWork
 		Author: &object.Signature{Name: author, When: time.Now()},
 	})
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "failed to commit file")
+		return [20]byte{}, fmt.Errorf("failed to commit file: %w", err)
 	}
 
 	return commit, nil
@@ -71,7 +73,7 @@ func pushChangesToRepository(username, password string, force *bool, repository 
 	}
 	err := repository.Push(pushOptions)
 	if err != nil {
-		return errors.Wrap(err, "failed to push commit")
+		return fmt.Errorf("failed to push commit: %w", err)
 	}
 	return nil
 }
@@ -96,7 +98,7 @@ func plainClone(username, password, serverURL, branchName, directory string, abs
 
 	repository, err := abstractionGit.plainClone(directory, false, &gitCloneOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to clone git")
+		return nil, fmt.Errorf("failed to clone git: %w", err)
 	}
 	return repository, nil
 }
@@ -111,7 +113,7 @@ func plainOpen(path string, abstractionGit utilsGit) (*git.Repository, error) {
 	log.Entry().Infof("Opening git repo at '%s'", path)
 	r, err := abstractionGit.plainOpen(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", path)
+		return nil, fmt.Errorf("Unable to open git repository at '%s': %w", path, err)
 	}
 	return r, nil
 }
@@ -137,7 +139,7 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 		checkoutOptions.Create = true
 		err = worktree.Checkout(checkoutOptions)
 		if err != nil {
-			return errors.Wrap(err, "failed to checkout branch")
+			return fmt.Errorf("failed to checkout branch: %w", err)
 		}
 	}
 
@@ -150,11 +152,11 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 
 	cTo, err := getCommitObject(to, repo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot provide log range (to: '%s' not found)", to)
+		return nil, fmt.Errorf("Cannot provide log range (to: '%s' not found): %w", to, err)
 	}
 	cFrom, err := getCommitObject(from, repo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot provide log range (from: '%s' not found)", from)
+		return nil, fmt.Errorf("Cannot provide log range (from: '%s' not found): %w", from, err)
 	}
 	ignore := []plumbing.Hash{}
 	err = object.NewCommitPreorderIter(
@@ -166,7 +168,7 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Cannot provide log range")
+		return nil, fmt.Errorf("Cannot provide log range: %w", err)
 	}
 
 	return object.NewCommitPreorderIter(cTo, map[plumbing.Hash]bool{}, ignore), nil
@@ -179,11 +181,11 @@ func getCommitObject(ref string, repo *git.Repository) (*object.Commit, error) {
 	}
 	r, err := repo.ResolveRevision(plumbing.Revision(ref))
 	if err != nil {
-		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+		return nil, fmt.Errorf("Trouble resolving '%s': %w", ref, err)
 	}
 	c, err := repo.CommitObject(*r)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+		return nil, fmt.Errorf("Trouble resolving '%s': %w", ref, err)
 	}
 	return c, nil
 }

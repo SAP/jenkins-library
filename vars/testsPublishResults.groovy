@@ -123,7 +123,7 @@ def publishCoberturaReport(Map settings = [:]) {
     if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
-        
+
         recordCoverage(
             tools: [[
                 parser: 'COBERTURA', 

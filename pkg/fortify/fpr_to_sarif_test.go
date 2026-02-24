@@ -4,12 +4,13 @@
 package fortify
 
 import (
-	"github.com/SAP/jenkins-library/pkg/format"
-	"github.com/piper-validation/fortify-client-go/models"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/format"
+	"github.com/piper-validation/fortify-client-go/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParse(t *testing.T) {

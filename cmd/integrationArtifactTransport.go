@@ -9,12 +9,13 @@ import (
 	"net/http"
 	"time"
 
+	"errors"
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/apim"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func integrationArtifactTransport(config integrationArtifactTransportOptions, telemetryData *telemetry.CustomData) {
@@ -43,13 +44,13 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 	header.Add("content-type", "application/json")
 	payload, jsonError := GetCPITransportReqPayload(config)
 	if jsonError != nil {
-		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.IntegrationPackageID)
+		return fmt.Errorf("Failed to get json payload for file %v, failed with error: %w", config.IntegrationPackageID, jsonError)
 	}
 
 	createTransportRequestResp, httpErr := httpClient.SendRequest(httpMethod, createTransportRequestURL, payload, header, nil)
 
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, createTransportRequestURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, createTransportRequestURL, httpErr)
 	}
 
 	if createTransportRequestResp != nil && createTransportRequestResp.Body != nil {
@@ -57,7 +58,7 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 	}
 
 	if createTransportRequestResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response")
+		return fmt.Errorf("did not retrieve a HTTP response")
 	}
 
 	if createTransportRequestResp.StatusCode == http.StatusAccepted {
@@ -67,11 +68,11 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 
 		bodyText, readErr := io.ReadAll(createTransportRequestResp.Body)
 		if readErr != nil {
-			return errors.Wrap(readErr, "HTTP response body could not be read")
+			return fmt.Errorf("HTTP response body could not be read: %w", readErr)
 		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
-			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+			return fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 		}
 		processId := jsonResponse.Path("processId").Data().(string)
 
@@ -84,10 +85,10 @@ func CreateIntegrationArtifactTransportRequest(config *integrationArtifactTransp
 	responseBody, readErr := io.ReadAll(createTransportRequestResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", createTransportRequestResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", createTransportRequestResp.StatusCode, readErr)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), createTransportRequestResp.StatusCode)
-	return errors.Errorf("integration flow deployment failed, response Status code: %v", createTransportRequestResp.StatusCode)
+	return fmt.Errorf("integration flow deployment failed, response Status code: %v", createTransportRequestResp.StatusCode)
 }
 
 // pollTransportStatus - Poll the integration package transport processing, return status or error details
@@ -148,7 +149,7 @@ func GetCPITransportReqPayload(config *integrationArtifactTransportOptions) (*by
 	jsonBody, jsonErr := json.Marshal(jsonObj)
 
 	if jsonErr != nil {
-		return nil, errors.Wrapf(jsonErr, "Transport request payload is invalid for integration package artifact %q", config.IntegrationPackageID)
+		return nil, fmt.Errorf("Transport request payload is invalid for integration package artifact %q: %w", config.IntegrationPackageID, jsonErr)
 	}
 	return bytes.NewBuffer(jsonBody), nil
 }
@@ -167,7 +168,7 @@ func getIntegrationTransportProcessingStatus(config *integrationArtifactTranspor
 	}
 
 	if transportProcStatusResp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if (transportProcStatusResp.StatusCode == http.StatusOK) || (transportProcStatusResp.StatusCode == http.StatusAccepted) {
@@ -177,11 +178,11 @@ func getIntegrationTransportProcessingStatus(config *integrationArtifactTranspor
 
 		bodyText, readErr := io.ReadAll(transportProcStatusResp.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", transportProcStatusResp.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", transportProcStatusResp.StatusCode, readErr)
 		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
-			return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+			return "", fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 		}
 		contentTransporStatus := jsonResponse.Path("state").Data().(string)
 		return contentTransporStatus, nil
@@ -189,7 +190,7 @@ func getIntegrationTransportProcessingStatus(config *integrationArtifactTranspor
 	if httpErr != nil {
 		return getHTTPErrorMessage(httpErr, transportProcStatusResp, httpMethod, transportProcStatusURL)
 	}
-	return "", errors.Errorf("failed to get transport request processing status, response Status code: %v", transportProcStatusResp.StatusCode)
+	return "", fmt.Errorf("failed to get transport request processing status, response Status code: %v", transportProcStatusResp.StatusCode)
 }
 
 // getTransportError - Get integration package transport failures error details
@@ -205,7 +206,7 @@ func getIntegrationTransportError(config *integrationArtifactTransportOptions, h
 	}
 
 	if errorStatusResp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if errorStatusResp.StatusCode == http.StatusOK {
@@ -214,7 +215,7 @@ func getIntegrationTransportError(config *integrationArtifactTransportOptions, h
 			Info("Successfully retrieved deployment failures error details")
 		responseBody, readErr := io.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", errorStatusResp.StatusCode, readErr)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
 		errorDetails := string(responseBody)
@@ -223,5 +224,5 @@ func getIntegrationTransportError(config *integrationArtifactTransportOptions, h
 	if httpErr != nil {
 		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
 	}
-	return "", errors.Errorf("failed to get Integration Package transport error details, response Status code: %v", errorStatusResp.StatusCode)
+	return "", fmt.Errorf("failed to get Integration Package transport error details, response Status code: %v", errorStatusResp.StatusCode)
 }

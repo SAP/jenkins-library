@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/events"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -35,6 +36,7 @@ type imagePushToRegistryOptions struct {
 	PushLocalDockerImage   bool                   `json:"pushLocalDockerImage,omitempty"`
 	LocalDockerImagePath   string                 `json:"localDockerImagePath,omitempty" validate:"required_if=PushLocalDockerImage true"`
 	TargetArchitecture     string                 `json:"targetArchitecture,omitempty"`
+	DisableHTTP2           bool                   `json:"disableHTTP2,omitempty"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -150,14 +152,31 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
+					log.Entry().Debug("publishing event to GCP Pub/Sub...")
+					// prepare event payload
+					payload := events.NewPayloadTaskRunFinished(
+						telemetryClient.GetData().StageName,
+						STEP_NAME,
+						stepTelemetryData.ErrorCode,
+					)
+					// create event
+					eventData, err := events.NewEventTaskRunFinished(
+						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
+						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
+						payload,
+					)
+					// publish cloud event via GCP Pub/Sub
+					err = gcp.NewGcpPubsubClient(
 						vaultClient,
 						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
 						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
 						GeneralConfig.CorrelationID,
 						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
+					).Publish(
+						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
+						eventData,
+					)
 					if err != nil {
 						log.Entry().WithError(err).Warn("event publish failed")
 					}
@@ -195,6 +214,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().BoolVar(&stepConfig.PushLocalDockerImage, "pushLocalDockerImage", false, "Defines if the local image should be pushed to registry")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
+	cmd.Flags().BoolVar(&stepConfig.DisableHTTP2, "disableHTTP2", false, "Disables HTTP/2 for registry communication. Set to true if you encounter HTTP/2 stream errors during image push/pull operations.")
 
 	cmd.MarkFlagRequired("targetRegistryUrl")
 	cmd.MarkFlagRequired("targetRegistryUser")
@@ -440,6 +460,15 @@ func imagePushToRegistryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_targetArchitecture"),
+					},
+					{
+						Name:        "disableHTTP2",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

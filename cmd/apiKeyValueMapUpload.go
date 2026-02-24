@@ -12,7 +12,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func apiKeyValueMapUpload(config apiKeyValueMapUploadOptions, telemetryData *telemetry.CustomData) {
@@ -42,7 +41,7 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, tokenErr := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if tokenErr != nil {
-		return errors.Wrap(tokenErr, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", tokenErr)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
@@ -59,7 +58,7 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 	apiProxyUploadStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadApiKeyValueMapStatusURL, payload, header, nil)
 
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %q request to %q failed with error", httpMethod, uploadApiKeyValueMapStatusURL)
+		return fmt.Errorf("HTTP %q request to %q failed with error: %w", httpMethod, uploadApiKeyValueMapStatusURL, httpErr)
 	}
 
 	if apiProxyUploadStatusResp != nil && apiProxyUploadStatusResp.Body != nil {
@@ -67,7 +66,7 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 	}
 
 	if apiProxyUploadStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response")
+		return fmt.Errorf("did not retrieve a HTTP response")
 	}
 
 	if apiProxyUploadStatusResp.StatusCode == http.StatusCreated {
@@ -79,11 +78,11 @@ func runApiKeyValueMapUpload(config *apiKeyValueMapUploadOptions, telemetryData 
 	response, readErr := io.ReadAll(apiProxyUploadStatusResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", apiProxyUploadStatusResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", apiProxyUploadStatusResp.StatusCode, readErr)
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(response), apiProxyUploadStatusResp.StatusCode)
-	return errors.Errorf("Failed to upload API key value map artefact, Response Status code: %v", apiProxyUploadStatusResp.StatusCode)
+	return fmt.Errorf("Failed to upload API key value map artefact, Response Status code: %v", apiProxyUploadStatusResp.StatusCode)
 }
 
 // createJSONPayload -return http payload as byte array
@@ -99,7 +98,7 @@ func createJSONPayload(config *apiKeyValueMapUploadOptions) (*bytes.Buffer, erro
 	jsonRootObj.ArrayAppend(jsonObj, "keyMapEntryValues")
 	jsonBody, jsonErr := json.Marshal(jsonRootObj)
 	if jsonErr != nil {
-		return nil, errors.Wrapf(jsonErr, "json payload is invalid for key value map %q", config.KeyValueMapName)
+		return nil, fmt.Errorf("json payload is invalid for key value map %q: %w", config.KeyValueMapName, jsonErr)
 	}
 	payload := bytes.NewBuffer([]byte(jsonBody))
 	return payload, nil

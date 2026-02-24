@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 const hadolintCommand = "hadolint"
@@ -86,7 +86,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		}
 		utils.SetOptions(clientOptions)
 		if err := loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, utils); err != nil {
-			return errors.Wrap(err, "failed to load configuration file from URL")
+			return fmt.Errorf("failed to load configuration file from URL: %w", err)
 		}
 	}
 	// use config
@@ -109,7 +109,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		}
 	} else if err != nil {
 		// if stdout is empty a processing issue occured
-		return errors.Wrap(err, errorBuffer.String())
+		return fmt.Errorf(errorBuffer.String(), err)
 	}
 	//TODO: mock away in tests
 	// persist report information

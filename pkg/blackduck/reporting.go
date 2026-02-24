@@ -13,7 +13,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
-	"github.com/pkg/errors"
 )
 
 var severityIndex = map[string]int{"LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
@@ -214,7 +213,7 @@ func WriteVulnerabilityReports(scanReport reporting.ScanReport, utils piperutils
 	htmlReportPath := "piper_detect_vulnerability_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Vulnerability Report", Target: htmlReportPath})
 
@@ -222,11 +221,11 @@ func WriteVulnerabilityReports(scanReport reporting.ScanReport, utils piperutils
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return reportPaths, fmt.Errorf("failed to create reporting directory: %w", err)
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", utils.CurrentTime("")))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, fmt.Errorf("failed to write json report: %w", err)
 	}
 
 	return reportPaths, nil
@@ -239,16 +238,16 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	sarifReport, errorMarshall := json.Marshal(sarif)
 	if errorMarshall != nil {
-		return reportPaths, errors.Wrapf(errorMarshall, "failed to marshall SARIF json file")
+		return reportPaths, fmt.Errorf("failed to marshall SARIF json file: %w", errorMarshall)
 	}
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	sarifReportPath := filepath.Join(ReportsDirectory, "piper_detect_vulnerability.sarif")
 	if err := utils.FileWrite(sarifReportPath, sarifReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write SARIF file")
+		return reportPaths, fmt.Errorf("failed to write SARIF file: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Detect Vulnerability SARIF file", Target: sarifReportPath})
 

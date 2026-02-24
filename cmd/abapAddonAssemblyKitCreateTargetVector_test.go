@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

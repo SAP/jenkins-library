@@ -14,7 +14,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type integrationArtifactTriggerIntegrationTestUtils interface {
@@ -137,7 +136,7 @@ func callIFlowURL(
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpIFlowClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	clientOptions.MaxRetries = -1
@@ -145,11 +144,11 @@ func callIFlowURL(
 	iFlowResp, httpErr := httpIFlowClient.SendRequest(httpMethod, serviceEndpointUrl, bytes.NewBuffer(fileBody), header, nil)
 
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %q request to %q failed with error", httpMethod, serviceEndpointUrl)
+		return fmt.Errorf("HTTP %q request to %q failed with error: %w", httpMethod, serviceEndpointUrl, httpErr)
 	}
 
 	if iFlowResp == nil {
-		return errors.Errorf("did not retrieve any HTTP response")
+		return fmt.Errorf("did not retrieve any HTTP response")
 	}
 
 	if iFlowResp.StatusCode < 400 {

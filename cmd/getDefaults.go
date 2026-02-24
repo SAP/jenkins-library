@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -76,7 +75,7 @@ func getDefaults() ([]map[string]string, error) {
 	for _, f := range defaultsOptions.defaultsFiles {
 		fc, err := defaultsOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
-			return yamlDefaults, errors.Wrapf(err, "defaults: retrieving defaults file failed: '%v'", f)
+			return yamlDefaults, fmt.Errorf("defaults: retrieving defaults file failed: '%v': %w", f, err)
 		}
 		if err == nil {
 			var yamlContent string
@@ -87,7 +86,7 @@ func getDefaults() ([]map[string]string, error) {
 
 				yamlContent, err = config.GetYAML(c)
 				if err != nil {
-					return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
+					return yamlDefaults, fmt.Errorf("defaults: could not marshal YAML default file: '%v: %w", f, err)
 				}
 			} else {
 				var rc config.RunConfigV1
@@ -96,7 +95,7 @@ func getDefaults() ([]map[string]string, error) {
 
 				yamlContent, err = config.GetYAML(rc.PipelineConfig)
 				if err != nil {
-					return yamlDefaults, errors.Wrapf(err, "defaults: could not marshal YAML default file: '%v", f)
+					return yamlDefaults, fmt.Errorf("defaults: could not marshal YAML default file: '%v: %w", f, err)
 				}
 			}
 
@@ -123,7 +122,7 @@ func generateDefaults(utils getDefaultsUtils) ([]byte, error) {
 	}
 
 	if err != nil {
-		return jsonOutput, errors.Wrapf(err, "defaults: could not embed YAML defaults into JSON")
+		return jsonOutput, fmt.Errorf("defaults: could not embed YAML defaults into JSON: %w", err)
 	}
 
 	if len(defaultsOptions.outputFile) > 0 {
