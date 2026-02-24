@@ -15,6 +15,7 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
 	}
 
+	// HookConfig comes from Piper defaults file (or may come from custom defaults specified by the end user).
 	cfg := generalConfig.HookConfig.GCPPubSubConfig
 
 	outcome := "failure"
