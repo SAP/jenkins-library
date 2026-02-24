@@ -168,12 +168,14 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if {{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.PublishTaskRunFinishedEvent(
+					if err := eventing.Process(
 						oidcTokenProvider,
-						{{ configPrefix .ExportPrefix }}GeneralConfig,
-						telemetryClient.GetData().StageName,
-						STEP_NAME,
-						stepTelemetryData.ErrorCode,
+						&{{ configPrefix .ExportPrefix }}GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}

@@ -15,7 +15,7 @@ func TestNewEvent(t *testing.T) {
 		bytes, err := newEvent("test.type", "test/source", data)
 		assert.NoError(t, err)
 
-		var result map[string]interface{}
+		var result map[string]any
 		err = json.Unmarshal(bytes, &result)
 		assert.NoError(t, err)
 		assert.Equal(t, "1.0", result["specversion"])
@@ -24,12 +24,16 @@ func TestNewEvent(t *testing.T) {
 		assert.NotEmpty(t, result["id"])
 		assert.NotEmpty(t, result["time"])
 
-		eventData := result["data"].(map[string]interface{})
+		eventData := result["data"].(map[string]any)
 		assert.Equal(t, "value", eventData["key"])
 	})
 
 	t.Run("creates valid CloudEvent with struct data", func(t *testing.T) {
-		payload := taskRunFinishedPayload{
+		payload := struct {
+			TaskName  string `json:"taskName"`
+			StageName string `json:"stageName"`
+			Outcome   string `json:"outcome"`
+		}{
 			TaskName:  "build",
 			StageName: "dev",
 			Outcome:   "success",
@@ -37,11 +41,11 @@ func TestNewEvent(t *testing.T) {
 		bytes, err := newEvent("test.type", "test/source", payload)
 		assert.NoError(t, err)
 
-		var result map[string]interface{}
+		var result map[string]any
 		err = json.Unmarshal(bytes, &result)
 		assert.NoError(t, err)
 
-		eventData := result["data"].(map[string]interface{})
+		eventData := result["data"].(map[string]any)
 		assert.Equal(t, "build", eventData["taskName"])
 		assert.Equal(t, "dev", eventData["stageName"])
 		assert.Equal(t, "success", eventData["outcome"])
@@ -59,12 +63,12 @@ func TestNewEventFromJSON(t *testing.T) {
 		bytes, err := NewEventFromJSON("test.type", "test/source", `{"key":"value"}`, "")
 		assert.NoError(t, err)
 
-		var result map[string]interface{}
+		var result map[string]any
 		err = json.Unmarshal(bytes, &result)
 		assert.NoError(t, err)
 		assert.Equal(t, "test.type", result["type"])
 
-		eventData := result["data"].(map[string]interface{})
+		eventData := result["data"].(map[string]any)
 		assert.Equal(t, "value", eventData["key"])
 	})
 
@@ -75,11 +79,11 @@ func TestNewEventFromJSON(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		var result map[string]interface{}
+		var result map[string]any
 		err = json.Unmarshal(bytes, &result)
 		assert.NoError(t, err)
 
-		eventData := result["data"].(map[string]interface{})
+		eventData := result["data"].(map[string]any)
 		assert.Equal(t, "value", eventData["key"])
 		assert.Equal(t, "data", eventData["extra"])
 	})
@@ -91,11 +95,11 @@ func TestNewEventFromJSON(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		var result map[string]interface{}
+		var result map[string]any
 		err = json.Unmarshal(bytes, &result)
 		assert.NoError(t, err)
 
-		eventData := result["data"].(map[string]interface{})
+		eventData := result["data"].(map[string]any)
 		assert.Equal(t, "overwritten", eventData["key"])
 	})
 

@@ -8,8 +8,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// PublishTaskRunFinishedEvent creates and publishes a TaskRunFinished CloudEvent via GCP Pub/Sub.
-func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalConfig config.GeneralConfigOptions, stageName, stepName, errorCode string) error {
+// Process is the single entry point for publishing events from generated steps.
+// It takes an EventContext with step-level data and handles event creation and publishing.
+func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
 	if tokenProvider == nil {
 		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
 	}
@@ -17,12 +18,12 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 	cfg := generalConfig.HookConfig.GCPPubSubConfig
 
 	outcome := "failure"
-	if errorCode == "0" {
+	if ctx.ErrorCode == "0" {
 		outcome = "success"
 	}
 
 	// TODO: pass a real pipeline URL (e.g. from orchestrator config) instead of empty string
-	eventData, err := NewTaskRunFinishedCDEvent(cfg.Source, stepName, "", outcome)
+	eventData, err := newTaskRunFinishedCDEvent(cfg.Source, ctx.StepName, "", outcome)
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
 	}
