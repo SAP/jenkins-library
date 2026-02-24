@@ -150,12 +150,14 @@ Please provide either of the following options:
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.PublishTaskRunFinishedEvent(
+					if err := eventing.Process(
 						oidcTokenProvider,
-						GeneralConfig,
-						telemetryClient.GetData().StageName,
-						STEP_NAME,
-						stepTelemetryData.ErrorCode,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
