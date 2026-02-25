@@ -2,12 +2,12 @@ package aakaas
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 const cvQueryURL string = "/odata/aas_ocs_package/xSSDAxC_Component_Version"
@@ -49,7 +49,7 @@ func (c *ComponentVersion) Validate() error {
 	}
 	var response jsonComponentVersionValidationResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Component Version: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for Validate Component Version: "+string(body), err)
 	}
 	c.Name = response.Wrapper.Name
 	c.TechRelease = response.Wrapper.TechRelease

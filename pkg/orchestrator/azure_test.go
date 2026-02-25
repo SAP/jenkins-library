@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"errors"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/gcp"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/gcp"
+
+	"errors"
+
 	"github.com/stretchr/testify/assert"
 )
 

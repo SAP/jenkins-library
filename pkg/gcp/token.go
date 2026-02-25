@@ -3,13 +3,15 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"google.golang.org/api/option"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"google.golang.org/api/option"
+
+	"errors"
+
 	"google.golang.org/api/sts/v1"
 )
 
@@ -31,7 +33,7 @@ func getFederatedToken(projectNumber, pool, provider, oidcToken string) (string,
 	ctx := context.Background()
 	token, expiresAt, err := exchangeOIDCToken(ctx, projectNumber, pool, provider, oidcToken)
 	if err != nil {
-		return "", errors.Wrap(err, "token exchange")
+		return "", fmt.Errorf("token exchange: %w", err)
 	}
 
 	os.Setenv(gcpPubsubTokenKey, token)
@@ -47,13 +49,13 @@ func exchangeOIDCToken(ctx context.Context, projectNumber, pool, provider, oidcT
 
 	stsService, err := sts.NewService(ctx, option.WithoutAuthentication())
 	if err != nil {
-		return "", 0, errors.Wrap(err, "service not created")
+		return "", 0, fmt.Errorf("service not created: %w", err)
 	}
 
 	request := getExchangeTokenRequestData(projectNumber, pool, provider, oidcToken)
 	response, err := sts.NewV1Service(stsService).Token(request).Context(ctx).Do()
 	if err != nil {
-		return "", 0, errors.Wrap(err, "exchange failed")
+		return "", 0, fmt.Errorf("exchange failed: %w", err)
 	}
 
 	expiresAt := time.Now().Unix() + response.ExpiresIn

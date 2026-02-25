@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -127,7 +128,7 @@ func (sys *SystemInstance) GetAppById(appId string) (App, error) {
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("api/v1/apps/%v", appId), nil, nil)
 	if err != nil {
-		return app, errors.Wrapf(err, "fetching app %v failed", appId)
+		return app, fmt.Errorf("fetching app %v failed: %w", appId, err)
 	}
 
 	json.Unmarshal(data, &app)
@@ -153,7 +154,7 @@ func (sys *SystemInstance) CreateRelease(ascAppId int, version string, descripti
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		return createReleaseResponse, errors.Wrap(err, "error marshalling release payload")
+		return createReleaseResponse, fmt.Errorf("error marshalling release payload: %w", err)
 	}
 
 	header := http.Header{}
@@ -161,7 +162,7 @@ func (sys *SystemInstance) CreateRelease(ascAppId int, version string, descripti
 
 	response, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("api/v1/apps/%v/releases", ascAppId), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return createReleaseResponse, errors.Wrap(err, "creating release")
+		return createReleaseResponse, fmt.Errorf("creating release: %w", err)
 	}
 
 	json.Unmarshal(response, &createReleaseResponse)
@@ -176,7 +177,7 @@ func (sys *SystemInstance) GetJamfAppInfo(bundleId string, jamfTargetSystem stri
 
 	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("api/v1/jamf/%v/info?system=%v", bundleId, url2.QueryEscape(jamfTargetSystem)), nil, nil)
 	if err != nil {
-		return jamfAppInformationResponse, errors.Wrapf(err, "fetching jamf %v app info for %v failed", jamfTargetSystem, bundleId)
+		return jamfAppInformationResponse, fmt.Errorf("fetching jamf %v app info for %v failed: %w", jamfTargetSystem, bundleId, err)
 	}
 
 	json.Unmarshal(data, &jamfAppInformationResponse)
@@ -191,7 +192,7 @@ func (sys *SystemInstance) UploadIpa(path string, jamfAppId int, jamfTargetSyste
 	_, err := sys.client.UploadFile(url, path, "file", nil, nil, "form")
 
 	if err != nil {
-		return errors.Wrap(err, "failed to upload ipa to asc")
+		return fmt.Errorf("failed to upload ipa to asc: %w", err)
 	}
 
 	return nil

@@ -7,8 +7,9 @@ import (
 	"testing"
 
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReadManifest(t *testing.T) {

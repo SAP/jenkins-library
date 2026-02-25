@@ -13,7 +13,6 @@ import (
 
 	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/pkg/errors"
 )
 
 // CommonUtils for CPI
@@ -69,7 +68,7 @@ func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey ServiceKey, err err
 	// parse
 	err = json.Unmarshal([]byte(serviceKeyJSON), &cpiServiceKey)
 	if err != nil {
-		err = errors.Wrap(err, "error unmarshalling serviceKey")
+		err = fmt.Errorf("error unmarshalling serviceKey: %w", err)
 		return
 	}
 
@@ -94,27 +93,27 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	method := "POST"
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
 	if httpErr != nil {
-		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", method, tokenFinalURL)
+		return "", fmt.Errorf("HTTP %v request to %v failed with error: %w", method, tokenFinalURL, httpErr)
 	}
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
 
 	if resp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response")
+		return "", fmt.Errorf("did not retrieve a HTTP response")
 	}
 
 	if resp.StatusCode != 200 {
-		return "", errors.Errorf("did not retrieve a valid HTTP response code: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a valid HTTP response code: %v", httpErr)
 	}
 
 	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		return "", errors.Wrap(readErr, "HTTP response body could not be read")
+		return "", fmt.Errorf("HTTP response body could not be read: %w", readErr)
 	}
 	jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 	if parsingErr != nil {
-		return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+		return "", fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
@@ -126,7 +125,7 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 	contentDisposition := response.Header.Get("Content-Disposition")
 	disposition, params, err := mime.ParseMediaType(contentDisposition)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition %s", disposition)
+		return fmt.Errorf("failed to read filename from http response headers, Content-Disposition %s: %w", disposition, err)
 	}
 	filename := params["filename"]
 
@@ -139,13 +138,13 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 		err = os.MkdirAll(workspaceRelativePath, 0755)
 		// handling error while creating a workspce directoy for file download, if one not exist already!
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create workspace directory")
+			return fmt.Errorf("Failed to create workspace directory: %w", err)
 		}
 		zipFileName := filepath.Join(workspaceRelativePath, filename)
 		file, err := os.Create(zipFileName)
 		// handling error while creating a file in the filesystem
 		if err != nil {
-			return errors.Wrap(err, "failed to create zip archive of api proxy")
+			return fmt.Errorf("failed to create zip archive of api proxy: %w", err)
 		}
 		_, err = io.Copy(file, response.Body)
 		if err != nil {
@@ -155,10 +154,10 @@ func (httpFileDownloadRequestParameters HttpFileDownloadRequestParameters) Handl
 	}
 	responseBody, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", response.StatusCode, readErr)
 	}
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, response.StatusCode)
-	return errors.Errorf("%s, Response Status code: %v", httpFileDownloadRequestParameters.ErrMessage, response.StatusCode)
+	return fmt.Errorf("%s, Response Status code: %v", httpFileDownloadRequestParameters.ErrMessage, response.StatusCode)
 }
 
 // HandleHTTPFileUploadResponse - Handle the file upload response
@@ -170,7 +169,7 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 	}
 
 	if response == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	responseCode := response.StatusCode
 
@@ -183,12 +182,12 @@ func (httpFileUploadRequestParameters HttpFileUploadRequestParameters) HandleHTT
 	if httpErr != nil {
 		responseBody, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
-			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+			return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", response.StatusCode, readErr)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody))
+		return fmt.Errorf("HTTP %v request to %v failed with error: %v: %w", httpFileUploadRequestParameters.HTTPMethod, httpFileUploadRequestParameters.HTTPURL, string(responseBody), httpErr)
 	}
-	return errors.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
+	return fmt.Errorf("%s, Response Status code: %v", httpFileUploadRequestParameters.ErrMessage, response.StatusCode)
 }
 
 // HandleHTTPGetRequestResponse - Handle the GET Request response data
@@ -200,22 +199,22 @@ func (httpGetRequestParameters HttpFileUploadRequestParameters) HandleHTTPGetReq
 	}
 
 	if response == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	if response.StatusCode == http.StatusOK {
 		responseBody, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", response.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", response.StatusCode, readErr)
 		}
 		return string(responseBody), nil
 	}
 	if httpErr != nil {
 		responseBody, readErr := io.ReadAll(response.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", response.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", response.StatusCode, readErr)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), response.StatusCode)
-		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpGetRequestParameters.HTTPMethod, httpGetRequestParameters.HTTPURL, string(responseBody))
+		return "", fmt.Errorf("HTTP %v request to %v failed with error: %v: %w", httpGetRequestParameters.HTTPMethod, httpGetRequestParameters.HTTPURL, string(responseBody), httpErr)
 	}
-	return "", errors.Errorf("%s, Response Status code: %v", httpGetRequestParameters.ErrMessage, response.StatusCode)
+	return "", fmt.Errorf("%s, Response Status code: %v", httpGetRequestParameters.ErrMessage, response.StatusCode)
 }

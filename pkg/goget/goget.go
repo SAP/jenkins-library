@@ -2,9 +2,10 @@ package goget
 
 import (
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"net/http"
 	"strings"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
 	"github.com/antchfx/htmlquery"
 )

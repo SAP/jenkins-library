@@ -3,7 +3,6 @@ metadata:
   description: Executes Cloud Native Buildpacks.
   longDescription: |-
     Executes a Cloud Native Buildpacks build for creating Docker image(s).
-    **Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.
 spec:
   inputs:
     secrets:

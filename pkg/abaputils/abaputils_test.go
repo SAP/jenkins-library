@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"testing"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )

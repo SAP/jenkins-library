@@ -49,7 +49,6 @@ require (
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31
 	github.com/package-url/packageurl-go v0.1.1
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
-	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
@@ -125,6 +124,7 @@ require (
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

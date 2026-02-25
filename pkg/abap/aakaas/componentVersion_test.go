@@ -6,9 +6,10 @@ package aakaas
 import (
 	"testing"
 
+	"errors"
+
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

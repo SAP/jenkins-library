@@ -2,11 +2,10 @@ package npm
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -33,7 +32,7 @@ func (ignorefile *NPMIgnore) Write() error {
 	content := strings.Join(ignorefile.values, "\n")
 
 	if err := writeIgnoreFile(ignorefile.filepath, []byte(content+"\n"), 0644); err != nil {
-		return errors.Wrapf(err, "failed to write %s", ignorefile.filepath)
+		return fmt.Errorf("failed to write %s: %w", ignorefile.filepath, err)
 	}
 	return nil
 }

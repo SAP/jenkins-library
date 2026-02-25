@@ -41,7 +41,6 @@ type kanikoExecuteOptions struct {
 	CustomTLSCertificateLinks        []string                 `json:"customTlsCertificateLinks,omitempty"`
 	DockerConfigJSON                 string                   `json:"dockerConfigJSON,omitempty"`
 	DockerfilePath                   string                   `json:"dockerfilePath,omitempty"`
-	TargetArchitectures              []string                 `json:"targetArchitectures,omitempty"`
 	ReadImageDigest                  bool                     `json:"readImageDigest,omitempty"`
 	CreateBOM                        bool                     `json:"createBOM,omitempty"`
 	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
@@ -364,7 +363,6 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 	cmd.Flags().StringVar(&stepConfig.DockerfilePath, "dockerfilePath", `Dockerfile`, "Defines the location of the Dockerfile relative to the pipeline working directory.")
-	cmd.Flags().StringSliceVar(&stepConfig.TargetArchitectures, "targetArchitectures", []string{``}, "Defines the target architectures for which the build should run using OS and architecture separated by a comma. (EXPERIMENTAL)")
 	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
@@ -574,15 +572,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
 						Default:     `Dockerfile`,
-					},
-					{
-						Name:        "targetArchitectures",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     []string{``},
 					},
 					{
 						Name:        "readImageDigest",

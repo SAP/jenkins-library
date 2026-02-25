@@ -20,7 +20,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -39,13 +38,13 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 
 	sourceReader, err := utils.Open(sourcePath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open file %q", sourcePath)
+		return fmt.Errorf("failed to open file %q: %w", sourcePath, err)
 	}
 	defer sourceReader.Close()
 
 	sourceConfig, err := config.LoadFromReader(sourceReader)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read file %q", sourcePath)
+		return fmt.Errorf("failed to read file %q: %w", sourcePath, err)
 	}
 
 	var targetConfig *configfile.ConfigFile
@@ -55,12 +54,12 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 	} else {
 		targetReader, err := utils.Open(targetPath)
 		if err != nil {
-			return errors.Wrapf(err, "failed to open file %q", targetReader)
+			return fmt.Errorf("failed to open file %q: %w", targetReader, err)
 		}
 		defer targetReader.Close()
 		targetConfig, err = config.LoadFromReader(targetReader)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file %q", targetPath)
+			return fmt.Errorf("failed to read file %q: %w", targetPath, err)
 		}
 	}
 
@@ -71,7 +70,7 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 	buf := bytes.NewBuffer(nil)
 	err = targetConfig.SaveToWriter(buf)
 	if err != nil {
-		return errors.Wrapf(err, "failed to save file %q", targetPath)
+		return fmt.Errorf("failed to save file %q: %w", targetPath, err)
 	}
 
 	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
@@ -265,7 +264,7 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
 	ref, err := c.getImageRef(imageSource)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing image reference")
+		return nil, fmt.Errorf("parsing image reference: %w", err)
 	}
 
 	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))

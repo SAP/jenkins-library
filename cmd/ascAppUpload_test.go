@@ -4,13 +4,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/asc"
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/asc"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 type ascAppUploadMockUtils struct {
