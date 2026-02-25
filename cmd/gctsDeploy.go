@@ -12,6 +12,7 @@ import (
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -41,20 +42,14 @@ func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 }
 
 func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
-	maxRetries := -1
-	cookieJar, cookieErr := cookiejar.New(nil)
 	repoState := repoStateExists
 	branchRollbackRequired := false
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
+
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                maxRetries,
-		TransportSkipVerification: config.SkipSSLVerification,
-	}
+
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)
 	configurationMetadata, getConfigMetadataErr := getConfigurationMetadata(config, httpClient)
@@ -508,17 +503,9 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 }
 
 func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
-
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                -1,
-		TransportSkipVerification: config.SkipSSLVerification,
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
 	httpClient.SetOptions(clientOptions)
 

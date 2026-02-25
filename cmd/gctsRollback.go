@@ -7,6 +7,7 @@ import (
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -34,19 +35,9 @@ func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomDat
 
 func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 
-	maxRetries := -1
-
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return cookieErr
-	}
-
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                maxRetries,
-		TransportSkipVerification: config.SkipSSLVerification,
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -127,6 +118,15 @@ func getLastSuccessfullCommit(config *gctsRollbackOptions, telemetryData *teleme
 		clientOptions.Token = "Bearer " + config.GithubPersonalAccessToken
 	} else {
 		log.Entry().Warning("no GitHub personal access token was provided")
+	}
+	// Add proxy support if configured
+	if config.Proxy != "" {
+		proxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to parse proxy URL")
+		}
+		clientOptions.TransportProxy = proxyURL
+		log.Entry().Infof("Using proxy: %v", config.Proxy)
 	}
 
 	httpClient.SetOptions(clientOptions)
