@@ -99,7 +99,9 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		LoginFunc: func() error {
-			return btp.Login(loginOptions)
+			pollLoginOptions := loginOptions
+			pollLoginOptions.Silent = true
+			return btp.Login(pollLoginOptions)
 		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceBindingCreated(btp, GetServiceBindingOptions{
@@ -349,7 +351,9 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		LoginFunc: func() error {
-			return btp.Login(loginOptions)
+			pollLoginOptions := loginOptions
+			pollLoginOptions.Silent = true
+			return btp.Login(pollLoginOptions)
 		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceBindingDeleted(btp, GetServiceBindingOptions{
@@ -464,7 +468,9 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		LoginFunc: func() error {
-			return btp.Login(loginOptions)
+			pollLoginOptions := loginOptions
+			pollLoginOptions.Silent = true
+			return btp.Login(pollLoginOptions)
 		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceInstanceCreated(btp, GetServiceInstanceOptions{
@@ -670,7 +676,9 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		TimeoutSeconds: options.Timeout,
 		PollInterval:   options.PollInterval,
 		LoginFunc: func() error {
-			return btp.Login(loginOptions)
+			pollLoginOptions := loginOptions
+			pollLoginOptions.Silent = true
+			return btp.Login(pollLoginOptions)
 		},
 		CheckFunc: func() CheckResponse {
 			return IsServiceInstanceDeleted(btp, GetServiceInstanceOptions{

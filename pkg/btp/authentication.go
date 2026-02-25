@@ -37,7 +37,9 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		return errors.Wrap(errors.New(errorMsg), "failed to login to BTP")
 	}
 
-	log.Entry().Info("Logging in to BTP")
+	if !options.Silent {
+		log.Entry().Info("Logging in to BTP")
+	}
 
 	builder := NewBTPCommandBuilder().
 		WithAction("login").
@@ -59,7 +61,9 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to login to BTP")
 	}
-	log.Entry().Info("Logged in successfully to BTP.")
+	if !options.Silent {
+		log.Entry().Info("Logged in successfully to BTP.")
+	}
 	return nil
 }
 
@@ -90,4 +94,5 @@ type LoginOptions struct {
 	User             string
 	Password         string
 	IdentityProvider string
+	Silent           bool
 }
