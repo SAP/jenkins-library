@@ -29,7 +29,7 @@ func TestBTPLogin(t *testing.T) {
 		btpConfig := LoginOptions{}
 		btp := BTPUtils{Exec: m}
 		err := btp.Login(btpConfig)
-		assert.EqualError(t, err, "Failed to login to BTP: Parameters missing. Please provide: Url, Subdomain, User, Password")
+		assert.EqualError(t, err, "failed to login to BTP: parameters missing. Please provide: Url, Subdomain, User, Password")
 	})
 
 	t.Run("BTP Login: failure", func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestBTPLogin(t *testing.T) {
 
 		btp := BTPUtils{Exec: m}
 		err := btp.Login(btpConfig)
-		assert.EqualError(t, err, "Failed to login to BTP: wrong password or account does not exist")
+		assert.EqualError(t, err, "failed to login to BTP: wrong password or account does not exist")
 	})
 
 	t.Run("BTP Login: success", func(t *testing.T) {

@@ -29,7 +29,7 @@ func TestRun(t *testing.T) {
 	// Test failing command execution
 	err = m.Run([]string{"btp", "logout"})
 	assert.Error(t, err)
-	assert.Equal(t, "Logout failed", err.Error())
+	assert.Equal(t, "logout failed", err.Error())
 }
 
 func TestRunSync_Success(t *testing.T) {
@@ -73,5 +73,5 @@ func TestRunSync_Erro_On_Check(t *testing.T) {
 	})
 
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Command did not complete within the timeout period")
+	assert.Contains(t, err.Error(), "command did not complete within the timeout period")
 }
