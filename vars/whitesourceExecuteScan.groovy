@@ -13,6 +13,8 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
+    Notify.deprecatedStep(this)
+
     List credentials = [
         [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
         [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
