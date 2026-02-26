@@ -20,6 +20,7 @@ func CreateBOM(
 	requirementsFile string,
 	cycloneDxVersion string,
 	cycloneDxSchemaVersion string,
+	buildDescriptorFilePath string,
 ) error {
 	if exists, _ := existsFn(requirementsFile); exists {
 		if err := InstallRequirements(executeFn, virtualEnv, requirementsFile); err != nil {
@@ -45,6 +46,7 @@ func CreateBOM(
 		"--output-file", BOMFilename,
 		"--output-format", "XML",
 		"--spec-version", cycloneDxSchemaVersion,
+		"----pyproject", buildDescriptorFilePath,
 	)
 
 	// Add pyproject.toml only if it exists AND contains [project] metadata
