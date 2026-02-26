@@ -1,7 +1,7 @@
 metadata:
   name: shellExecute
   description: Step executes defined script
-  longDescription: Step executes defined script provided in the 'sources' parameter
+  longDescription: Step executes defined script provided in the 'sources' parameter. Please note that this step is not part of the GPP, so the only way to run it, is through an extension in the pre- or postBuild steps. To run it in a stage like a normal step, you'll have to create a custom pipeline implementation.
   errors:
     # File and permission errors
     - pattern: "No such file or directory"

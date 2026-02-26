@@ -36,7 +36,7 @@ func ShellExecuteCommand() *cobra.Command {
 	var createShellExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Step executes defined script",
-		Long:  `Step executes defined script provided in the 'sources' parameter`,
+		Long:  `Step executes defined script provided in the 'sources' parameter. Please note that this step is not part of the GPP, so the only way to run it, is through an extension in the pre- or postBuild steps. To run it in a stage like a normal step, you'll have to create a custom pipeline implementation.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
