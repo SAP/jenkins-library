@@ -281,7 +281,7 @@ type getRepoInfoResponseBody struct {
 		Branch        string `json:"branch"`
 		URL           string `json:"url"`
 		Version       string `json:"version"`
-		Objects       int    `json:"objects"`
+		Objects       any    `json:"objects"`
 		CurrentCommit string `json:"currentCommit"`
 		Connection    string `json:"connection"`
 		Config        []struct {

@@ -46,23 +46,18 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, _ *te
 
 func runAbapEnvironmentRunATCCheck(autils abaputils.AbapUtils, client piperhttp.Client, options abapEnvironmentRunATCCheckOptions, fileUtils piperutils.Files) error {
 
-	var details abaputils.ConnectionDetailsHTTP
-	cookieJar, _ := cookiejar.New(nil)
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-	}
-	client.SetOptions(clientOptions)
-
 	subOptions := convertATCOptions(&options)
 	details, err := autils.GetAbapCommunicationArrangementInfo(subOptions, "")
 	if err != nil {
 		return err
 	}
 
+	cookieJar, _ := cookiejar.New(nil)
 	credentialsOptions := piperhttp.ClientOptions{
-		Username:  details.User,
-		Password:  details.Password,
-		CookieJar: cookieJar,
+		Username:     details.User,
+		Password:     details.Password,
+		CookieJar:    cookieJar,
+		TrustedCerts: options.CertificateNames,
 	}
 	client.SetOptions(credentialsOptions)
 	details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)

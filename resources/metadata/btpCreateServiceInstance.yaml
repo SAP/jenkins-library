@@ -1,0 +1,156 @@
+metadata:
+  name: btpCreateServiceInstance
+  description: Creates a service instance in BTP
+  longDescription: |
+    Creates a service instance in SAP Business Technology Platform (BTP) using `btp create services/instance` ([documentation](https://help.sap.com/docs/BTP/btp-cli_command-documentation_btp-cli/btp-create-services-instance.html?locale=en-US&version=Cloud)).
+spec:
+  inputs:
+    secrets:
+      - name: btpCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.
+        type: jenkins
+        aliases:
+          - name: btp/credentialsId
+    params:
+      - name: url
+        type: string
+        description: BTP API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/url
+        default: "https://cli.btp.cloud.sap"
+      - name: subdomain
+        type: string
+        description: BTP subdomain (Global Account). It will be used during login.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/subdomain
+      - name: idp
+        type: string
+        description: BTP idp (Identity Provider) (optional). It will be used during login.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: btp/idp
+      - name: subaccount
+        type: string
+        description: BTP subaccount where the service instance will be created
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/subaccount
+      - name: planName
+        type: string
+        description: Plan name of the offering to use
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/planName
+      - name: offeringName
+        type: string
+        description: Offering name to be used when creating the service instance
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/offeringName
+      - name: serviceInstanceName
+        type: string
+        description: Name of the service instance to create
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: btp/instanceName
+      - name: parameters
+        type: string
+        description: Path to JSON file or JSON in-line string for a Service creation
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: btp/parameters
+      - name: timeout
+        type: int
+        description: Timeout in seconds for creation/polling
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        default: 7200
+        aliases:
+          - name: btp/timeout
+      - name: pollInterval
+        type: int
+        description: Poll interval in seconds for checking instance readiness
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        default: 30
+        aliases:
+          - name: btp/pollInterval
+      - name: user
+        type: string
+        description: User or E-Mail for BTP
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: btpCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password for BTP
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: btpCredentialsId
+            type: secret
+            param: password
+  containers:
+    - name: btp
+      image: ppiper/cf-cli:latest
