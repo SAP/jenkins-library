@@ -98,7 +98,7 @@ spec:
           - name: cloudFoundry/cfDeleteServiceKeys
       - name: cfAsync
         type: bool
-        description: Decides if the service creation runs asynchronously
+        description: Decides if the service deletion runs asynchronously
         scope:
           - GENERAL
           - PARAMETERS
