@@ -22,6 +22,7 @@ func TestCloudFoundryDeleteService(t *testing.T) {
 			Password:            "testPassword",
 			CfServiceInstance:   "testInstance",
 			CfDeleteServiceKeys: true,
+			CfAsync:             true,
 		}
 		m := make(map[string]string)
 		m["cf service-keys testInstance"] = `line1
@@ -43,8 +44,8 @@ myServiceKey2
 			assert.Equal(t, "cf", execRunner.Calls[3].Exec)
 			assert.Equal(t, []string{"service-keys", "testInstance"}, execRunner.Calls[0].Params)
 			assert.Equal(t, []string{"delete-service-key", "testInstance", "myServiceKey1", "-f"}, execRunner.Calls[1].Params)
-			assert.Equal(t, []string{"delete-service-key", "testInstance", "myServiceKey2", "-f"}, execRunner.Calls[2].Params)
-			assert.Equal(t, []string{"delete-service", "testInstance", "-f"}, execRunner.Calls[3].Params)
+			assert.Equal(t, []string{"delete-service-keys", "testInstance", "myServiceKey2", "-f"}, execRunner.Calls[2].Params)
+			assert.Equal(t, []string{"delete-service", "testInstance", "-f", "--wait"}, execRunner.Calls[3].Params)
 		}
 	})
 }

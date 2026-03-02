@@ -96,6 +96,16 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/cfDeleteServiceKeys
+      - name: cfAsync
+        type: bool
+        description: Decides if the service creation runs asynchronously
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: true
   containers:
     - name: cf
       image: ppiper/cf-cli:latest

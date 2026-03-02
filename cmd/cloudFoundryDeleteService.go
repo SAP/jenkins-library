@@ -58,7 +58,7 @@ func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c co
 		}
 	}
 
-	err := cloudFoundryDeleteServiceFunction(options.CfServiceInstance, c)
+	err := cloudFoundryDeleteServiceFunction(options, c)
 	if err != nil {
 		return err
 	}
@@ -97,6 +97,9 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c c
 	for i := 3; i <= numberOfLines-2; i++ {
 		log.Entry().WithField("Deleting Service Key", lines[i]).Info("ServiceKeyDeletion")
 		var cfDeleteServiceKeyScript = []string{"delete-service-key", options.CfServiceInstance, lines[i], "-f"}
+		if !options.CfAsync {
+			cfDeleteServiceKeyScript = append(cfDeleteServiceKeyScript, "--wait")
+		}
 		err := c.RunExecutable("cf", cfDeleteServiceKeyScript...)
 		if err != nil {
 			return fmt.Errorf("Failed to Delete Service Key: %w", err)
@@ -106,10 +109,14 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c c
 	return nil
 }
 
-func cloudFoundryDeleteServiceFunction(service string, c command.ExecRunner) error {
-	var cfdeleteServiceScript = []string{"delete-service", service, "-f"}
+func cloudFoundryDeleteServiceFunction(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
+	var cfdeleteServiceScript = []string{"delete-service", options.CfServiceInstance, "-f"}
 
-	log.Entry().WithField("cfService", service).Info("Deleting the requested Service")
+	if !options.CfAsync {
+		cfdeleteServiceScript = append(cfdeleteServiceScript, "--wait")
+	}
+
+	log.Entry().WithField("cfService", options.CfServiceInstance).Info("Deleting the requested Service")
 
 	err := c.RunExecutable("cf", cfdeleteServiceScript...)
 

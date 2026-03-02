@@ -24,6 +24,7 @@ type cloudFoundryDeleteServiceOptions struct {
 	CfSpace             string `json:"cfSpace,omitempty"`
 	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
 	CfDeleteServiceKeys bool   `json:"cfDeleteServiceKeys,omitempty"`
+	CfAsync             bool   `json:"cfAsync,omitempty"`
 }
 
 // CloudFoundryDeleteServiceCommand DeleteCloudFoundryService
@@ -168,6 +169,7 @@ func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
 	cmd.Flags().BoolVar(&stepConfig.CfDeleteServiceKeys, "cfDeleteServiceKeys", false, "Parameter to force deletion of Cloud Foundry Service Keys")
+	cmd.Flags().BoolVar(&stepConfig.CfAsync, "cfAsync", true, "Decides if the service creation runs asynchronously")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -277,6 +279,15 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys"}},
 						Default:     false,
+					},
+					{
+						Name:        "cfAsync",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 				},
 			},
