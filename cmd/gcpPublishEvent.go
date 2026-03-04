@@ -13,9 +13,9 @@ import (
 
 func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
 	vaultClient := config.GlobalVaultClient()
-	var tokenProvider gcp.OIDCTokenProvider
-	if vaultClient != nil {
-		tokenProvider = vaultClient.GetOIDCTokenByValidation
+	if vaultClient == nil {
+		log.Entry().Info("Vault not configured, event publishing will be disabled")
+		return
 	}
 
 	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
@@ -25,7 +25,7 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 	}
 
 	publisher := gcp.NewGcpPubsubClient(
-		tokenProvider,
+		vaultClient.GetOIDCTokenByValidation,
 		cfg.GcpProjectNumber,
 		cfg.GcpWorkloadIDentityPool,
 		cfg.GcpWorkloadIDentityPoolProvider,
