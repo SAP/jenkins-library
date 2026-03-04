@@ -23,7 +23,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 		Exec: &c,
 	}
 
-	err := runCloudFoundryDeleteService(options, &c, &cfUtils)
+	err := runCloudFoundryDeleteService(&options, &c, &cfUtils)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -31,7 +31,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	}
 }
 
-func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) (returnedError error) {
+func runCloudFoundryDeleteService(options *cloudFoundryDeleteServiceOptions, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) (returnedError error) {
 
 	config := cloudfoundry.LoginOptions{
 		CfAPIEndpoint: options.CfAPIEndpoint,
@@ -66,7 +66,7 @@ func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c co
 	return returnedError
 }
 
-func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
+func cloudFoundryDeleteServiceKeys(options *cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
 
 	log.Entry().Info("Deleting inherent Service Keys")
 
@@ -109,7 +109,7 @@ func cloudFoundryDeleteServiceKeys(options cloudFoundryDeleteServiceOptions, c c
 	return nil
 }
 
-func cloudFoundryDeleteServiceFunction(options cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
+func cloudFoundryDeleteServiceFunction(options *cloudFoundryDeleteServiceOptions, c command.ExecRunner) error {
 	var cfdeleteServiceScript = []string{"delete-service", options.CfServiceInstance, "-f"}
 
 	if !options.CfAsync {
