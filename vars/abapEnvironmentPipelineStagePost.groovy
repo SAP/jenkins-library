@@ -31,7 +31,6 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('confirmDeletion', false)
         .addIfEmpty('debug', false)
-        .addIfEmpty('cfAsync', false)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {

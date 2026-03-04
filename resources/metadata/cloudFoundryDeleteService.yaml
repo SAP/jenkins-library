@@ -105,7 +105,7 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
-        default: false
+        default: true
   containers:
     - name: cf
       image: ppiper/cf-cli:latest
