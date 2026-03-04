@@ -36,7 +36,7 @@ myServiceKey2
 		}
 		cfUtils := cloudfoundry.CfUtilsMock{}
 
-		err := runCloudFoundryDeleteService(config, &execRunner, &cfUtils)
+		err := runCloudFoundryDeleteService(&config, &execRunner, &cfUtils)
 		if assert.NoError(t, err) {
 			assert.Equal(t, "cf", execRunner.Calls[0].Exec)
 			assert.Equal(t, "cf", execRunner.Calls[1].Exec)
