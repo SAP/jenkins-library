@@ -51,7 +51,7 @@ func (u *UnknownOrchestratorConfigProvider) JobName() string {
 
 func (u *UnknownOrchestratorConfigProvider) OrchestratorType() string {
 	log.Entry().Warning(unknownOrchestratorWarning)
-	return "Unknown"
+	return OrchestratorTypeUnknown
 }
 
 func (u *UnknownOrchestratorConfigProvider) FullLogs() ([]byte, error) {

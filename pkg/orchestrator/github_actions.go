@@ -74,7 +74,7 @@ func (g *githubActionsConfigProvider) OrchestratorVersion() string {
 }
 
 func (g *githubActionsConfigProvider) OrchestratorType() string {
-	return "GitHubActions"
+	return OrchestratorTypeGitHubActions
 }
 
 // BuildStatus returns current run status by looking at all jobs of the current workflow run

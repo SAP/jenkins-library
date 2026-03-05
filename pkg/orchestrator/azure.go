@@ -97,7 +97,7 @@ func (a *azureDevopsConfigProvider) OrchestratorVersion() string {
 
 // OrchestratorType returns the orchestrator name e.g. Azure/GitHubActions/Jenkins
 func (a *azureDevopsConfigProvider) OrchestratorType() string {
-	return "Azure"
+	return OrchestratorTypeAzure
 }
 
 // BuildStatus returns status of the build. Return variables are aligned with Jenkins build statuses.
