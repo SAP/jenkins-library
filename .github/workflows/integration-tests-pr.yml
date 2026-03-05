@@ -42,7 +42,7 @@ jobs:
           echo "branch_name=$(curl ${{ steps.pull_request.outputs.pull_request }} |
           jq '.head.ref' |
           sed 's/\"//g')" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: ${{ steps.repository.outputs.repository }}
           ref: ${{ steps.branch_name.outputs.branch_name }}
@@ -71,7 +71,7 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v5
@@ -95,7 +95,7 @@ jobs:
       - start
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v5
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.start.outputs.sha }}
       - uses: actions/setup-go@v5
