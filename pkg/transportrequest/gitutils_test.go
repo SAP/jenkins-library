@@ -4,6 +4,9 @@
 package transportrequest
 
 import (
+	"io"
+	"testing"
+
 	pipergit "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
@@ -12,8 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"testing"
 )
 
 type commitIteratorMock struct {

@@ -8,8 +8,9 @@ import (
 	"io"
 	"net/http"
 
+	"errors"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/pkg/errors"
 )
 
 type HttpMockAPIM struct {

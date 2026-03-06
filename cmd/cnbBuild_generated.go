@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -140,8 +140,7 @@ func CnbBuildCommand() *cobra.Command {
 	var createCnbBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes Cloud Native Buildpacks.",
-		Long: `Executes a Cloud Native Buildpacks build for creating Docker image(s).
-**Important:** Please note, that the cnbBuild step is in **beta** state, and there could be breaking changes before we remove the beta notice.`,
+		Long:  `Executes a Cloud Native Buildpacks build for creating Docker image(s).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -203,8 +202,10 @@ func CnbBuildCommand() *cobra.Command {
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -235,16 +236,16 @@ func CnbBuildCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -281,7 +282,7 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.PreserveFiles, "preserveFiles", []string{}, "List of globs, for keeping build results in the Jenkins workspace.\n\n*Note*: globs will be calculated relative to the [path](#path) property.\n")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
-	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.38.0/syft_1.38.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 	cmd.Flags().StringVar(&stepConfig.RunImage, "runImage", os.Getenv("PIPER_runImage"), "Base image from which application images are built. Will be defaulted to the image provided by the builder. See also https://buildpacks.io/docs/for-app-developers/concepts/base-images/.")
 	cmd.Flags().StringVar(&stepConfig.DefaultProcess, "defaultProcess", os.Getenv("PIPER_defaultProcess"), "Process that should be started by default. See https://buildpacks.io/docs/app-developer-guide/run-an-app/")
 
@@ -538,7 +539,7 @@ func cnbBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz`,
+						Default:     `https://github.com/anchore/syft/releases/download/v1.38.0/syft_1.38.0_linux_amd64.tar.gz`,
 					},
 					{
 						Name:        "runImage",

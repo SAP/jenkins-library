@@ -5,14 +5,15 @@ package ans
 
 import (
 	"encoding/json"
-	"github.com/SAP/jenkins-library/pkg/xsuaa"
-	"github.com/jarcoal/httpmock"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/xsuaa"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type Examinee struct {

@@ -95,7 +95,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	if config.Publish {
 		if len(config.BuildDescriptorList) > 0 {
-			err = npmExecutor.PublishAllPackages(config.BuildDescriptorList, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish, &buildCoordinates)
+			err = npmExecutor.PublishAllPackages(config.BuildDescriptorList, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PublishTag, config.PackBeforePublish, &buildCoordinates)
 			if err != nil {
 				return err
 			}
@@ -105,7 +105,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 				return err
 			}
 
-			err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PackBeforePublish, &buildCoordinates)
+			err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword, config.PublishTag, config.PackBeforePublish, &buildCoordinates)
 			if err != nil {
 				return err
 			}

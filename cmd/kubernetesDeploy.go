@@ -18,7 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
+
 	"helm.sh/helm/v3/pkg/cli/values"
 )
 
@@ -81,7 +81,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 	helmValues, err := defineDeploymentValues(config, containerRegistry)
 	if err != nil {
-		return errors.Wrap(err, "failed to process deployment values")
+		return fmt.Errorf("failed to process deployment values: %w", err)
 	}
 
 	helmLogFields := map[string]interface{}{}
@@ -115,6 +115,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	} else {
 		var dockerRegistrySecret bytes.Buffer
 		utils.Stdout(&dockerRegistrySecret)
+		config.InsecureSkipTLSVerify = true // Currently CA certificate handling is not supported for helm deployments
 		err, kubeSecretParams := defineKubeSecretParams(config, containerRegistry, utils)
 		if err != nil {
 			log.Entry().WithError(err).Fatal("parameter definition for creating registry secret failed")
@@ -168,7 +169,7 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 
 	err = helmValues.mapValues()
 	if err != nil {
-		return errors.Wrap(err, "failed to map values using 'valuesMapping' configuration")
+		return fmt.Errorf("failed to map values using 'valuesMapping' configuration: %w", err)
 	}
 
 	upgradeParams = append(
@@ -263,8 +264,20 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	}
 
 	kubeParams := []string{
-		"--insecure-skip-tls-verify=true",
 		fmt.Sprintf("--namespace=%v", config.Namespace),
+	}
+
+	log.Entry().Debugf("Running kubectl with InsecureSkipTLSVerify: %v", config.InsecureSkipTLSVerify)
+
+	// Add CA certificate if provided
+	if len(config.CACertificate) > 0 && !config.InsecureSkipTLSVerify {
+		kubeParams = append(kubeParams, fmt.Sprintf("--certificate-authority=%v", config.CACertificate))
+		log.Entry().Debugf("Running kubectl with CACertificate: %v", config.CACertificate)
+	}
+
+	kubeParams = append(kubeParams, "--insecure-skip-tls-verify="+strconv.FormatBool(config.InsecureSkipTLSVerify))
+	if config.InsecureSkipTLSVerify {
+		log.Entry().Warn("Skipping TLS verification check. Please note that this action poses security concerns.")
 	}
 
 	if len(config.KubeConfig) > 0 {
@@ -314,6 +327,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		}
 
 		kubeSecretApplyParams := []string{"apply", "-f", filepath.Join(tmpFolder, "secret.json")}
+		kubeSecretApplyParams = append(kubeSecretApplyParams, kubeParams...)
 		if err := utils.RunExecutable("kubectl", kubeSecretApplyParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Creating container registry secret failed")
 		}
@@ -327,11 +341,11 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 
 	values, err := defineDeploymentValues(config, containerRegistry)
 	if err != nil {
-		return errors.Wrap(err, "failed to process deployment values")
+		return fmt.Errorf("failed to process deployment values: %w", err)
 	}
 	err = values.mapValues()
 	if err != nil {
-		return errors.Wrap(err, "failed to map values using 'valuesMapping' configuration")
+		return fmt.Errorf("failed to map values using 'valuesMapping' configuration: %w", err)
 	}
 
 	re := regexp.MustCompile(`image:[ ]*<image-name>`)
@@ -350,16 +364,16 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	buf := bytes.NewBufferString("")
 	tpl, err := template.New("appTemplate").Parse(string(appTemplate))
 	if err != nil {
-		return errors.Wrap(err, "failed to parse app-template file")
+		return fmt.Errorf("failed to parse app-template file: %w", err)
 	}
 	err = tpl.Execute(buf, values.asHelmValues())
 	if err != nil {
-		return errors.Wrap(err, "failed to render app-template file")
+		return fmt.Errorf("failed to render app-template file: %w", err)
 	}
 
 	err = utils.FileWrite(config.AppTemplate, buf.Bytes(), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "Error when updating appTemplate '%v'", config.AppTemplate)
+		return fmt.Errorf("Error when updating appTemplate '%v': %w", config.AppTemplate, err)
 	}
 
 	kubeParams = append(kubeParams, config.DeployCommand, "--filename", config.AppTemplate)
@@ -525,7 +539,6 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 		config.ContainerRegistrySecret,
 		fmt.Sprintf("--from-file=.dockerconfigjson=%v", targetPath),
 		"--type=kubernetes.io/dockerconfigjson",
-		"--insecure-skip-tls-verify=true",
 		"--dry-run=client",
 		"--output=json",
 	}

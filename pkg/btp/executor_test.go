@@ -1,0 +1,77 @@
+package btp
+
+import (
+	"bytes"
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestRun(t *testing.T) {
+	m := &BtpExecutorMock{
+		StdoutReturn: map[string]string{
+			"btp login": "Login successful",
+		},
+		ShouldFailOnCommand: map[string]error{
+			"btp logout": errors.New("logout failed"),
+		},
+	}
+
+	m.Stdout(new(bytes.Buffer))
+	m.Stderr(new(bytes.Buffer))
+
+	// Test successful command execution
+	err := m.Run([]string{"btp", "login"})
+	assert.NoError(t, err)
+	assert.Contains(t, m.GetStdoutValue(), "Login successful")
+
+	// Test failing command execution
+	err = m.Run([]string{"btp", "logout"})
+	assert.Error(t, err)
+	assert.Equal(t, "logout failed", err.Error())
+}
+
+func TestRunSync_Success(t *testing.T) {
+	m := &BtpExecutorMock{
+		StdoutReturn: map[string]string{
+			"btp check": `OK`,
+		},
+	}
+
+	m.Stdout(new(bytes.Buffer))
+
+	// Test successful polling execution
+	err := m.RunSync(RunSyncOptions{
+		CmdScript:      []string{"btp", "deploy"},
+		TimeoutSeconds: 1,
+		PollInterval:   30,
+		CheckFunc: func() CheckResponse {
+			return CheckResponse{successful: true, done: true} // Simulate a successful check
+		},
+	})
+	assert.NoError(t, err)
+}
+
+func TestRunSync_Erro_On_Check(t *testing.T) {
+	m := &BtpExecutorMock{
+		ShouldFailOnCommand: map[string]error{
+			"btp check": errors.New("bad Request"),
+		},
+	}
+
+	m.Stdout(new(bytes.Buffer))
+
+	timeoutMin := 1
+	err := m.RunSync(RunSyncOptions{
+		CmdScript:      []string{"btp", "deploy"},
+		TimeoutSeconds: timeoutMin,
+		PollInterval:   20,
+		CheckFunc: func() CheckResponse {
+			return CheckResponse{successful: false, done: false}
+		},
+	})
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "command did not complete within the timeout period")
+}

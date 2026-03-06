@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -32,6 +32,7 @@ type npmExecuteScriptsOptions struct {
 	BuildDescriptorList          []string `json:"buildDescriptorList,omitempty"`
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
 	Publish                      bool     `json:"publish,omitempty"`
+	PublishTag                   string   `json:"publishTag,omitempty"`
 	RepositoryURL                string   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword           string   `json:"repositoryPassword,omitempty"`
 	RepositoryUsername           string   `json:"repositoryUsername,omitempty"`
@@ -204,8 +205,10 @@ If your build has scoped/unscoped dependencies from a private repository you can
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -236,16 +239,16 @@ If your build has scoped/unscoped dependencies from a private repository you can
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -272,6 +275,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorList, "buildDescriptorList", []string{}, "List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Create a BOM xml using CycloneDX.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures npm to publish the artifact to a repository.")
+	cmd.Flags().StringVar(&stepConfig.PublishTag, "publishTag", os.Getenv("PIPER_publishTag"), "Value of --tag flag that is passed to `npm publish` command. If not specified, it will be determined automatically depending on semver2 version (e.g., 1.0.0-202601012233 will be 'prerelease', 1.0.0 will be 'latest').")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "Url to the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the repository to which the project artifacts should be published.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for the repository to which the project artifacts should be published.")
@@ -426,6 +430,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "publishTag",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_publishTag"),
+					},
+					{
 						Name: "repositoryUrl",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -535,7 +548,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:lts-bookworm"},
+				{Name: "node", Image: "node:24-bookworm"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

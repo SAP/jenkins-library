@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *telemetry.CustomData) {
@@ -51,7 +52,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, c
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "")
 	if err != nil {
-		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
+		return fmt.Errorf("Parameters for the ABAP Connection not available: %w", err)
 	}
 	connectionDetails.CertificateNames = options.CertificateNames
 
@@ -101,12 +102,12 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 
 	api, errGetAPI := apiManager.GetAPI(con, repo)
 	if errGetAPI != nil {
-		return errors.Wrap(errGetAPI, "Could not initialize the connection to the system")
+		return fmt.Errorf("Could not initialize the connection to the system: %w", errGetAPI)
 	}
 
 	err = api.Pull()
 	if err != nil {
-		return errors.Wrap(err, errorString)
+		return fmt.Errorf("%s: %w", errorString, err)
 	}
 
 	// set correct filename for archive file
@@ -114,7 +115,7 @@ func handlePull(repo abaputils.Repository, con abaputils.ConnectionDetailsHTTP, 
 	// Polling the status of the repository import on the ABAP Environment system
 	status, errorPollEntity := abaputils.PollEntity(api, apiManager.GetPollIntervall(), logOutputManager)
 	if errorPollEntity != nil {
-		return errors.Wrap(errorPollEntity, errorString)
+		return fmt.Errorf("%s: %w", errorString, errorPollEntity)
 	}
 	if status == "E" {
 		return errors.New(errorString)

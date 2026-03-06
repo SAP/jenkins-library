@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -9,7 +10,6 @@ import (
 	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type jenkinsConfigProvider struct {
@@ -128,14 +128,14 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 
 	response, err := j.client.GetRequest(URL, nil, nil)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "could not GET Jenkins log file %v", err)
+		return []byte{}, fmt.Errorf("could not GET Jenkins log file %v: %w", err, err)
 	} else if response.StatusCode != 200 {
 		log.Entry().Error("response code !=200 could not get log information from Jenkins, returning with empty log.")
 		return []byte{}, nil
 	}
 	logFile, err := io.ReadAll(response.Body)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "could not read Jenkins log file from request %v", err)
+		return []byte{}, fmt.Errorf("could not read Jenkins log file from request %v: %w", err, err)
 	}
 	defer response.Body.Close()
 	return logFile, nil

@@ -1,0 +1,12 @@
+{
+  "name": "@piper/test-stable",
+  "version": "1.0.0",
+  "description": "Test package for stable version publishing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Test passed\""
+  },
+  "keywords": ["test"],
+  "author": "Piper",
+  "license": "Apache-2.0"
+}

@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Docker defines an artifact based on a Dockerfile
@@ -57,7 +55,7 @@ func (d *Docker) GetVersion() (string, error) {
 		d.initDockerfile()
 		d.content, err = d.readFile(d.path)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to read file '%v'", d.path)
+			return "", fmt.Errorf("failed to read file '%v': %w", d.path, err)
 		}
 		version := d.versionFromBaseImageTag()
 		if len(version) == 0 {
@@ -83,7 +81,7 @@ func (d *Docker) GetVersion() (string, error) {
 		d.initDockerfile()
 		d.content, err = d.readFile(d.path)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to read file '%v'", d.path)
+			return "", fmt.Errorf("failed to read file '%v': %w", d.path, err)
 		}
 		version := d.versionFromEnv(d.versionSource)
 		if len(version) == 0 {
@@ -109,7 +107,7 @@ func (d *Docker) SetVersion(version string) error {
 
 	err := d.writeFile(filepath.Join(dir, "VERSION"), []byte(version), 0700)
 	if err != nil {
-		return errors.Wrap(err, "failed to write file 'VERSION'")
+		return fmt.Errorf("failed to write file 'VERSION': %w", err)
 	}
 
 	return nil

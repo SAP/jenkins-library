@@ -49,6 +49,8 @@ func TestNpmPublish(t *testing.T) {
 
 		tarballPath string
 
+		publishTag string
+
 		err string
 	}
 
@@ -61,6 +63,7 @@ func TestNpmPublish(t *testing.T) {
 		registryURL        string
 		registryUser       string
 		registryPassword   string
+		publishTag         string
 		packBeforePublish  bool
 
 		wants wants
@@ -521,6 +524,45 @@ func TestNpmPublish(t *testing.T) {
 				tarballPath:       "/sub/package.tgz",
 			},
 		},
+		{
+			name: "success - no publishTag provided for prerelease",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "0.0.2-20251029013231"}`,
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+
+			wants: wants{
+				publishConfigPath: `\.piperNpmrc`,
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishTag:        "prerelease",
+			},
+		},
+		{
+			name: "success - with different publishTag",
+
+			files: map[string]string{
+				"package.json": `{"name": "piper-project", "version": "0.0.2-20251029013231"}`,
+			},
+
+			packageDescriptors: []string{"package.json"},
+
+			registryURL:      "https://my.private.npm.registry/",
+			registryUser:     "ThisIsTheUser",
+			registryPassword: "AndHereIsThePassword",
+			publishTag:       "next",
+
+			wants: wants{
+				publishConfigPath: `\.piperNpmrc`,
+				publishConfig:     "registry=https://my.private.npm.registry/\n//my.private.npm.registry/:_auth=VGhpc0lzVGhlVXNlcjpBbmRIZXJlSXNUaGVQYXNzd29yZA==\nalways-auth=true\n",
+				publishTag:        "next",
+			},
+		},
 		// TODO multiple projects
 	}
 
@@ -548,7 +590,7 @@ func TestNpmPublish(t *testing.T) {
 			}
 
 			coordinates := []versioning.Coordinates{}
-			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.packBeforePublish, &coordinates)
+			err := exec.PublishAllPackages(test.packageDescriptors, test.registryURL, test.registryUser, test.registryPassword, test.publishTag, test.packBeforePublish, &coordinates)
 
 			if len(test.wants.err) == 0 && assert.NoError(t, err) {
 				if assert.NotEmpty(t, utils.execRunner.Calls) {
@@ -578,10 +620,41 @@ func TestNpmPublish(t *testing.T) {
 							assert.Equal(t, test.wants.publishConfig, string(effectiveConfig))
 						}
 					}
+
+					if test.wants.publishTag != "" {
+						assert.Contains(t, publishCmd.Params, "--tag")
+						tagValue := publishCmd.Params[slices.Index(publishCmd.Params, "--tag")+1]
+						assert.Equal(t, test.wants.publishTag, tagValue)
+					}
 				}
 			} else {
 				assert.EqualError(t, err, test.wants.err)
 			}
+		})
+	}
+}
+
+func TestIsPrerelease(t *testing.T) {
+	tests := []struct {
+		name     string
+		version  string
+		expected bool
+	}{
+		{"prerelease with timestamp", "0.0.2-20251029013231", true},
+		{"prerelease with timestamp and git hash", "0.0.2-20251029013231+a28cbc5623de32dff88f64cfd8b0795f57050d0c", true},
+		{"prerelease beta", "1.0.0-beta.1", true},
+		{"prerelease alpha", "2.0.0-alpha.3", true},
+		{"prerelease rc", "3.5.0-rc.2", true},
+		{"stable version", "1.0.0", false},
+		{"stable version with patch", "1.2.3", false},
+		{"version with build metadata", "1.0.0+build123", false},
+		{"prerelease with build metadata", "1.0.0-beta+build", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isPrerelease(tt.version)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }

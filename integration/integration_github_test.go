@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,12 +28,18 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 	}
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
-		owner = "OliverNocon"
+		owner = "piper-test"
 	}
 	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
+	host := os.Getenv("PIPER_INTEGRATION_GITHUB_HOST")
+	if len(host) == 0 {
+		t.Fatal("No GitHub host maintained")
+	}
+	apiUrl := fmt.Sprintf("https://%s/api/v3", host)
+	uploadUrl := fmt.Sprintf("https://%s/api/uploads", host)
 	dir := t.TempDir()
 
 	testAsset := filepath.Join(dir, "test.txt")
@@ -58,6 +65,10 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			repository,
 			"--token",
 			token,
+			"--apiUrl",
+			apiUrl,
+			"--uploadUrl",
+			uploadUrl,
 			"--assetPath",
 			testAsset,
 			"--noTelemetry",
@@ -82,6 +93,10 @@ func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {
 			repository,
 			"--token",
 			token,
+			"--apiUrl",
+			apiUrl,
+			"--uploadUrl",
+			uploadUrl,
 			"--assetPathList",
 			testAsset,
 			"--assetPathList",
@@ -104,15 +119,23 @@ func TestGitHubIntegrationFetchCommitStatistics(t *testing.T) {
 
 	owner := os.Getenv("PIPER_INTEGRATION_GITHUB_OWNER")
 	if len(owner) == 0 {
-		owner = "OliverNocon"
+		owner = "piper-test"
 	}
+
 	repository := os.Getenv("PIPER_INTEGRATION_GITHUB_REPOSITORY")
 	if len(repository) == 0 {
 		repository = "piper-integration"
 	}
+
+	host := os.Getenv("PIPER_INTEGRATION_GITHUB_HOST")
+	if len(host) == 0 {
+		t.Fatal("No GitHub host maintained")
+	}
+	apiUrl := fmt.Sprintf("https://%s/api/v3", host)
+
 	// test
 	result, err := pipergithub.FetchCommitStatistics(&pipergithub.FetchCommitOptions{
-		Owner: owner, Repository: repository, APIURL: "https://api.github.com", Token: token, SHA: "3601ed6"})
+		Owner: owner, Repository: repository, APIURL: apiUrl, Token: token, SHA: "eba66f2"})
 
 	// assert
 	assert.NoError(t, err)

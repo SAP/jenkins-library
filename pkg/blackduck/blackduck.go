@@ -13,7 +13,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/package-url/packageurl-go"
-	"github.com/pkg/errors"
 )
 
 // ReportsDirectory defines the subfolder for the BlackDuck reports which are generated
@@ -295,12 +294,12 @@ func (b *Client) getProjectByPagination(projectName string, offset int) (*Projec
 	}
 	respBody, err := b.sendRequest("GET", "/api/projects", queryParams, nil, headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project '%v'", projectName)
+		return nil, fmt.Errorf("failed to get project '%v': %w", projectName, err)
 	}
 	projects := Projects{}
 	err = json.Unmarshal(respBody, &projects)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve details for project '%v'", projectName)
+		return nil, fmt.Errorf("failed to retrieve details for project '%v': %w", projectName, err)
 	} else if projects.TotalCount == 0 {
 		return nil, fmt.Errorf("project '%v' not found", projectName)
 	}
@@ -333,13 +332,13 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	//More than 100 project versions is currently not supported/recommended by BlackDuck
 	respBody, err := b.sendRequest("GET", versionPath, map[string]string{"offset": "0", "limit": "100"}, nil, headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project version '%v:%v'", projectName, projectVersion)
+		return nil, fmt.Errorf("failed to get project version '%v:%v': %w", projectName, projectVersion, err)
 	}
 
 	projectVersions := ProjectVersions{}
 	err = json.Unmarshal(respBody, &projectVersions)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve details for project version '%v:%v'", projectName, projectVersion)
+		return nil, fmt.Errorf("failed to retrieve details for project version '%v:%v': %w", projectName, projectVersion, err)
 	} else if projectVersions.TotalCount == 0 {
 		return nil, fmt.Errorf("project version '%v:%v' not found", projectName, projectVersion)
 	}
@@ -386,14 +385,14 @@ func (b *Client) GetComponents(projectName, versionName string) (*Components, er
 
 	respBody, err := b.sendRequest("GET", componentsPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get components list for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("Failed to get components list for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	components := Components{}
 	err = json.Unmarshal(respBody, &components)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("failed to retrieve component details for project version '%v:%v': %w", projectName, versionName, err)
 	} else if components.TotalCount == 0 {
 		return nil, fmt.Errorf("No Components found for project version '%v:%v'", projectName, versionName)
 	}
@@ -420,14 +419,14 @@ func (b *Client) GetComponentsWithLicensePolicyRule(projectName, versionName str
 
 	respBody, err := b.sendRequest("GET", componentsPath, map[string]string{"offset": "0", "limit": "999", "filter": "policyCategory:license"}, nil, headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get components list for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("Failed to get components list for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	components := Components{}
 	err = json.Unmarshal(respBody, &components)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("failed to retrieve component details for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	//Just return the components, the details of the components are not necessary
@@ -467,13 +466,13 @@ func (b *Client) GetVulnerabilities(projectName, versionName string) (*Vulnerabi
 
 	respBody, err := b.sendRequest("GET", vulnerableComponentsPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Vulnerabilties for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("Failed to get Vulnerabilties for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	vulnerabilities := Vulnerabilities{}
 	err = json.Unmarshal(respBody, &vulnerabilities)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve Vulnerability details for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("failed to retrieve Vulnerability details for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	return &vulnerabilities, nil
@@ -498,13 +497,13 @@ func (b *Client) GetPolicyStatus(projectName, versionName string) (*PolicyStatus
 
 	respBody, err := b.sendRequest("GET", policyStatusPath, map[string]string{}, nil, headers)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get Policy Violation status for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("Failed to get Policy Violation status for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	policyStatus := PolicyStatus{}
 	err = json.Unmarshal(respBody, &policyStatus)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve Policy violation details for project version '%v:%v'", projectName, versionName)
+		return nil, fmt.Errorf("failed to retrieve Policy violation details for project version '%v:%v': %w", projectName, versionName, err)
 	}
 
 	return &policyStatus, nil
@@ -517,11 +516,11 @@ func (b *Client) authenticate() error {
 	b.lastAuthentication = time.Now()
 	respBody, err := b.sendRequest(http.MethodPost, "/api/tokens/authenticate", map[string]string{}, nil, headers)
 	if err != nil {
-		return errors.Wrap(err, "authentication to BlackDuck API failed")
+		return fmt.Errorf("authentication to BlackDuck API failed: %w", err)
 	}
 	err = json.Unmarshal(respBody, b)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse BlackDuck response")
+		return fmt.Errorf("failed to parse BlackDuck response: %w", err)
 	}
 	return nil
 }
@@ -531,7 +530,7 @@ func (b *Client) sendRequest(method, apiEndpoint string, params map[string]strin
 
 	blackDuckAPIUrl, err := b.apiURL(apiEndpoint)
 	if err != nil {
-		return responseBody, errors.Wrap(err, "failed to get api url")
+		return responseBody, fmt.Errorf("failed to get api url: %w", err)
 	}
 
 	q := url.Values{}
@@ -546,12 +545,12 @@ func (b *Client) sendRequest(method, apiEndpoint string, params map[string]strin
 
 	response, err := b.httpClient.SendRequest(method, blackDuckAPIUrl.String(), nil, header, nil)
 	if err != nil {
-		return responseBody, errors.Wrap(err, "request to BlackDuck API failed")
+		return responseBody, fmt.Errorf("request to BlackDuck API failed: %w", err)
 	}
 
 	responseBody, err = io.ReadAll(response.Body)
 	if err != nil {
-		return responseBody, errors.Wrap(err, "reading BlackDuck response failed")
+		return responseBody, fmt.Errorf("reading BlackDuck response failed: %w", err)
 	}
 	return responseBody, nil
 }

@@ -2,12 +2,12 @@ package contrast
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type ContrastHttpClient interface {
@@ -29,22 +29,22 @@ func NewContrastHttpClient(apiKey, auth string) *ContrastHttpClientInstance {
 func (c *ContrastHttpClientInstance) ExecuteRequest(url string, params map[string]string, dest interface{}) error {
 	req, err := newHttpRequest(url, c.apiKey, c.auth, params)
 	if err != nil {
-		return errors.Wrap(err, "failed to create request")
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	log.Entry().Debugf("GET call request to: %s", url)
 	response, err := performRequest(req)
 	if response != nil && response.StatusCode != http.StatusOK {
-		return errors.Errorf("failed to perform request, status code: %v and status %v", response.StatusCode, response.Status)
+		return fmt.Errorf("failed to perform request, status code: %v and status %v", response.StatusCode, response.Status)
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "failed to perform request")
+		return fmt.Errorf("failed to perform request: %w", err)
 	}
 	defer response.Body.Close()
 	err = parseJsonResponse(response, dest)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse JSON response")
+		return fmt.Errorf("failed to parse JSON response: %w", err)
 	}
 	return nil
 }

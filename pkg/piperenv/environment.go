@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 // This file contains functions used to read/write pipeline environment data from/to disk.
@@ -26,7 +25,7 @@ func SetResourceParameter(path, resourceName, paramName string, value interface{
 		paramPath += ".json"
 		content, err = json.Marshal(typedValue)
 		if err != nil {
-			return errors.Wrapf(err, "failed to marshal resource parameter value %v", typedValue)
+			return fmt.Errorf("failed to marshal resource parameter value %v: %w", typedValue, err)
 		}
 	}
 	return writeToDisk(paramPath, content)

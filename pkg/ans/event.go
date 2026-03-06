@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,7 +56,7 @@ type Resource struct {
 // MergeWithJSON unmarshalls an ANS Event JSON string and merges it with the existing receiver Event
 func (event *Event) MergeWithJSON(eventJSON []byte) (err error) {
 	if err = strictUnmarshal(eventJSON, &event); err != nil {
-		return errors.Wrapf(err, "error unmarshalling ANS event from JSON string %q", eventJSON)
+		return fmt.Errorf("error unmarshalling ANS event from JSON string %q: %w", eventJSON, err)
 	}
 	return
 }
@@ -69,7 +70,7 @@ func (event *Event) Validate() (err error) {
 		errs := err.(validator.ValidationErrors)
 		err = fmt.Errorf("event JSON failed the validation")
 		for _, fieldError := range errs.Translate(translator) {
-			err = errors.Wrap(err, fieldError)
+			err = fmt.Errorf("%s: %w", fieldError, err)
 		}
 	}
 	return

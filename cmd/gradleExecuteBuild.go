@@ -235,6 +235,7 @@ func createBOM(config *gradleExecuteBuildOptions, utils gradleExecuteBuildUtils)
 		log.Entry().WithError(err).Errorf("failed to create BOM: %v", err)
 		return err
 	}
+
 	return nil
 }
 

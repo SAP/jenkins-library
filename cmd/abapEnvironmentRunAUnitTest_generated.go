@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -29,6 +29,7 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	Host                 string `json:"host,omitempty"`
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
 	GenerateHTML         bool   `json:"generateHTML,omitempty"`
+	EvaluateResults      bool   `json:"evaluateResults,omitempty"`
 }
 
 // AbapEnvironmentRunAUnitTestCommand Runs an AUnit Test
@@ -114,8 +115,10 @@ Regardless of the option you chose, please make sure to provide the object set c
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -144,16 +147,16 @@ Regardless of the option you chose, please make sure to provide the object set c
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -183,6 +186,7 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
+	cmd.Flags().BoolVar(&stepConfig.EvaluateResults, "evaluateResults", false, "Evaluation will parse the result file and fail the step execution in case of unsuccessful (error/failure) ABAP Unit test cases")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -315,6 +319,15 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 					},
 					{
 						Name:        "generateHTML",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "evaluateResults",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "bool",

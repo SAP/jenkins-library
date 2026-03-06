@@ -8,9 +8,10 @@ import (
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapAddonAssemblyKitReserveNextPackages(config abapAddonAssemblyKitReserveNextPackagesOptions, telemetryData *telemetry.CustomData, cpe *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) {
@@ -39,7 +40,7 @@ func runAbapAddonAssemblyKitReserveNextPackages(config *abapAddonAssemblyKitRese
 	log.Entry().Info("... reading AddonDescriptor (Software Component, Version) from CommonPipelineEnvironment")
 	addonDescriptor := new(abaputils.AddonDescriptor)
 	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
-		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV steps have been run before]")
+		return fmt.Errorf("Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV steps have been run before]: %w", err)
 	}
 
 	log.Entry().Info("╭────────────────────────────────┬──────────────────────╮")
@@ -82,6 +83,10 @@ func checkAndCopyFieldsToRepositories(pckgWR []aakaas.PackageWithRepository) ([]
 	var repos []abaputils.Repository
 	var checkFailure error = nil
 	for i := range pckgWR {
+		if pckgWR[i].Package.Status != aakaas.PackageStatusReleased && pckgWR[i].Package.Namespace == "" {
+			checkFailure = errors.New("AAKaaS returned a response with empty Namespace which indicates a configuration error")
+		}
+
 		checkFailure = checkCommitID(pckgWR, i, checkFailure)
 
 		pckgWR[i].Package.CopyFieldsToRepo(&pckgWR[i].Repo)

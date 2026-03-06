@@ -6,7 +6,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	github "github.com/google/go-github/v68/github"
@@ -57,7 +56,7 @@ func getBody(config *githubCreateIssueOptions, readFile func(string) ([]byte, er
 	if len(config.Body) == 0 {
 		issueContent, err := readFile(config.BodyFilePath)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read file '%v'", config.BodyFilePath)
+			return nil, fmt.Errorf("failed to read file '%v': %w", config.BodyFilePath, err)
 		}
 		bodyString = []rune(string(issueContent))
 	} else {

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -76,8 +76,8 @@ type detectExecuteScanOptions struct {
 	RegistryURL                     string   `json:"registryUrl,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
 	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
-	UseDetect8                      bool     `json:"useDetect8,omitempty"`
 	UseDetect9                      bool     `json:"useDetect9,omitempty"`
+	UseDetect10                     bool     `json:"useDetect10,omitempty"`
 	ContainerScan                   bool     `json:"containerScan,omitempty"`
 }
 
@@ -254,8 +254,10 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -286,16 +288,16 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -318,7 +320,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "Name of the BlackDuck Detect project.")
 	cmd.Flags().StringSliceVar(&stepConfig.Scanners, "scanners", []string{`signature`}, "List of scanners to be used for BlackDuck Detect scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the BlackDuck Detect scan.")
-	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project")
+	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. **This parameter is ignored if '--detect.source.path' option is included in the scanProperties parameter.**")
 	cmd.Flags().BoolVar(&stepConfig.Unmap, "unmap", false, "Unmap flag will unmap all previous code locations and keep only the current scan results in the specified project version. Set this parameter to true, when the project version needs to store only the latest scan results.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.detect=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the BlackDuck Detect scan. You can find details in the [BlackDuck Detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/basic-properties.html)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the BlackDuck Detect Server.")
@@ -366,8 +368,8 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect8, "useDetect8", false, "DEPRECATED: This flag enables the use of the supported version 8 of the Detect script instead of default version 10")
-	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "This flag enables the use of the supported version 9 of the Detect script instead of default version 10")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11")
+	cmd.Flags().BoolVar(&stepConfig.UseDetect10, "useDetect10", false, "This flag enables the use of the supported version 10 of the Detect script instead of default version 11")
 	cmd.Flags().BoolVar(&stepConfig.ContainerScan, "containerScan", false, "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan")
 
 	cmd.MarkFlagRequired("token")
@@ -959,21 +961,21 @@ func detectExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_repositoryPassword"),
 					},
 					{
-						Name:        "useDetect8",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect8", Deprecated: true}},
-						Default:     false,
-					},
-					{
 						Name:        "useDetect9",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "detect/useDetect9"}},
+						Aliases:     []config.Alias{{Name: "detect/useDetect9", Deprecated: true}},
+						Default:     false,
+					},
+					{
+						Name:        "useDetect10",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/useDetect10"}},
 						Default:     false,
 					},
 					{
@@ -988,7 +990,7 @@ func detectExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "openjdk", Image: "openjdk:11-ea", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Sidecars: []config.Container{
 				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},

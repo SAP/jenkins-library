@@ -1,4 +1,22 @@
-# **_Important:_** **_This project is no longer accepting contributions. We appreciate all the past contributions and support from the community._**
+## ⚠️ Repository Archive Notice
+
+**This repository will be archived on December 31, 2026.**
+
+### What This Means
+
+- This repository will no longer be actively maintained after the archive date
+  
+- The repository will remain available in read-only mode for reference
+  
+- No further updates, bug fixes, or pull requests will be accepted after December 31, 2026
+
+- Contact your SAP representative for details
+
+### Timeline
+
+- **Now - December 31, 2026**: Limited maintenance (critical issues only)
+
+- **January 1, 2027**: Repository becomes read-only/archived
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)

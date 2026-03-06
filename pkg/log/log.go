@@ -75,7 +75,8 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		case "warn":
 			message = fmt.Sprintf("::warning::%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 		case "debug":
-			message = fmt.Sprintf("::debug::%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
+			// Use [DEBUG] prefix for highlighting debug messages instead of ::debug:: command to ensure visibility
+			message = fmt.Sprintf("[DEBUG] %s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)
 		default: // info and others
 			// For info messages, show clean output without step repetition
 			message = fmt.Sprintf("%s%s%s\n", entry.Message, fieldsSnippet, errorMessageSnippet)

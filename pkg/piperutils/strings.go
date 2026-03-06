@@ -1,9 +1,10 @@
 package piperutils
 
 import (
+	"strings"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"strings"
 )
 
 func Title(in string) string {
@@ -16,4 +17,8 @@ func StringWithDefault(input, defaultValue string) string {
 		return defaultValue
 	}
 	return inputCleared
+}
+
+func SanitizePath(input string) string {
+	return strings.Split(input, "?")[0]
 }

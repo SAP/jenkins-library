@@ -39,7 +39,7 @@ type Executor interface {
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
-	PublishAllPackages(packageJSONFiles []string, registry, username, password string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error
+	PublishAllPackages(packageJSONFiles []string, registry, username, password, publishTag string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error
 	SetNpmRegistries() error
 	CreateBOM(packageJSONFiles []string) error
 }

@@ -20,6 +20,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -27,7 +29,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -304,12 +305,12 @@ func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCo
 	mtarPath := getMtarFilePath(config, mtarName)
 	data, err := utils.Open(mtarPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to open mtar archive for upload")
+		return fmt.Errorf("failed to open mtar archive for upload: %w", err)
 	}
 	defer data.Close()
 
 	if _, httpErr := utils.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil); httpErr != nil {
-		return errors.Wrap(httpErr, "failed to upload mtar to repository")
+		return fmt.Errorf("failed to upload mtar to repository: %w", httpErr)
 	}
 
 	if config.CreateBuildArtifactsMetadata {
@@ -323,7 +324,7 @@ func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCo
 }
 
 func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment, mtarPath string) error {
-	mtarDir := filepath.Dir(mtarPath)
+	component := piperutils.GetComponent(filepath.Join(filepath.Dir(mtarPath), "sbom-gen/bom-mta.xml"))
 	buildArtifacts := build.BuildArtifacts{
 		Coordinates: []versioning.Coordinates{
 			{
@@ -333,7 +334,7 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 				Packaging:  "mtar",
 				BuildPath:  getSourcePath(config),
 				URL:        config.MtaDeploymentRepositoryURL,
-				PURL:       piperutils.GetPurl(filepath.Join(mtarDir, "sbom-gen/bom-mta.xml")),
+				PURL:       component.Purl,
 			},
 		},
 	}

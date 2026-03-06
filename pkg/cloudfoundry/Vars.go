@@ -2,8 +2,9 @@ package cloudfoundry
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"regexp"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // VarsFilesNotFoundError ...

@@ -10,8 +10,6 @@ on:
         default: false
   repository_dispatch:
     types: perform-release
-  schedule:
-    - cron: '0 9 * * 1'
 
 jobs:
   run_integration_tests:
@@ -23,6 +21,7 @@ jobs:
     secrets:
       INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
       PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
+      PIPER_INTEGRATION_GITHUB_HOST: ${{secrets.PIPER_INTEGRATION_GITHUB_HOST}}
       PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
       PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
 

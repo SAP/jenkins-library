@@ -3,8 +3,9 @@ package nexus
 import (
 	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // ArtifactDescription describes a single artifact that can be uploaded to a Nexus repository manager.

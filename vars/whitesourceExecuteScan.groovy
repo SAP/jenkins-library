@@ -20,5 +20,6 @@ void call(Map parameters = [:]) {
         [type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']],
         [type: 'usernamePassword', id: 'golangPrivateModulesGitTokenCredentialsId', env: ['PIPER_privateModulesGitUsername', 'PIPER_privateModulesGitToken']]
     ]
+    echo "WARNING: Step '${STEP_NAME}' is deprecated."
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

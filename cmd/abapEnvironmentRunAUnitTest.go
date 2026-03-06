@@ -10,8 +10,11 @@ import (
 	"net/http/cookiejar"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -19,7 +22,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentRunAUnitTest(config abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData) {
@@ -64,7 +66,7 @@ func runAbapEnvironmentRunAUnitTest(config *abapEnvironmentRunAUnitTestOptions, 
 		resp, err = triggerAUnitrun(*config, details, client)
 	}
 	if err == nil {
-		err = fetchAndPersistAUnitResults(resp, details, client, utils, config.AUnitResultsFileName, config.GenerateHTML)
+		err = fetchAndPersistAUnitResults(resp, details, client, utils, config.AUnitResultsFileName, config.GenerateHTML, config.EvaluateResults)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -136,7 +138,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	return subOptions
 }
 
-func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, aunitResultFileName string, generateHTML bool) error {
+func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, utils piperutils.FileUtils, aunitResultFileName string, generateHTML bool, evaluateResults bool) error {
 	var err error
 	abapEndpoint := details.URL
 	location := resp.Header.Get("Location")
@@ -153,7 +155,7 @@ func fetchAndPersistAUnitResults(resp *http.Response, details abaputils.Connecti
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = persistAUnitResult(utils, body, aunitResultFileName, generateHTML)
+		err = persistAUnitResult(utils, body, aunitResultFileName, generateHTML, evaluateResults)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling AUnit result failed: %w", err)
@@ -346,7 +348,7 @@ func getAUnitResults(requestType string, details abaputils.ConnectionDetailsHTTP
 	return req, err
 }
 
-func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFileName string, generateHTML bool) (err error) {
+func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFileName string, generateHTML bool, evaluateResults bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing AUnit result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -399,6 +401,26 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 	//Persist findings afterwards
 	reports = append(reports, piperutils.Path{Target: aunitResultFileName, Name: "AUnit Results", Mandatory: true})
 	piperutils.PersistReportsAndLinks("abapEnvironmentRunAUnitTest", "", utils, reports, nil)
+
+	log.Entry().Info("The technical execution of the ABAP Unit Tests was successful and result File(s) have been persisted")
+
+	if evaluateResults {
+		aUnitErrorCount, _ := strconv.Atoi(parsedXML.Errors)
+		aUnitFailureCount, _ := strconv.Atoi(parsedXML.Failures)
+
+		if aUnitErrorCount > 0 || aUnitFailureCount > 0 {
+			for _, s := range parsedXML.Testsuite.Testcase {
+				for _, failure := range s.Failure {
+					log.Entry().Errorf("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
+				}
+				for _, aUnitError := range s.Error {
+					log.Entry().Errorf("%s, %s: %s found by %s", aUnitError.Type, aUnitError.Message, aUnitError.Message, s.Classname)
+				}
+			}
+			return errors.New("Evaluation of the ABAP Unit Results indicate failed or errornous test cases")
+		}
+	}
+
 	return nil
 }
 

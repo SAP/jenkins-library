@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"os"
 	"strconv"
 	"time"
@@ -12,6 +11,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const (
@@ -60,16 +60,20 @@ func (t *Telemetry) Initialize(stepName string) {
 	}
 
 	t.baseData = BaseData{
-		Orchestrator:    t.provider.OrchestratorType(),
-		TemplateName:    piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
-		StageName:       t.provider.StageName(),
-		URL:             LibraryRepository,
-		ActionName:      actionName,
-		EventType:       eventType,
-		StepName:        stepName,
-		SiteID:          t.SiteID,
-		PipelineURLHash: t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
-		BuildURLHash:    t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
+		Orchestrator:      t.provider.OrchestratorType(),
+		TemplateName:      piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
+		StageTemplateName: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_STAGE_TEMPLATE_NAME"), "n/a"),
+		StageName:         t.provider.StageName(),
+		URL:               LibraryRepository,
+		ActionName:        actionName,
+		EventType:         eventType,
+		StepName:          stepName,
+		SiteID:            t.SiteID,
+		PipelineURLHash:   t.getPipelineURLHash(), // URL (hashed value) which points to the project’s pipelines
+		BuildURLHash:      t.getBuildURLHash(),    // URL (hashed value) which points to the pipeline that is currently running
+		BinaryVersion:     piperutils.GetVersion(),
+		ActionVersion:     piperutils.StringWithDefault(os.Getenv("PIPER_ACTION_VERSION"), "n/a"),
+		TemplateVersion:   piperutils.StringWithDefault(os.Getenv("PIPER_TEMPLATE_VERSION"), "n/a"),
 	}
 }
 
@@ -143,6 +147,9 @@ func (t *Telemetry) LogStepTelemetryData() {
 		ErrorDetail:     fatalError,
 		CorrelationID:   t.provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
+		BinaryVersion:   t.data.BinaryVersion,
+		ActionVersion:   t.data.ActionVersion,
+		TemplateVersion: t.data.TemplateVersion,
 	}
 	stepTelemetryJSON, err := json.Marshal(stepTelemetryData)
 	if err != nil {

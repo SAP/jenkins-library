@@ -1,0 +1,12 @@
+{
+  "name": "@piper/test-prerelease",
+  "version": "0.0.1-20251112123456",
+  "description": "Test package for prerelease publishing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Test passed\""
+  },
+  "keywords": ["test"],
+  "author": "Piper",
+  "license": "Apache-2.0"
+}

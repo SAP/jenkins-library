@@ -14,7 +14,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/package-url/packageurl-go"
-	"github.com/pkg/errors"
 )
 
 // ReportsDirectory defines the subfolder for the WhiteSource reports which are generated
@@ -374,7 +373,7 @@ func (s *System) GetProductsMetaInfo() ([]Product, error) {
 func (s *System) GetProductByName(productName string) (Product, error) {
 	products, err := s.GetProductsMetaInfo()
 	if err != nil {
-		return Product{}, errors.Wrap(err, "failed to retrieve WhiteSource products")
+		return Product{}, fmt.Errorf("failed to retrieve WhiteSource products: %w", err)
 	}
 
 	for _, p := range products {
@@ -496,7 +495,7 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 	}
 
 	if len(wsResponse.ProjectVitals) == 0 {
-		return Project{}, errors.Wrapf(err, "no project with token '%s' found in WhiteSource", projectToken)
+		return Project{}, fmt.Errorf("no project with token '%s' found in WhiteSource: %w", projectToken, err)
 	}
 
 	return wsResponse.ProjectVitals[0], nil
@@ -506,7 +505,7 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 func (s *System) GetProjectByName(productToken, projectName string) (Project, error) {
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
-		return Project{}, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+		return Project{}, fmt.Errorf("failed to retrieve WhiteSource project meta info: %w", err)
 	}
 
 	for _, project := range projects {
@@ -523,7 +522,7 @@ func (s *System) GetProjectByName(productToken, projectName string) (Project, er
 func (s *System) GetProjectsByIDs(productToken string, projectIDs []int64) ([]Project, error) {
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+		return nil, fmt.Errorf("failed to retrieve WhiteSource project meta info: %w", err)
 	}
 
 	var projectsMatched []Project
@@ -544,7 +543,7 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 	projectTokens := []string{}
 	projects, err := s.GetProjectsMetaInfo(productToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to retrieve WhiteSource project meta info")
+		return nil, fmt.Errorf("failed to retrieve WhiteSource project meta info: %w", err)
 	}
 
 	for _, project := range projects {
@@ -600,7 +599,7 @@ func (s *System) GetProjectRiskReport(projectToken string) ([]byte, error) {
 
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource getProjectRiskReport request failed")
+		return nil, fmt.Errorf("WhiteSource getProjectRiskReport request failed: %w", err)
 	}
 
 	return respBody, nil
@@ -616,7 +615,7 @@ func (s *System) GetProjectVulnerabilityReport(projectToken string, format strin
 
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource getProjectVulnerabilityReport request failed")
+		return nil, fmt.Errorf("WhiteSource getProjectVulnerabilityReport request failed: %w", err)
 	}
 
 	return respBody, nil
@@ -722,7 +721,7 @@ func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error
 func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface{}, count *int) error {
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return errors.Wrap(err, "sending whiteSource request failed")
+		return fmt.Errorf("sending whiteSource request failed: %w", err)
 	}
 
 	log.Entry().Debugf("response: %v", string(respBody))
@@ -745,7 +744,7 @@ func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface
 			err = s.sendRequestAndDecodeJSONRecursive(req, result, count)
 			if err != nil {
 				if initial {
-					return errors.Wrapf(err, "WhiteSource request failed after %v retries", s.maxRetries)
+					return fmt.Errorf("WhiteSource request failed after %v retries: %w", s.maxRetries, err)
 				}
 				return err
 			}
@@ -756,7 +755,7 @@ func (s *System) sendRequestAndDecodeJSONRecursive(req Request, result interface
 	if result != nil {
 		err = json.Unmarshal(respBody, result)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse WhiteSource response")
+			return fmt.Errorf("failed to parse WhiteSource response: %w", err)
 		}
 	}
 	return nil
@@ -773,7 +772,7 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 
 	body, err := json.Marshal(req)
 	if err != nil {
-		return responseBody, errors.Wrap(err, "failed to create WhiteSource request")
+		return responseBody, fmt.Errorf("failed to create WhiteSource request: %w", err)
 	}
 
 	log.Entry().Debugf("request: %v", string(body))
@@ -782,12 +781,12 @@ func (s *System) sendRequest(req Request) ([]byte, error) {
 	headers.Add("Content-Type", "application/json")
 	response, err := s.httpClient.SendRequest(http.MethodPost, s.serverURL, bytes.NewBuffer(body), headers, nil)
 	if err != nil {
-		return responseBody, errors.Wrap(err, "failed to send request to WhiteSource")
+		return responseBody, fmt.Errorf("failed to send request to WhiteSource: %w", err)
 	}
 	defer response.Body.Close()
 	responseBody, err = io.ReadAll(response.Body)
 	if err != nil {
-		return responseBody, errors.Wrap(err, "failed to read WhiteSource response")
+		return responseBody, fmt.Errorf("failed to read WhiteSource response: %w", err)
 	}
 
 	return responseBody, nil

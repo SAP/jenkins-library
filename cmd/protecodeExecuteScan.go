@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
@@ -85,7 +83,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		log.Entry().Debugf("Get docker image: %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath)
 		fileName, filePath, err = getDockerImage(utils, config, cachePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to get Docker image")
+			return fmt.Errorf("failed to get Docker image: %w", err)
 		}
 		if len(config.FilePath) <= 0 {
 			(*config).FilePath = filePath
@@ -143,7 +141,7 @@ func getDockerImage(utils protecodeUtils, config *protecodeExecuteScanOptions, c
 	}
 
 	if _, err = utils.DownloadImage(config.ScanImage, tarFilePath); err != nil {
-		return "", "", errors.Wrap(err, "failed to download docker image")
+		return "", "", fmt.Errorf("failed to download docker image: %w", err)
 	}
 
 	return filepath.Base(tarFilePath), filepath.Dir(tarFilePath), nil
@@ -385,7 +383,7 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions, utils protec
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create / update docker config json file")
+		return fmt.Errorf("failed to create / update docker config json file: %w", err)
 	}
 
 	if len(path) > 0 {
