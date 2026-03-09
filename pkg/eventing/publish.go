@@ -30,6 +30,7 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 	}
 
 	log.Entry().Debugf("publishing TaskRunFinished event to GCP Pub/Sub...")
+	log.Entry().Debugf("event content: %s", string(eventData))
 
 	topic := fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix)
 	publisher := gcp.NewGcpPubsubClient(
