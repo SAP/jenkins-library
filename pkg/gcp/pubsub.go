@@ -2,6 +2,7 @@ package gcp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -66,6 +67,14 @@ func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Cli
 }
 
 func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, topic, orderingKey string, data []byte) error {
+	var prettyData json.RawMessage
+	if json.Unmarshal(data, &prettyData) == nil {
+		indented, _ := json.MarshalIndent(prettyData, "", "  ")
+		log.Entry().Infof("Publish data:\n%s", string(indented))
+	} else {
+		log.Entry().Infof("Publish data (raw): %s", string(data))
+	}
+
 	t := psClient.Topic(topic)
 	t.EnableMessageOrdering = true
 	publishResult := t.Publish(ctx, &pubsub.Message{Data: data, OrderingKey: orderingKey})
