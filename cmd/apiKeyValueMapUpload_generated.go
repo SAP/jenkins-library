@@ -131,7 +131,7 @@ Learn more about the SAP API Management API for creating an API key value map ar
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+					if err := eventing.ProcessLegacy(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

@@ -139,7 +139,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+					if err := eventing.ProcessLegacy(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

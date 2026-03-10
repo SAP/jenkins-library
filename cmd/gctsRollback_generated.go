@@ -140,7 +140,7 @@ If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote reposit
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+					if err := eventing.ProcessLegacy(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

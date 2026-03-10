@@ -257,7 +257,7 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+					if err := eventing.ProcessLegacy(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

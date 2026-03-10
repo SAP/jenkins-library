@@ -157,7 +157,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+					if err := eventing.ProcessLegacy(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
