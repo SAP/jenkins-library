@@ -12,6 +12,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapEnvironmentRunAUnitTest',
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryCreateServiceKey',
+    /** Creates a BTP service binding for ABAP Environment instance */
+    'btpCreateServiceBinding',
     /** Parameter for host config */
     'host'
 ]
@@ -34,8 +36,21 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (!config.host) {
-            cloudFoundryCreateServiceKey script: parameters.script
+            if (isBTPMode(config)) {
+                // BTP path: Create BTP service binding with SAP_COM_0735 scenario
+                btpCreateServiceBinding script: parameters.script
+            } else {
+                // Cloud Foundry path: Create CF service key
+                cloudFoundryCreateServiceKey script: parameters.script
+            }
         }
         abapEnvironmentRunAUnitTest script: parameters.script
     }
+}
+
+/**
+ * Checks if BTP mode is enabled based on presence of BTP configuration parameters
+ */
+def isBTPMode(Map config) {
+    return config.btp?.subdomain && config.btp?.subaccount
 }

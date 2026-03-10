@@ -12,6 +12,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     'cloudFoundryCreateServiceKey',
+    'btpCreateServiceBinding',
     'abapEnvironmentAssemblePackages',
     'abapEnvironmentBuild',
     'abapAddonAssemblyKitRegisterPackages',
@@ -46,7 +47,13 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (!config.host) {
-            cloudFoundryCreateServiceKey script: parameters.script
+            if (isBTPMode(config)) {
+                // BTP path: Create BTP service binding with SAP_COM_0582 scenario
+                btpCreateServiceBinding script: parameters.script
+            } else {
+                // Cloud Foundry path: Create CF service key
+                cloudFoundryCreateServiceKey script: parameters.script
+            }
         }
         abapEnvironmentAssemblePackages script: parameters.script
         abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
@@ -81,4 +88,11 @@ void call(Map parameters = [:]) {
             echo "abapEnvironmentCreateTag skipped as testBuild = true"
         }
     }
+}
+
+/**
+ * Checks if BTP mode is enabled based on presence of BTP configuration parameters
+ */
+def isBTPMode(Map config) {
+    return config.btp?.subdomain && config.btp?.subaccount
 }

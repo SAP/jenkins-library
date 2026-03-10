@@ -1,5 +1,6 @@
 import groovy.transform.Field
 import com.sap.piper.Utils
+import com.sap.piper.ConfigurationHelper
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -9,7 +10,11 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Creates a SAP BTP ABAP Environment instance via the cloud foundry command line interface */
     'abapEnvironmentCreateSystem',
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
-    'cloudFoundryCreateServiceKey'
+    'cloudFoundryCreateServiceKey',
+    /** Creates a BTP service instance for ABAP Environment */
+    'btpCreateServiceInstance',
+    /** Creates a BTP service binding for ABAP Environment instance */
+    'btpCreateServiceBinding'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -20,8 +25,30 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STAGE_STEP_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .use()
+
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        abapEnvironmentCreateSystem script: parameters.script
+        if (isBTPMode(config)) {
+            // BTP path: Create BTP service instance and binding
+            btpCreateServiceInstance script: parameters.script
+            btpCreateServiceBinding script: parameters.script
+        } else {
+            // Cloud Foundry path: Use existing approach
+            abapEnvironmentCreateSystem script: parameters.script
+            cloudFoundryCreateServiceKey script: parameters.script
+        }
     }
 
+}
+
+/**
+ * Checks if BTP mode is enabled based on presence of BTP configuration parameters
+ */
+def isBTPMode(Map config) {
+    return config.btp?.subdomain && config.btp?.subaccount
 }
