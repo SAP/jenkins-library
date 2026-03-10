@@ -142,7 +142,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 func createPythonBuildArtifactsMetadata(buildDescriptorFilePath string, targetRepositoryURL string, utils pythonBuildUtils) (error, versioning.Coordinates) {
 	options := versioning.Options{}
-	builtArtifact, err := versioning.GetArtifact("python", "", &options, utils)
+	builtArtifact, err := versioning.GetArtifact("pip", buildDescriptorFilePath, &options, utils)
 	if err != nil {
 		return err, versioning.Coordinates{}
 	}
