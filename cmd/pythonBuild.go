@@ -1,17 +1,23 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/python"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 const (
@@ -24,11 +30,14 @@ type pythonBuildUtils interface {
 	command.ExecRunner
 	FileExists(filename string) (bool, error)
 	piperutils.FileUtils
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type pythonBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	httpClient *piperhttp.Client
 }
 
 func newPythonBuildUtils() pythonBuildUtils {
@@ -86,11 +95,23 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	// coordinate contains the artifact id and version needed for sbom generation when only
+	// setup.py is present as project descriptor
+	err, coordinate := createPythonBuildArtifactsMetadata(buildDescriptorFilePath, config.TargetRepositoryURL, utils)
+	if err != nil {
+		log.Entry().Warnf("unable to create build artifact metadata : %v", err)
+	}
+
 	if config.CreateBOM {
-		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
+		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion, buildDescriptorFilePath, coordinate); err != nil {
 			return fmt.Errorf("failed to create BOM: %w", err)
 		}
 	}
+
+	component := piperutils.GetComponent(filepath.Join(filepath.Dir(buildDescriptorFilePath), python.BOMFilename))
+
+	purl := component.Purl
+	coordinate.PURL = purl
 
 	if info, err := createBuildSettingsInfo(config); err != nil {
 		return fmt.Errorf("failed to create build settings info: %v", err)
@@ -109,7 +130,32 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 	}
+
+	if config.CreateBuildArtifactsMetadata {
+		var buildArtifacts build.BuildArtifacts
+		buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
+	}
+
 	return nil
+}
+
+func createPythonBuildArtifactsMetadata(buildDescriptorFilePath string, targetRepositoryURL string, utils pythonBuildUtils) (error, versioning.Coordinates) {
+	options := versioning.Options{}
+	builtArtifact, err := versioning.GetArtifact("pip", buildDescriptorFilePath, &options, utils)
+	if err != nil {
+		return err, versioning.Coordinates{}
+	}
+	coordinate, err := builtArtifact.GetCoordinates()
+	if err != nil {
+		return err, versioning.Coordinates{}
+	}
+
+	coordinate.URL = targetRepositoryURL
+	coordinate.BuildPath = filepath.Dir(buildDescriptorFilePath)
+
+	return nil, coordinate
 }
 
 // TODO: extract to common place
@@ -145,4 +191,8 @@ func searchDescriptor(supported []string, existsFunc func(string) (bool, error))
 		return "", fmt.Errorf("no build descriptor available, supported: %v", supported)
 	}
 	return descriptor, nil
+}
+
+func (p *pythonBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return p.httpClient.DownloadFile(url, filename, header, cookies)
 }

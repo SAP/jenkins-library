@@ -2,10 +2,13 @@ package python
 
 import (
 	"fmt"
+	"os"
 	"regexp"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 const (
@@ -20,6 +23,8 @@ func CreateBOM(
 	requirementsFile string,
 	cycloneDxVersion string,
 	cycloneDxSchemaVersion string,
+	buildDescriptorFilePath string,
+	coordinate versioning.Coordinates,
 ) error {
 	if exists, _ := existsFn(requirementsFile); exists {
 		if err := InstallRequirements(executeFn, virtualEnv, requirementsFile); err != nil {
@@ -40,11 +45,39 @@ func CreateBOM(
 		return fmt.Errorf("failed to install cyclonedx module: %w", err)
 	}
 
+	// for setup.py only projects cyclone dx needs the pyproject toml file to create the
+	// parent component.metadata of the sbom see:
+	//https://github.com/CycloneDX/cyclonedx-python/issues/825#issuecomment-2457261498
+	if strings.HasSuffix(buildDescriptorFilePath, "setup.py") {
+		tmpFile, err := os.CreateTemp("", "pyproject.toml")
+		if err != nil {
+			return fmt.Errorf("failed to create tmp toml file for cyclonedx sbom: %w", err)
+		}
+
+		//defer os.Remove(tmpFile.Name())
+		name := coordinate.ArtifactID
+		log.Entry().Infof("artifact id is : %s", name)
+		version := coordinate.Version
+		log.Entry().Infof("artifact version is : %s", version)
+		content := fmt.Sprintf("[project]\nname = \"%s\"\nversion = \"%s\"\n", name, version)
+
+		if _, err := tmpFile.WriteString(content); err != nil {
+			return fmt.Errorf("failed to write tmp toml file for cyclonedx sbom: %w", err)
+		}
+
+		// Close it so other processes (like cyclonedx-py) can access it if needed
+		tmpFile.Close()
+
+		buildDescriptorFilePath = tmpFile.Name()
+	}
+
 	log.Entry().Debug("creating BOM")
 	args := append([]string{"env"},
 		"--output-file", BOMFilename,
 		"--output-format", "XML",
 		"--spec-version", cycloneDxSchemaVersion,
+		"--pyproject", buildDescriptorFilePath,
+		"--mc-type", "application",
 	)
 
 	// Add pyproject.toml only if it exists AND contains [project] metadata
