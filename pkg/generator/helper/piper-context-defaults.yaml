@@ -38,6 +38,14 @@ spec:
         - GENERAL
         - STAGES
         - STEPS
+    - name: dockerEnvInherit
+      description: 'Environment variable names to inherit from the runner environment to the container, e.g. [BUILD_NUMBER, MY_TOKEN].'
+      type: '[]string'
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
     - name: dockerImage
       description: Name of the docker image that should be used. If empty, Docker is not used and the command is executed directly on the Jenkins system.
       type: string
@@ -97,6 +105,14 @@ spec:
     - name: sidecarEnvVars
       description: A map of environment variables to set in the sidecar container, similar to `dockerEnvVars`.
       type: map[string]string
+      scope:
+        - PARAMETERS
+        - GENERAL
+        - STAGES
+        - STEPS
+    - name: sidecarEnvInherit
+      description: 'Environment variable names to inherit from the runner environment to the sidecar container, e.g. [BUILD_NUMBER, MY_TOKEN].'
+      type: '[]string'
       scope:
         - PARAMETERS
         - GENERAL
