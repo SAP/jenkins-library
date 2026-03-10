@@ -97,7 +97,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 
 	// coordinate contains the artifact id and version needed for sbom generation when only
 	// setup.py is present as project descriptor
-	err, coordinate := createPythonBuildArtifactsMetadata(config.RequirementsFilePath, config.TargetRepositoryURL, utils)
+	err, coordinate := createPythonBuildArtifactsMetadata(buildDescriptorFilePath, config.TargetRepositoryURL, utils)
 	if err != nil {
 		log.Entry().Warnf("unable to create build artifact metadata : %v", err)
 	}
@@ -107,6 +107,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to create BOM: %w", err)
 		}
 	}
+
+	component := piperutils.GetComponent(filepath.Join(filepath.Dir(buildDescriptorFilePath), python.BOMFilename))
+
+	purl := component.Purl
+	coordinate.PURL = purl
 
 	if info, err := createBuildSettingsInfo(config); err != nil {
 		return fmt.Errorf("failed to create build settings info: %v", err)
@@ -135,7 +140,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	return nil
 }
 
-func createPythonBuildArtifactsMetadata(requirementsFilePath string, targetRepositoryURL string, utils pythonBuildUtils) (error, versioning.Coordinates) {
+func createPythonBuildArtifactsMetadata(buildDescriptorFilePath string, targetRepositoryURL string, utils pythonBuildUtils) (error, versioning.Coordinates) {
 	options := versioning.Options{}
 	builtArtifact, err := versioning.GetArtifact("python", "", &options, utils)
 	if err != nil {
@@ -145,13 +150,9 @@ func createPythonBuildArtifactsMetadata(requirementsFilePath string, targetRepos
 	if err != nil {
 		return err, versioning.Coordinates{}
 	}
-	component := piperutils.GetComponent(filepath.Join(filepath.Dir(requirementsFilePath), python.BOMFilename))
-
-	purl := component.Purl
 
 	coordinate.URL = targetRepositoryURL
-	coordinate.BuildPath = filepath.Dir(requirementsFilePath)
-	coordinate.PURL = purl
+	coordinate.BuildPath = filepath.Dir(buildDescriptorFilePath)
 
 	return nil, coordinate
 }
