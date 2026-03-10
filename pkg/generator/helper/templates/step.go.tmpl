@@ -168,7 +168,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if {{ configPrefix .ExportPrefix }}GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.ProcessLegacy(
+					if err := eventing.Process(
 						oidcTokenProvider,
 						&{{ configPrefix .ExportPrefix }}GeneralConfig,
 						eventing.EventContext{

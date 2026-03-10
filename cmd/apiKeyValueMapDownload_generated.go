@@ -130,7 +130,7 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.ProcessLegacy(
+					if err := eventing.Process(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

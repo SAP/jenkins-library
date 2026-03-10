@@ -132,7 +132,7 @@ either use ESLint configurations present in the project or use the provided gene
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.ProcessLegacy(
+					if err := eventing.Process(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

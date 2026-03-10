@@ -9,8 +9,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// Process publishes a CDEvents TaskRunFinished event via GCP Pub/Sub.
-func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
+// ProcessCDE publishes a CDEvents TaskRunFinished event via GCP Pub/Sub.
+func ProcessCDE(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
 	if tokenProvider == nil {
 		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
 	}
@@ -33,9 +33,9 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 	return publish(tokenProvider, generalConfig, fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix), eventData)
 }
 
-// ProcessLegacy publishes a plain CloudEvent TaskRunFinished event via GCP Pub/Sub,
+// Process publishes a plain CloudEvent TaskRunFinished event via GCP Pub/Sub,
 // using the original event format with taskName, stageName, and outcome in the data payload.
-func ProcessLegacy(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
+func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
 	if tokenProvider == nil {
 		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
 	}

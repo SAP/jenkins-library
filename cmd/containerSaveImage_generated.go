@@ -137,7 +137,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.ProcessLegacy(
+					if err := eventing.Process(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

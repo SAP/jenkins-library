@@ -135,7 +135,7 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.ProcessLegacy(
+					if err := eventing.Process(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

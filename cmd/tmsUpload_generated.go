@@ -181,7 +181,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.ProcessLegacy(
+					if err := eventing.Process(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{

@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcess_NilTokenProvider(t *testing.T) {
+func TestProcessCDE_NilTokenProvider(t *testing.T) {
 	generalConfig := config.GeneralConfigOptions{}
-	err := Process(nil, &generalConfig, EventContext{
+	err := ProcessCDE(nil, &generalConfig, EventContext{
 		StepName:  "step1",
 		StageName: "stage1",
 		ErrorCode: "0",
@@ -20,9 +20,9 @@ func TestProcess_NilTokenProvider(t *testing.T) {
 	assert.Contains(t, err.Error(), "no OIDC token provider")
 }
 
-func TestProcessLegacy_NilTokenProvider(t *testing.T) {
+func TestProcess_NilTokenProvider(t *testing.T) {
 	generalConfig := config.GeneralConfigOptions{}
-	err := ProcessLegacy(nil, &generalConfig, EventContext{
+	err := Process(nil, &generalConfig, EventContext{
 		StepName:  "step1",
 		StageName: "stage1",
 		ErrorCode: "0",
