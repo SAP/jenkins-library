@@ -291,7 +291,7 @@ func TestGitHubActionsConfigProvider_Others(t *testing.T) {
 	}
 
 	assert.Equal(t, "n/a", p.OrchestratorVersion())
-	assert.Equal(t, "GitHubActions", p.OrchestratorType())
+	assert.Equal(t, OrchestratorTypeGitHubActions, p.OrchestratorType())
 	assert.Equal(t, "11111", p.BuildID())
 	assert.Equal(t, []ChangeSet{}, p.ChangeSets())
 	assert.Equal(t, startedAt, p.PipelineStartTime())
