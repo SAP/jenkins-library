@@ -75,6 +75,7 @@ func CreateBOM(
 		"--output-format", "XML",
 		"--spec-version", cycloneDxSchemaVersion,
 		"--pyproject", buildDescriptorFilePath,
+		"--mc-type", "application",
 	)
 
 	// Add pyproject.toml only if it exists AND contains [project] metadata
