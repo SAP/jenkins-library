@@ -129,12 +129,13 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		); err != nil {
 			return fmt.Errorf("failed to publish: %w", err)
 		}
-		if config.CreateBuildArtifactsMetadata {
-			var buildArtifacts build.BuildArtifacts
-			buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
-			jsonResult, _ := json.Marshal(buildArtifacts)
-			commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
-		}
+	}
+
+	if config.CreateBuildArtifactsMetadata {
+		var buildArtifacts build.BuildArtifacts
+		buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
+		jsonResult, _ := json.Marshal(buildArtifacts)
+		commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
 	}
 
 	return nil
