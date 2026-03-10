@@ -1,6 +1,7 @@
 package eventing
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -56,6 +57,8 @@ func ProcessLegacy(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.Ge
 		return fmt.Errorf("failed to create event: %w", err)
 	}
 
+	prettyJSON, _ := json.MarshalIndent(json.RawMessage(eventData), "", "  ")
+	log.Entry().Debugf("legacy event payload:\n%s", string(prettyJSON))
 	log.Entry().Debugf("publishing TaskRunFinished legacy event to GCP Pub/Sub...")
 
 	return publish(tokenProvider, generalConfig, fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix), eventData)
