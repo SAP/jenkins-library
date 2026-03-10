@@ -95,8 +95,15 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	// coordinate contains the artifact id and version needed for sbom generation when only
+	// setup.py is present as project descriptor
+	err, coordinate := createPythonBuildArtifactsMetadata(config.RequirementsFilePath, config.TargetRepositoryURL, utils)
+	if err != nil {
+		log.Entry().Warnf("unable to create build artifact metadata : %v", err)
+	}
+
 	if config.CreateBOM {
-		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion, buildDescriptorFilePath); err != nil {
+		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion, buildDescriptorFilePath, coordinate); err != nil {
 			return fmt.Errorf("failed to create BOM: %w", err)
 		}
 	}
@@ -118,13 +125,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to publish: %w", err)
 		}
 		if config.CreateBuildArtifactsMetadata {
-			err, coordinate := createPythonBuildArtifactsMetadata(config.RequirementsFilePath, config.TargetRepositoryURL, utils)
-			if err != nil {
-				log.Entry().Warnf("unable to create build artifact metadata : %v", err)
-			}
-
 			var buildArtifacts build.BuildArtifacts
-
 			buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
 			jsonResult, _ := json.Marshal(buildArtifacts)
 			commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
