@@ -54,7 +54,7 @@ func CreateBOM(
 			return fmt.Errorf("failed to create tmp toml file for cyclonedx sbom: %w", err)
 		}
 
-		defer os.Remove(tmpFile.Name())
+		//defer os.Remove(tmpFile.Name())
 		name := coordinate.ArtifactID
 		version := coordinate.Version
 		content := fmt.Sprintf("[project]\nname = %s\nversion = %s\n", name, version)
