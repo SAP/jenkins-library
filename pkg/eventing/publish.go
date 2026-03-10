@@ -24,7 +24,7 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 	}
 
 	// TODO: pass a real pipeline URL (e.g. from orchestrator config) instead of empty string
-	eventData, err := newTaskRunFinishedCDEvent(cfg.Source, ctx.StepName, "", outcome)
+	eventData, err := newTaskRunFinishedCDEvent(cfg.Source, ctx.StepName, "", outcome, ctx.StageName)
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
 	}
