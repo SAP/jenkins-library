@@ -8,14 +8,12 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-// Process is the single entry point for publishing events from generated steps.
-// It takes an EventContext with step-level data and handles event creation and publishing.
+// Process publishes a CDEvents TaskRunFinished event via GCP Pub/Sub.
 func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
 	if tokenProvider == nil {
 		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
 	}
 
-	// HookConfig comes from Piper defaults file (or may come from custom defaults specified by the end user).
 	cfg := generalConfig.HookConfig.GCPPubSubConfig
 
 	outcome := "failure"
@@ -29,9 +27,42 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 		return fmt.Errorf("failed to create event: %w", err)
 	}
 
-	log.Entry().Debugf("publishing TaskRunFinished event to GCP Pub/Sub...")
+	log.Entry().Debugf("publishing TaskRunFinished CDEvent to GCP Pub/Sub...")
 
-	topic := fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix)
+	return publish(tokenProvider, generalConfig, fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix), eventData)
+}
+
+// ProcessLegacy publishes a plain CloudEvent TaskRunFinished event via GCP Pub/Sub,
+// using the original event format with taskName, stageName, and outcome in the data payload.
+func ProcessLegacy(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
+	if tokenProvider == nil {
+		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
+	}
+
+	cfg := generalConfig.HookConfig.GCPPubSubConfig
+
+	outcome := "failure"
+	if ctx.ErrorCode == "0" {
+		outcome = "success"
+	}
+
+	eventType := fmt.Sprintf("%seventTypeTaskRunFinished", cfg.TypePrefix)
+	eventData, err := newEvent(eventType, cfg.Source, map[string]string{
+		"taskName":  ctx.StepName,
+		"stageName": ctx.StageName,
+		"outcome":   outcome,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create event: %w", err)
+	}
+
+	log.Entry().Debugf("publishing TaskRunFinished legacy event to GCP Pub/Sub...")
+
+	return publish(tokenProvider, generalConfig, fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix), eventData)
+}
+
+func publish(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, topic string, eventData []byte) error {
+	cfg := generalConfig.HookConfig.GCPPubSubConfig
 	publisher := gcp.NewGcpPubsubClient(
 		tokenProvider,
 		cfg.ProjectNumber,
@@ -40,9 +71,8 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 		generalConfig.CorrelationID,
 		generalConfig.HookConfig.OIDCConfig.RoleID,
 	)
-	if err = publisher.Publish(topic, eventData); err != nil {
+	if err := publisher.Publish(topic, eventData); err != nil {
 		return fmt.Errorf("event publish failed: %w", err)
 	}
-
 	return nil
 }
