@@ -55,7 +55,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 			SourceRegistryUser:     "sourceuser",
 			SourceRegistryPassword: "sourcepassword",
 			TargetRegistryURL:      "https://target.registry",
-			TargetImages:           map[string]any{"source-image": "target-image"},
+			TargetImages:           []string{"source-image: target-image"},
 			TargetImageTag:         "1.0.0-123+456",
 			TargetRegistryUser:     "targetuser",
 			TargetRegistryPassword: "targetpassword",
@@ -122,7 +122,7 @@ func TestRunImagePushToRegistry(t *testing.T) {
 		t.Parallel()
 
 		config := imagePushToRegistryOptions{
-			TargetImages:           map[string]any{"img": "source-image"},
+			TargetImages:           []string{"img: source-image"},
 			TargetImageTag:         "0.0.1",
 			TargetRegistryURL:      "https://target.registry",
 			TargetRegistryUser:     "targetuser",
@@ -221,9 +221,10 @@ func TestPushLocalImageToTargetRegistry(t *testing.T) {
 			PushLocalDockerImage: true,
 			LocalDockerImagePath: "/image/path",
 			TargetRegistryURL:    "https://target.registry",
-			TargetImages:         map[string]any{"image1": "my-image"},
+			TargetImages:         []string{"image1: my-image"},
 			TagLatest:            true,
 		}
+		targetImagesMap = map[string]any{"image1": "my-image"} // targetImagesMap gets filled earlier in the execution flow, so we need to fill it here for the test
 		utils := newImagePushToRegistryMockUtils(craneMockUtils)
 		err := pushLocalImageToTargetRegistry(config, utils)
 		assert.EqualError(t, err, "push image err")

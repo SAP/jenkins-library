@@ -17,25 +17,25 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
-	TargetImages           map[string]interface{} `json:"targetImages,omitempty"`
-	SourceImages           []string               `json:"sourceImages,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceImageTag         string                 `json:"sourceImageTag,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceRegistryURL      string                 `json:"sourceRegistryUrl,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceRegistryUser     string                 `json:"sourceRegistryUser,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceRegistryPassword string                 `json:"sourceRegistryPassword,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	TargetRegistryURL      string                 `json:"targetRegistryUrl,omitempty"`
-	TargetRegistryUser     string                 `json:"targetRegistryUser,omitempty"`
-	TargetRegistryPassword string                 `json:"targetRegistryPassword,omitempty"`
-	TargetImageTag         string                 `json:"targetImageTag,omitempty" validate:"required_if=TagLatest false"`
-	UseImageNameTags       bool                   `json:"useImageNameTags,omitempty"`
-	SourceImageNameTags    []string               `json:"sourceImageNameTags,omitempty"`
-	TargetImageNameTags    []string               `json:"targetImageNameTags,omitempty"`
-	TagLatest              bool                   `json:"tagLatest,omitempty"`
-	DockerConfigJSON       string                 `json:"dockerConfigJSON,omitempty"`
-	PushLocalDockerImage   bool                   `json:"pushLocalDockerImage,omitempty"`
-	LocalDockerImagePath   string                 `json:"localDockerImagePath,omitempty" validate:"required_if=PushLocalDockerImage true"`
-	TargetArchitecture     string                 `json:"targetArchitecture,omitempty"`
-	DisableHTTP2           bool                   `json:"disableHTTP2,omitempty"`
+	TargetImages           []string `json:"targetImages,omitempty"`
+	SourceImages           []string `json:"sourceImages,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceImageTag         string   `json:"sourceImageTag,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceRegistryURL      string   `json:"sourceRegistryUrl,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceRegistryUser     string   `json:"sourceRegistryUser,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceRegistryPassword string   `json:"sourceRegistryPassword,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	TargetRegistryURL      string   `json:"targetRegistryUrl,omitempty"`
+	TargetRegistryUser     string   `json:"targetRegistryUser,omitempty"`
+	TargetRegistryPassword string   `json:"targetRegistryPassword,omitempty"`
+	TargetImageTag         string   `json:"targetImageTag,omitempty" validate:"required_if=TagLatest false"`
+	UseImageNameTags       bool     `json:"useImageNameTags,omitempty"`
+	SourceImageNameTags    []string `json:"sourceImageNameTags,omitempty"`
+	TargetImageNameTags    []string `json:"targetImageNameTags,omitempty"`
+	TagLatest              bool     `json:"tagLatest,omitempty"`
+	DockerConfigJSON       string   `json:"dockerConfigJSON,omitempty"`
+	PushLocalDockerImage   bool     `json:"pushLocalDockerImage,omitempty"`
+	LocalDockerImagePath   string   `json:"localDockerImagePath,omitempty" validate:"required_if=PushLocalDockerImage true"`
+	TargetArchitecture     string   `json:"targetArchitecture,omitempty"`
+	DisableHTTP2           bool     `json:"disableHTTP2,omitempty"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -180,7 +180,7 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 }
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
-
+	cmd.Flags().StringSliceVar(&stepConfig.TargetImages, "targetImages", []string{}, "Defines the names of the images that will be pushed to the target registry. If empty, names of sourceImages will be used.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.\n\n```yaml\nsourceImages:\n  - image-1\n  - image-2\ntargetImages:\n  image-1: target-image-1\n  image-2: target-image-2\n```\n")
 	cmd.Flags().StringSliceVar(&stepConfig.SourceImages, "sourceImages", []string{}, "Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.\n\n```yaml\n  sourceImages:\n    - image-1\n    - image-2\n  targetImages:\n    image-1: target-image-1\n    image-2: target-image-2\n```\n")
 	cmd.Flags().StringVar(&stepConfig.SourceImageTag, "sourceImageTag", os.Getenv("PIPER_sourceImageTag"), "Tag of the sourceImages")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
@@ -223,9 +223,10 @@ func imagePushToRegistryMetadata() config.StepData {
 						Name:        "targetImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name: "sourceImages",

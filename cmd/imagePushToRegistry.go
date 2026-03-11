@@ -22,6 +22,10 @@ const (
 	targetDockerConfigPath = "/root/.docker/config.json"
 )
 
+var (
+	targetImagesMap = map[string]interface{}{}
+)
+
 type dockerImageUtils interface {
 	LoadImage(ctx context.Context, src string) (v1.Image, error)
 	PushImage(ctx context.Context, im v1.Image, dest, platform string) error
@@ -67,6 +71,9 @@ func newImagePushToRegistryUtils(disableHTTP2 bool) imagePushToRegistryUtils {
 }
 
 func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telemetry.CustomData) {
+	// Parse targetImages slice data into a map
+	targetImagesMap = parseTargetImagesToMap(config.TargetImages)
+
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newImagePushToRegistryUtils(config.DisableHTTP2)
@@ -85,10 +92,10 @@ func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telem
 
 func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *telemetry.CustomData, utils imagePushToRegistryUtils) error {
 	if !config.PushLocalDockerImage && !config.UseImageNameTags {
-		if len(config.TargetImages) == 0 {
-			config.TargetImages = mapSourceTargetImages(config.SourceImages)
+		if len(targetImagesMap) == 0 {
+			targetImagesMap = mapSourceTargetImages(config.SourceImages)
 		}
-		if len(config.TargetImages) != len(config.SourceImages) {
+		if len(targetImagesMap) != len(config.SourceImages) {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.New("configuration error: please configure targetImage and sourceImage properly")
 		}
@@ -171,9 +178,9 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 		sourceImage := sourceImage
 		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
-		targetImage, ok := config.TargetImages[sourceImage].(string)
+		targetImage, ok := targetImagesMap[sourceImage].(string)
 		if !ok {
-			return fmt.Errorf("incorrect name of target image: %v", config.TargetImages[sourceImage])
+			return fmt.Errorf("incorrect name of target image: %v", targetImagesMap[sourceImage])
 		}
 
 		if config.TargetImageTag != "" {
@@ -190,7 +197,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 
 		if config.TagLatest {
 			g.Go(func() error {
-				dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, config.TargetImages[sourceImage])
+				dst := fmt.Sprintf("%s/%s", config.TargetRegistryURL, targetImagesMap[sourceImage])
 				log.Entry().Infof("Copying %s to %s...", src, dst)
 				if err := utils.CopyImage(ctx, src, dst, platform); err != nil {
 					return err
@@ -220,7 +227,7 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 	}
 	log.Entry().Infof("Loading local image... Done")
 
-	for _, trgImage := range config.TargetImages {
+	for _, trgImage := range targetImagesMap {
 		trgImage := trgImage
 		targetImage, ok := trgImage.(string)
 		if !ok {
@@ -297,4 +304,33 @@ func mapSourceTargetImages(sourceImages []string) map[string]any {
 	}
 
 	return targetImages
+}
+
+func parseTargetImagesToMap(targetImages []string) map[string]any {
+	result := make(map[string]any)
+	for _, entry := range targetImages {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+
+		// Split on the first colon only
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) != 2 {
+			// malformed entry; skip or handle as needed
+			continue
+		}
+
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+
+		if key == "" {
+			// skip entries with empty keys
+			continue
+		}
+
+		// Store value as interface{} (string)
+		result[key] = val
+	}
+	return result
 }
