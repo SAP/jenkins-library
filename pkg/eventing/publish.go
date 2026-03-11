@@ -12,7 +12,8 @@ import (
 // ProcessCDE publishes a CDEvents TaskRunFinished event via GCP Pub/Sub.
 func ProcessCDE(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
 	if tokenProvider == nil {
-		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
+		log.Entry().Warn("event publishing is enabled but no OIDC token provider is available, skipping")
+		return nil
 	}
 
 	cfg := generalConfig.HookConfig.GCPPubSubConfig
@@ -37,7 +38,8 @@ func ProcessCDE(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.Gener
 // using the original event format with taskName, stageName, and outcome in the data payload.
 func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, ctx EventContext) error {
 	if tokenProvider == nil {
-		return fmt.Errorf("event publishing is enabled but no OIDC token provider is available")
+		log.Entry().Warn("event publishing is enabled but no OIDC token provider is available, skipping")
+		return nil
 	}
 
 	cfg := generalConfig.HookConfig.GCPPubSubConfig

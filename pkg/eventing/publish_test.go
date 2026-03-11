@@ -16,8 +16,7 @@ func TestProcessCDE_NilTokenProvider(t *testing.T) {
 		StageName: "stage1",
 		ErrorCode: "0",
 	})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no OIDC token provider")
+	assert.NoError(t, err)
 }
 
 func TestProcess_NilTokenProvider(t *testing.T) {
@@ -27,6 +26,5 @@ func TestProcess_NilTokenProvider(t *testing.T) {
 		StageName: "stage1",
 		ErrorCode: "0",
 	})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no OIDC token provider")
+	assert.NoError(t, err)
 }
