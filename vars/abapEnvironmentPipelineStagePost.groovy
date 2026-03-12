@@ -60,5 +60,5 @@ void call(Map parameters = [:]) {
  * Checks if BTP mode is enabled based on presence of BTP configuration parameters
  */
 def isBTPMode(Map config) {
-    return config.btp?.subdomain && config.btp?.subaccount
+    return config.subdomain && config.subaccount
 }
