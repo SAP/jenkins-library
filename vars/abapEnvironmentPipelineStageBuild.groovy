@@ -47,7 +47,7 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (!config.host) {
-            if (isBTPMode(config)) {
+            if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
                 // BTP path: Create BTP service binding with SAP_COM_0582 scenario
                 btpCreateServiceBinding script: parameters.script
             } else {
@@ -88,11 +88,4 @@ void call(Map parameters = [:]) {
             echo "abapEnvironmentCreateTag skipped as testBuild = true"
         }
     }
-}
-
-/**
- * Checks if BTP mode is enabled based on presence of BTP configuration parameters
- */
-def isBTPMode(Map config) {
-    return config.subdomain && config.subaccount
 }

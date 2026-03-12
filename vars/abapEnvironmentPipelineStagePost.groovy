@@ -43,7 +43,7 @@ void call(Map parameters = [:]) {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
             if (!config.debug) {
-                if (isBTPMode(config)) {
+                if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
                     // BTP path: Clean up BTP resources
                     btpDeleteServiceBinding script: parameters.script
                     btpDeleteServiceInstance script: parameters.script
@@ -54,11 +54,4 @@ void call(Map parameters = [:]) {
             }
         }
     }
-}
-
-/**
- * Checks if BTP mode is enabled based on presence of BTP configuration parameters
- */
-def isBTPMode(Map config) {
-    return config.subdomain && config.subaccount
 }

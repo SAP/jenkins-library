@@ -50,7 +50,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (config.integrationTestOption == 'systemProvisioning') {
             try {
-                if (isBTPMode(config)) {
+                if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
                     // BTP path: Create BTP service instance and binding
                     btpCreateServiceInstance(script: parameters.script, includeAddon: true)
                     btpCreateServiceBinding script: parameters.script
@@ -69,7 +69,7 @@ void call(Map parameters = [:]) {
                 }
 
                 if (!config.debug) {
-                    if (isBTPMode(config)) {
+                    if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
                         // BTP path: Clean up BTP resources
                         btpDeleteServiceBinding script: parameters.script
                         btpDeleteServiceInstance script: parameters.script
@@ -92,11 +92,4 @@ void call(Map parameters = [:]) {
             throw e
         }
     }
-}
-
-/**
- * Checks if BTP mode is enabled based on presence of BTP configuration parameters
- */
-def isBTPMode(Map config) {
-    return config.subdomain && config.subaccount
 }

@@ -31,7 +31,7 @@ void call(Map parameters = [:]) {
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        if (isBTPMode(config)) {
+        if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
             // BTP path: Create BTP service instance
             btpCreateServiceInstance script: parameters.script
         } else {
@@ -40,11 +40,4 @@ void call(Map parameters = [:]) {
         }
     }
 
-}
-
-/**
- * Checks if BTP mode is enabled based on presence of BTP configuration parameters
- */
-def isBTPMode(Map config) {
-    return config.subdomain && config.subaccount
 }
