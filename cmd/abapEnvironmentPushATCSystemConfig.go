@@ -518,6 +518,14 @@ func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) ab
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
+	// BTP configuration
+	subOptions.URL = options.Url
+	subOptions.Subdomain = options.Subdomain
+	subOptions.Subaccount = options.Subaccount
+	subOptions.Idp = options.Idp
+	subOptions.ServiceInstanceName = options.ServiceInstanceName
+	subOptions.ServiceBindingName = options.ServiceBindingName
+
 	return subOptions
 }
 

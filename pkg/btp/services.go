@@ -264,6 +264,119 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 	return serviceBindingJSON, nil
 }
 
+func (btp *BTPUtils) RunListServiceBindings(options ListServiceBindingOptions) ([]ServiceBindingData, error) {
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
+	}
+
+	parametersCheck := options.Subaccount == "" || (options.ServiceInstance == "" && options.ServiceInstanceId == "")
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.ServiceInstance == "" && options.ServiceInstanceId == "" {
+			missingParams = append(missingParams, "ServiceInstance or ServiceInstanceId")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return nil, errors.Wrap(errors.New(errorMsg), "failed to list service bindings")
+	}
+
+	instanceID := options.ServiceInstanceId
+	if instanceID == "" {
+		instanceData, err := GetServiceInstanceData(btp, GetServiceInstanceOptions{
+			Url:              options.Url,
+			Subdomain:        options.Subdomain,
+			User:             options.User,
+			Password:         options.Password,
+			IdentityProvider: options.IdentityProvider,
+			Subaccount:       options.Subaccount,
+			InstanceName:     options.ServiceInstance,
+		})
+
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get service instance data")
+		}
+
+		instanceID = instanceData.ID
+	}
+
+	log.Entry().WithField("subaccount", options.Subaccount).WithField("serviceInstanceId", instanceID)
+
+	fieldsFilter := fmt.Sprintf("\"service_instance_id eq '%s'\"", instanceID)
+
+	builder := NewBTPCommandBuilder().
+		WithAction("list").
+		WithTarget("services/binding").
+		WithSubAccount(options.Subaccount).
+		WithFieldsFilter(fieldsFilter)
+
+	btpGetBindingScript, _ := builder.Build()
+
+	var serviceBindingBytes bytes.Buffer
+	btp.Exec.Stdout(&serviceBindingBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
+
+	err := btp.Exec.Run(btpGetBindingScript)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return nil, errors.Wrapf(err, "list service bindings failed for instance id: %s", instanceID)
+	}
+
+	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
+	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return nil, errors.Wrap(err, "parsing service bindings JSON failed")
+	}
+
+	serviceBindingData := []ServiceBindingData{}
+	err = json.Unmarshal([]byte(serviceBindingJSON), &serviceBindingData)
+	if err != nil {
+		// fallback: if result is a single object instead of array
+		singleBinding := ServiceBindingData{}
+		err2 := json.Unmarshal([]byte(serviceBindingJSON), &singleBinding)
+		if err2 != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return nil, errors.Wrap(err, "failed to unmarshal service bindings JSON")
+		}
+		serviceBindingData = append(serviceBindingData, singleBinding)
+	}
+
+	return serviceBindingData, nil
+}
+
+func (btp *BTPUtils) ListServiceBindings(options ListServiceBindingOptions) ([]ServiceBindingData, error) {
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
+	}
+
+	loginOptions := LoginOptions{
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
+	}
+	if err := btp.Login(loginOptions); err != nil {
+		return nil, errors.Wrap(err, "login to BTP failed")
+	}
+
+	bindings, err := btp.RunListServiceBindings(options)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving service bindings failed")
+	}
+
+	if err := btp.Logout(); err != nil {
+		return bindings, errors.Wrap(err, "logout of BTP failed")
+	}
+
+	return bindings, nil
+}
+
 func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) error {
 	if btp.Exec == nil {
 		btp.Exec = &Executor{}
@@ -779,6 +892,17 @@ type GetServiceBindingOptions struct {
 	Password          string
 	IdentityProvider  string
 	BindingId         string
+	ServiceInstance   string
+	ServiceInstanceId string
+}
+
+type ListServiceBindingOptions struct {
+	Url               string
+	Subdomain         string
+	Subaccount        string
+	User              string
+	Password          string
+	IdentityProvider  string
 	ServiceInstance   string
 	ServiceInstanceId string
 }

@@ -13,6 +13,11 @@ stages:
     abapSystemSizeOfPersistence: 2
     abapSystemSizeOfRuntime: 1
     cfAsync: false
+    # BTP service instance defaults
+    offeringName: 'abap'
+    planName: 'standard'
+    timeout: 7200
+    pollInterval: 30
 
   'Clone Repositories':
     cfServiceKeyName: 'sap_com_0948'
@@ -20,24 +25,44 @@ stages:
     cfAsync: false
     ordinal: 30
     logOutput: STANDARD
+    # BTP service binding defaults for Clone Repositories (SAP_COM_0948)
+    serviceBindingName: 'sap_com_0948'
+    parameters: '{"scenario_id":"SAP_COM_0948","type":"basic"}'
+    timeout: 600
+    pollInterval: 5
 
   'ATC':
     ordinal: 40
     cfServiceKeyName: 'sap_com_0901'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0901","type":"basic"}'
     cfAsync: false
+    # BTP service binding defaults for ATC (SAP_COM_0901)
+    serviceBindingName: 'sap_com_0901'
+    parameters: '{"scenario_id":"SAP_COM_0901","type":"basic"}'
+    timeout: 600
+    pollInterval: 5
 
   'AUnit':
     ordinal: 50
     cfServiceKeyName: 'sap_com_0735'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0735","type":"basic"}'
     cfAsync: false
+    # BTP service binding defaults for AUnit (SAP_COM_0735)
+    serviceBindingName: 'sap_com_0735'
+    parameters: '{"scenario_id":"SAP_COM_0735","type":"basic"}'
+    timeout: 600
+    pollInterval: 5
 
   Build:
     ordinal: 60
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
     cfAsync: false
+    # BTP service binding defaults for Build (SAP_COM_0582)
+    serviceBindingName: 'sap_com_0582'
+    parameters: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
+    timeout: 600
+    pollInterval: 5
 
   'Integration Tests':
     ordinal: 70
@@ -53,6 +78,13 @@ stages:
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
     cfAsync: false
     cfDeleteServiceKeys: true
+    # BTP service instance and binding defaults for Integration Tests
+    offeringName: 'abap'
+    planName: 'saas_oem'
+    serviceBindingName: 'sap_com_0582'
+    parameters: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
+    timeout: 7200
+    pollInterval: 30
 
   Confirm:
     ordinal: 80
