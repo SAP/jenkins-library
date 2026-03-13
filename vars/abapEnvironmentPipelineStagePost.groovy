@@ -7,6 +7,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     /** Deletes a SAP BTP ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
+    /** Deletes a BTP service instance */
+    'btpDeleteServiceInstance',
     /** If set to true, a confirmation is required to delete the system in case the pipeline was not successful */
     'confirmDeletion',
     /** If set to true, the system is never deleted */
@@ -39,7 +41,12 @@ void call(Map parameters = [:]) {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
             if (!config.debug) {
-                cloudFoundryDeleteService script: parameters.script
+                if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
+                    btpDeleteServiceInstance script: parameters.script
+                } else {
+                    // Cloud Foundry path: Use existing cleanup
+                    cloudFoundryDeleteService script: parameters.script
+                }
             }
         }
     }

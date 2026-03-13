@@ -118,6 +118,16 @@ spec:
           - name: btpCredentialsId
             type: secret
             param: password
+      - name: DeleteServiceBindings
+        type: bool
+        description: Parameter to force deletion of BTP Service Bindings
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        aliases:
+          - name: btp/deleteServiceBindings
   containers:
     - name: btp
       image: ppiper/cf-cli:latest
