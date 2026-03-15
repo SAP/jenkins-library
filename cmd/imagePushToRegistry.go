@@ -171,7 +171,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 		sourceImage := sourceImage
 		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
-		targetImage, ok := config.TargetImages[sourceImage].(string)
+		targetImage, ok := config.TargetImages[sourceImage]
 		if !ok {
 			return fmt.Errorf("incorrect name of target image: %v", config.TargetImages[sourceImage])
 		}
@@ -222,10 +222,7 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 
 	for _, trgImage := range config.TargetImages {
 		trgImage := trgImage
-		targetImage, ok := trgImage.(string)
-		if !ok {
-			return fmt.Errorf("incorrect name of target image: %v", trgImage)
-		}
+		targetImage := trgImage
 
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
@@ -290,8 +287,8 @@ func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils
 	return nil
 }
 
-func mapSourceTargetImages(sourceImages []string) map[string]any {
-	targetImages := make(map[string]any, len(sourceImages))
+func mapSourceTargetImages(sourceImages []string) map[string]string {
+	targetImages := make(map[string]string, len(sourceImages))
 	for _, sourceImage := range sourceImages {
 		targetImages[sourceImage] = sourceImage
 	}
