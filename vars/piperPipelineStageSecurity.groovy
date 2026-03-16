@@ -15,8 +15,6 @@ import static com.sap.piper.Prerequisites.checkScript
     'checkmarxExecuteScan',
     /** Executes BlackDuck Detect scans */
     'detectExecuteScan',
-    /** Executes a Fortify scan */
-    'fortifyExecuteScan',
     /** Executes a WhiteSource scan */
     'whitesourceExecuteScan'
 ]
@@ -42,7 +40,6 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('checkmarxExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.checkmarxExecuteScan)
         .addIfEmpty('detectExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.detectExecuteScan)
-        .addIfEmpty('fortifyExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.fortifyExecuteScan)
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
 
@@ -67,20 +64,6 @@ void call(Map parameters = [:]) {
                     try{
                         durationMeasure(script: script, measurementName: 'detect_duration') {
                             detectExecuteScan script: script
-                        }
-                    }finally{
-                        deleteDir()
-                    }
-                }
-            }
-        }
-
-        if (config.fortifyExecuteScan) {
-            securityScanMap['Fortify'] = {
-                node(config.nodeLabel) {
-                    try{
-                        durationMeasure(script: script, measurementName: 'fortify_duration') {
-                            fortifyExecuteScan script: script
                         }
                     }finally{
                         deleteDir()

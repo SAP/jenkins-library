@@ -60,7 +60,6 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"contrastExecuteScan":                       contrastExecuteScanMetadata(),
 		"credentialdiggerScan":                      credentialdiggerScanMetadata(),
 		"detectExecuteScan":                         detectExecuteScanMetadata(),
-		"fortifyExecuteScan":                        fortifyExecuteScanMetadata(),
 		"gaugeExecuteTests":                         gaugeExecuteTestsMetadata(),
 		"gcpPublishEvent":                           gcpPublishEventMetadata(),
 		"gctsCloneRepository":                       gctsCloneRepositoryMetadata(),
