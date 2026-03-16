@@ -1,7 +1,6 @@
 package orchestrator
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -80,7 +79,7 @@ type (
 	}
 )
 
-func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
+func GetOrchestratorConfigProvider(opts *Options) ConfigProvider {
 	providerOnce.Do(func() {
 		switch DetectOrchestrator() {
 		case AzureDevOps:
@@ -97,15 +96,15 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 
 	if opts == nil {
 		log.Entry().Debug("ConfigProvider options are not set. Provider configuration is skipped.")
-		return provider, nil
+		return provider
 	}
 
 	// This allows configuration of the provider during initialization and/or after it (reconfiguration)
 	if cfgErr := provider.Configure(opts); cfgErr != nil {
-		return provider, fmt.Errorf("provider configuration failed: %w", cfgErr)
+		log.Entry().Errorf("provider configuration failed: %s", cfgErr)
 	}
 
-	return provider, nil
+	return provider
 }
 
 // DetectOrchestrator function determines in which orchestrator Piper is running by examining environment variables.

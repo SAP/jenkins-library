@@ -18,11 +18,7 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 		return
 	}
 
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		// do not fail the step
-		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	publisher := gcp.NewGcpPubsubClient(
 		vaultClient.GetOIDCTokenByValidation,
@@ -33,7 +29,7 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	)
 
-	if err = runGcpPublishEvent(publisher, &cfg); err != nil {
+	if err := runGcpPublishEvent(publisher, &cfg); err != nil {
 		// do not fail the step
 		log.Entry().WithError(err).Warnf("step execution failed")
 	}

@@ -512,10 +512,7 @@ func (c *checkmarxOneExecuteScanHelper) UploadScanContent(zipFile *os.File) (str
 
 func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 	branch := c.config.Branch
-	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().Warn("Could not identify orchestrator")
-	}
+	cicdOrch := orchestrator.GetOrchestratorConfigProvider(nil)
 	if len(branch) == 0 && len(c.config.GitBranch) > 0 && c.config.GitBranch != "n/a" {
 		branch = c.config.GitBranch
 	} else if len(branch) == 0 && (len(c.config.GitBranch) == 0 || c.config.GitBranch == "n/a") { // use the branch from the orchestrator by default
@@ -640,10 +637,7 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 }
 
 func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
-	cicdOrch, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		return fmt.Errorf("Failed to get orchestrator config provider: %s", err)
-	}
+	cicdOrch := orchestrator.GetOrchestratorConfigProvider(nil)
 	isPullRequest := cicdOrch.IsPullRequest()
 	pullRequestId := cicdOrch.PullRequestConfig().Key
 	var owner, repository string
