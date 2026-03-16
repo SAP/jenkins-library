@@ -141,9 +141,9 @@ func SetVerbose(verbose bool) {
 	}
 }
 
-// IsVerbose returns true if DegbuLevel is enabled.
+// IsVerbose returns true if DebugLevel is enabled.
 func IsVerbose() bool {
-	return logrus.GetLevel() == logrus.DebugLevel
+	return logrus.IsLevelEnabled(logrus.DebugLevel)
 }
 
 // SetFormatter specifies the log format to use for piper's output
