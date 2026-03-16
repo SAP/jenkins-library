@@ -19,7 +19,12 @@
  *     abapEnvironmentCreateSystem script: parameters.script
  *   }
  */
-def isBTPMode(Map config) {
+def isBTPMode(Object config) {
+    // Ensure we have a map-like config (LinkedHashMap, Map, etc.)
+    if (!(config instanceof Map)) {
+        return false
+    }
+
     // Check for both mandatory BTP parameters
     return config.subdomain && config.subaccount
 }
