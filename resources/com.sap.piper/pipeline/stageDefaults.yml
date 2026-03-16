@@ -69,9 +69,6 @@ spec:
           - name: checkmarxExecuteScan
             conditions:
               - configKey: 'checkmarxCredentialsId'
-          - name: fortifyExecuteScan
-            conditions:
-              - configKey: 'fortifyCredentialsId'
           - name: whitesourceExecuteScan
             conditions:
               - configKey: 'userTokenCredentialsId'
