@@ -13,7 +13,6 @@ enum QualityCheck {
     FindbugsCheck("Findbugs Static Code Checks", QualityCheckCategory.StaticCodeChecks),
     NpmAudit("Npm Audit", QualityCheckCategory.SecurityScans),
     CheckmarxScan("Checkmarx Scan", QualityCheckCategory.SecurityScans),
-    FortifyScan("Fortify Scan", QualityCheckCategory.SecurityScans),
     WhiteSourceScan("WhiteSource Scan", QualityCheckCategory.SecurityScans),
     SourceClearScan("SourceClearScan Scan", QualityCheckCategory.SecurityScans),
 
