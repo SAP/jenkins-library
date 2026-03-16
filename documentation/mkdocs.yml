@@ -105,7 +105,6 @@ nav:
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
-        - fortifyExecuteScan: steps/fortifyExecuteScan.md
         - gatlingExecuteTests: steps/gatlingExecuteTests.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - gctsCloneRepository: steps/gctsCloneRepository.md
