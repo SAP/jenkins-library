@@ -25,7 +25,9 @@ void call(Map parameters = [:]) {
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
+        .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STAGE_STEP_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .use()
