@@ -35,7 +35,7 @@ func newPipelineRunStartedCDEvent(source, pipelineName, pipelineURL string) ([]b
 }
 
 // newTaskRunFinishedCDEvent creates a CDEvents TaskRunFinished event and returns its JSON-serialized CloudEvent bytes.
-func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome string) ([]byte, error) {
+func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome, stageName string) ([]byte, error) {
 	event, err := cdeventsv04.NewTaskRunFinishedEvent()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create CDEvent: %w", err)
@@ -47,6 +47,13 @@ func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome string) ([
 	event.SetSubjectTaskName(taskName)
 	event.SetSubjectUrl(pipelineURL)
 	event.SetSubjectOutcome(outcome)
+
+	if stageName != "" {
+		customData := map[string]string{"stageName": stageName}
+		if err = event.SetCustomData("application/json", customData); err != nil {
+			return nil, fmt.Errorf("failed to set custom data: %w", err)
+		}
+	}
 
 	ce, err := cdevents.AsCloudEvent(event)
 	if err != nil {
