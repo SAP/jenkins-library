@@ -27,8 +27,6 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-billy/v5 v5.6.0
 	github.com/go-git/go-git/v5 v5.13.0
-	github.com/go-openapi/runtime v0.24.1
-	github.com/go-openapi/strfmt v0.21.3
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.14.1
@@ -49,7 +47,6 @@ require (
 	github.com/moby/buildkit v0.13.1
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31
 	github.com/package-url/packageurl-go v0.1.1
-	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sirupsen/logrus v1.9.3
@@ -176,7 +173,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/antchfx/xpath v1.2.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.30.4 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.30 // indirect
@@ -208,14 +204,9 @@ require (
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
-	github.com/go-openapi/analysis v0.21.2 // indirect
-	github.com/go-openapi/errors v0.20.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
-	github.com/go-openapi/loads v0.21.1 // indirect
-	github.com/go-openapi/spec v0.20.6 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-openapi/validate v0.22.0 // indirect
 	github.com/go-test/deep v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -258,11 +249,9 @@ require (
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
 	github.com/pasztorpisti/qs v0.0.0-20171216220353-8d6c33ee906c
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -279,7 +268,6 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/xuri/efp v0.0.0-20210322160811-ab561f5b45e3 // indirect
-	go.mongodb.org/mongo-driver v1.11.6 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.40.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
