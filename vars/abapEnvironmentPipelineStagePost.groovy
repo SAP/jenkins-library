@@ -41,7 +41,7 @@ void call(Map parameters = [:]) {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
             if (!config.debug) {
-                if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
+                if (config.subdomain && config.subaccount) {
                     btpDeleteServiceInstance script: parameters.script
                 } else {
                     // Cloud Foundry path: Use existing cleanup

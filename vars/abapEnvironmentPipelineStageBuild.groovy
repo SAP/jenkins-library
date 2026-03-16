@@ -47,7 +47,7 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (!config.host) {
-            if (abapEnvironmentPipelineHelpers.isBTPMode(config)) {
+            if (config.subdomain && config.subaccount) {
                 // BTP path: Create BTP service binding with SAP_COM_0582 scenario
                 btpCreateServiceBinding script: parameters.script
             } else {
