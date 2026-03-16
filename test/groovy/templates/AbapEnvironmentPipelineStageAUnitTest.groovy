@@ -34,8 +34,9 @@ class AbapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('abapEnvironmentRunAUnitTest', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunAUnitTest')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
+        helper.registerAllowedMethod('btpCreateServiceBinding', [Map.class], {m -> stepsCalled.add('btpCreateServiceBinding')})
     }
-    
+
     @Test
     void testAbapEnvironmentRunTestsWithoutHost() {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
