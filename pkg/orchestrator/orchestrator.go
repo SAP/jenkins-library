@@ -5,8 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -83,7 +81,6 @@ type (
 )
 
 func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
-	var err error
 	providerOnce.Do(func() {
 		switch DetectOrchestrator() {
 		case AzureDevOps:
@@ -94,12 +91,9 @@ func GetOrchestratorConfigProvider(opts *Options) (ConfigProvider, error) {
 			provider = newJenkinsConfigProvider()
 		default:
 			provider = newUnknownOrchestratorConfigProvider()
-			err = errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
+			log.Entry().Warning("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 		}
 	})
-	if err != nil {
-		return provider, err
-	}
 
 	if opts == nil {
 		log.Entry().Debug("ConfigProvider options are not set. Provider configuration is skipped.")
