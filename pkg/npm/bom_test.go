@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -29,7 +30,7 @@ func TestBom(t *testing.T) {
 			Options: options,
 		}
 		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
+		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@^2.1.0", "--prefix", "./tmp"}
 		cycloneDxNpmRunParams := []string{
 			"--output-format",
 			"XML",
@@ -49,13 +50,13 @@ func TestBom(t *testing.T) {
 		}
 	})
 
-	t.Run("Create BOM with fallback cyclonedx/bom", func(t *testing.T) {
+	t.Run("Create BOM fails if cyclonedx-npm install fails", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile("package-lock.json", []byte("{}"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
-		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@1.11.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
+		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@^2.1.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -65,22 +66,8 @@ func TestBom(t *testing.T) {
 			Options: options,
 		}
 		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@1.11.0", "--prefix", "./tmp"}
 
-		cycloneDxBomInstallParams := []string{"install", cycloneDxBomPackageVersion, "--no-save"}
-		cycloneDxBomRunParams := []string{
-			"cyclonedx-bom",
-			"--output",
-		}
-
-		if assert.NoError(t, err) {
-			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxNpmInstallParams}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: cycloneDxBomInstallParams}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, "bom-npm.xml", ".")}, utils.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: append(cycloneDxBomRunParams, filepath.Join("src", "bom-npm.xml"), filepath.Join("src"))}, utils.execRunner.Calls[3])
-			}
-		}
+		assert.Contains(t, err.Error(), "failed to install CycloneDX BOM")
 	})
 
 	t.Run("Create BOM with cdxgen for pnpm project", func(t *testing.T) {
@@ -133,9 +120,11 @@ func TestBom(t *testing.T) {
 			}, utils.execRunner.Calls[2])
 
 			// Check cyclonedx-cli conversion from JSON to XML
+			// The output version for cyclonedx-cli is expected to be in the format "vX_Y_Z". Ex: 1.4 => v1_4
+			outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(cycloneDxSchemaVersion, ".", "_"))
 			assert.Equal(t, mock.ExecCall{
 				Exec:   cyclonedxExec,
-				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml"},
+				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml", "--output-version", outputVersion},
 			}, utils.execRunner.Calls[3])
 		}
 	})
@@ -145,7 +134,7 @@ func TestBom(t *testing.T) {
 		utils.AddFile("package.json", []byte("{}"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 		utils.execRunner.ShouldFailOnCommand = map[string]error{
-			"npm install @cyclonedx/cdxgen@^11.3.2 --prefix ./tmp": fmt.Errorf("failed to install cdxgen"),
+			"npm install @cyclonedx/cdxgen@^12.1.1 --prefix ./tmp": fmt.Errorf("failed to install cdxgen"),
 		}
 
 		exec := &Execute{
