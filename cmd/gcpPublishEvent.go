@@ -3,86 +3,53 @@ package cmd
 import (
 	"fmt"
 
-	piperConfig "github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-type gcpPublishEventUtils interface {
-	GetConfig() *gcpPublishEventOptions
-	NewPubsubClient(projectNumber, pool, provider, key, oidcRoleId string) gcp.PubsubClient
-}
-
-type gcpPublishEventUtilsBundle struct {
-	config *gcpPublishEventOptions
-	piperConfig.VaultClient
-}
-
-func (g *gcpPublishEventUtilsBundle) GetConfig() *gcpPublishEventOptions {
-	return g.config
-}
-
-func (g *gcpPublishEventUtilsBundle) NewPubsubClient(projectNumber, pool, provider, key, oidcRoleId string) gcp.PubsubClient {
-	return gcp.NewGcpPubsubClient(g.VaultClient, projectNumber, pool, provider, key, oidcRoleId)
-}
-
-func gcpPublishEvent(config gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
-	utils := &gcpPublishEventUtilsBundle{
-		config:      &config,
-		VaultClient: piperConfig.GlobalVaultClient(),
+func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.CustomData) {
+	vaultClient := config.GlobalVaultClient()
+	if vaultClient == nil {
+		log.Entry().Info("Vault not configured, event publishing will be disabled")
+		return
 	}
 
-	if err := runGcpPublishEvent(utils); err != nil {
+	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
+	if err != nil {
+		// do not fail the step
+		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+	}
+
+	publisher := gcp.NewGcpPubsubClient(
+		vaultClient.GetOIDCTokenByValidation,
+		cfg.GcpProjectNumber,
+		cfg.GcpWorkloadIDentityPool,
+		cfg.GcpWorkloadIDentityPoolProvider,
+		provider.BuildURL(),
+		GeneralConfig.HookConfig.OIDCConfig.RoleID,
+	)
+
+	if err = runGcpPublishEvent(publisher, &cfg); err != nil {
 		// do not fail the step
 		log.Entry().WithError(err).Warnf("step execution failed")
 	}
 }
 
-func runGcpPublishEvent(utils gcpPublishEventUtils) error {
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
-	}
-
-	config := utils.GetConfig()
-	data, err := createNewEvent(config)
+func runGcpPublishEvent(publisher gcp.PubsubClient, cfg *gcpPublishEventOptions) error {
+	data, err := eventing.NewEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
+	log.Entry().Debugf("CloudEvent created: %s", string(data))
 
-	err = utils.NewPubsubClient(
-		config.GcpProjectNumber,
-		config.GcpWorkloadIDentityPool,
-		config.GcpWorkloadIDentityPoolProvider,
-		provider.BuildURL(),
-		GeneralConfig.HookConfig.OIDCConfig.RoleID,
-	).Publish(config.Topic, data)
-	if err != nil {
+	if err = publisher.Publish(cfg.Topic, data); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 
-	log.Entry().Infof("Event published successfully! With topic: %s", config.Topic)
+	log.Entry().Infof("Event published successfully! With topic: %s", cfg.Topic)
 	return nil
-}
-
-func createNewEvent(config *gcpPublishEventOptions) ([]byte, error) {
-	event, err := events.NewEvent(config.EventType, config.EventSource, "").CreateWithJSONData(config.EventData)
-	if err != nil {
-		return []byte{}, fmt.Errorf("failed to create new event: %w", err)
-	}
-
-	err = event.AddToCloudEventData(config.AdditionalEventData)
-	if err != nil {
-		log.Entry().Debugf("couldn't add additionalData to cloud event data: %s", err)
-	}
-
-	eventBytes, err := event.ToBytes()
-	if err != nil {
-		return []byte{}, fmt.Errorf("casting event to bytes failed: %w", err)
-	}
-	log.Entry().Debugf("CloudEvent created: %s", string(eventBytes))
-	return eventBytes, nil
 }

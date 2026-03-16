@@ -64,3 +64,4 @@ stages:
   Post:
     ordinal: 100
     cfDeleteServiceKeys: true
+    cfAsync: false
