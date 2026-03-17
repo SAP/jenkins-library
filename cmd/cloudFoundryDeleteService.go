@@ -125,7 +125,7 @@ func cloudFoundryFindServiceKeyNames(ServiceGUID string, c command.ExecRunner) (
 	err = c.RunExecutable("cf", cfFindServiceKeysScript...)
 
 	if err != nil {
-		return ServiceKeyNames, fmt.Errorf("Failed to any related Service Keys for the Service Instance, most likely your service doesn't exist: %w", err)
+		return ServiceKeyNames, fmt.Errorf("Failed to find any related Service Keys for the Service Instance, most likely your service doesn't exist: %w", err)
 	}
 
 	if len(serviceKeyBytes.String()) == 0 {
