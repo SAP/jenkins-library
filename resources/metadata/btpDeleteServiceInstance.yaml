@@ -118,7 +118,7 @@ spec:
           - name: btpCredentialsId
             type: secret
             param: password
-      - name: DeleteServiceBindings
+      - name: deleteServiceBindings
         type: bool
         description: Parameter to force deletion of BTP Service Bindings
         scope:
