@@ -209,8 +209,8 @@ func (a *artifactPrepareVersionMockUtils) DownloadFile(url, filename string, hea
 	return nil
 }
 
-func (a *artifactPrepareVersionMockUtils) GetConfigProvider() (orchestrator.ConfigProvider, error) {
-	return &orchestrator.UnknownOrchestratorConfigProvider{}, nil
+func (a *artifactPrepareVersionMockUtils) GetConfigProvider() orchestrator.ConfigProvider {
+	return &orchestrator.UnknownOrchestratorConfigProvider{}
 }
 
 func TestRunArtifactPrepareVersion(t *testing.T) {
