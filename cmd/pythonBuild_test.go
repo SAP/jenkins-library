@@ -4,7 +4,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
@@ -33,6 +35,15 @@ func newPythonBuildTestsUtils() pythonBuildMockUtils {
 
 func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 	return f.config
+}
+
+func (f *pythonBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	f.requestedUrls = append(m.requestedUrls, url)
+	f.requestedFiles = append(m.requestedFiles, filename)
+	if f.shouldFail {
+		return errors.New("something happened")
+	}
+	return nil
 }
 
 func TestRunPythonBuild(t *testing.T) {
