@@ -68,7 +68,7 @@ type artifactPrepareVersionUtils interface {
 	FileRead(path string) ([]byte, error)
 	FileRemove(path string) error
 
-	GetConfigProvider() (orchestrator.ConfigProvider, error)
+	GetConfigProvider() orchestrator.ConfigProvider
 }
 
 type artifactPrepareVersionUtilsBundle struct {
@@ -77,7 +77,7 @@ type artifactPrepareVersionUtilsBundle struct {
 	*piperhttp.Client
 }
 
-func (a *artifactPrepareVersionUtilsBundle) GetConfigProvider() (orchestrator.ConfigProvider, error) {
+func (a *artifactPrepareVersionUtilsBundle) GetConfigProvider() orchestrator.ConfigProvider {
 	return orchestrator.GetOrchestratorConfigProvider(nil)
 }
 
@@ -165,10 +165,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
-		provider, err := utils.GetConfigProvider()
-		if err != nil {
-			log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
-		}
+		provider := utils.GetConfigProvider()
 		if provider.IsPullRequest() || config.IsOptimizedAndScheduled {
 			config.VersioningType = "cloud_noTag"
 		}

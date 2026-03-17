@@ -129,6 +129,7 @@ func writeOutput(commonPipelineEnv piperenv.CPEMap) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	writtenBytes = append(writtenBytes, '\n')
 	return os.Stdout.Write(writtenBytes)
 }
 

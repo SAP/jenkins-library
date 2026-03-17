@@ -170,9 +170,8 @@ func gradleExecuteBuild(config gradleExecuteBuildOptions, telemetryData *telemet
 }
 
 func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *telemetry.CustomData, utils gradleExecuteBuildUtils, pipelineEnv *gradleExecuteBuildCommonPipelineEnvironment) error {
-	log.Entry().Info("BOM file creation...")
-
 	if config.CreateBOM {
+		log.Entry().Info("BOM file creation...")
 		if err := createBOM(config, utils); err != nil {
 			return err
 		}
