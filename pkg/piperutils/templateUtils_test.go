@@ -4,9 +4,10 @@
 package piperutils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"text/template"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type SomeDescriptor struct {

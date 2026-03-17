@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/pkg/errors"
 )
 
 type CodeqlAudit struct {
@@ -33,13 +34,13 @@ func WriteJSONReport(jsonReport CodeqlAudit, modulePath string) ([]piperutils.Pa
 	reportsDirectory := filepath.Join(modulePath, "codeql")
 	jsonComplianceReportPath := filepath.Join(reportsDirectory, "piper_codeql_report.json")
 	if err := utils.MkdirAll(reportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	file, _ := json.Marshal(jsonReport)
 	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write codeql json compliance report")
+		return reportPaths, fmt.Errorf("failed to write codeql json compliance report: %w", err)
 	}
 
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Codeql JSON Compliance Report", Target: jsonComplianceReportPath})

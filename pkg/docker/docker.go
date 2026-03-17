@@ -20,7 +20,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -39,13 +38,13 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 
 	sourceReader, err := utils.Open(sourcePath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open file %q", sourcePath)
+		return fmt.Errorf("failed to open file %q: %w", sourcePath, err)
 	}
 	defer sourceReader.Close()
 
 	sourceConfig, err := config.LoadFromReader(sourceReader)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read file %q", sourcePath)
+		return fmt.Errorf("failed to read file %q: %w", sourcePath, err)
 	}
 
 	var targetConfig *configfile.ConfigFile
@@ -55,12 +54,12 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 	} else {
 		targetReader, err := utils.Open(targetPath)
 		if err != nil {
-			return errors.Wrapf(err, "failed to open file %q", targetReader)
+			return fmt.Errorf("failed to open file %q: %w", targetReader, err)
 		}
 		defer targetReader.Close()
 		targetConfig, err = config.LoadFromReader(targetReader)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file %q", targetPath)
+			return fmt.Errorf("failed to read file %q: %w", targetPath, err)
 		}
 	}
 
@@ -71,7 +70,7 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 	buf := bytes.NewBuffer(nil)
 	err = targetConfig.SaveToWriter(buf)
 	if err != nil {
-		return errors.Wrapf(err, "failed to save file %q", targetPath)
+		return fmt.Errorf("failed to save file %q: %w", targetPath, err)
 	}
 
 	err = utils.MkdirAll(filepath.Dir(targetPath), 0777)
@@ -133,7 +132,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	if err := fileWrite(targetPath, jsonResult, utils); err != nil {
+	if err = fileWrite(targetPath, jsonResult, utils); err != nil {
 		return "", err
 	}
 
@@ -216,7 +215,7 @@ func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, 
 	exportCmd := cranecmd.NewCmdExport(&noOpts)
 	exportCmd.SetArgs(args)
 
-	if err := exportCmd.Execute(); err != nil {
+	if err = exportCmd.Execute(); err != nil {
 		return nil, err
 	}
 
@@ -248,12 +247,12 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 	args := []string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat}
 	craneCmd.SetArgs(args)
 
-	if err := craneCmd.Execute(); err != nil {
+	if err = craneCmd.Execute(); err != nil {
 		defer os.Remove(tmpFile.Name())
 		return nil, err
 	}
 
-	if err := os.Rename(tmpFile.Name(), targetFile); err != nil {
+	if err = os.Rename(tmpFile.Name(), targetFile); err != nil {
 		defer os.Remove(tmpFile.Name())
 		return nil, err
 	}
@@ -265,7 +264,7 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
 	ref, err := c.getImageRef(imageSource)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing image reference")
+		return nil, fmt.Errorf("parsing image reference: %w", err)
 	}
 
 	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))

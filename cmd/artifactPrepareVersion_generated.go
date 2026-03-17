@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -153,19 +153,21 @@ Define ` + "`" + `buildTool: custom` + "`" + ` as well as ` + "`" + `filePath: <
 
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.txt` + "`" + ` file or to a file without extension.
 
+**Warning:** Using a plain version file may lead to issues in later pipeline steps, as some steps expect structured files (ini, yaml, json) for version extraction.
+
 #### ` + "`" + `ini` + "`" + ` file containing the version:
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your ini-file>` + "`" + ` as well as parameters ` + "`" + `versionSection` + "`" + ` and ` + "`" + `versionSource` + "`" + ` to point to the version location (section & parameter name) within the file.
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your ini-file>` + "`" + ` as well as parameters ` + "`" + `customVersionSection` + "`" + ` and ` + "`" + `customVersionField` + "`" + ` to point to the version location (section & parameter name) within the file.
 
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.cfg` + "`" + ` or a ` + "`" + `*.ini` + "`" + ` file.
 
 #### ` + "`" + `json` + "`" + ` file containing the version:
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.json file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.json file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.
 
 #### ` + "`" + `yaml` + "`" + ` file containing the version
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file` + "`" + ` as well as parameter ` + "`" + `versionSource` + "`" + ` to point to the parameter containing the version.`,
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -227,8 +229,10 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -258,16 +262,16 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}

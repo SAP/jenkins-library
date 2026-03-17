@@ -28,7 +28,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 )
 
 type checkmarxOneExecuteScanUtils interface {
@@ -467,7 +466,7 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 
 	scanMetadatas, err := c.sys.GetScanMetadatas(scanIds)
 	if err != nil {
-		return false, false, 0, errors.Wrapf(err, "failed to fetch metadata for scans")
+		return false, false, 0, fmt.Errorf("failed to fetch metadata for scans: %w", err)
 	}
 
 	contiguousIncrementalScans := 0
@@ -973,7 +972,7 @@ func (c *checkmarxOneExecuteScanHelper) createReportName(workspace, reportFileNa
 func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName string, scan *checkmarxOne.Scan, reportType string) error {
 	report, err := c.generateAndDownloadReport(scan, reportType)
 	if err != nil {
-		return errors.Wrap(err, "failed to download the report")
+		return fmt.Errorf("failed to download the report: %w", err)
 	}
 	log.Entry().Debugf("Saving report to file %v...", reportFileName)
 	return c.utils.WriteFile(reportFileName, report, 0o700)
@@ -984,12 +983,12 @@ func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmar
 
 	report, err := c.sys.RequestNewReport(scan.ScanID, scan.ProjectID, scan.Branch, reportType)
 	if err != nil {
-		return []byte{}, errors.Wrap(err, "failed to request new report")
+		return []byte{}, fmt.Errorf("failed to request new report: %w", err)
 	}
 	for {
 		finalStatus, err = c.sys.GetReportStatus(report)
 		if err != nil {
-			return []byte{}, errors.Wrap(err, "failed to get report status")
+			return []byte{}, fmt.Errorf("failed to get report status: %w", err)
 		}
 
 		if finalStatus.Status == "completed" {
@@ -1180,13 +1179,13 @@ func (c *checkmarxOneExecuteScanHelper) zipWorkspaceFiles(filterPattern string, 
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
-		return zipFile, errors.Wrap(err, "failed to create archive of project sources")
+		return zipFile, fmt.Errorf("failed to create archive of project sources: %w", err)
 	}
 	defer zipFile.Close()
 
 	err = c.zipFolder(utils.GetWorkspace(), zipFile, patterns, utils)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to compact folder")
+		return nil, fmt.Errorf("failed to compact folder: %w", err)
 	}
 	return zipFile, nil
 }
@@ -1282,7 +1281,7 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 		}
 		match, err := utils.PathMatch(pattern, path)
 		if err != nil {
-			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
+			return false, fmt.Errorf("Pattern %v could not get executed: %w", pattern, err)
 		}
 		if match {
 			includeMatch = true
@@ -1303,7 +1302,7 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 		}
 		match, err := utils.PathMatch(pattern, path)
 		if err != nil {
-			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
+			return false, fmt.Errorf("Pattern %v could not get executed: %w", pattern, err)
 		}
 
 		if match { // match with an exclude pattern, the file is excluded

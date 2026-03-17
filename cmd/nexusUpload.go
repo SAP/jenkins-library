@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"errors"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/pkg/errors"
 
 	b64 "encoding/base64"
 

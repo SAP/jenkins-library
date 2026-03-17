@@ -133,7 +133,7 @@ nav:
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactResource: steps/integrationArtifactResource.md
-        - integrationArtifactTransport: steps/integrationArtifactTransport.md        
+        - integrationArtifactTransport: steps/integrationArtifactTransport.md
         - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
@@ -184,7 +184,6 @@ nav:
         - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
-        - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - writeTemporaryCredentials: steps/writeTemporaryCredentials.md
         - xsDeploy: steps/xsDeploy.md
     - 'Library Steps (deprecated)':
@@ -194,6 +193,7 @@ nav:
         - transportRequestCreate: steps/transportRequestCreate.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
     - 'Command line tool': cli/index.md
 
@@ -218,7 +218,7 @@ markdown_extensions:
     - footnotes
     - pymdownx.superfences
     - pymdownx.tabbed:
-        alternate_style: true 
+        alternate_style: true
     - pymdownx.details
 extra_css:
     - 'css/extra.css'

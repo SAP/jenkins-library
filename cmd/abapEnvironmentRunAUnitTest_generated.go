@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -30,6 +30,12 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
 	GenerateHTML         bool   `json:"generateHTML,omitempty"`
 	EvaluateResults      bool   `json:"evaluateResults,omitempty"`
+	Url                  string `json:"url,omitempty"`
+	Subdomain            string `json:"subdomain,omitempty"`
+	Subaccount           string `json:"subaccount,omitempty"`
+	Idp                  string `json:"idp,omitempty"`
+	ServiceInstanceName  string `json:"serviceInstanceName,omitempty"`
+	ServiceBindingName   string `json:"serviceBindingName,omitempty"`
 }
 
 // AbapEnvironmentRunAUnitTestCommand Runs an AUnit Test
@@ -115,8 +121,10 @@ Regardless of the option you chose, please make sure to provide the object set c
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -145,16 +153,16 @@ Regardless of the option you chose, please make sure to provide the object set c
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -185,6 +193,12 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 	cmd.Flags().BoolVar(&stepConfig.EvaluateResults, "evaluateResults", false, "Evaluation will parse the result file and fail the step execution in case of unsuccessful (error/failure) ABAP Unit test cases")
+	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
+	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
+	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "BTP service instance name")
+	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "BTP service binding name")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -332,6 +346,60 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "url",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/url"}},
+						Default:     os.Getenv("PIPER_url"),
+					},
+					{
+						Name:        "subdomain",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
+						Default:     os.Getenv("PIPER_subdomain"),
+					},
+					{
+						Name:        "subaccount",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
+						Default:     os.Getenv("PIPER_subaccount"),
+					},
+					{
+						Name:        "idp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/idp"}},
+						Default:     os.Getenv("PIPER_idp"),
+					},
+					{
+						Name:        "serviceInstanceName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
+						Default:     os.Getenv("PIPER_serviceInstanceName"),
+					},
+					{
+						Name:        "serviceBindingName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
+						Default:     os.Getenv("PIPER_serviceBindingName"),
 					},
 				},
 			},

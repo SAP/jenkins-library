@@ -12,7 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
@@ -55,7 +54,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 			config.AddDeltaToLastRelease = false
 			log.Entry().Debug("This is the first release.")
 		} else {
-			return errors.Wrapf(err, "Error occurred when retrieving latest GitHub release (%v/%v)", config.Owner, config.Repository)
+			return fmt.Errorf("Error occurred when retrieving latest GitHub release (%v/%v): %w", config.Owner, config.Repository, err)
 		}
 	}
 	publishedAt = lastRelease.GetPublishedAt()
@@ -94,7 +93,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 
 	createdRelease, _, err := ghRepoClient.CreateRelease(ctx, config.Owner, config.Repository, &release)
 	if err != nil {
-		return errors.Wrapf(err, "Creation of release '%v' failed", *release.TagName)
+		return fmt.Errorf("Creation of release '%v' failed: %w", *release.TagName, err)
 	}
 	log.Entry().Infof("Release %v created on %v/%v", *createdRelease.TagName, config.Owner, config.Repository)
 
@@ -189,7 +188,7 @@ func uploadReleaseAssetList(ctx context.Context, releaseID int64, config *github
 func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient) error {
 	assets, _, err := ghRepoClient.ListReleaseAssets(ctx, config.Owner, config.Repository, releaseID, &github.ListOptions{})
 	if err != nil {
-		return errors.Wrap(err, "Failed to get list of release assets.")
+		return fmt.Errorf("Failed to get list of release assets.: %w", err)
 	}
 	var assetID int64
 	for _, a := range assets {
@@ -202,7 +201,7 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPubl
 		// asset needs to be deleted first since API does not allow for replacement
 		_, err := ghRepoClient.DeleteReleaseAsset(ctx, config.Owner, config.Repository, assetID)
 		if err != nil {
-			return errors.Wrap(err, "Failed to delete release asset.")
+			return fmt.Errorf("Failed to delete release asset.: %w", err)
 		}
 	}
 
@@ -225,13 +224,13 @@ func uploadReleaseAsset(ctx context.Context, releaseID int64, config *githubPubl
 	}
 	defer file.Close()
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load release asset '%v'", config.AssetPath)
+		return fmt.Errorf("Failed to load release asset '%v': %w", config.AssetPath, err)
 	}
 
 	log.Entry().Info("Starting to upload release asset.")
 	asset, _, err := ghRepoClient.UploadReleaseAsset(ctx, config.Owner, config.Repository, releaseID, &opts, file)
 	if err != nil {
-		return errors.Wrap(err, "Failed to upload release asset.")
+		return fmt.Errorf("Failed to upload release asset.: %w", err)
 	}
 	log.Entry().Infof("Done uploading asset '%v'.", asset.GetURL())
 

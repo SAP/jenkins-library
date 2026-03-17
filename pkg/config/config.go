@@ -18,7 +18,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 )
 
 // Config defines the structure of the config files
@@ -48,7 +47,7 @@ func (c *Config) ReadConfig(configuration io.ReadCloser) error {
 
 	content, err := io.ReadAll(configuration)
 	if err != nil {
-		return errors.Wrapf(err, "error reading %v", configuration)
+		return fmt.Errorf("error reading %v: %w", configuration, err)
 	}
 
 	err = yaml.Unmarshal(content, &c)
@@ -149,7 +148,7 @@ func (c *Config) copyStepAliasConfig(stepName string, stepAliases []Alias) {
 func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool) error {
 	if configuration != nil {
 		if err := c.ReadConfig(configuration); err != nil {
-			return errors.Wrap(err, "failed to parse custom pipeline configuration")
+			return fmt.Errorf("failed to parse custom pipeline configuration: %w", err)
 		}
 	}
 
@@ -163,14 +162,14 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 		for _, f := range c.CustomDefaults {
 			fc, err := c.openFile(f, c.accessTokens)
 			if err != nil {
-				return errors.Wrapf(err, "getting default '%v' failed", f)
+				return fmt.Errorf("getting default '%v' failed: %w", f, err)
 			}
 			defaults = append(defaults, fc)
 		}
 	}
 
 	if err := c.defaults.ReadPipelineDefaults(defaults); err != nil {
-		return errors.Wrap(err, "failed to read default configuration")
+		return fmt.Errorf("failed to read default configuration: %w", err)
 	}
 	c.initialized = true
 	return nil
@@ -373,7 +372,7 @@ func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, d
 func GetJSON(data interface{}) (string, error) {
 	result, err := json.Marshal(data)
 	if err != nil {
-		return "", errors.Wrapf(err, "error marshalling json: %v", err)
+		return "", fmt.Errorf("error marshalling json: %v: %w", err, err)
 	}
 	return string(result), nil
 }
@@ -382,7 +381,7 @@ func GetJSON(data interface{}) (string, error) {
 func GetYAML(data interface{}) (string, error) {
 	result, err := yaml.Marshal(data)
 	if err != nil {
-		return "", errors.Wrapf(err, "error marshalling yaml: %v", err)
+		return "", fmt.Errorf("error marshalling yaml: %v: %w", err, err)
 	}
 	return string(result), nil
 }
@@ -390,7 +389,7 @@ func GetYAML(data interface{}) (string, error) {
 // OpenPiperFile provides functionality to retrieve configuration via file or http
 func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
 	if len(name) == 0 {
-		return nil, errors.Wrap(os.ErrNotExist, "no filename provided")
+		return nil, fmt.Errorf("no filename provided: %w", os.ErrNotExist)
 	}
 
 	if !strings.HasPrefix(name, "http://") && !strings.HasPrefix(name, "https://") {

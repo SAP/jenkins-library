@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -125,8 +125,10 @@ If an image for mavenExecute is configured, and npm packages are to be published
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -155,16 +157,16 @@ If an image for mavenExecute is configured, and npm packages are to be published
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}

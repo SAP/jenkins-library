@@ -14,85 +14,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
+
 	"github.com/spf13/cobra"
 )
-
-// GeneralConfigOptions contains all global configuration options for piper binary
-type GeneralConfigOptions struct {
-	GitHubAccessTokens   map[string]string // map of tokens with url as key in order to maintain url-specific tokens
-	CorrelationID        string
-	CustomConfig         string
-	GitHubTokens         []string // list of entries in form of <server>:<token> to allow token authentication for downloading config / defaults
-	DefaultConfig        []string // ordered list of Piper default configurations. Can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	IgnoreCustomDefaults bool
-	ParametersJSON       string
-	EnvRootPath          string
-	NoTelemetry          bool
-	StageName            string
-	StepConfigJSON       string
-	StepMetadata         string // metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
-	StepName             string
-	Verbose              bool
-	LogFormat            string
-	VaultRoleID          string
-	VaultRoleSecretID    string
-	VaultToken           string
-	VaultServerURL       string
-	VaultNamespace       string
-	VaultPath            string
-	SystemTrustToken     string
-	HookConfig           HookConfiguration
-	MetaDataResolver     func() map[string]config.StepData
-	GCPJsonKeyFilePath   string
-	GCSFolderPath        string
-	GCSBucketId          string
-	GCSSubFolder         string
-}
-
-// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
-type HookConfiguration struct {
-	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
-	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
-	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
-	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
-	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
-}
-
-type GCPPubSubConfiguration struct {
-	Enabled          bool   `json:"enabled"`
-	ProjectNumber    string `json:"projectNumber,omitempty"`
-	IdentityPool     string `json:"identityPool,omitempty"`
-	IdentityProvider string `json:"identityProvider,omitempty"`
-	Topic            string `json:"topic,omitempty"`
-}
-
-// SentryConfiguration defines the configuration options for the Sentry logging system
-type SentryConfiguration struct {
-	Dsn string `json:"dsn,omitempty"`
-}
-
-// SplunkConfiguration defines the configuration options for the Splunk logging system
-type SplunkConfiguration struct {
-	Dsn               string `json:"dsn,omitempty"`
-	Token             string `json:"token,omitempty"`
-	Index             string `json:"index,omitempty"`
-	SendLogs          bool   `json:"sendLogs"`
-	ProdCriblEndpoint string `json:"prodCriblEndpoint,omitempty"`
-	ProdCriblToken    string `json:"prodCriblToken,omitempty"`
-	ProdCriblIndex    string `json:"prodCriblIndex,omitempty"`
-}
-
-// OIDCConfiguration defines the configuration options for the OpenID Connect authentication system
-type OIDCConfiguration struct {
-	RoleID string `json:",roleID,omitempty"`
-}
-
-type SystemTrustConfiguration struct {
-	ServerURL           string `json:"baseURL,omitempty"`
-	TokenEndPoint       string `json:"tokenEndPoint,omitempty"`
-	TokenQueryParamName string `json:"tokenQueryParamName,omitempty"`
-}
 
 var rootCmd = &cobra.Command{
 	Use:   "piper",
@@ -104,7 +28,7 @@ It contains many steps which can be used within CI/CD systems as well as directl
 }
 
 // GeneralConfig contains global configuration flags for piper binary
-var GeneralConfig GeneralConfigOptions
+var GeneralConfig config.GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
@@ -230,6 +154,10 @@ func Execute() {
 	rootCmd.AddCommand(AscAppUploadCommand())
 	rootCmd.AddCommand(AbapLandscapePortalUpdateAddOnProductCommand())
 	rootCmd.AddCommand(ImagePushToRegistryCommand())
+	rootCmd.AddCommand(BtpCreateServiceInstanceCommand())
+	rootCmd.AddCommand(BtpCreateServiceBindingCommand())
+	rootCmd.AddCommand(BtpDeleteServiceInstanceCommand())
+	rootCmd.AddCommand(BtpDeleteServiceBindingCommand())
 
 	addRootFlags(rootCmd)
 
@@ -398,7 +326,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			if exists, err := piperutils.FileExists(projectConfigFile); exists {
 				log.Entry().Debugf("Project config: '%s'", projectConfigFile)
 				if customConfig, err = openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens); err != nil {
-					return errors.Wrapf(err, "Cannot read '%s'", projectConfigFile)
+					return fmt.Errorf("Cannot read '%s': %w", projectConfigFile, err)
 				}
 			} else {
 				log.Entry().Infof("Project config: NONE ('%s' does not exist)", projectConfigFile)
@@ -415,7 +343,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			if err != nil {
 				if projectDefaultFile != ".pipeline/defaults.yaml" {
 					log.Entry().Debugf("Project defaults: '%s'", projectDefaultFile)
-					return errors.Wrapf(err, "Cannot read '%s'", projectDefaultFile)
+					return fmt.Errorf("Cannot read '%s': %w", projectDefaultFile, err)
 				}
 			} else {
 				log.Entry().Debugf("Project defaults: '%s'", projectDefaultFile)
@@ -430,7 +358,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 		}
 		if err != nil {
-			return errors.Wrap(err, "retrieving step configuration failed")
+			return fmt.Errorf("retrieving step configuration failed: %w", err)
 		}
 	}
 
@@ -457,7 +385,7 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
+func retrieveHookConfig(source map[string]interface{}, target *config.HookConfiguration) {
 	if source != nil {
 		log.Entry().Debug("Retrieving hook configuration")
 		b, err := json.Marshal(source)

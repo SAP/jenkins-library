@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -17,22 +17,28 @@ import (
 )
 
 type abapEnvironmentCloneGitRepoOptions struct {
-	Username          string   `json:"username,omitempty"`
-	Password          string   `json:"password,omitempty"`
-	ByogUsername      string   `json:"byogUsername,omitempty"`
-	ByogPassword      string   `json:"byogPassword,omitempty"`
-	ByogAuthMethod    string   `json:"byogAuthMethod,omitempty" validate:"possible-values=TOKEN BASIC"`
-	Repositories      string   `json:"repositories,omitempty"`
-	RepositoryName    string   `json:"repositoryName,omitempty"`
-	BranchName        string   `json:"branchName,omitempty"`
-	Host              string   `json:"host,omitempty"`
-	LogOutput         string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD"`
-	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string   `json:"cfOrg,omitempty"`
-	CfSpace           string   `json:"cfSpace,omitempty"`
-	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
-	CertificateNames  []string `json:"certificateNames,omitempty"`
+	Username            string   `json:"username,omitempty"`
+	Password            string   `json:"password,omitempty"`
+	ByogUsername        string   `json:"byogUsername,omitempty"`
+	ByogPassword        string   `json:"byogPassword,omitempty"`
+	ByogAuthMethod      string   `json:"byogAuthMethod,omitempty" validate:"possible-values=TOKEN BASIC"`
+	Repositories        string   `json:"repositories,omitempty"`
+	RepositoryName      string   `json:"repositoryName,omitempty"`
+	BranchName          string   `json:"branchName,omitempty"`
+	Host                string   `json:"host,omitempty"`
+	LogOutput           string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD"`
+	CfAPIEndpoint       string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg               string   `json:"cfOrg,omitempty"`
+	CfSpace             string   `json:"cfSpace,omitempty"`
+	CfServiceInstance   string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName    string   `json:"cfServiceKeyName,omitempty"`
+	Url                 string   `json:"url,omitempty"`
+	Subdomain           string   `json:"subdomain,omitempty"`
+	Subaccount          string   `json:"subaccount,omitempty"`
+	Idp                 string   `json:"idp,omitempty"`
+	ServiceInstanceName string   `json:"serviceInstanceName,omitempty"`
+	ServiceBindingName  string   `json:"serviceBindingName,omitempty"`
+	CertificateNames    []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentCloneGitRepoCommand Clones a git repository to a SAP BTP ABAP Environment system
@@ -118,8 +124,10 @@ Please provide either of the following options:
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -148,16 +156,16 @@ Please provide either of the following options:
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -190,6 +198,12 @@ func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
+	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
+	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "BTP service instance name")
+	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "BTP service binding name")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
@@ -371,6 +385,60 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
+					},
+					{
+						Name:        "url",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/url"}},
+						Default:     os.Getenv("PIPER_url"),
+					},
+					{
+						Name:        "subdomain",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
+						Default:     os.Getenv("PIPER_subdomain"),
+					},
+					{
+						Name:        "subaccount",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
+						Default:     os.Getenv("PIPER_subaccount"),
+					},
+					{
+						Name:        "idp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/idp"}},
+						Default:     os.Getenv("PIPER_idp"),
+					},
+					{
+						Name:        "serviceInstanceName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
+						Default:     os.Getenv("PIPER_serviceInstanceName"),
+					},
+					{
+						Name:        "serviceBindingName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
+						Default:     os.Getenv("PIPER_serviceBindingName"),
 					},
 					{
 						Name:        "certificateNames",

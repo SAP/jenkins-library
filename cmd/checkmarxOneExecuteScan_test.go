@@ -11,7 +11,6 @@ import (
 
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 type checkmarxOneSystemMock struct {
@@ -214,7 +213,7 @@ func (sys *checkmarxOneSystemMock) GetGroupByName(groupName string) (checkmarxOn
 		}
 	}
 
-	return group, errors.New(fmt.Sprintf("No group matching %v", groupName))
+	return group, fmt.Errorf("No group matching %v", groupName)
 }
 
 func (sys *checkmarxOneSystemMock) GetGroupByID(groupID string) (checkmarxOne.Group, error) {

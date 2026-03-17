@@ -5,9 +5,10 @@ package rfc
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestUploadRFC(t *testing.T) {

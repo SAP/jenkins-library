@@ -14,9 +14,10 @@ import (
 
 	"encoding/xml"
 
+	"errors"
+
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -272,7 +273,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 
 	token, err := sys.getOAuth2Token()
 	if err != nil {
-		return sys, errors.Wrap(err, "Error fetching oAuth token")
+		return sys, fmt.Errorf("Error fetching oAuth token: %w", err)
 	}
 
 	log.RegisterSecret(token)
@@ -373,7 +374,7 @@ func (sys *SystemInstance) GetProjectByID(projectID int) (Project, error) {
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/projects/%v", projectID), nil, nil)
 	if err != nil {
-		return project, errors.Wrapf(err, "fetching project %v failed", projectID)
+		return project, fmt.Errorf("fetching project %v failed: %w", projectID, err)
 	}
 
 	json.Unmarshal(data, &project)
@@ -398,7 +399,7 @@ func (sys *SystemInstance) GetProjectsByNameAndTeam(projectName, teamID string) 
 		data, err = sendRequestInternal(sys, http.MethodGet, "/projects", nil, header, []int{404})
 	}
 	if err != nil {
-		return projects, errors.Wrapf(err, "fetching project %v failed", projectName)
+		return projects, fmt.Errorf("fetching project %v failed: %w", projectName, err)
 	}
 
 	json.Unmarshal(data, &projects)
@@ -416,7 +417,7 @@ func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCre
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		return result, errors.Wrapf(err, "failed to marshal project data")
+		return result, fmt.Errorf("failed to marshal project data: %w", err)
 	}
 
 	header := http.Header{}
@@ -424,7 +425,7 @@ func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCre
 
 	data, err := sendRequest(sys, http.MethodPost, "/projects", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return result, errors.Wrapf(err, "failed to create project %v", projectName)
+		return result, fmt.Errorf("failed to create project %v: %w", projectName, err)
 	}
 
 	json.Unmarshal(data, &result)
@@ -495,13 +496,13 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	header.Add("Accept", "text/plain")
 	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/cxrestapi/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil, "form")
 	if err != nil {
-		return errors.Wrap(err, "failed to uploaded zipped sources")
+		return fmt.Errorf("failed to uploaded zipped sources: %w", err)
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
-		return errors.Wrap(err, "error reading the response data")
+		return fmt.Errorf("error reading the response data: %w", err)
 	}
 
 	responseData := make(map[string]string)
@@ -512,7 +513,7 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	}
 
 	sys.logger.Debugf("Body %s", data)
-	return errors.Wrapf(err, "error writing the request's body, status: %s", resp.Status)
+	return fmt.Errorf("error writing the request's body, status: %s: %w", resp.Status, err)
 }
 
 // UpdateProjectExcludeSettings updates the exclude configuration of the project
@@ -524,14 +525,14 @@ func (sys *SystemInstance) UpdateProjectExcludeSettings(projectID int, excludeFo
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		return errors.Wrap(err, "error marhalling project exclude settings")
+		return fmt.Errorf("error marhalling project exclude settings: %w", err)
 	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
 	_, err = sendRequest(sys, http.MethodPut, fmt.Sprintf("/projects/%v/sourceCode/excludeSettings", projectID), bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return errors.Wrap(err, "request to checkmarx system failed")
+		return fmt.Errorf("request to checkmarx system failed: %w", err)
 	}
 
 	return nil
@@ -585,12 +586,12 @@ func (sys *SystemInstance) UpdateProjectConfiguration(projectID int, presetID in
 
 	jsonValue, err := json.Marshal(jsonData)
 	if err != nil {
-		return errors.Wrapf(err, "error marshalling project data")
+		return fmt.Errorf("error marshalling project data: %w", err)
 	}
 
 	_, err = sendRequest(sys, http.MethodPost, "/sast/scanSettings", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return errors.Wrapf(err, "request to checkmarx system failed")
+		return fmt.Errorf("request to checkmarx system failed: %w", err)
 	}
 	sys.logger.Debugf("Project configuration updated")
 
@@ -616,7 +617,7 @@ func (sys *SystemInstance) ScanProject(projectID int, isIncremental, isPublic, f
 	data, err := sendRequest(sys, http.MethodPost, "/sast/scans", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
 		sys.logger.Errorf("Failed to trigger scan of project %v: %s", projectID, err)
-		return scan, errors.Wrapf(err, "Failed to trigger scan of project %v", projectID)
+		return scan, fmt.Errorf("Failed to trigger scan of project %v: %w", projectID, err)
 	}
 
 	json.Unmarshal(data, &scan)
@@ -637,7 +638,7 @@ func (sys *SystemInstance) GetScans(projectID int) ([]ScanStatus, error) {
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast/scans?%v", body.Encode()), nil, header)
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch scans of project %v: %s", projectID, err)
-		return scans, errors.Wrapf(err, "failed to fetch scans of project %v", projectID)
+		return scans, fmt.Errorf("failed to fetch scans of project %v: %w", projectID, err)
 	}
 
 	json.Unmarshal(data, &scans)
@@ -688,7 +689,7 @@ func (sys *SystemInstance) RequestNewReport(scanID int, reportType string) (Repo
 	header.Set("Content-Type", "application/json")
 	data, err := sendRequest(sys, http.MethodPost, "/reports/sastScan", bytes.NewBuffer(jsonValue), header)
 	if err != nil {
-		return report, errors.Wrapf(err, "Failed to trigger report generation for scan %v", scanID)
+		return report, fmt.Errorf("Failed to trigger report generation for scan %v: %w", scanID, err)
 	}
 
 	json.Unmarshal(data, &report)
@@ -704,7 +705,7 @@ func (sys *SystemInstance) GetReportStatus(reportID int) (ReportStatusResponse, 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v/status", reportID), nil, header)
 	if err != nil {
 		sys.logger.Errorf("Failed to fetch report status for reportID %v: %s", reportID, err)
-		return response, errors.Wrapf(err, "failed to fetch report status for reportID %v", reportID)
+		return response, fmt.Errorf("failed to fetch report status for reportID %v: %w", reportID, err)
 	}
 
 	json.Unmarshal(data, &response)
@@ -731,7 +732,7 @@ func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 	header.Set("Accept", "application/json")
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/reports/sastScan/%v", reportID), nil, header)
 	if err != nil {
-		return []byte{}, errors.Wrapf(err, "failed to download report with reportID %v", reportID)
+		return []byte{}, fmt.Errorf("failed to download report with reportID %v: %w", reportID, err)
 	}
 	return data, nil
 }

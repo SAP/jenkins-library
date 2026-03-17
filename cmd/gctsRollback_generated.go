@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -26,6 +26,7 @@ type gctsRollbackOptions struct {
 	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
 	QueryParameters           map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification       bool                   `json:"skipSSLVerification,omitempty"`
+	Proxy                     string                 `json:"proxy,omitempty"`
 }
 
 // GctsRollbackCommand Perfoms a rollback of one (default) or several commits
@@ -107,8 +108,10 @@ If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote reposit
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -137,16 +140,16 @@ If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote reposit
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -173,6 +176,7 @@ func addGctsRollbackFlags(cmd *cobra.Command, stepConfig *gctsRollbackOptions) {
 	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "GitHub personal access token with at least read permissions for the remote repository")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "You can skip the SSL (Secure Socket Layer) verification for the http client")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -292,6 +296,15 @@ func gctsRollbackMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "proxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_proxy"),
 					},
 				},
 			},

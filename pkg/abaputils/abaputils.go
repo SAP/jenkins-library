@@ -12,12 +12,14 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
+	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 // AbapUtils Struct
@@ -41,11 +43,11 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 	var error error
 
 	if options.Host != "" {
-		// Host, User and Password are directly provided -> check for host schema (double https)
+		// PATH 1: Host, User and Password are directly provided -> check for host schema (double https)
 		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed. Check for https.")
+			return connectionDetails, fmt.Errorf("Schema validation for host parameter failed. Check for https.: %w", err)
 		}
 		var hostOdataURL = options.Host + oDataURL
 		if match {
@@ -57,16 +59,30 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		}
 		connectionDetails.User = options.Username
 		connectionDetails.Password = options.Password
+	} else if options.Subdomain != "" && options.Subaccount != "" {
+		// PATH 3: BTP service binding (NEW)
+		abapServiceBinding, error := ReadServiceBindingAbapEnvironment(options, c)
+		if error != nil {
+			return connectionDetails, fmt.Errorf("Read BTP service binding failed: %w", error)
+		}
+		connectionDetails.Host = abapServiceBinding.Credentials.URL
+		connectionDetails.URL = abapServiceBinding.Credentials.URL + oDataURL
+		connectionDetails.User = abapServiceBinding.Credentials.Abap.Username
+		connectionDetails.Password = abapServiceBinding.Credentials.Abap.Password
 	} else {
+		// PATH 2: Cloud Foundry service key (existing)
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
-			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
+			var err = errors.New("Parameters missing. Please provide EITHER: " +
+				"1. Host of the ABAP server OR " +
+				"2. BTP parameters (subdomain, subaccount) OR " +
+				"3. Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
 		var abapServiceKey, error = ReadServiceKeyAbapEnvironment(options, c)
 		if error != nil {
-			return connectionDetails, errors.Wrap(error, "Read service key failed")
+			return connectionDetails, fmt.Errorf("Read CF service key failed: %w", error)
 		}
 		connectionDetails.Host = abapServiceKey.URL
 		connectionDetails.URL = abapServiceKey.URL + oDataURL
@@ -127,6 +143,44 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	}
 	log.SetErrorCategory(log.ErrorInfrastructure)
 	return abapServiceKeyV8.Credentials, errors.New("Parsing the service key failed for all supported formats. Service key is empty")
+}
+
+// ReadServiceBindingAbapEnvironment reads a BTP service binding and returns the ABAP credentials
+func ReadServiceBindingAbapEnvironment(options AbapEnvironmentOptions, c command.ExecRunner) (btp.ServiceBindingData, error) {
+	var bindingData btp.ServiceBindingData
+
+	// Create BTP executor (BTP utilities use a different executor interface than command.ExecRunner)
+	btpExecutor := &btp.Executor{}
+	btpUtils := btp.NewBTPUtils(btpExecutor)
+
+	// Prepare options for BTP service binding retrieval
+	getBindingOptions := btp.GetServiceBindingOptions{
+		Url:              options.URL,
+		Subdomain:        options.Subdomain,
+		User:             options.Username,
+		Password:         options.Password,
+		IdentityProvider: options.Idp,
+		Subaccount:       options.Subaccount,
+		BindingName:      options.ServiceBindingName,
+		ServiceInstance:  options.ServiceInstanceName,
+	}
+
+	// Get service binding from BTP
+	bindingJSON, err := btpUtils.GetServiceBinding(getBindingOptions)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		return bindingData, fmt.Errorf("Failed to retrieve BTP service binding: %w", err)
+	}
+
+	// Parse the JSON response into ServiceBindingData struct
+	err = json.Unmarshal([]byte(bindingJSON), &bindingData)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		return bindingData, fmt.Errorf("Failed to parse BTP service binding JSON: %w", err)
+	}
+
+	log.Entry().Info("BTP Service Binding read successfully")
+	return bindingData, nil
 }
 
 /*
@@ -211,8 +265,8 @@ func HandleHTTPError(resp *http.Response, err error, message string, connectionD
 		if parsingError != nil {
 			return "", err
 		}
-		abapError := errors.New(fmt.Sprintf("%s - %s", errorCode, errorText))
-		err = errors.Wrap(abapError, err.Error())
+		abapError := fmt.Errorf("%s - %s", errorCode, errorText)
+		err = fmt.Errorf("%s: %w", err.Error(), abapError)
 
 	}
 	return errorCode, err
@@ -295,6 +349,13 @@ type AbapEnvironmentOptions struct {
 	CfSpace           string `json:"cfSpace,omitempty"`
 	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
+	// BTP Configuration
+	URL                 string `json:"url,omitempty"`
+	Subdomain           string `json:"subdomain,omitempty"`
+	Subaccount          string `json:"subaccount,omitempty"`
+	Idp                 string `json:"idp,omitempty"`
+	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
+	ServiceBindingName  string `json:"serviceBindingName,omitempty"`
 }
 
 // AbapMetadata contains the URI of metadata files

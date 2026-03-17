@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"errors"
+
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/build"
-	"github.com/pkg/errors"
 )
 
 const azureUrl = "https://dev.azure.com"
@@ -42,7 +43,7 @@ func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 	// Get a build definition
 	buildDefinition, err := bc.buildClient.GetDefinition(bc.ctx, getDefinitionArgs)
 	if err != nil {
-		return errors.Wrapf(err, "error: get definition failed")
+		return fmt.Errorf("error: get definition failed: %w", err)
 	}
 
 	buildDefinitionVars := map[string]build.BuildDefinitionVariable{}
@@ -68,7 +69,7 @@ func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 
 	_, err = bc.buildClient.UpdateDefinition(bc.ctx, updateDefinitionArgs)
 	if err != nil {
-		return errors.Wrapf(err, "error: update definition failed")
+		return fmt.Errorf("error: update definition failed: %w", err)
 	}
 
 	return nil

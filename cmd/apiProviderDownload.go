@@ -12,7 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type apiProviderDownloadUtils interface {
@@ -58,17 +57,17 @@ func runApiProviderDownload(config *apiProviderDownloadOptions, telemetryData *t
 		Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := http.MethodGet
 	downloadResp, httpErr := httpClient.SendRequest(httpMethod, downloadArtifactURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, downloadArtifactURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, downloadArtifactURL, httpErr)
 	}
 	if downloadResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	if downloadResp != nil && downloadResp.Body != nil {
 		defer downloadResp.Body.Close()

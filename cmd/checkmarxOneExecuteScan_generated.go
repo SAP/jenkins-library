@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -339,8 +339,10 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -371,16 +373,16 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -400,7 +402,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOneExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names. [Not yet supported]")
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not  [Not yet supported]")
-	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
+	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
@@ -511,7 +513,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`,
 					},
 					{
 						Name:        "fullScanCycle",

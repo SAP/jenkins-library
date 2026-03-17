@@ -14,13 +14,14 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func abapEnvironmentRunAUnitTest(config abapEnvironmentRunAUnitTestOptions, telemetryData *telemetry.CustomData) {
@@ -133,6 +134,14 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	subOptions.Host = options.Host
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
+
+	// BTP configuration
+	subOptions.URL = options.Url
+	subOptions.Subdomain = options.Subdomain
+	subOptions.Subaccount = options.Subaccount
+	subOptions.Idp = options.Idp
+	subOptions.ServiceInstanceName = options.ServiceInstanceName
+	subOptions.ServiceBindingName = options.ServiceBindingName
 
 	return subOptions
 }

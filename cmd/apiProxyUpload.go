@@ -7,12 +7,13 @@ import (
 	"net/http"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func apiProxyUpload(config apiProxyUploadOptions, telemetryData *telemetry.CustomData) {
@@ -42,7 +43,7 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, tokenErr := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if tokenErr != nil {
-		return errors.Wrap(tokenErr, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", tokenErr)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
@@ -53,7 +54,7 @@ func runApiProxyUpload(config *apiProxyUploadOptions, telemetryData *telemetry.C
 	header.Add("Accept", "application/zip")
 	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {
-		return errors.Wrap(readError, "Error reading file")
+		return fmt.Errorf("Error reading file: %w", readError)
 	}
 	if !strings.Contains(config.FilePath, "zip") {
 		return errors.New("not valid zip archive")

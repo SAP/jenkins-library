@@ -8,8 +8,14 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     /** Creates a SAP BTP ABAP Environment system via the cloud foundry command line interface */
     'abapEnvironmentCreateSystem',
+    /** Creates a BTP service instance for ABAP Environment */
+    'btpCreateServiceInstance',
+    /** Creates a BTP service binding for ABAP Environment */
+    'btpCreateServiceBinding',
     /** Deletes a SAP BTP ABAP Environment system via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
+    /** Deletes a BTP service instance */
+    'btpDeleteServiceInstance',
     /** If set to true, a confirmation is required to delete the system */
     'confirmDeletion',
     'debug', // If set to true, the system is never deleted
@@ -44,8 +50,15 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (config.integrationTestOption == 'systemProvisioning') {
             try {
-                abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
-                cloudFoundryCreateServiceKey(script: parameters.script)
+                if (config.subdomain && config.subaccount) {
+                    // BTP path: Create BTP service instance and binding
+                    btpCreateServiceInstance(script: parameters.script, includeAddon: true)
+                    btpCreateServiceBinding script: parameters.script
+                } else {
+                    // Cloud Foundry path: Use existing approach
+                    abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
+                    cloudFoundryCreateServiceKey(script: parameters.script)
+                }
                 abapEnvironmentBuild(script: parameters.script, phase: 'GENERATION', downloadAllResultFiles: true, useFieldsOfAddonDescriptor: '[{"use":"Name","renameTo":"SWC"}]')
             } catch (Exception e) {
                 echo "Deployment test of add-on product failed."
@@ -56,7 +69,13 @@ void call(Map parameters = [:]) {
                 }
 
                 if (!config.debug) {
-                    cloudFoundryDeleteService script: parameters.script
+                    if (config.subdomain && config.subaccount) {
+                        // BTP path: Clean up BTP resources
+                        btpDeleteServiceInstance script: parameters.script
+                    } else {
+                        // Cloud Foundry path: Use existing cleanup
+                        cloudFoundryDeleteService script: parameters.script
+                    }
                 }
             }
         } else if (config.integrationTestOption == 'addOnDeployment') {

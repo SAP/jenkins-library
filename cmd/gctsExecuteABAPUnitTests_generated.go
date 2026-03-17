@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -32,6 +32,7 @@ type gctsExecuteABAPUnitTestsOptions struct {
 	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
 	QueryParameters      map[string]interface{} `json:"queryParameters,omitempty"`
 	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
+	Proxy                string                 `json:"proxy,omitempty"`
 }
 
 // GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -110,8 +111,10 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -140,16 +143,16 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -182,6 +185,7 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies an output file name for the results of the ABAP Unit tests.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
+	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -350,6 +354,15 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "proxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_proxy"),
 					},
 				},
 			},

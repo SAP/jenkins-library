@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 // PipelineDefaults defines the structure of the pipeline defaults
@@ -28,7 +27,7 @@ func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) 
 
 		content, err := io.ReadAll(def)
 		if err != nil {
-			return errors.Wrapf(err, "error reading %v", def)
+			return fmt.Errorf("error reading %v: %w", def, err)
 		}
 
 		err = yaml.Unmarshal(content, &c)

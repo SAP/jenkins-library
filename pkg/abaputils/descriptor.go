@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"errors"
+
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 )
 
 /*
@@ -83,18 +84,18 @@ func ConstructAddonDescriptorFromJSON(JSON []byte) (AddonDescriptor, error) {
 func readFile(FileName string) ([]byte, error) {
 	fileLocations, err := filepath.Glob(FileName)
 	if err != nil || len(fileLocations) != 1 {
-		return nil, errors.New(fmt.Sprintf("Could not find %v", FileName))
+		return nil, fmt.Errorf("Could not find %v", FileName)
 	}
 
 	absoluteFilename, err := filepath.Abs(fileLocations[0])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Could not get path of %v", FileName))
+		return nil, fmt.Errorf("Could not get path of %v", FileName)
 	}
 
 	var fileContent []byte
 	fileContent, err = os.ReadFile(absoluteFilename)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Could not read %v", FileName))
+		return nil, fmt.Errorf("Could not read %v", FileName)
 	}
 
 	return fileContent, nil
@@ -110,12 +111,12 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFun
 	var jsonBytes []byte
 	jsonBytes, err = yaml.YAMLToJSON(fileContent)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Could not parse %v", FileName))
+		return fmt.Errorf("Could not parse %v", FileName)
 	}
 
 	err = me.initFromJSON(jsonBytes)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
+		return fmt.Errorf("Could not unmarshal %v", FileName)
 	}
 
 	return nil

@@ -7,8 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -135,7 +133,7 @@ func (s *StepCondition) evaluateV1(
 	if s.Config != nil {
 
 		if len(s.Config) > 1 {
-			return false, errors.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
+			return false, fmt.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
 		}
 
 		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
@@ -157,7 +155,7 @@ func (s *StepCondition) evaluateV1(
 	if len(s.FilePattern) > 0 {
 		files, err := utils.Glob(s.FilePattern)
 		if err != nil {
-			return false, errors.Wrap(err, "failed to check filePattern condition")
+			return false, fmt.Errorf("failed to check filePattern condition: %w", err)
 		}
 		if len(files) > 0 {
 			return true, nil
@@ -173,7 +171,7 @@ func (s *StepCondition) evaluateV1(
 		}
 		files, err := utils.Glob(configValue)
 		if err != nil {
-			return false, errors.Wrap(err, "failed to check filePatternFromConfig condition")
+			return false, fmt.Errorf("failed to check filePatternFromConfig condition: %w", err)
 		}
 		if len(files) > 0 {
 			return true, nil
@@ -261,7 +259,7 @@ func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, 
 func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils piperutils.FileUtils) (bool, error) {
 	packages, err := utils.Glob("**/package.json")
 	if err != nil {
-		return false, errors.Wrap(err, "failed to check if file-exists")
+		return false, fmt.Errorf("failed to check if file-exists: %w", err)
 	}
 	for _, pack := range packages {
 		packDirs := strings.Split(path.Dir(pack), "/")
@@ -278,11 +276,11 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 
 		jsonFile, err := utils.FileRead(pack)
 		if err != nil {
-			return false, errors.Errorf("failed to open file %s: %v", pack, err)
+			return false, fmt.Errorf("failed to open file %s: %v", pack, err)
 		}
 		packageJSON := map[string]interface{}{}
 		if err := json.Unmarshal(jsonFile, &packageJSON); err != nil {
-			return false, errors.Errorf("failed to unmarshal json file %s: %v", pack, err)
+			return false, fmt.Errorf("failed to unmarshal json file %s: %v", pack, err)
 		}
 		npmScripts, ok := packageJSON["scripts"]
 		if !ok {
@@ -290,7 +288,7 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 		}
 		scriptsMap, ok := npmScripts.(map[string]interface{})
 		if !ok {
-			return false, errors.Errorf("failed to read scripts from package.json: %T", npmScripts)
+			return false, fmt.Errorf("failed to read scripts from package.json: %T", npmScripts)
 		}
 		if _, ok := scriptsMap[npmScript]; ok {
 			return true, nil

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -254,8 +254,10 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -286,16 +288,16 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:  STEP_NAME,
+							StageName: telemetryClient.GetData().StageName,
+							ErrorCode: stepTelemetryData.ErrorCode,
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -318,7 +320,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "Name of the BlackDuck Detect project.")
 	cmd.Flags().StringSliceVar(&stepConfig.Scanners, "scanners", []string{`signature`}, "List of scanners to be used for BlackDuck Detect scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the BlackDuck Detect scan.")
-	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project")
+	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. **This parameter is ignored if '--detect.source.path' option is included in the scanProperties parameter.**")
 	cmd.Flags().BoolVar(&stepConfig.Unmap, "unmap", false, "Unmap flag will unmap all previous code locations and keep only the current scan results in the specified project version. Set this parameter to true, when the project version needs to store only the latest scan results.")
 	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.detect=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the BlackDuck Detect scan. You can find details in the [BlackDuck Detect documentation](https://documentation.blackduck.com/bundle/detect/page/properties/basic-properties.html)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the BlackDuck Detect Server.")

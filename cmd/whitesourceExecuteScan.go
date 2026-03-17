@@ -16,6 +16,8 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/golang"
@@ -26,7 +28,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
 
 	"github.com/google/go-github/v68/github"
@@ -220,14 +221,14 @@ func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *w
 	}
 
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
-		return errors.Wrapf(err, "failed to resolve and aggregate project name")
+		return fmt.Errorf("failed to resolve and aggregate project name: %w", err)
 	}
 
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		if strings.Contains(fmt.Sprint(err), "User is not allowed to perform this action") {
 			log.SetErrorCategory(log.ErrorConfiguration)
 		}
-		return errors.Wrapf(err, "failed to resolve project identifiers")
+		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
 
 	if config.AggregateVersionWideReport {
@@ -236,14 +237,14 @@ func runWhitesourceExecuteScan(ctx context.Context, config *ScanOptions, scan *w
 		// For example, if a module was removed from the source code, the project may still
 		// exist in the WhiteSource system.
 		if err := aggregateVersionWideLibraries(config, utils, sys); err != nil {
-			return errors.Wrapf(err, "failed to aggregate version wide libraries")
+			return fmt.Errorf("failed to aggregate version wide libraries: %w", err)
 		}
 		if err := aggregateVersionWideVulnerabilities(config, utils, sys); err != nil {
-			return errors.Wrapf(err, "failed to aggregate version wide vulnerabilities")
+			return fmt.Errorf("failed to aggregate version wide vulnerabilities: %w", err)
 		}
 	} else {
 		if err := runWhitesourceScan(ctx, config, scan, utils, sys, commonPipelineEnvironment, influx); err != nil {
-			return errors.Wrapf(err, "failed to execute WhiteSource scan")
+			return fmt.Errorf("failed to execute WhiteSource scan: %w", err)
 		}
 	}
 	return nil
@@ -259,28 +260,28 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 				config.ScanImage = image
 				err := downloadMultipleDockerImageAsTar(config, utils)
 				if err != nil {
-					return errors.Wrapf(err, "failed to download docker image")
+					return fmt.Errorf("failed to download docker image: %w", err)
 				}
 			}
 
 		} else {
 			err := downloadDockerImageAsTar(config, utils)
 			if err != nil {
-				return errors.Wrapf(err, "failed to download docker image")
+				return fmt.Errorf("failed to download docker image: %w", err)
 			}
 		}
 	}
 
 	// Start the scan
 	if err := executeScan(config, scan, utils); err != nil {
-		return errors.Wrapf(err, "failed to execute Scan")
+		return fmt.Errorf("failed to execute Scan: %w", err)
 	}
 
 	// ToDo: Check this:
 	// Why is this required at all, resolveProjectIdentifiers() is already called before the scan in runWhitesourceExecuteScan()
 	// Could perhaps use scan.updateProjects(sys) directly... have not investigated what could break
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
-		return errors.Wrapf(err, "failed to resolve project identifiers")
+		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
 
 	log.Entry().Info("-----------------------------------------------------")
@@ -295,7 +296,7 @@ func runWhitesourceScan(ctx context.Context, config *ScanOptions, scan *ws.Scan,
 	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, paths, nil)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check and report scan results")
+		return fmt.Errorf("failed to check and report scan results: %w", err)
 	}
 	return nil
 }
@@ -401,7 +402,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 		}
 		coordinates, err := utils.GetArtifactCoordinates(config.BuildTool, config.BuildDescriptorFile, options)
 		if err != nil {
-			return errors.Wrap(err, "failed to get build artifact description")
+			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
 		scan.Coordinates = coordinates
 
@@ -424,12 +425,12 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	scan.ProductVersion = validateProductVersion(config.Version)
 
 	if err := resolveProductToken(config, sys); err != nil {
-		return errors.Wrap(err, "error resolving product token")
+		return fmt.Errorf("error resolving product token: %w", err)
 	}
 
 	if !config.SkipParentProjectResolution {
 		if err := resolveAggregateProjectToken(config, sys); err != nil {
-			return errors.Wrap(err, "error resolving aggregate project token")
+			return fmt.Errorf("error resolving aggregate project token: %w", err)
 		}
 	}
 
@@ -453,11 +454,11 @@ func resolveProductToken(config *ScanOptions, sys whitesource) error {
 		product = ws.Product{}
 		product.Token, err = createWhiteSourceProduct(config, sys)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create whitesource product")
+			return fmt.Errorf("failed to create whitesource product: %w", err)
 		}
 	}
 	if err != nil {
-		return errors.Wrapf(err, "failed to get product by name")
+		return fmt.Errorf("failed to get product by name: %w", err)
 	}
 	log.Entry().Infof("Resolved product token: '%s'..", product.Token)
 	config.ProductToken = product.Token
@@ -475,7 +476,7 @@ func resolveAggregateProjectName(config *ScanOptions, scan *ws.Scan, sys whiteso
 	// If the user configured the "projectToken" parameter, we expect this project to exist in the backend.
 	project, err := sys.GetProjectByToken(config.ProjectToken)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get project by token")
+		return fmt.Errorf("failed to get project by token: %w", err)
 	}
 	nameVersion := strings.Split(project.Name, " - ")
 	scan.AggregateProjectName = nameVersion[0]
@@ -494,7 +495,7 @@ func resolveAggregateProjectToken(config *ScanOptions, sys whitesource) error {
 	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.Version)
 	projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get project token")
+		return fmt.Errorf("failed to get project token: %w", err)
 	}
 	// A project may not yet exist for this project name-version combo.
 	// It will be created by the scan, we retrieve the token again after scanning.
@@ -562,13 +563,13 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 		installCommandTokens := strings.Split(config.InstallCommand, " ")
 		if err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
 			log.SetErrorCategory(log.ErrorCustom)
-			return errors.Wrapf(err, "failed to execute install command: %v", config.InstallCommand)
+			return fmt.Errorf("failed to execute install command: %v: %w", config.InstallCommand, err)
 		}
 	}
 
 	// Execute scan with Unified Agent jar file
 	if err := scan.ExecuteUAScan(options, utils); err != nil {
-		return errors.Wrapf(err, "failed to execute Unified Agent scan")
+		return fmt.Errorf("failed to execute Unified Agent scan: %w", err)
 	}
 	return nil
 }
@@ -631,11 +632,11 @@ func checkPolicyViolations(ctx context.Context, config *ScanOptions, scan *ws.Sc
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0o777)
 		if err != nil {
-			return policyReport, errors.Wrap(err, "failed to create reporting directory")
+			return policyReport, fmt.Errorf("failed to create reporting directory: %w", err)
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", ws.ReportSha(config.ProductName, scan))), jsonReport, 0o666); err != nil {
-		return policyReport, errors.Wrap(err, "failed to write json report")
+		return policyReport, fmt.Errorf("failed to write json report: %w", err)
 	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
@@ -929,7 +930,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get projects meta info")
+		return fmt.Errorf("failed to get projects meta info: %w", err)
 	}
 
 	versionWideLibraries := map[string][]ws.Library{} // maps project name to slice of libraries
@@ -939,14 +940,14 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 		if projectVersion == config.Version {
 			libs, err := sys.GetProjectLibraryLocations(project.Token)
 			if err != nil {
-				return errors.Wrapf(err, "failed to get project library locations")
+				return fmt.Errorf("failed to get project library locations: %w", err)
 			}
 			log.Entry().Infof("Found project: %s with %v libraries.", project.Name, len(libs))
 			versionWideLibraries[projectName] = libs
 		}
 	}
 	if err := newLibraryCSVReport(versionWideLibraries, config, utils); err != nil {
-		return errors.Wrapf(err, "failed toget new libary CSV report")
+		return fmt.Errorf("failed toget new libary CSV report: %w", err)
 	}
 	return nil
 }
@@ -956,7 +957,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get projects meta info")
+		return fmt.Errorf("failed to get projects meta info: %w", err)
 	}
 
 	var versionWideAlerts []ws.Alert // all alerts for a given project version
@@ -967,7 +968,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 			projectNames += project.Name + "\n"
 			alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 			if err != nil {
-				return errors.Wrapf(err, "failed to get project alerts by type")
+				return fmt.Errorf("failed to get project alerts by type: %w", err)
 			}
 
 			log.Entry().Infof("Found project: %s with %v vulnerabilities.", project.Name, len(alerts))
@@ -977,10 +978,10 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 
 	reportPath := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
 	if err := utils.FileWrite(reportPath, []byte(projectNames), 0o666); err != nil {
-		return errors.Wrapf(err, "failed to write report: %s", reportPath)
+		return fmt.Errorf("failed to write report: %s: %w", reportPath, err)
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
-		return errors.Wrapf(err, "failed to create new vulnerability excel report")
+		return fmt.Errorf("failed to create new vulnerability excel report: %w", err)
 	}
 	return nil
 }
@@ -1071,14 +1072,14 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ws.ReportsDirectory, 0o777); err != nil {
-		return errors.Wrapf(err, "failed to create directories: %s", ws.ReportsDirectory)
+		return fmt.Errorf("failed to create directories: %s: %w", ws.ReportsDirectory, err)
 	}
 
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", ws.ReportsDirectory,
 		utils.Now().Format(wsReportTimeStampLayout))
 	if err := utils.FileWrite(fileName, []byte(output), 0o666); err != nil {
-		return errors.Wrapf(err, "failed to write file: %s", fileName)
+		return fmt.Errorf("failed to write file: %s: %w", fileName, err)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
 	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", utils, []piperutils.Path{filePath}, nil)
@@ -1169,11 +1170,11 @@ func downloadMultipleDockerImageAsTar(config *ScanOptions, utils whitesourceUtil
 		if strings.Contains(fmt.Sprint(err), "no image found") {
 			log.SetErrorCategory(log.ErrorConfiguration)
 		}
-		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+		return fmt.Errorf("failed to download Docker image %v: %w", config.ScanImage, err)
 	}
 	// remove contents after : in the image name
 	if err := renameTarfilePath(tarFilePath); err != nil {
-		return errors.Wrapf(err, "failed to rename image %v", err)
+		return fmt.Errorf("failed to rename image %v: %w", err, err)
 	}
 
 	return nil
@@ -1197,7 +1198,7 @@ func downloadDockerImageAsTar(config *ScanOptions, utils whitesourceUtils) error
 		if strings.Contains(fmt.Sprint(err), "no image found") {
 			log.SetErrorCategory(log.ErrorConfiguration)
 		}
-		return errors.Wrapf(err, "failed to download Docker image %v", config.ScanImage)
+		return fmt.Errorf("failed to download Docker image %v: %w", config.ScanImage, err)
 	}
 
 	return nil

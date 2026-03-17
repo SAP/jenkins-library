@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"errors"
+
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -13,7 +15,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type buildWithRepository struct {
@@ -50,7 +51,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 
 	addonDescriptor := new(abaputils.AddonDescriptor)
 	if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
-		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
+		return fmt.Errorf("Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]: %w", err)
 	}
 
 	builds, assembleError := runAssemblePackages(config, com, utils, client, addonDescriptor)
@@ -88,21 +89,21 @@ func runAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, com aba
 
 	builds, err := executeBuilds(addonDescriptor, *connBuild, time.Duration(config.MaxRuntimeInMinutes)*time.Minute, time.Duration(config.PollIntervalsInMilliseconds)*time.Millisecond, config.AlternativePhaseName)
 	if err != nil {
-		return builds, errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
+		return builds, fmt.Errorf("Starting Builds for Repositories with reserved AAKaaS packages failed: %w", err)
 	}
 
 	if err := checkIfFailedAndPrintLogs(builds); err != nil {
-		return builds, errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
+		return builds, fmt.Errorf("Checking for failed Builds and Printing Build Logs failed: %w", err)
 	}
 
 	if _, err := downloadResultToFile(builds, "SAR_XML", false); err != nil {
-		return builds, errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
+		return builds, fmt.Errorf("Download of Build Artifact SAR_XML failed: %w", err)
 	}
 
 	var filesToPublish []piperutils.Path
 	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", true)
 	if err != nil {
-		return builds, errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed")
+		return builds, fmt.Errorf("Download of Build Artifact DELIVERY_LOGS.ZIP failed: %w", err)
 	}
 
 	log.Entry().Infof("Publishing %v files", len(filesToPublish))
@@ -155,7 +156,7 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 	for {
 		select {
 		case <-timeout:
-			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
+			return fmt.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
 			if err := br.build.Get(); err != nil {
 				return err
@@ -327,7 +328,7 @@ func initAssemblePackagesConnection(conn *abapbuild.Connector, config *abapEnvir
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+		return fmt.Errorf("Connector initialization for communication with the ABAP system failed: %w", err)
 	}
 
 	return nil

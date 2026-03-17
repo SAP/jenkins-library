@@ -23,7 +23,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -135,7 +134,7 @@ func (c *Client) UploadRequest(method, url, file, fileFieldName string, header h
 	fileHandle, err := c.getFileUtils().Open(file)
 
 	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "unable to locate file %v", file)
+		return &http.Response{}, fmt.Errorf("unable to locate file %v: %w", file, err)
 	}
 	defer fileHandle.Close()
 
@@ -154,7 +153,7 @@ func (c *Client) UploadRequest(method, url, file, fileFieldName string, header h
 // Upload uploads a file's content as multipart-form or pure binary with given http method request to the specified URL
 func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	if data.Method != http.MethodPost && data.Method != http.MethodPut {
-		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
+		return nil, fmt.Errorf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut)
 	}
 
 	// Binary upload :: other options ("binary" or "form").
@@ -162,7 +161,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		request, err := c.createRequest(data.Method, data.URL, data.FileContent, &data.Header, data.Cookies)
 		if err != nil {
 			c.logger.Debugf("New %v request to %v (binary upload)", data.Method, data.URL)
-			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v (binary upload)", data.Method, data.URL)
+			return &http.Response{}, fmt.Errorf("error creating %v request to %v (binary upload): %w", data.Method, data.URL, err)
 		}
 		request.Header.Add("Content-Type", "application/octet-stream")
 		request.Header.Add("Connection", "Keep-Alive")
@@ -178,19 +177,19 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 			for fieldName, fieldValue := range data.FormFields {
 				err := bodyWriter.WriteField(fieldName, fieldValue)
 				if err != nil {
-					return &http.Response{}, errors.Wrapf(err, "error writing form field %v with value %v", fieldName, fieldValue)
+					return &http.Response{}, fmt.Errorf("error writing form field %v with value %v: %w", fieldName, fieldValue, err)
 				}
 			}
 		}
 
 		fileWriter, err := bodyWriter.CreateFormFile(data.FileFieldName, data.File)
 		if err != nil {
-			return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
+			return &http.Response{}, fmt.Errorf("error creating form file %v for field %v: %w", data.File, data.FileFieldName, err)
 		}
 
 		_, err = piperutils.CopyData(fileWriter, data.FileContent)
 		if err != nil {
-			return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
+			return &http.Response{}, fmt.Errorf("unable to copy file content of %v into request body: %w", data.File, err)
 		}
 		err = bodyWriter.Close()
 		if err != nil {
@@ -200,7 +199,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		request, err := c.createRequest(data.Method, data.URL, bodyBuffer, &data.Header, data.Cookies)
 		if err != nil {
 			c.logger.Debugf("new %v request to %v", data.Method, data.URL)
-			return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", data.Method, data.URL)
+			return &http.Response{}, fmt.Errorf("error creating %v request to %v: %w", data.Method, data.URL, err)
 		}
 
 		startBoundary := strings.Index(bodyWriter.FormDataContentType(), "=") + 1
@@ -219,7 +218,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	request, err := c.createRequest(method, url, body, &header, cookies)
 	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
+		return &http.Response{}, fmt.Errorf("error creating %v request to %v: %w", method, url, err)
 	}
 
 	return c.Send(request)
@@ -230,7 +229,7 @@ func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	httpClient := c.initializeHttpClient()
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
+		return response, fmt.Errorf("HTTP %v request to %v failed: %w", request.Method, request.URL, err)
 	}
 	return c.handleResponse(response, request.URL.String())
 }
@@ -534,7 +533,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 	trustStoreDir, err := getWorkingDirForTrustStore()
 	if err != nil {
-		return errors.Wrap(err, "failed to create trust store directory")
+		return fmt.Errorf("failed to create trust store directory: %w", err)
 	}
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
 	// Get the SystemCertPool, continue with an empty pool on error
@@ -587,7 +586,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			}
 			response, err := httpClient.Do(request)
 			if err != nil {
-				return errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
+				return fmt.Errorf("HTTP %v request to %v failed: %w", request.Method, request.URL, err)
 			}
 
 			if response.StatusCode >= 200 && response.StatusCode < 300 {
@@ -600,39 +599,39 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				}
 				fileHandler, err := c.getFileUtils().Create(target)
 				if err != nil {
-					return errors.Wrapf(err, "unable to create file %v", filename)
+					return fmt.Errorf("unable to create file %v: %w", filename, err)
 				}
 				defer fileHandler.Close()
 
 				numWritten, err := io.Copy(fileHandler, response.Body)
 				if err != nil {
-					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
+					return fmt.Errorf("unable to copy content from url to file %v: %w", filename, err)
 				}
 				log.Entry().Debugf("wrote %v bytes from response body to file", numWritten)
 
 				certs, err := os.ReadFile(target)
 				if err != nil {
-					return errors.Wrapf(err, "failed to read cert file %v", certificate)
+					return fmt.Errorf("failed to read cert file %v: %w", certificate, err)
 				}
 				// Append our cert to the system pool
 				ok := rootCAs.AppendCertsFromPEM(certs)
 				if !ok {
-					return errors.Errorf("failed to append %v to root CA store", certificate)
+					return fmt.Errorf("failed to append %v to root CA store", certificate)
 				}
 				log.Entry().Infof("%v appended to root CA successfully", certificate)
 			} else {
-				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
+				return fmt.Errorf("Download of TLS certificate %v failed with status code %v: %w", certificate, response.StatusCode, err)
 			}
 		} else {
 			log.Entry().Debugf("existing certificate file %v found, appending it to rootCA", target)
 			certs, err := os.ReadFile(target)
 			if err != nil {
-				return errors.Wrapf(err, "failed to read cert file %v", certificate)
+				return fmt.Errorf("failed to read cert file %v: %w", certificate, err)
 			}
 			// Append our cert to the system pool
 			ok := rootCAs.AppendCertsFromPEM(certs)
 			if !ok {
-				return errors.Errorf("failed to append %v to root CA store", certificate)
+				return fmt.Errorf("failed to append %v to root CA store", certificate)
 			}
 			log.Entry().Debugf("%v appended to root CA successfully", certificate)
 		}
@@ -649,7 +648,7 @@ func getWorkingDirForTrustStore() (string, error) {
 	if exists, _ := fileUtils.DirExists(TrustStoreDirectory); !exists {
 		err := fileUtils.MkdirAll(TrustStoreDirectory, 0777)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to create trust store directory")
+			return "", fmt.Errorf("failed to create trust store directory: %w", err)
 		}
 	}
 	return TrustStoreDirectory, nil
@@ -658,17 +657,17 @@ func getWorkingDirForTrustStore() (string, error) {
 // ParseHTTPResponseBodyXML parses an XML http response into a given interface
 func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 	if resp == nil {
-		return errors.Errorf("cannot parse HTTP response with value <nil>")
+		return fmt.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
 	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		return errors.Wrap(readErr, "HTTP response body could not be read")
+		return fmt.Errorf("HTTP response body could not be read: %w", readErr)
 	}
 
 	marshalErr := xml.Unmarshal(bodyText, &response)
 	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as XML: %v", string(bodyText))
+		return fmt.Errorf("HTTP response body could not be parsed as XML: %v: %w", string(bodyText), marshalErr)
 	}
 
 	return nil
@@ -677,17 +676,17 @@ func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
 // ParseHTTPResponseBodyJSON parses a JSON http response into a given interface
 func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
 	if resp == nil {
-		return errors.Errorf("cannot parse HTTP response with value <nil>")
+		return fmt.Errorf("cannot parse HTTP response with value <nil>")
 	}
 
 	bodyText, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read")
+		return fmt.Errorf("HTTP response body could not be read: %w", readErr)
 	}
 
 	marshalErr := json.Unmarshal(bodyText, &response)
 	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+		return fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), marshalErr)
 	}
 
 	return nil

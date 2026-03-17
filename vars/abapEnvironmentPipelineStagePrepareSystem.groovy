@@ -1,5 +1,6 @@
 import groovy.transform.Field
 import com.sap.piper.Utils
+import com.sap.piper.ConfigurationHelper
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -9,7 +10,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Creates a SAP BTP ABAP Environment instance via the cloud foundry command line interface */
     'abapEnvironmentCreateSystem',
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
-    'cloudFoundryCreateServiceKey'
+    'cloudFoundryCreateServiceKey',
+    /** Creates a BTP service instance for ABAP Environment */
+    'btpCreateServiceInstance'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -20,8 +23,21 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults()
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .use()
+
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        abapEnvironmentCreateSystem script: parameters.script
+        if (config.subdomain && config.subaccount) {
+            // BTP path: Create BTP service instance
+            btpCreateServiceInstance script: parameters.script
+        } else {
+            // Cloud Foundry path: Use existing approach
+            abapEnvironmentCreateSystem script: parameters.script
+        }
     }
 
 }

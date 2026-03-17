@@ -3,14 +3,15 @@ package yaml
 import (
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"gopkg.in/yaml.v3"
 )
 
 type fUtils interface {

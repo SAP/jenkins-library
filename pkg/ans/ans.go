@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
-	"github.com/pkg/errors"
 )
 
 // ANS holds the setup for the xsuaa service to retrieve a bearer token for authorization and
@@ -37,7 +36,7 @@ type ServiceKey struct {
 // UnmarshallServiceKeyJSON unmarshalls the given json service key string.
 func UnmarshallServiceKeyJSON(serviceKeyJSON string) (ansServiceKey ServiceKey, err error) {
 	if err = json.Unmarshal([]byte(serviceKeyJSON), &ansServiceKey); err != nil {
-		err = errors.Wrap(err, "error unmarshalling ANS serviceKey")
+		err = fmt.Errorf("error unmarshalling ANS serviceKey: %w", err)
 	}
 	return
 }
@@ -115,7 +114,7 @@ func handleStatusCode(requestedUrl string, expectedStatus int, response *http.Re
 			requestedUrl, expectedStatus, response.StatusCode)
 		responseBody, err := readResponseBody(response)
 		if err != nil {
-			err = errors.Wrapf(err, "%s; reading response body failed", statusCodeError.Error())
+			err = fmt.Errorf("%s; reading response body failed: %w", statusCodeError.Error(), err)
 		} else {
 			err = fmt.Errorf("%s; response body: %s", statusCodeError.Error(), responseBody)
 		}
@@ -126,12 +125,12 @@ func handleStatusCode(requestedUrl string, expectedStatus int, response *http.Re
 
 func readResponseBody(response *http.Response) ([]byte, error) {
 	if response == nil {
-		return nil, errors.Errorf("did not retrieve an HTTP response")
+		return nil, fmt.Errorf("did not retrieve an HTTP response")
 	}
 	defer response.Body.Close()
 	bodyText, readErr := io.ReadAll(response.Body)
 	if readErr != nil {
-		return nil, errors.Wrap(readErr, "HTTP response body could not be read")
+		return nil, fmt.Errorf("HTTP response body could not be read: %w", readErr)
 	}
 	return bodyText, nil
 }
