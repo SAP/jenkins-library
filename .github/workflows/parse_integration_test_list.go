@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 func main() {
