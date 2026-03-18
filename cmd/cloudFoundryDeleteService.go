@@ -73,7 +73,7 @@ func cloudFoundryDeleteServiceKeys(options *cloudFoundryDeleteServiceOptions, c 
 
 	ServiceGUID, err := cloudFoundryFindServiceGUID(options, c)
 	if err != nil {
-
+		return fmt.Errorf("Failed to determine Service Instance GUID: %w", err)
 	}
 
 	log.Entry().WithField("Service Instance GUID :", ServiceGUID).Info("ServiceGUID")
