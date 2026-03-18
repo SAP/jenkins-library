@@ -194,7 +194,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
+					{Name: "abapCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -264,7 +264,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 						Name: "user",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "btpCredentialsId",
+								Name:  "abapCredentialsId",
 								Param: "username",
 								Type:  "secret",
 							},
@@ -279,7 +279,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 						Name: "password",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "btpCredentialsId",
+								Name:  "abapCredentialsId",
 								Param: "password",
 								Type:  "secret",
 							},
