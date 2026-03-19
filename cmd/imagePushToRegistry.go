@@ -220,10 +220,7 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 	}
 	log.Entry().Infof("Loading local image... Done")
 
-	for _, trgImage := range config.TargetImages {
-		trgImage := trgImage
-		targetImage := trgImage
-
+	for _, targetImage := range config.TargetImages {
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
 				dst := fmt.Sprintf("%s/%s:%s", config.TargetRegistryURL, targetImage, config.TargetImageTag)
