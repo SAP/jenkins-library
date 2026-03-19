@@ -11,7 +11,7 @@ import (
 
 func TestNewTaskRunFinishedCDEvent(t *testing.T) {
 	t.Run("creates valid CDEvent as CloudEvent", func(t *testing.T) {
-		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "https://example.com/run/1", "success")
+		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "https://example.com/run/1", "success", "Build")
 		assert.NoError(t, err)
 
 		var result map[string]any
@@ -25,8 +25,37 @@ func TestNewTaskRunFinishedCDEvent(t *testing.T) {
 		assert.NotEmpty(t, result["id"])
 	})
 
+	t.Run("includes stageName in customData", func(t *testing.T) {
+		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "success", "Build")
+		assert.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(bytes, &result)
+		assert.NoError(t, err)
+
+		data, ok := result["data"].(map[string]any)
+		assert.True(t, ok)
+		customData, ok := data["customData"].(map[string]any)
+		assert.True(t, ok)
+		assert.Equal(t, "Build", customData["stageName"])
+	})
+
+	t.Run("no customData when stageName is empty", func(t *testing.T) {
+		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "success", "")
+		assert.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(bytes, &result)
+		assert.NoError(t, err)
+
+		data, ok := result["data"].(map[string]any)
+		assert.True(t, ok)
+		_, hasCustomData := data["customData"]
+		assert.False(t, hasCustomData)
+	})
+
 	t.Run("outcome failure", func(t *testing.T) {
-		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "failure")
+		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "failure", "")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, bytes)
 	})

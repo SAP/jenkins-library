@@ -39,12 +39,7 @@ type Telemetry struct {
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func (t *Telemetry) Initialize(stepName string) {
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().Warningf("could not get orchestrator config provider, leads to insufficient data")
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
-	}
-	t.provider = provider
+	t.provider = orchestrator.GetOrchestratorConfigProvider(nil)
 
 	if t.client == nil {
 		t.client = &piperhttp.Client{}

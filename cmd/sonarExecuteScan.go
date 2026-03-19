@@ -486,11 +486,7 @@ func getTempDir() string {
 
 // Fetches parameters from environment variables and updates the options accordingly (only if not already set)
 func detectParametersFromCI(options *sonarExecuteScanOptions) {
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
-		return
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	if provider.IsPullRequest() {
 		config := provider.PullRequestConfig()
