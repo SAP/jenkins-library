@@ -175,6 +175,7 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 		if !ok {
 			return fmt.Errorf("incorrect name of target image: %v", config.TargetImages[sourceImage])
 		}
+		log.Entry().Debugf("Current target image: %s", targetImage)
 
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
@@ -219,6 +220,7 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 		return err
 	}
 	log.Entry().Infof("Loading local image... Done")
+	log.Entry().Debugf("Selected target images: %s", config.TargetImages)
 
 	for _, targetImage := range config.TargetImages {
 		if config.TargetImageTag != "" {
@@ -286,9 +288,12 @@ func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils
 
 func mapSourceTargetImages(sourceImages []string) map[string]string {
 	targetImages := make(map[string]string, len(sourceImages))
+
 	for _, sourceImage := range sourceImages {
 		targetImages[sourceImage] = sourceImage
 	}
+
+	log.Entry().Debugf("Mapped target images: %s", targetImages)
 
 	return targetImages
 }
