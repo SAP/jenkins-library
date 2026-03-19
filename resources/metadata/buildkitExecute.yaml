@@ -1,0 +1,336 @@
+metadata:
+  name: buildkitExecute
+  description: Executes a Docker BuildKit build for creating a Docker container image.
+  longDescription: |
+    Executes a Docker [BuildKit](https://docs.docker.com/build/buildkit/) build (`docker buildx build`) for creating a Docker container image.
+    This step is intended for use in GitHub Actions, where Docker + BuildKit are natively available on the runner.
+
+    ### Building one container image
+
+    For building one container image the step expects that one of the containerImage, containerImageName or --destination (via buildOptions) is set.
+
+    ### Building multiple container images
+
+    The step allows you to build multiple container images with one run.
+    This is suitable in case you need to create multiple images for one microservice, e.g. for testing.
+
+    All images will get the same "root" name and the same versioning.<br />
+    **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
+    or implement a custom logic and for example execute this `buildkitExecute` step multiple times in your custom pipeline.
+
+    You can activate multiple builds using the parameter [containerMultiImageBuild](#containermultiimagebuild)
+
+    Behavior can be adapted using:
+
+    * [containerMultiImageBuildExcludes](#containermultiimagebuildexcludes) for defining excludes
+    * [containerMultiImageBuildTrimDir](#containermultiimagebuildtrimdir) for removing parent directory part from image name
+
+    Examples:
+
+    #### Multiple containers in sub directories
+
+    Configuration as follows:
+
+    ```
+    general:
+      containerImageName: myImage
+    steps:
+      buildkitExecute:
+        containerMultiImageBuild: true
+    ```
+
+    Following Dockerfiles are available in the repository:
+
+    * sub1/Dockerfile
+    * sub2/Dockerfile
+
+    Following final image names will be built:
+
+    * `myImage-sub1`
+    * `myImage-sub2`
+
+    #### Multiple containers in sub directories while trimming a directory part
+
+    Configuration as follows:
+
+    ```
+    general:
+      containerImageName: myImage
+    steps:
+      buildkitExecute:
+        containerMultiImageBuild: true
+        containerMultiImageBuildTrimDir: .ci
+    ```
+
+    Following Dockerfiles are available in the repository:
+
+    * .ci/sub1/Dockerfile
+    * .ci/sub2/Dockerfile
+
+    Following final image names will be built:
+
+    * `myImage-sub1`
+    * `myImage-sub2`
+
+spec:
+  inputs:
+    params:
+      - name: buildOptions
+        type: "[]string"
+        description: Defines a list of build options for the Docker BuildKit build.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+      - name: containerBuildOptions
+        type: string
+        description: Deprected, please use buildOptions. Defines the build options for the Docker BuildKit build.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImage
+        aliases:
+          - name: containerImageNameAndTag
+            deprecated: true
+        type: string
+        description: Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If `containerImage` is not provided, then `containerImageName` or `--destination` (via buildOptions) should be provided.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used instead of parameter `containerImage`. If `containerImageName` is not provided, then `containerImage` or `--destination` (via buildOptions) should be provided.
+        mandatoryIf:
+          - name: containerMultiImageBuild
+            value: true
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: multipleImages
+        aliases:
+          - name: images
+        type: "[]map[string]interface{}"
+        description: |
+          This parameter is only needed if `buildkitExecute` should create multiple images using the same root Dockerfile, but with different sub-contexts.
+          Otherwise it can be ignored!!!
+
+          In case of multiple images, this array contains one entry for each image.
+          Either containerImageName OR containerImage MUST be provided for each entry.
+          contextSubPath MUST be provided for each entry.
+
+          Array keys:
+            contextSubPath - Set a context subpath.
+            dockerfilePath - Dockerfile path (optional). If empty, root will be used.
+            containerImageName - Name of the container which will be built.
+            containerImageTag - Tag of the container which will be built. If empty - root containerImageTag will be used.
+            containerImage - Defines the full name of the Docker image to be created including registry.
+
+          ```yaml
+          containerRegistryUrl: docker.io
+          containerImageTag: latest
+          multipleImages:
+          - containerImageName: myImage1
+            containerImageTag: v1.0.0
+            contextSubPath: path/to/folder
+          ```
+        scope:
+          - PARAMETERS
+          - STEPS
+      - name: containerMultiImageBuild
+        type: bool
+        description: Defines if multiple containers should be build. Dockerfiles are used using the pattern **/Dockerfile*. Excludes can be defined via [`containerMultiImageBuildExcludes`](#containermultiimagebuildexcludes).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildExcludes
+        type: '[]string'
+        description: Defines a list of Dockerfile paths to exclude from the build when using [`containerMultiImageBuild`](#containermultiimagebuild).
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerMultiImageBuildTrimDir
+        type: 'string'
+        description: Defines a trailing directory part which should not be considered in the final image name.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerPreparationCommand
+        type: string
+        description: Defines the command to prepare the build environment. Empty by default since Docker BuildKit does not require special preparation.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: containerRegistryUser
+        aliases:
+          - name: dockerRegistryUser
+        type: string
+        description: Username of the Container registry where the image should be pushed to - which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryUsername
+      - name: containerRegistryPassword
+        aliases:
+          - name: dockerRegistryPassword
+        type: string
+        description: Password of the Container registry where the image should be pushed to -  which will updated in a docker config json file. If a docker config json file is provided via parameter `dockerConfigJSON` , then the existing file will be enhanced
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/repositoryPassword
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - type: vaultSecretFile
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
+      - name: dockerfilePath
+        aliases:
+          - name: dockerfile
+        type: string
+        description: Defines the location of the Dockerfile relative to the pipeline working directory.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: Dockerfile
+      - name: readImageDigest
+        type: bool
+        default: false
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: syftDownloadUrl
+        type: string
+        description: Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.
+        scope:
+          - PARAMETERS
+          - STEPS
+        default: "https://github.com/anchore/syft/releases/download/v1.22.0/syft_1.22.0_linux_amd64.tar.gz"
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: registryMirrors
+        type: "[]string"
+        description: List of registry mirrors to use instead of default index.docker.io.
+        longDescription: |
+          Set registry mirror(s) to use instead of the default index.docker.io.
+          If an image is not found on the first mirror, Docker will try the next mirror(s),
+          and at the end fallback on the default registry.
+
+          Valid formats:
+          - mirror.gcr.io
+          - 127.0.0.1
+          - 192.168.0.1:5000
+          - mycompany-docker-virtual.jfrog.io
+          - harbor.private.io/theproject
+
+          You can specify URLs with schemes (e.g., http://127.0.0.1:5000).
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/registryUrl
+          - name: container/imageNameTag
+          - name: container/imageDigest
+          - name: custom/dockerBuildArtifacts
+          - name: container/imageNames
+            type: "[]string"
+          - name: container/imageNameTags
+            type: "[]string"
+          - name: container/imageDigests
+            type: "[]string"
+          - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom-*.xml"
+            type: sbom

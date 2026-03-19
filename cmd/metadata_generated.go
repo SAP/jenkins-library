@@ -45,6 +45,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"btpCreateServiceInstance":                  btpCreateServiceInstanceMetadata(),
 		"btpDeleteServiceBinding":                   btpDeleteServiceBindingMetadata(),
 		"btpDeleteServiceInstance":                  btpDeleteServiceInstanceMetadata(),
+		"buildkitExecute":                           buildkitExecuteMetadata(),
 		"checkmarxExecuteScan":                      checkmarxExecuteScanMetadata(),
 		"checkmarxOneExecuteScan":                   checkmarxOneExecuteScanMetadata(),
 		"cloudFoundryCreateService":                 cloudFoundryCreateServiceMetadata(),
