@@ -18,7 +18,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/ghodss/yaml"
+	piperyaml "github.com/SAP/jenkins-library/pkg/yaml"
 )
 
 // AbapUtils Struct
@@ -160,7 +160,7 @@ func ReadConfigFile(path string) (file []byte, err error) {
 		return nil, err
 	}
 	var jsonFile []byte
-	jsonFile, err = yaml.YAMLToJSON(yamlFile)
+	jsonFile, err = piperyaml.YAMLToJSON(yamlFile)
 	return jsonFile, err
 }
 

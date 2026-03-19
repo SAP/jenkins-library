@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ghodss/yaml"
 	"helm.sh/helm/v3/pkg/chart"
+	"sigs.k8s.io/yaml"
 )
 
 // JSONfile defines an artifact using a json file for versioning

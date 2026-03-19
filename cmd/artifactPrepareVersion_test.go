@@ -17,9 +17,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart"
+	"sigs.k8s.io/yaml"
 
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"

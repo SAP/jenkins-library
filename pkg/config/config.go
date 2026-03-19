@@ -16,17 +16,17 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
-	"github.com/ghodss/yaml"
 	"github.com/google/go-cmp/cmp"
+	"go.yaml.in/yaml/v3"
 )
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults           []string                          `json:"customDefaults,omitempty"`
-	General                  map[string]interface{}            `json:"general"`
-	Stages                   map[string]map[string]interface{} `json:"stages"`
-	Steps                    map[string]map[string]interface{} `json:"steps"`
-	Hooks                    map[string]interface{}            `json:"hooks,omitempty"`
+	CustomDefaults           []string                          `json:"customDefaults,omitempty" yaml:"customDefaults,omitempty"`
+	General                  map[string]interface{}            `json:"general" yaml:"general"`
+	Stages                   map[string]map[string]interface{} `json:"stages" yaml:"stages"`
+	Steps                    map[string]map[string]interface{} `json:"steps" yaml:"steps"`
+	Hooks                    map[string]interface{}            `json:"hooks,omitempty" yaml:"hooks,omitempty"`
 	defaults                 PipelineDefaults
 	initialized              bool
 	accessTokens             map[string]string

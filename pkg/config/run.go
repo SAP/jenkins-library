@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 // RunConfig ...
@@ -32,49 +32,49 @@ type StepConditions struct {
 }
 
 type PipelineDefinitionV1 struct {
-	APIVersion string   `json:"apiVersion"`
-	Kind       string   `json:"kind"`
-	Metadata   Metadata `json:"metadata"`
-	Spec       Spec     `json:"spec"`
+	APIVersion string   `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string   `json:"kind" yaml:"kind"`
+	Metadata   Metadata `json:"metadata" yaml:"metadata"`
+	Spec       Spec     `json:"spec" yaml:"spec"`
 	openFile   func(s string, t map[string]string) (io.ReadCloser, error)
 	runSteps   map[string]map[string]bool
 }
 
 type Metadata struct {
-	Name        string `json:"name,omitempty"`
-	DisplayName string `json:"displayName,omitempty"`
-	Description string `json:"description,omitempty"`
+	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty" yaml:"displayName,omitempty"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
 type Spec struct {
-	Stages []Stage `json:"stages"`
+	Stages []Stage `json:"stages" yaml:"stages"`
 }
 
 type Stage struct {
-	Name        string `json:"name,omitempty"`
-	DisplayName string `json:"displayName,omitempty"`
-	Description string `json:"description,omitempty"`
-	Steps       []Step `json:"steps,omitempty"`
+	Name        string `json:"name,omitempty" yaml:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty" yaml:"displayName,omitempty"`
+	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+	Steps       []Step `json:"steps,omitempty" yaml:"steps,omitempty"`
 }
 
 type Step struct {
-	Name                string          `json:"name,omitempty"`
-	Description         string          `json:"description,omitempty"`
-	Conditions          []StepCondition `json:"conditions,omitempty"`
-	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty"`
-	Orchestrators       []string        `json:"orchestrators,omitempty"`
+	Name                string          `json:"name,omitempty" yaml:"name,omitempty"`
+	Description         string          `json:"description,omitempty" yaml:"description,omitempty"`
+	Conditions          []StepCondition `json:"conditions,omitempty" yaml:"conditions,omitempty"`
+	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty" yaml:"notActiveConditions,omitempty"`
+	Orchestrators       []string        `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`
 }
 
 type StepCondition struct {
-	Config                    map[string][]interface{} `json:"config,omitempty"`
-	ConfigKey                 string                   `json:"configKey,omitempty"`
-	FilePattern               string                   `json:"filePattern,omitempty"`
-	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty"`
-	Inactive                  bool                     `json:"inactive,omitempty"`
-	OnlyActiveStepInStage     bool                     `json:"onlyActiveStepInStage,omitempty"`
-	NpmScript                 string                   `json:"npmScript,omitempty"`
-	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty"`
-	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty"`
+	Config                    map[string][]interface{} `json:"config,omitempty" yaml:"config,omitempty"`
+	ConfigKey                 string                   `json:"configKey,omitempty" yaml:"configKey,omitempty"`
+	FilePattern               string                   `json:"filePattern,omitempty" yaml:"filePattern,omitempty"`
+	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty" yaml:"filePatternFromConfig,omitempty"`
+	Inactive                  bool                     `json:"inactive,omitempty" yaml:"inactive,omitempty"`
+	OnlyActiveStepInStage     bool                     `json:"onlyActiveStepInStage,omitempty" yaml:"onlyActiveStepInStage,omitempty"`
+	NpmScript                 string                   `json:"npmScript,omitempty" yaml:"npmScript,omitempty"`
+	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty" yaml:"commonPipelineEnvironment,omitempty"`
+	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty" yaml:"pipelineEnvironmentFilled,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {

@@ -9,7 +9,7 @@ import (
 
 	"errors"
 
-	"github.com/ghodss/yaml"
+	piperyaml "github.com/SAP/jenkins-library/pkg/yaml"
 )
 
 /*
@@ -109,7 +109,7 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFun
 	}
 
 	var jsonBytes []byte
-	jsonBytes, err = yaml.YAMLToJSON(fileContent)
+	jsonBytes, err = piperyaml.YAMLToJSON(fileContent)
 	if err != nil {
 		return fmt.Errorf("Could not parse %v", FileName)
 	}

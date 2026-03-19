@@ -24,7 +24,6 @@ require (
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/getsentry/sentry-go v0.31.1
-	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-billy/v5 v5.6.0
 	github.com/go-git/go-git/v5 v5.13.0
 	github.com/go-openapi/runtime v0.24.1
@@ -303,5 +302,5 @@ require (
 	sigs.k8s.io/kustomize/api v0.19.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
-	sigs.k8s.io/yaml v1.5.0 // indirect
+	sigs.k8s.io/yaml v1.5.0
 )

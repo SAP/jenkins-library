@@ -5,7 +5,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )

@@ -2,6 +2,7 @@ package yaml
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -23,6 +24,20 @@ var _fileUtils fUtils
 
 var _stat = os.Stat
 var _traverse = traverse
+
+func YAMLToJSON(yamlData []byte) ([]byte, error) {
+	var v interface{}
+	if err := yaml.Unmarshal(yamlData, &v); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
+	}
+
+	jsonData, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal to JSON: %w", err)
+	}
+
+	return jsonData, nil
+}
 
 // Substitute ...
 func Substitute(ymlFile string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 // PipelineDefaults defines the structure of the pipeline defaults

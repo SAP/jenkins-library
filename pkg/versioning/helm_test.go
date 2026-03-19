@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/chart"
+	"sigs.k8s.io/yaml"
 )
 
 func TestHelmChartInit(t *testing.T) {
