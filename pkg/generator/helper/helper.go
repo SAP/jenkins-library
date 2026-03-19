@@ -356,6 +356,8 @@ func setDefaultParameters(stepData *config.StepData) error {
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
+			case "map[string]string":
+				param.Default = fmt.Sprintf("map[string]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
 			case "map[string]interface{}", "[]map[string]interface{}", "map[string]any", "[]map[string]any":
 				// Currently we don't need to set a default here since in this case the default
 				// is never used. Needs to be changed in case we enable cli parameter handling
