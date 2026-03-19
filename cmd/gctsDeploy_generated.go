@@ -17,23 +17,24 @@ import (
 )
 
 type gctsDeployOptions struct {
-	Username            string                 `json:"username,omitempty"`
-	Password            string                 `json:"password,omitempty"`
-	Repository          string                 `json:"repository,omitempty"`
-	Host                string                 `json:"host,omitempty"`
-	Client              string                 `json:"client,omitempty"`
-	Commit              string                 `json:"commit,omitempty"`
-	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
-	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
-	VSID                string                 `json:"vSID,omitempty"`
-	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT GITHUB GITLAB"`
-	Branch              string                 `json:"branch,omitempty"`
-	Scope               string                 `json:"scope,omitempty"`
-	Rollback            bool                   `json:"rollback,omitempty"`
-	Configuration       map[string]interface{} `json:"configuration,omitempty"`
-	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
-	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
-	Proxy               string                 `json:"proxy,omitempty"`
+	Username                string                 `json:"username,omitempty"`
+	Password                string                 `json:"password,omitempty"`
+	Repository              string                 `json:"repository,omitempty"`
+	Host                    string                 `json:"host,omitempty"`
+	Client                  string                 `json:"client,omitempty"`
+	Commit                  string                 `json:"commit,omitempty"`
+	RemoteRepositoryURL     string                 `json:"remoteRepositoryURL,omitempty"`
+	Role                    string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
+	VSID                    string                 `json:"vSID,omitempty"`
+	Type                    string                 `json:"type,omitempty" validate:"possible-values=GIT GITHUB GITLAB"`
+	Branch                  string                 `json:"branch,omitempty"`
+	Scope                   string                 `json:"scope,omitempty"`
+	Rollback                bool                   `json:"rollback,omitempty"`
+	FailOnMissingRepository bool                   `json:"failOnMissingRepository,omitempty"`
+	Configuration           map[string]interface{} `json:"configuration,omitempty"`
+	QueryParameters         map[string]interface{} `json:"queryParameters,omitempty"`
+	SkipSSLVerification     bool                   `json:"skipSSLVerification,omitempty"`
+	Proxy                   string                 `json:"proxy,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git repository to a local repository and then to an ABAP system
@@ -188,6 +189,7 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.")
 	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed (imported). Only use this parameter for specific use cases, for example, when import errors occurred. Possible values are `CRNTCOMMIT` (current commit of the local repository) and `LASTACTION` (last action that occurred in the local repository). The `CRNTCOMMIT` option deploys the complete list of objects that existed in the local repository at the point in time when the commit was created. Note that this deploy scope doesn't only comprise the changed objects of the commit itself. `LASTACTION` only deploys the object difference between the `From Commit` and the `To Commit` of the last action in the repository.")
 	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.")
+	cmd.Flags().BoolVar(&stepConfig.FailOnMissingRepository, "failOnMissingRepository", false, "If set to true, the step will fail if the repository does not exist in the gCTS backend. If set to false (default), the step will create the repository if it does not exist.")
 
 	cmd.Flags().BoolVar(&stepConfig.SkipSSLVerification, "skipSSLVerification", false, "Skip the verification of SSL (Secure Socket Layer) certificates when using HTTPS. This parameter is **not recommended** for productive environments.")
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy URL to be used for HTTP requests to the ABAP system. Provide in the format `<protocol>://<host>:<port>` (e.g., `http://proxy.company.com:8080`)")
@@ -336,6 +338,15 @@ func gctsDeployMetadata() config.StepData {
 					},
 					{
 						Name:        "rollback",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "failOnMissingRepository",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",

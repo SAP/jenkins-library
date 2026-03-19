@@ -131,6 +131,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: failOnMissingRepository
+        type: bool
+        description: If set to true, the step will fail if the repository does not exist in the gCTS backend. If set to false (default), the step will create the repository if it does not exist.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
       - name: configuration
         type: "map[string]interface{}"
         description: "Configuration parameters for the repository. Provide the parameters as a key-value pair map in the following format: `<configuration parameter>`:`<Value>`. For a list of available configuration parameters, see [Configuration Parameters for Repositories](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/99e471efcbee4a0faec82f9dd15897e1.html)."
