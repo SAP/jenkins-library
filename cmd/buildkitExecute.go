@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -24,11 +25,21 @@ import (
 )
 
 const (
-	buildkitDockerConfigDir  = "/root/.docker"
-	buildkitDockerConfigPath = "/root/.docker/config.json"
-	buildkitTLSCertPath      = "/etc/ssl/certs/ca-certificates.crt"
-	buildkitDaemonJSONPath   = "/etc/docker/daemon.json"
+	buildkitTLSCertPath    = "/etc/ssl/certs/ca-certificates.crt"
+	buildkitDaemonJSONPath = "/etc/docker/daemon.json"
 )
+
+func buildkitGetDockerConfigDir() string {
+	home := os.Getenv("HOME")
+	if home == "" {
+		home = "/root"
+	}
+	return filepath.Join(home, ".docker")
+}
+
+func buildkitGetDockerConfigPath() string {
+	return filepath.Join(buildkitGetDockerConfigDir(), "config.json")
+}
 
 func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
 	c := command.Command{
@@ -77,6 +88,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	// Docker config handling
+	dockerConfigPath := buildkitGetDockerConfigPath()
 	dockerConfig := []byte(`{"auths":{}}`)
 
 	if len(config.DockerConfigJSON) > 0 {
@@ -97,18 +109,18 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 			return fmt.Errorf("failed to read enhanced file '%v': %w", config.DockerConfigJSON, err)
 		}
 	} else if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryURL) > 0 && len(config.ContainerRegistryPassword) > 0 && len(config.ContainerRegistryUser) > 0 {
-		targetConfigJSON, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", buildkitDockerConfigPath, fileUtils)
+		targetConfigJSON, err := docker.CreateDockerConfigJSON(config.ContainerRegistryURL, config.ContainerRegistryUser, config.ContainerRegistryPassword, "", dockerConfigPath, fileUtils)
 		if err != nil {
-			return fmt.Errorf("failed to create new docker config json at %s: %w", buildkitDockerConfigPath, err)
+			return fmt.Errorf("failed to create new docker config json at %s: %w", dockerConfigPath, err)
 		}
 		dockerConfig, err = fileUtils.FileRead(targetConfigJSON)
 		if err != nil {
-			return fmt.Errorf("failed to read new docker config file at %s: %w", buildkitDockerConfigPath, err)
+			return fmt.Errorf("failed to read new docker config file at %s: %w", dockerConfigPath, err)
 		}
 	}
 
-	if err := fileUtils.FileWrite(buildkitDockerConfigPath, dockerConfig, 0644); err != nil {
-		return fmt.Errorf("failed to write file '%s': %w", buildkitDockerConfigPath, err)
+	if err := fileUtils.FileWrite(dockerConfigPath, dockerConfig, 0644); err != nil {
+		return fmt.Errorf("failed to write file '%s': %w", dockerConfigPath, err)
 	}
 
 	// Registry mirrors: write daemon.json for Docker daemon
@@ -194,7 +206,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		}
 		if config.CreateBOM {
-			err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitDockerConfigDir, execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 			if err != nil {
 				return err
 			}
@@ -287,7 +299,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 
 		if config.CreateBOM {
-			err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitDockerConfigDir, execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 			if err != nil {
 				return err
 			}
@@ -384,7 +396,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	if config.CreateBOM {
-		err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitDockerConfigDir, execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			return err
 		}

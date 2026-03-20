@@ -86,7 +86,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, "Dockerfile")
 
 		// docker config written
-		c, err := fileUtils.FileRead(buildkitDockerConfigPath)
+		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{"custom":"test"}}`, string(c))
 
@@ -167,7 +167,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 		assert.NotContains(t, runner.Calls[0].Params, "--push")
 
 		// docker config written with default empty auths
-		c, err := fileUtils.FileRead(buildkitDockerConfigPath)
+		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{}}`, string(c))
 	})
@@ -444,7 +444,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		c, err := fileUtils.FileRead(buildkitDockerConfigPath)
+		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{"dummyUrl":{"auth":"XXXXXXX"},"https://my.registry.com:50000":{"auth":"ZHVtbXlVc2VyOmR1bW15UGFzc3dvcmQ="}}}`, string(c))
 	})
@@ -466,7 +466,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		c, err := fileUtils.FileRead(buildkitDockerConfigPath)
+		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{"https://my.registry.com:50000":{"auth":"ZHVtbXlVc2VyOmR1bW15UGFzc3dvcmQ="}}}`, string(c))
 	})
@@ -632,11 +632,11 @@ func TestRunBuildkitExecute(t *testing.T) {
 		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-		fileUtils.FileWriteErrors = map[string]error{buildkitDockerConfigPath: fmt.Errorf("write error")}
+		fileUtils.FileWriteErrors = map[string]error{buildkitGetDockerConfigPath(): fmt.Errorf("write error")}
 
 		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
-		assert.EqualError(t, err, fmt.Sprintf("failed to write file '%s': write error", buildkitDockerConfigPath))
+		assert.EqualError(t, err, fmt.Sprintf("failed to write file '%s': write error", buildkitGetDockerConfigPath()))
 	})
 
 	t.Run("error case - BuildKit execution failed", func(t *testing.T) {
