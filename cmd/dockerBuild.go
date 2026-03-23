@@ -396,15 +396,23 @@ func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		err := syft.GenerateSBOM(config.SyftDownloadURL, dockerBuildGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
-		if err != nil {
-			return err
+		if len(commonPipelineEnvironment.container.imageNameTags) == 0 {
+			log.Entry().Warn("skipping BOM creation: no container image was pushed")
+		} else {
+			err := syft.GenerateSBOM(config.SyftDownloadURL, dockerBuildGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if config.CreateBuildArtifactsMetadata {
-		err := dockerBuildCreateArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
-		if err != nil {
-			return err
+		if len(commonPipelineEnvironment.container.imageNameTags) == 0 {
+			log.Entry().Warn("skipping build artifacts metadata creation: no container image was pushed")
+		} else {
+			err := dockerBuildCreateArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
