@@ -1,5 +1,5 @@
 metadata:
-  name: buildkitExecute
+  name: dockerBuild
   description: Executes a Docker BuildKit build for creating a Docker container image.
   longDescription: |
     Executes a Docker [BuildKit](https://docs.docker.com/build/buildkit/) build (`docker buildx build`) for creating a Docker container image.
@@ -16,7 +16,7 @@ metadata:
 
     All images will get the same "root" name and the same versioning.<br />
     **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
-    or implement a custom logic and for example execute this `buildkitExecute` step multiple times in your custom pipeline.
+    or implement a custom logic and for example execute this `dockerBuild` step multiple times in your custom pipeline.
 
     You can activate multiple builds using the parameter [containerMultiImageBuild](#containermultiimagebuild)
 
@@ -35,7 +35,7 @@ metadata:
     general:
       containerImageName: myImage
     steps:
-      buildkitExecute:
+      dockerBuild:
         containerMultiImageBuild: true
     ```
 
@@ -57,7 +57,7 @@ metadata:
     general:
       containerImageName: myImage
     steps:
-      buildkitExecute:
+      dockerBuild:
         containerMultiImageBuild: true
         containerMultiImageBuildTrimDir: .ci
     ```
@@ -140,7 +140,7 @@ spec:
           - name: images
         type: "[]map[string]interface{}"
         description: |
-          This parameter is only needed if `buildkitExecute` should create multiple images using the same root Dockerfile, but with different sub-contexts.
+          This parameter is only needed if `dockerBuild` should create multiple images using the same root Dockerfile, but with different sub-contexts.
           Otherwise it can be ignored!!!
 
           In case of multiple images, this array contains one entry for each image.

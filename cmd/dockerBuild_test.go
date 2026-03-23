@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type buildkitMockClient struct {
+type dockerBuildMockClient struct {
 	httpMethod     string
 	httpStatusCode int
 	urlsCalled     []string
@@ -29,9 +29,9 @@ type buildkitMockClient struct {
 	errorMessage   string
 }
 
-func (c *buildkitMockClient) SetOptions(opts piperhttp.ClientOptions) {}
+func (c *dockerBuildMockClient) SetOptions(opts piperhttp.ClientOptions) {}
 
-func (c *buildkitMockClient) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+func (c *dockerBuildMockClient) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	c.httpMethod = method
 	c.urlsCalled = append(c.urlsCalled, url)
 	c.requestBody = body
@@ -41,14 +41,14 @@ func (c *buildkitMockClient) SendRequest(method, url string, body io.Reader, hea
 	return &http.Response{StatusCode: c.httpStatusCode, Body: io.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
 }
 
-func (c *buildkitMockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (c *dockerBuildMockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	if len(c.errorMessage) > 0 {
 		return fmt.Errorf("%s", c.errorMessage)
 	}
 	return nil
 }
 
-func TestRunBuildkitExecute(t *testing.T) {
+func TestRunDockerBuild(t *testing.T) {
 	// required due to config resolution during build settings retrieval
 	openFileBak := configOptions.OpenFile
 	defer func() {
@@ -57,18 +57,18 @@ func TestRunBuildkitExecute(t *testing.T) {
 	configOptions.OpenFile = configOpenFileMock
 
 	t.Run("success case - full image reference", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImage:    "my.registry.io/myimage:mytag",
 			DockerfilePath:    "Dockerfile",
 			DockerConfigJSON:  "path/to/docker/config.json",
 			BuildSettingsInfo: `{"mavenExecuteBuild":[{"dockerImage":"maven"}]}`,
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "https://my.registry.io", commonPipelineEnvironment.container.registryURL)
@@ -86,17 +86,17 @@ func TestRunBuildkitExecute(t *testing.T) {
 		assert.Contains(t, runner.Calls[0].Params, "Dockerfile")
 
 		// docker config written
-		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
+		c, err := fileUtils.FileRead(dockerBuildGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{"custom":"test"}}`, string(c))
 
 		// build settings info populated
 		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"mavenExecuteBuild":[{"dockerImage":"maven"}]`)
-		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"buildkitExecute"`)
+		assert.Contains(t, commonPipelineEnvironment.custom.buildSettingsInfo, `"dockerBuild"`)
 	})
 
 	t.Run("success case - image params (name + tag + registry)", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:   "myImage",
 			ContainerImageTag:    "1.2.3-a+x",
 			ContainerRegistryURL: "https://my.registry.com:50000",
@@ -104,11 +104,11 @@ func TestRunBuildkitExecute(t *testing.T) {
 			DockerConfigJSON:     "path/to/docker/config.json",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "https://my.registry.com:50000", commonPipelineEnvironment.container.registryURL)
@@ -125,15 +125,15 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - destination in buildOptions (-t)", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			BuildOptions:   []string{"-t", "my.other.registry.com:50000/myImage:3.2.1-a-x"},
 			DockerfilePath: "Dockerfile",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "https://my.other.registry.com:50000", commonPipelineEnvironment.container.registryURL)
@@ -152,14 +152,14 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - no push default", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			DockerfilePath: "Dockerfile",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(runner.Calls))
@@ -167,30 +167,30 @@ func TestRunBuildkitExecute(t *testing.T) {
 		assert.NotContains(t, runner.Calls[0].Params, "--push")
 
 		// docker config written with default empty auths
-		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
+		c, err := fileUtils.FileRead(dockerBuildGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{}}`, string(c))
 	})
 
 	t.Run("success case - image digest capture", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImage:   "my.registry.io/myimage:mytag",
 			DockerfilePath:   "Dockerfile",
 			ReadImageDigest:  true,
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-		fileUtils.AddFile("/tmp/*-buildkitExecutetest/metadata.json", []byte(`{
+		fileUtils.AddFile("/tmp/*-dockerBuildtest/metadata.json", []byte(`{
 			"buildx.build.provenance": {},
 			"buildx.build.ref": "default/default/abc123",
 			"containerimage.config.digest": "sha256:configdigest",
 			"containerimage.digest": "sha256:468dd1253cc9f498fc600454bb8af96d880fec3f9f737e7057692adfe9f7d5b0"
 		}`))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Contains(t, runner.Calls[0].Params, "--metadata-file")
@@ -200,20 +200,20 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi image build with root image", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
 			ContainerRegistryURL:     "https://my.registry.com:50000",
 			ContainerMultiImageBuild: true,
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(runner.Calls))
@@ -247,7 +247,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi image build with excludes", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:               "myImage",
 			ContainerImageTag:                "myTag",
 			ContainerRegistryURL:             "https://my.registry.com:50000",
@@ -255,13 +255,13 @@ func TestRunBuildkitExecute(t *testing.T) {
 			ContainerMultiImageBuildExcludes: []string{"Dockerfile"},
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub1/Dockerfile", []byte("some content"))
 		fileUtils.AddFile("sub2/Dockerfile", []byte("some content"))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(runner.Calls))
@@ -275,7 +275,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi context explicit build", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:   "myImage",
 			ContainerImageTag:    "myTag",
 			ContainerRegistryURL: "https://my.registry.com:50000",
@@ -293,10 +293,10 @@ func TestRunBuildkitExecute(t *testing.T) {
 			},
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 2, len(runner.Calls))
@@ -327,7 +327,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - createBOM", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImage:   "myImage:tag",
 			DockerfilePath:   "Dockerfile",
 			DockerConfigJSON: "path/to/docker/config.json",
@@ -335,7 +335,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 			SyftDownloadURL:  "http://test-syft-url.io",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
@@ -348,7 +348,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		err = runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, client, fileUtils)
+		err = runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, client, fileUtils)
 		assert.NoError(t, err)
 
 		assert.Equal(t, "docker", runner.Calls[0].Exec)
@@ -361,44 +361,44 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - docker config with custom TLS certificates", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImage:            "my.registry.io/myimage:mytag",
 			DockerfilePath:            "Dockerfile",
 			DockerConfigJSON:          "path/to/docker/config.json",
 			CustomTLSCertificateLinks: []string{"https://test.url/cert.crt"},
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
-		certClient := &buildkitMockClient{
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		certClient := &dockerBuildMockClient{
 			responseBody: "testCert",
 		}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-		fileUtils.AddFile(buildkitTLSCertPath, []byte(``))
+		fileUtils.AddFile(dockerBuildTLSCertPath, []byte(``))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, config.CustomTLSCertificateLinks, certClient.urlsCalled)
 	})
 
 	t.Run("success case - registry mirrors (daemon.json written)", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImage:   "my.registry.io/myimage:mytag",
 			DockerfilePath:   "Dockerfile",
 			RegistryMirrors:  []string{"mirror.gcr.io", "192.168.0.1:5000"},
 			DockerConfigJSON: "path/to/docker/config.json",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 
-		daemonJSON, err := fileUtils.FileRead(buildkitDaemonJSONPath)
+		daemonJSON, err := fileUtils.FileRead(dockerBuildDaemonJSONPath)
 		assert.NoError(t, err)
 		assert.Contains(t, string(daemonJSON), `"registry-mirrors"`)
 		assert.Contains(t, string(daemonJSON), "mirror.gcr.io")
@@ -406,19 +406,19 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - backward compatibility containerBuildOptions", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerBuildOptions: "--label test=true",
 			ContainerImage:        "my.registry.io/myimage:mytag",
 			DockerfilePath:        "Dockerfile",
 			DockerConfigJSON:      "path/to/docker/config.json",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		telemetryData := telemetry.CustomData{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
-		err := runBuildkitExecute(config, &telemetryData, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetryData, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 		assert.Equal(t, "--label test=true", telemetryData.ContainerBuildOptions)
@@ -426,7 +426,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - updating existing docker config json with additional credentials", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:        "myImage",
 			ContainerImageTag:         "1.2.3-a+x",
 			ContainerRegistryURL:      "https://my.registry.com:50000",
@@ -436,21 +436,21 @@ func TestRunBuildkitExecute(t *testing.T) {
 			ContainerRegistryPassword: "dummyPassword",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths": {"dummyUrl": {"auth": "XXXXXXX"}}}`))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 
-		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
+		c, err := fileUtils.FileRead(dockerBuildGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{"dummyUrl":{"auth":"XXXXXXX"},"https://my.registry.com:50000":{"auth":"ZHVtbXlVc2VyOmR1bW15UGFzc3dvcmQ="}}}`, string(c))
 	})
 
 	t.Run("success case - creating new docker config json with container credentials", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:        "myImage",
 			ContainerImageTag:         "1.2.3-a+x",
 			ContainerRegistryURL:      "https://my.registry.com:50000",
@@ -459,20 +459,20 @@ func TestRunBuildkitExecute(t *testing.T) {
 			ContainerRegistryPassword: "dummyPassword",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.NoError(t, err)
 
-		c, err := fileUtils.FileRead(buildkitGetDockerConfigPath())
+		c, err := fileUtils.FileRead(dockerBuildGetDockerConfigPath())
 		assert.NoError(t, err)
 		assert.Equal(t, `{"auths":{"https://my.registry.com:50000":{"auth":"ZHVtbXlVc2VyOmR1bW15UGFzc3dvcmQ="}}}`, string(c))
 	})
 
 	t.Run("success case - multi image build with CreateBOM", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
 			ContainerRegistryURL:     "https://my.registry.com:50000",
@@ -482,7 +482,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 			SyftDownloadURL:          "http://test-syft-url.io",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
@@ -498,7 +498,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		err = runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, client, fileUtils)
+		err = runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, client, fileUtils)
 		assert.NoError(t, err)
 
 		// 3 docker builds + 3 syft scans
@@ -515,7 +515,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 	})
 
 	t.Run("success case - multi context build with CreateBOM", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:   "myImage",
 			ContainerImageTag:    "myTag",
 			ContainerRegistryURL: "https://my.registry.com:50000",
@@ -536,7 +536,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 			},
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
@@ -549,7 +549,7 @@ func TestRunBuildkitExecute(t *testing.T) {
 		client := &piperhttp.Client{}
 		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 
-		err = runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, client, fileUtils)
+		err = runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, client, fileUtils)
 		assert.NoError(t, err)
 
 		// 2 docker builds + 2 syft scans
@@ -583,15 +583,15 @@ func TestRunBuildkitExecute(t *testing.T) {
 		assert.NoError(t, err)
 
 		imageNameTags := []string{"dummyImage:1.0.0"}
-		cpe := buildkitExecuteCommonPipelineEnvironment{}
+		cpe := dockerBuildCommonPipelineEnvironment{}
 
-		err = buildkitCreateDockerBuildArtifactMetadata(imageNameTags, &cpe)
+		err = dockerBuildCreateArtifactMetadata(imageNameTags, &cpe)
 
 		assert.NoError(t, err)
 	})
 
 	t.Run("error case - container preparation failed", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerPreparationCommand: "failing-command arg1",
 			DockerfilePath:              "Dockerfile",
 		}
@@ -600,47 +600,47 @@ func TestRunBuildkitExecute(t *testing.T) {
 				"failing-command": fmt.Errorf("prep command failed"),
 			},
 		}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.EqualError(t, err, "failed to run container preparation command: prep command failed")
 	})
 
 	t.Run("error case - docker config read failed", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 			DockerfilePath:   "Dockerfile",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.FileReadErrors = map[string]error{"path/to/docker/config.json": fmt.Errorf("read error")}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.EqualError(t, err, "failed to read existing docker config json at 'path/to/docker/config.json': read error")
 	})
 
 	t.Run("error case - docker config write failed", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			DockerConfigJSON: "path/to/docker/config.json",
 			DockerfilePath:   "Dockerfile",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
-		fileUtils.FileWriteErrors = map[string]error{buildkitGetDockerConfigPath(): fmt.Errorf("write error")}
+		fileUtils.FileWriteErrors = map[string]error{dockerBuildGetDockerConfigPath(): fmt.Errorf("write error")}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
-		assert.EqualError(t, err, fmt.Sprintf("failed to write file '%s': write error", buildkitGetDockerConfigPath()))
+		assert.EqualError(t, err, fmt.Sprintf("failed to write file '%s': write error", dockerBuildGetDockerConfigPath()))
 	})
 
-	t.Run("error case - BuildKit execution failed", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+	t.Run("error case - docker build execution failed", func(t *testing.T) {
+		config := &dockerBuildOptions{
 			ContainerImage:   "my.registry.io/myimage:mytag",
 			DockerfilePath:   "Dockerfile",
 			DockerConfigJSON: "path/to/docker/config.json",
@@ -650,89 +650,89 @@ func TestRunBuildkitExecute(t *testing.T) {
 				"docker": fmt.Errorf("buildx build failed"),
 			},
 		}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("path/to/docker/config.json", []byte(`{"auths":{"custom":"test"}}`))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.EqualError(t, err, "execution of 'docker buildx build' failed: buildx build failed")
 	})
 
 	t.Run("error case - multi image build: no docker files", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
 			ContainerRegistryURL:     "https://my.registry.com:50000",
 			ContainerMultiImageBuild: true,
 		}
-		cpe := buildkitExecuteCommonPipelineEnvironment{}
+		cpe := dockerBuildCommonPipelineEnvironment{}
 		runner := &mock.ExecMockRunner{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to identify image list for multi image build")
 	})
 
 	t.Run("error case - multi image build: no docker files to process", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:               "myImage",
 			ContainerImageTag:                "myTag",
 			ContainerRegistryURL:             "https://my.registry.com:50000",
 			ContainerMultiImageBuild:         true,
 			ContainerMultiImageBuildExcludes: []string{"Dockerfile"},
 		}
-		cpe := buildkitExecuteCommonPipelineEnvironment{}
+		cpe := dockerBuildCommonPipelineEnvironment{}
 		runner := &mock.ExecMockRunner{}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "no docker files to process, please check exclude list")
 	})
 
 	t.Run("error case - multi image build: build failed", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:       "myImage",
 			ContainerImageTag:        "myTag",
 			ContainerRegistryURL:     "https://my.registry.com:50000",
 			ContainerMultiImageBuild: true,
 		}
-		cpe := buildkitExecuteCommonPipelineEnvironment{}
+		cpe := dockerBuildCommonPipelineEnvironment{}
 		runner := &mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{"docker": fmt.Errorf("execution failed")},
 		}
 		fileUtils := &mock.FilesMock{}
 		fileUtils.AddFile("Dockerfile", []byte("some content"))
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "failed to build image")
 	})
 
 	t.Run("error case - cert update failed", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			CustomTLSCertificateLinks: []string{"https://test.url/cert.crt"},
 			DockerfilePath:            "Dockerfile",
 		}
 		runner := &mock.ExecMockRunner{}
-		commonPipelineEnvironment := buildkitExecuteCommonPipelineEnvironment{}
-		certClient := &buildkitMockClient{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		certClient := &dockerBuildMockClient{}
 		fileUtils := &mock.FilesMock{}
-		fileUtils.FileReadErrors = map[string]error{buildkitTLSCertPath: fmt.Errorf("read error")}
+		fileUtils.FileReadErrors = map[string]error{dockerBuildTLSCertPath: fmt.Errorf("read error")}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
-		assert.EqualError(t, err, fmt.Sprintf("failed to update certificates: failed to load file '%s': read error", buildkitTLSCertPath))
+		assert.EqualError(t, err, fmt.Sprintf("failed to update certificates: failed to load file '%s': read error", dockerBuildTLSCertPath))
 	})
 
 	t.Run("error case - multi context build: no subcontext provided", func(t *testing.T) {
-		config := &buildkitExecuteOptions{
+		config := &dockerBuildOptions{
 			ContainerImageName:   "myImage",
 			ContainerImageTag:    "myTag",
 			ContainerRegistryURL: "https://my.registry.com:50000",
@@ -741,11 +741,11 @@ func TestRunBuildkitExecute(t *testing.T) {
 				{"containerImageName": "myImageTwo"},
 			},
 		}
-		cpe := buildkitExecuteCommonPipelineEnvironment{}
+		cpe := dockerBuildCommonPipelineEnvironment{}
 		runner := &mock.ExecMockRunner{}
 		fileUtils := &mock.FilesMock{}
 
-		err := runBuildkitExecute(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
+		err := runDockerBuild(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
 
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "multipleImages: empty contextSubPath")
@@ -806,55 +806,55 @@ func TestExtractDigestFromMetadata(t *testing.T) {
 	})
 }
 
-func TestBuildkitHasDestination(t *testing.T) {
+func TestDockerBuildHasDestination(t *testing.T) {
 	t.Parallel()
 
 	t.Run("has -t flag", func(t *testing.T) {
 		t.Parallel()
-		assert.True(t, buildkitHasDestination([]string{"-t", "registry/image:tag", "--some-other-flag"}))
+		assert.True(t, dockerBuildHasDestination([]string{"-t", "registry/image:tag", "--some-other-flag"}))
 	})
 
 	t.Run("no -t flag", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, buildkitHasDestination([]string{"--some-flag", "value"}))
+		assert.False(t, dockerBuildHasDestination([]string{"--some-flag", "value"}))
 	})
 
 	t.Run("empty options", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, buildkitHasDestination([]string{}))
+		assert.False(t, dockerBuildHasDestination([]string{}))
 	})
 }
 
-func TestBuildkitFindImageNameTagInPurl(t *testing.T) {
+func TestDockerBuildFindImageNameTagInPurl(t *testing.T) {
 	t.Parallel()
 
 	t.Run("exact match found", func(t *testing.T) {
 		t.Parallel()
-		result := buildkitFindImageNameTagInPurl([]string{"myImage:1.0.0", "anotherImage:2.0.0"}, "myImage:1.0.0")
+		result := dockerBuildFindImageNameTagInPurl([]string{"myImage:1.0.0", "anotherImage:2.0.0"}, "myImage:1.0.0")
 		assert.Equal(t, "myImage:1.0.0", result)
 	})
 
 	t.Run("suffix match found", func(t *testing.T) {
 		t.Parallel()
-		result := buildkitFindImageNameTagInPurl([]string{"my.registry.com:50000/apps/myImage:1.0.0"}, "apps/myImage:1.0.0")
+		result := dockerBuildFindImageNameTagInPurl([]string{"my.registry.com:50000/apps/myImage:1.0.0"}, "apps/myImage:1.0.0")
 		assert.Equal(t, "my.registry.com:50000/apps/myImage:1.0.0", result)
 	})
 
 	t.Run("no match found", func(t *testing.T) {
 		t.Parallel()
-		result := buildkitFindImageNameTagInPurl([]string{"myImage:1.0.0"}, "nonExistentImage:3.0.0")
+		result := dockerBuildFindImageNameTagInPurl([]string{"myImage:1.0.0"}, "nonExistentImage:3.0.0")
 		assert.Equal(t, "", result)
 	})
 
 	t.Run("empty container image name tags", func(t *testing.T) {
 		t.Parallel()
-		result := buildkitFindImageNameTagInPurl([]string{}, "myImage:1.0.0")
+		result := dockerBuildFindImageNameTagInPurl([]string{}, "myImage:1.0.0")
 		assert.Equal(t, "", result)
 	})
 
 	t.Run("multiple matches - exact match takes precedence", func(t *testing.T) {
 		t.Parallel()
-		result := buildkitFindImageNameTagInPurl([]string{"my.registry.com/myImage:1.0.0", "myImage:1.0.0"}, "myImage:1.0.0")
+		result := dockerBuildFindImageNameTagInPurl([]string{"my.registry.com/myImage:1.0.0", "myImage:1.0.0"}, "myImage:1.0.0")
 		assert.Equal(t, "myImage:1.0.0", result)
 	})
 }

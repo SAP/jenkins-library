@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBuildkitExecuteCommand(t *testing.T) {
+func TestDockerBuildCommand(t *testing.T) {
 	t.Parallel()
 
-	testCmd := BuildkitExecuteCommand()
+	testCmd := DockerBuildCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "buildkitExecute", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "dockerBuild", testCmd.Use, "command name incorrect")
 
 }

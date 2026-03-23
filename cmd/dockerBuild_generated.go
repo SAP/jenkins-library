@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type buildkitExecuteOptions struct {
+type dockerBuildOptions struct {
 	BuildOptions                     []string                 `json:"buildOptions,omitempty"`
 	BuildSettingsInfo                string                   `json:"buildSettingsInfo,omitempty"`
 	ContainerBuildOptions            string                   `json:"containerBuildOptions,omitempty"`
@@ -47,7 +47,7 @@ type buildkitExecuteOptions struct {
 	RegistryMirrors                  []string                 `json:"registryMirrors,omitempty"`
 }
 
-type buildkitExecuteCommonPipelineEnvironment struct {
+type dockerBuildCommonPipelineEnvironment struct {
 	container struct {
 		registryURL   string
 		imageNameTag  string
@@ -62,7 +62,7 @@ type buildkitExecuteCommonPipelineEnvironment struct {
 	}
 }
 
-func (p *buildkitExecuteCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *dockerBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
@@ -91,10 +91,10 @@ func (p *buildkitExecuteCommonPipelineEnvironment) persist(path, resourceName st
 	}
 }
 
-type buildkitExecuteReports struct {
+type dockerBuildReports struct {
 }
 
-func (p *buildkitExecuteReports) persist(stepConfig buildkitExecuteOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+func (p *dockerBuildReports) persist(stepConfig dockerBuildOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
 	if gcsBucketId == "" {
 		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
 		return
@@ -125,20 +125,20 @@ func (p *buildkitExecuteReports) persist(stepConfig buildkitExecuteOptions, gcpJ
 	}
 }
 
-// BuildkitExecuteCommand Executes a Docker BuildKit build for creating a Docker container image.
-func BuildkitExecuteCommand() *cobra.Command {
-	const STEP_NAME = "buildkitExecute"
+// DockerBuildCommand Executes a Docker BuildKit build for creating a Docker container image.
+func DockerBuildCommand() *cobra.Command {
+	const STEP_NAME = "dockerBuild"
 
-	metadata := buildkitExecuteMetadata()
-	var stepConfig buildkitExecuteOptions
+	metadata := dockerBuildMetadata()
+	var stepConfig dockerBuildOptions
 	var startTime time.Time
-	var commonPipelineEnvironment buildkitExecuteCommonPipelineEnvironment
-	var reports buildkitExecuteReports
+	var commonPipelineEnvironment dockerBuildCommonPipelineEnvironment
+	var reports dockerBuildReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createBuildkitExecuteCmd = &cobra.Command{
+	var createDockerBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes a Docker BuildKit build for creating a Docker container image.",
 		Long: `Executes a Docker [BuildKit](https://docs.docker.com/build/buildkit/) build (` + "`" + `docker buildx build` + "`" + `) for creating a Docker container image.
@@ -155,7 +155,7 @@ This is suitable in case you need to create multiple images for one microservice
 
 All images will get the same "root" name and the same versioning.<br />
 **Thus, this is not suitable to be used for a monorepo approach!** For monorepos you need to use a build tool natively capable to take care for monorepos
-or implement a custom logic and for example execute this ` + "`" + `buildkitExecute` + "`" + ` step multiple times in your custom pipeline.
+or implement a custom logic and for example execute this ` + "`" + `dockerBuild` + "`" + ` step multiple times in your custom pipeline.
 
 You can activate multiple builds using the parameter [containerMultiImageBuild](#containermultiimagebuild)
 
@@ -174,7 +174,7 @@ Configuration as follows:
 general:
   containerImageName: myImage
 steps:
-  buildkitExecute:
+  dockerBuild:
     containerMultiImageBuild: true
 ` + "`" + `` + "`" + `` + "`" + `
 
@@ -196,7 +196,7 @@ Configuration as follows:
 general:
   containerImageName: myImage
 steps:
-  buildkitExecute:
+  dockerBuild:
     containerMultiImageBuild: true
     containerMultiImageBuildTrimDir: .ci
 ` + "`" + `` + "`" + `` + "`" + `
@@ -320,17 +320,17 @@ Following final image names will be built:
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(STEP_NAME)
-			buildkitExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			dockerBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addBuildkitExecuteFlags(createBuildkitExecuteCmd, &stepConfig)
-	return createBuildkitExecuteCmd
+	addDockerBuildFlags(createDockerBuildCmd, &stepConfig)
+	return createDockerBuildCmd
 }
 
-func addBuildkitExecuteFlags(cmd *cobra.Command, stepConfig *buildkitExecuteOptions) {
+func addDockerBuildFlags(cmd *cobra.Command, stepConfig *dockerBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.BuildOptions, "buildOptions", []string{}, "Defines a list of build options for the Docker BuildKit build.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.ContainerBuildOptions, "containerBuildOptions", os.Getenv("PIPER_containerBuildOptions"), "Deprected, please use buildOptions. Defines the build options for the Docker BuildKit build.")
@@ -357,10 +357,10 @@ func addBuildkitExecuteFlags(cmd *cobra.Command, stepConfig *buildkitExecuteOpti
 }
 
 // retrieve step metadata
-func buildkitExecuteMetadata() config.StepData {
+func dockerBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "buildkitExecute",
+			Name:        "dockerBuild",
 			Aliases:     []config.Alias{},
 			Description: "Executes a Docker BuildKit build for creating a Docker container image.",
 		},

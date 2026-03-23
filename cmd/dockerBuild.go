@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	buildkitTLSCertPath    = "/etc/ssl/certs/ca-certificates.crt"
-	buildkitDaemonJSONPath = "/etc/docker/daemon.json"
+	dockerBuildTLSCertPath    = "/etc/ssl/certs/ca-certificates.crt"
+	dockerBuildDaemonJSONPath = "/etc/docker/daemon.json"
 )
 
-func buildkitGetDockerConfigDir() string {
+func dockerBuildGetDockerConfigDir() string {
 	home := os.Getenv("HOME")
 	if home == "" {
 		home = "/root"
@@ -37,18 +37,18 @@ func buildkitGetDockerConfigDir() string {
 	return filepath.Join(home, ".docker")
 }
 
-func buildkitGetDockerConfigPath() string {
-	return filepath.Join(buildkitGetDockerConfigDir(), "config.json")
+func dockerBuildGetDockerConfigPath() string {
+	return filepath.Join(dockerBuildGetDockerConfigDir(), "config.json")
 }
 
-func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) {
+func dockerBuild(config dockerBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *dockerBuildCommonPipelineEnvironment) {
 	c := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
 				"unsupported status code 401",
 			},
 		},
-		StepName: "buildkitExecute",
+		StepName: "dockerBuild",
 	}
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
@@ -56,13 +56,13 @@ func buildkitExecute(config buildkitExecuteOptions, telemetryData *telemetry.Cus
 	client := &piperhttp.Client{}
 	fileUtils := &piperutils.Files{}
 
-	err := runBuildkitExecute(&config, telemetryData, commonPipelineEnvironment, &c, client, fileUtils)
+	err := runDockerBuild(&config, telemetryData, commonPipelineEnvironment, &c, client, fileUtils)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("BuildKit execution failed")
+		log.Entry().WithError(err).Fatal("docker build execution failed")
 	}
 }
 
-func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *dockerBuildCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
@@ -79,7 +79,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils, buildkitTLSCertPath)
+		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils, dockerBuildTLSCertPath)
 		if err != nil {
 			return fmt.Errorf("failed to update certificates: %w", err)
 		}
@@ -88,7 +88,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	}
 
 	// Docker config handling
-	dockerConfigPath := buildkitGetDockerConfigPath()
+	dockerConfigPath := dockerBuildGetDockerConfigPath()
 	dockerConfig := []byte(`{"auths":{}}`)
 
 	if len(config.DockerConfigJSON) > 0 {
@@ -131,27 +131,27 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		if err != nil {
 			return fmt.Errorf("failed to marshal daemon.json: %w", err)
 		}
-		if err := fileUtils.FileWrite(buildkitDaemonJSONPath, daemonJSON, 0644); err != nil {
-			return fmt.Errorf("failed to write '%s': %w", buildkitDaemonJSONPath, err)
+		if err := fileUtils.FileWrite(dockerBuildDaemonJSONPath, daemonJSON, 0644); err != nil {
+			return fmt.Errorf("failed to write '%s': %w", dockerBuildDaemonJSONPath, err)
 		}
 		log.Entry().Infof("Registry mirrors configured: %v", config.RegistryMirrors)
 	}
 
 	// Build settings
 	log.Entry().Debugf("preparing build settings information...")
-	stepName := "buildkitExecute"
+	stepName := "dockerBuild"
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve dockerImage configuration: %w", err)
 	}
 
-	buildkitConfig := buildsettings.BuildOptions{
+	dockerBuildConfig := buildsettings.BuildOptions{
 		DockerImage:       dockerImage,
 		BuildSettingsInfo: config.BuildSettingsInfo,
 	}
 
 	log.Entry().Debugf("creating build settings information...")
-	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&buildkitConfig, stepName)
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&dockerBuildConfig, stepName)
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
@@ -193,7 +193,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 			log.Entry().Debugf("Building image '%v' using file '%v'", image, file)
 			containerImageNameAndTag := fmt.Sprintf("%v:%v", image, containerImageTag)
 			dest := fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)
-			if err = runBuildkit(config, file, dest, true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+			if err = runDockerBuildExec(config, file, dest, true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 				return fmt.Errorf("failed to build image '%v' using '%v': %w", image, file, err)
 			}
 			commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, image)
@@ -206,14 +206,14 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameAndTag
 		}
 		if config.CreateBOM {
-			err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err := syft.GenerateSBOM(config.SyftDownloadURL, dockerBuildGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 			if err != nil {
 				return err
 			}
 		}
 
 		if config.CreateBuildArtifactsMetadata {
-			err := buildkitCreateDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			err := dockerBuildCreateArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
 			if err != nil {
 				return err
 			}
@@ -222,7 +222,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 
 	case config.MultipleImages != nil:
 		log.Entry().Debugf("multipleImages build activated")
-		parsedMultipleImages, err := buildkitParseMultipleImages(config.MultipleImages)
+		parsedMultipleImages, err := dockerBuildParseMultipleImages(config.MultipleImages)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("failed to parse multipleImages param: %w", err)
@@ -256,7 +256,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 				}
 
 				dest := fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)
-				if err = runBuildkit(config, dockerfilePath, dest, true, entry.ContextSubPath, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+				if err = runDockerBuildExec(config, dockerfilePath, dest, true, entry.ContextSubPath, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", entry.ContainerImageName, config.DockerfilePath, err)
 				}
 
@@ -282,7 +282,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 					dockerfilePath = entry.DockerfilePath
 				}
 
-				if err = runBuildkit(config, dockerfilePath, entry.ContainerImage, true, entry.ContextSubPath, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+				if err = runDockerBuildExec(config, dockerfilePath, entry.ContainerImage, true, entry.ContextSubPath, execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 					return fmt.Errorf("multipleImages: failed to build image '%v' using '%v': %w", containerImageName, config.DockerfilePath, err)
 				}
 
@@ -299,22 +299,22 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 
 		if config.CreateBOM {
-			err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+			err := syft.GenerateSBOM(config.SyftDownloadURL, dockerBuildGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 			if err != nil {
 				return err
 			}
 		}
 
 		if config.CreateBuildArtifactsMetadata {
-			err := buildkitCreateDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+			err := dockerBuildCreateArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
 
-	case buildkitHasDestination(config.BuildOptions):
-		log.Entry().Infof("Running BuildKit build with destination defined via buildOptions: %v", config.BuildOptions)
+	case dockerBuildHasDestination(config.BuildOptions):
+		log.Entry().Infof("Running docker build with destination defined via buildOptions: %v", config.BuildOptions)
 
 		for i, o := range config.BuildOptions {
 			if o == "-t" && i+1 < len(config.BuildOptions) {
@@ -341,7 +341,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		}
 
 		// -t is already in buildOptions, so pass empty destination; push is true since user specified -t
-		if err := runBuildkit(config, config.DockerfilePath, "", true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+		if err := runDockerBuildExec(config, config.DockerfilePath, "", true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 			return err
 		}
 
@@ -363,7 +363,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, config.ContainerImageName)
 
 		dest := fmt.Sprintf("%v/%v", containerRegistry, containerImageNameAndTag)
-		if err = runBuildkit(config, config.DockerfilePath, dest, true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+		if err = runDockerBuildExec(config, config.DockerfilePath, dest, true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 			return err
 		}
 
@@ -384,25 +384,25 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 		commonPipelineEnvironment.container.imageNameTags = append(commonPipelineEnvironment.container.imageNameTags, containerImageNameTag)
 		commonPipelineEnvironment.container.imageNames = append(commonPipelineEnvironment.container.imageNames, containerImageName)
 
-		if err = runBuildkit(config, config.DockerfilePath, config.ContainerImage, true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+		if err = runDockerBuildExec(config, config.DockerfilePath, config.ContainerImage, true, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 			return err
 		}
 
 	default:
 		// no-push: build without pushing
-		if err := runBuildkit(config, config.DockerfilePath, "", false, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
+		if err := runDockerBuildExec(config, config.DockerfilePath, "", false, ".", execRunner, fileUtils, commonPipelineEnvironment); err != nil {
 			return err
 		}
 	}
 
 	if config.CreateBOM {
-		err := syft.GenerateSBOM(config.SyftDownloadURL, buildkitGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
+		err := syft.GenerateSBOM(config.SyftDownloadURL, dockerBuildGetDockerConfigDir(), execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
 			return err
 		}
 	}
 	if config.CreateBuildArtifactsMetadata {
-		err := buildkitCreateDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
+		err := dockerBuildCreateArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
 		if err != nil {
 			return err
 		}
@@ -411,7 +411,7 @@ func runBuildkitExecute(config *buildkitExecuteOptions, telemetryData *telemetry
 	return nil
 }
 
-func runBuildkit(config *buildkitExecuteOptions, dockerfilePath string, destination string, push bool, contextSubPath string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) error {
+func runDockerBuildExec(config *dockerBuildOptions, dockerfilePath string, destination string, push bool, contextSubPath string, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, commonPipelineEnvironment *dockerBuildCommonPipelineEnvironment) error {
 	cwd, err := fileUtils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory: %w", err)
@@ -422,36 +422,36 @@ func runBuildkit(config *buildkitExecuteOptions, dockerfilePath string, destinat
 		buildContext = filepath.Join(cwd, contextSubPath)
 	}
 
-	buildkitOpts := []string{"buildx", "build", "--file", dockerfilePath}
+	buildOpts := []string{"buildx", "build", "--file", dockerfilePath}
 
 	if destination != "" {
-		buildkitOpts = append(buildkitOpts, "-t", destination)
+		buildOpts = append(buildOpts, "-t", destination)
 	}
 	if push {
-		buildkitOpts = append(buildkitOpts, "--push")
+		buildOpts = append(buildOpts, "--push")
 	}
 
-	tmpDir, err := fileUtils.TempDir("", "*-buildkitExecute")
+	tmpDir, err := fileUtils.TempDir("", "*-dockerBuild")
 	if err != nil {
-		return fmt.Errorf("failed to create tmp dir for buildkitExecute: %w", err)
+		return fmt.Errorf("failed to create tmp dir for dockerBuild: %w", err)
 	}
 
 	metadataFilePath := fmt.Sprintf("%s/metadata.json", tmpDir)
 
 	if config.ReadImageDigest {
-		buildkitOpts = append(buildkitOpts, "--metadata-file", metadataFilePath)
+		buildOpts = append(buildOpts, "--metadata-file", metadataFilePath)
 	}
 
 	if GeneralConfig.Verbose {
-		buildkitOpts = append(buildkitOpts, "--progress=plain")
+		buildOpts = append(buildOpts, "--progress=plain")
 	}
 
-	buildkitOpts = append(buildkitOpts, config.BuildOptions...)
+	buildOpts = append(buildOpts, config.BuildOptions...)
 
 	// build context must be last argument
-	buildkitOpts = append(buildkitOpts, buildContext)
+	buildOpts = append(buildOpts, buildContext)
 
-	err = execRunner.RunExecutable("docker", buildkitOpts...)
+	err = execRunner.RunExecutable("docker", buildOpts...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return fmt.Errorf("execution of 'docker buildx build' failed: %w", err)
@@ -500,8 +500,8 @@ func extractDigestFromMetadata(metadataFilePath string, fileUtils piperutils.Fil
 	return digestStr, nil
 }
 
-// buildkitHasDestination checks if buildOptions contains a -t flag (BuildKit equivalent of --destination)
-func buildkitHasDestination(buildOptions []string) bool {
+// dockerBuildHasDestination checks if buildOptions contains a -t flag (BuildKit equivalent of --destination)
+func dockerBuildHasDestination(buildOptions []string) bool {
 	for _, o := range buildOptions {
 		if o == "-t" {
 			return true
@@ -512,7 +512,7 @@ func buildkitHasDestination(buildOptions []string) bool {
 
 // Duplicated helpers from kanikoExecute (to be refactored to shared package later)
 
-type buildkitMultipleImageConf struct {
+type dockerBuildMultipleImageConf struct {
 	ContextSubPath     string `json:"contextSubPath,omitempty"`
 	DockerfilePath     string `json:"dockerfilePath,omitempty"`
 	ContainerImageName string `json:"containerImageName,omitempty"`
@@ -520,11 +520,11 @@ type buildkitMultipleImageConf struct {
 	ContainerImage     string `json:"containerImage,omitempty"`
 }
 
-func buildkitParseMultipleImages(src []map[string]interface{}) ([]buildkitMultipleImageConf, error) {
-	var result []buildkitMultipleImageConf
+func dockerBuildParseMultipleImages(src []map[string]interface{}) ([]dockerBuildMultipleImageConf, error) {
+	var result []dockerBuildMultipleImageConf
 
 	for _, conf := range src {
-		var structuredConf buildkitMultipleImageConf
+		var structuredConf dockerBuildMultipleImageConf
 		if err := mapstructure.Decode(conf, &structuredConf); err != nil {
 			return nil, err
 		}
@@ -534,7 +534,7 @@ func buildkitParseMultipleImages(src []map[string]interface{}) ([]buildkitMultip
 	return result, nil
 }
 
-func buildkitCreateDockerBuildArtifactMetadata(containerImageNameTags []string, commonPipelineEnvironment *buildkitExecuteCommonPipelineEnvironment) error {
+func dockerBuildCreateArtifactMetadata(containerImageNameTags []string, commonPipelineEnvironment *dockerBuildCommonPipelineEnvironment) error {
 	buildCoordinates := []versioning.Coordinates{}
 
 	pattern := "bom*.xml"
@@ -556,7 +556,7 @@ func buildkitCreateDockerBuildArtifactMetadata(containerImageNameTags []string, 
 			return nil
 		}
 
-		registry, name, version, err := buildkitParsePurl(constructedPurl)
+		registry, name, version, err := dockerBuildParsePurl(constructedPurl)
 		if err != nil {
 			log.Entry().Warnf("unable to parse purl creating build artifact metadata")
 			return nil
@@ -569,7 +569,7 @@ func buildkitCreateDockerBuildArtifactMetadata(containerImageNameTags []string, 
 		}
 
 		log.Entry().Debugf("purl is %s", constructedPurl)
-		imageNameTag := buildkitFindImageNameTagInPurl(containerImageNameTags, fmt.Sprintf("%s:%s", name, version))
+		imageNameTag := dockerBuildFindImageNameTagInPurl(containerImageNameTags, fmt.Sprintf("%s:%s", name, version))
 		var coordinate versioning.Coordinates
 		if imageNameTag != "" {
 			coordinate.ArtifactID = name
@@ -601,7 +601,7 @@ func buildkitCreateDockerBuildArtifactMetadata(containerImageNameTags []string, 
 	return nil
 }
 
-func buildkitParsePurl(purlStr string) (registry, name, version string, err error) {
+func dockerBuildParsePurl(purlStr string) (registry, name, version string, err error) {
 	p, err := purlParser.FromString(purlStr)
 	if err != nil {
 		return "", "", "", err
@@ -624,7 +624,7 @@ func buildkitParsePurl(purlStr string) (registry, name, version string, err erro
 	return
 }
 
-func buildkitFindImageNameTagInPurl(containerImageNameTags []string, purlReference string) string {
+func dockerBuildFindImageNameTagInPurl(containerImageNameTags []string, purlReference string) string {
 	for _, entry := range containerImageNameTags {
 		if entry == purlReference {
 			log.Entry().Debugf("found image name tag %s in purlReference %s", entry, purlReference)
