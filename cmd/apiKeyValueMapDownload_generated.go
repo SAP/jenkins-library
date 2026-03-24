@@ -134,9 +134,10 @@ Learn more about the SAP API Management API for downloading an Key Value Map art
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:  STEP_NAME,
-							StageName: telemetryClient.GetData().StageName,
-							ErrorCode: stepTelemetryData.ErrorCode,
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineId: telemetryClient.Provider.BuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

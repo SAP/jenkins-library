@@ -189,9 +189,10 @@ func AbapEnvironmentBuildCommand() *cobra.Command {
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:  STEP_NAME,
-							StageName: telemetryClient.GetData().StageName,
-							ErrorCode: stepTelemetryData.ErrorCode,
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineId: telemetryClient.Provider.BuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
