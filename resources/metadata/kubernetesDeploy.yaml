@@ -296,7 +296,7 @@ spec:
           - STAGES
           - STEPS
       - name: valuesMapping
-        type: "map[string]interface{}"
+        type: "map[string]string"
         longDescription: |
           Mapping of values provided by Piper onto custom paths in format `[custom-path]: [piper-value]`
 
