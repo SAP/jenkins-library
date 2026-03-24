@@ -27,7 +27,7 @@ var LibraryRepository string
 type Telemetry struct {
 	baseData             BaseData
 	data                 Data
-	provider             orchestrator.ConfigProvider
+	Provider             orchestrator.ConfigProvider
 	client               *piperhttp.Client
 	CustomReportingDsn   string
 	CustomReportingToken string
@@ -39,7 +39,7 @@ type Telemetry struct {
 
 // Initialize sets up the base telemetry data and is called in generated part of the steps
 func (t *Telemetry) Initialize(stepName string) {
-	t.provider = orchestrator.GetOrchestratorConfigProvider(nil)
+	t.Provider = orchestrator.GetOrchestratorConfigProvider(nil)
 
 	if t.client == nil {
 		t.client = &piperhttp.Client{}
@@ -55,10 +55,10 @@ func (t *Telemetry) Initialize(stepName string) {
 	}
 
 	t.baseData = BaseData{
-		Orchestrator:      t.provider.OrchestratorType(),
+		Orchestrator:      t.Provider.OrchestratorType(),
 		TemplateName:      piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_TEMPLATE_NAME"), "n/a"),
 		StageTemplateName: piperutils.StringWithDefault(os.Getenv("PIPER_PIPELINE_STAGE_TEMPLATE_NAME"), "n/a"),
-		StageName:         t.provider.StageName(),
+		StageName:         t.Provider.StageName(),
 		URL:               LibraryRepository,
 		ActionName:        actionName,
 		EventType:         eventType,
@@ -73,12 +73,12 @@ func (t *Telemetry) Initialize(stepName string) {
 }
 
 func (t *Telemetry) getPipelineURLHash() string {
-	jobURL := t.provider.JobURL()
+	jobURL := t.Provider.JobURL()
 	return t.toSha1OrNA(jobURL)
 }
 
 func (t *Telemetry) getBuildURLHash() string {
-	buildURL := t.provider.BuildURL()
+	buildURL := t.Provider.BuildURL()
 	return t.toSha1OrNA(buildURL)
 }
 
@@ -140,7 +140,7 @@ func (t *Telemetry) LogStepTelemetryData() {
 		StepDuration:    t.data.CustomData.Duration,
 		ErrorCategory:   t.data.CustomData.ErrorCategory,
 		ErrorDetail:     fatalError,
-		CorrelationID:   t.provider.BuildURL(),
+		CorrelationID:   t.Provider.BuildURL(),
 		PiperCommitHash: t.data.CustomData.PiperCommitHash,
 		BinaryVersion:   t.data.BinaryVersion,
 		ActionVersion:   t.data.ActionVersion,
