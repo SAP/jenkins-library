@@ -392,7 +392,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 }
 
 type deploymentValues struct {
-	mapping     map[string]interface{}
+	mapping     map[string]string
 	singleImage bool
 	values      []struct {
 		key, value string
@@ -426,7 +426,7 @@ func (dv *deploymentValues) mapValues() error {
 	}
 	sort.Strings(keys)
 	for _, dst := range keys {
-		srcString, ok := dv.mapping[dst].(string)
+		srcString, ok := dv.mapping[dst]
 		if !ok {
 			return fmt.Errorf("invalid path '%#v' is used for valuesMapping, only strings are supported", dv.mapping[dst])
 		}
