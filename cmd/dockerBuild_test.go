@@ -590,6 +590,38 @@ func TestRunDockerBuild(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("success case - container preparation command runs", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			ContainerPreparationCommand: "prep-cmd arg1 arg2",
+			DockerfilePath:              "Dockerfile",
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "prep-cmd", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"arg1", "arg2"}, runner.Calls[0].Params)
+	})
+
+	t.Run("success case - container preparation command with quoted args", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			ContainerPreparationCommand: `prep-cmd "arg with spaces" --flag`,
+			DockerfilePath:              "Dockerfile",
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "prep-cmd", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"arg with spaces", "--flag"}, runner.Calls[0].Params)
+	})
+
 	t.Run("error case - container preparation failed", func(t *testing.T) {
 		config := &dockerBuildOptions{
 			ContainerPreparationCommand: "failing-command arg1",
@@ -606,6 +638,21 @@ func TestRunDockerBuild(t *testing.T) {
 		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
 
 		assert.EqualError(t, err, "failed to run container preparation command: prep command failed")
+	})
+
+	t.Run("error case - container preparation command parse error", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			ContainerPreparationCommand: `prep-cmd "unterminated quote`,
+			DockerfilePath:              "Dockerfile",
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse container preparation command")
 	})
 
 	t.Run("error case - docker config read failed", func(t *testing.T) {
@@ -814,6 +861,11 @@ func TestDockerBuildHasDestination(t *testing.T) {
 		assert.True(t, dockerBuildHasDestination([]string{"-t", "registry/image:tag", "--some-other-flag"}))
 	})
 
+	t.Run("has --tag flag", func(t *testing.T) {
+		t.Parallel()
+		assert.True(t, dockerBuildHasDestination([]string{"--tag", "registry/image:tag", "--some-other-flag"}))
+	})
+
 	t.Run("no -t flag", func(t *testing.T) {
 		t.Parallel()
 		assert.False(t, dockerBuildHasDestination([]string{"--some-flag", "value"}))
@@ -856,5 +908,147 @@ func TestDockerBuildFindImageNameTagInPurl(t *testing.T) {
 		t.Parallel()
 		result := dockerBuildFindImageNameTagInPurl([]string{"my.registry.com/myImage:1.0.0", "myImage:1.0.0"}, "myImage:1.0.0")
 		assert.Equal(t, "myImage:1.0.0", result)
+	})
+}
+
+func TestDockerBuildParsePurl(t *testing.T) {
+	t.Parallel()
+
+	t.Run("no namespace - defaults to docker.io", func(t *testing.T) {
+		t.Parallel()
+		// pkg:docker/myimage@1.0.0 has no namespace
+		registry, name, version, err := dockerBuildParsePurl("pkg:docker/myimage@1.0.0")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "docker.io", registry)
+		assert.Equal(t, "myimage", name)
+		assert.Equal(t, "1.0.0", version)
+	})
+
+	t.Run("namespace with domain - extracts registry", func(t *testing.T) {
+		t.Parallel()
+		// pkg:docker/my.registry.io/myimage@1.0.0 has namespace "my.registry.io"
+		registry, name, version, err := dockerBuildParsePurl("pkg:docker/my.registry.io/myimage@1.0.0")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "my.registry.io", registry)
+		assert.Equal(t, "myimage", name)
+		assert.Equal(t, "1.0.0", version)
+	})
+
+	t.Run("namespace without domain - defaults to docker.io", func(t *testing.T) {
+		t.Parallel()
+		// pkg:docker/library/nginx@1.0.0 has namespace "library" (no dot)
+		registry, name, version, err := dockerBuildParsePurl("pkg:docker/library/nginx@1.0.0")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "docker.io", registry)
+		assert.Equal(t, "nginx", name)
+		assert.Equal(t, "1.0.0", version)
+	})
+
+	t.Run("nested namespace with domain", func(t *testing.T) {
+		t.Parallel()
+		// pkg:docker/my.registry.io/path/myimage@2.0.0
+		registry, name, version, err := dockerBuildParsePurl("pkg:docker/my.registry.io/path/myimage@2.0.0")
+
+		assert.NoError(t, err)
+		assert.Equal(t, "my.registry.io", registry)
+		assert.Equal(t, "myimage", name)
+		assert.Equal(t, "2.0.0", version)
+	})
+
+	t.Run("invalid purl string", func(t *testing.T) {
+		t.Parallel()
+		_, _, _, err := dockerBuildParsePurl("not-a-valid-purl")
+
+		assert.Error(t, err)
+	})
+}
+
+func TestDockerBuildCreateArtifactMetadata(t *testing.T) {
+	t.Run("no bom files - returns nil", func(t *testing.T) {
+		cpe := dockerBuildCommonPipelineEnvironment{}
+		err := dockerBuildCreateArtifactMetadata([]string{"myimage:1.0.0"}, &cpe)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "", cpe.custom.dockerBuildArtifacts)
+	})
+
+	t.Run("success - full path with registry-qualified image", func(t *testing.T) {
+		// CycloneDX BOM with proper xmlns for UpdatePurl to work
+		validBom := `<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="container">
+			<name>my.registry.io/myimage</name>
+			<version>1.0.0</version>
+		</component>
+	</metadata>
+</bom>`
+		bomFile, err := os.Create("bom-docker-0.xml")
+		assert.NoError(t, err)
+		_, err = bomFile.WriteString(validBom)
+		assert.NoError(t, err)
+		bomFile.Close()
+		defer os.Remove("bom-docker-0.xml")
+
+		cpe := dockerBuildCommonPipelineEnvironment{}
+		err = dockerBuildCreateArtifactMetadata([]string{"myimage:1.0.0"}, &cpe)
+
+		assert.NoError(t, err)
+		assert.Contains(t, cpe.custom.dockerBuildArtifacts, "myimage")
+		assert.Contains(t, cpe.custom.dockerBuildArtifacts, "1.0.0")
+		assert.Contains(t, cpe.custom.dockerBuildArtifacts, "my.registry.io")
+	})
+
+	t.Run("success - image without registry namespace", func(t *testing.T) {
+		validBom := `<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="container">
+			<name>myimage</name>
+			<version>2.0.0</version>
+		</component>
+	</metadata>
+</bom>`
+		bomFile, err := os.Create("bom-docker-0.xml")
+		assert.NoError(t, err)
+		_, err = bomFile.WriteString(validBom)
+		assert.NoError(t, err)
+		bomFile.Close()
+		defer os.Remove("bom-docker-0.xml")
+
+		cpe := dockerBuildCommonPipelineEnvironment{}
+		err = dockerBuildCreateArtifactMetadata([]string{"myimage:2.0.0"}, &cpe)
+
+		assert.NoError(t, err)
+		assert.Contains(t, cpe.custom.dockerBuildArtifacts, "myimage")
+		assert.Contains(t, cpe.custom.dockerBuildArtifacts, "2.0.0")
+		assert.Contains(t, cpe.custom.dockerBuildArtifacts, "docker.io")
+	})
+
+	t.Run("image name tag not found - returns nil", func(t *testing.T) {
+		validBom := `<?xml version="1.0" encoding="UTF-8"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
+	<metadata>
+		<component type="container">
+			<name>myimage</name>
+			<version>1.0.0</version>
+		</component>
+	</metadata>
+</bom>`
+		bomFile, err := os.Create("bom-docker-0.xml")
+		assert.NoError(t, err)
+		_, err = bomFile.WriteString(validBom)
+		assert.NoError(t, err)
+		bomFile.Close()
+		defer os.Remove("bom-docker-0.xml")
+
+		cpe := dockerBuildCommonPipelineEnvironment{}
+		err = dockerBuildCreateArtifactMetadata([]string{"completely-different:9.9.9"}, &cpe)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "", cpe.custom.dockerBuildArtifacts)
 	})
 }

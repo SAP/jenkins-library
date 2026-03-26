@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/shlex"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/SAP/jenkins-library/pkg/build"
@@ -72,7 +73,10 @@ func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomD
 
 	// run container preparation command if configured
 	if len(config.ContainerPreparationCommand) > 0 {
-		prepCommand := strings.Split(config.ContainerPreparationCommand, " ")
+		prepCommand, err := shlex.Split(config.ContainerPreparationCommand)
+		if err != nil {
+			return fmt.Errorf("failed to parse container preparation command: %w", err)
+		}
 		if err := execRunner.RunExecutable(prepCommand[0], prepCommand[1:]...); err != nil {
 			return fmt.Errorf("failed to run container preparation command: %w", err)
 		}
@@ -84,7 +88,7 @@ func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomD
 			return fmt.Errorf("failed to update certificates: %w", err)
 		}
 	} else {
-		log.Entry().Info("skipping updation of certificates")
+		log.Entry().Info("no custom TLS certificates configured, skipping")
 	}
 
 	// Docker config handling
@@ -317,7 +321,7 @@ func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomD
 		log.Entry().Infof("Running docker build with destination defined via buildOptions: %v", config.BuildOptions)
 
 		for i, o := range config.BuildOptions {
-			if o == "-t" && i+1 < len(config.BuildOptions) {
+			if (o == "-t" || o == "--tag") && i+1 < len(config.BuildOptions) {
 				destination := config.BuildOptions[i+1]
 
 				containerRegistry, err := docker.ContainerRegistryFromImage(destination)
@@ -508,10 +512,10 @@ func extractDigestFromMetadata(metadataFilePath string, fileUtils piperutils.Fil
 	return digestStr, nil
 }
 
-// dockerBuildHasDestination checks if buildOptions contains a -t flag (BuildKit equivalent of --destination)
+// dockerBuildHasDestination checks if buildOptions contains a -t or --tag flag
 func dockerBuildHasDestination(buildOptions []string) bool {
 	for _, o := range buildOptions {
-		if o == "-t" {
+		if o == "-t" || o == "--tag" {
 			return true
 		}
 	}
@@ -602,7 +606,11 @@ func dockerBuildCreateArtifactMetadata(containerImageNameTags []string, commonPi
 	if len(buildCoordinates) > 0 {
 		var buildArtifacts build.BuildArtifacts
 		buildArtifacts.Coordinates = buildCoordinates
-		jsonResult, _ := json.Marshal(buildArtifacts)
+		jsonResult, err := json.Marshal(buildArtifacts)
+		if err != nil {
+			log.Entry().Warnf("failed to marshal build artifacts metadata: %v", err)
+			return nil
+		}
 		commonPipelineEnvironment.custom.dockerBuildArtifacts = string(jsonResult)
 	}
 
