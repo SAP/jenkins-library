@@ -286,8 +286,11 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
 	} else {
 		systemTrustClient = systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
-		// try to get a Vault token from System Trust first; fall back to AppRole if it fails
-		if vaultToken, err := systemtrust.GetToken("vault", systemTrustClient, c.systemTrustConfiguration); err != nil {
+		// use PIPER_vaultToken if already set (e.g. pre-fetched by the GHA composite action);
+		// otherwise fall back to fetching it from System Trust, and ultimately to AppRole
+		if c.vaultCredentials.VaultToken != "" {
+			log.Entry().Debug("Using Vault token from environment")
+		} else if vaultToken, err := systemtrust.GetToken("vault", systemTrustClient, c.systemTrustConfiguration); err != nil {
 			log.Entry().WithError(err).Debug("Could not get Vault token from System Trust")
 		} else {
 			log.Entry().Debug("Using Vault token obtained from System Trust")
