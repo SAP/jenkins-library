@@ -2,6 +2,11 @@
 
 ## ${docGenDescription}
 
+!!! warning "Deprecation Notice for GitHub Actions"
+    Kaniko is no longer actively maintained. If you are running on **GitHub Actions**, please use
+    [`dockerBuild`](dockerBuild.md) instead — it uses Docker BuildKit which is natively available
+    on GitHub Actions runners. `kanikoExecute` continues to be supported on Jenkins and Azure Pipelines.
+
 ## Prerequisites
 
 When pushing to a container registry, you need to maintain the respective credentials in your Jenkins credentials store:

@@ -101,6 +101,7 @@ nav:
         - credentialdiggerScan: steps/credentialdiggerScan.md
         - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md
+        - dockerBuild: steps/dockerBuild.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
