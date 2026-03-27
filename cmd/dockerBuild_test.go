@@ -797,6 +797,104 @@ func TestRunDockerBuild(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, fmt.Sprint(err), "multipleImages: empty contextSubPath")
 	})
+
+	t.Run("success case - multi context build with containerImage", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			ContainerImageName:   "myImage",
+			ContainerImageTag:    "myTag",
+			ContainerRegistryURL: "https://my.registry.com:50000",
+			DockerfilePath:       "Dockerfile",
+			MultipleImages: []map[string]interface{}{
+				{
+					"contextSubPath": "/test1",
+					"containerImage": "my.other.registry.io/myImageOne:1.0.0",
+				},
+			},
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(runner.Calls))
+		assert.Equal(t, "docker", runner.Calls[0].Exec)
+		assert.Contains(t, runner.Calls[0].Params, "--push")
+		assert.Contains(t, runner.Calls[0].Params, "my.other.registry.io/myImageOne:1.0.0")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNameTags, "myImageOne:1.0.0")
+		assert.Contains(t, commonPipelineEnvironment.container.imageNames, "myImageOne")
+	})
+
+	t.Run("error case - multi context build: missing both containerImageName and containerImage", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			ContainerImageName:   "myImage",
+			ContainerImageTag:    "myTag",
+			ContainerRegistryURL: "https://my.registry.com:50000",
+			MultipleImages: []map[string]interface{}{
+				{"contextSubPath": "/test1"},
+			},
+		}
+		cpe := dockerBuildCommonPipelineEnvironment{}
+		runner := &mock.ExecMockRunner{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &cpe, runner, nil, fileUtils)
+
+		assert.Error(t, err)
+		assert.Contains(t, fmt.Sprint(err), "multipleImages: either containerImageName or containerImage must be filled")
+	})
+
+	t.Run("success case - verbose mode adds progress plain", func(t *testing.T) {
+		GeneralConfig.Verbose = true
+		defer func() { GeneralConfig.Verbose = false }()
+
+		config := &dockerBuildOptions{
+			ContainerImage: "my.registry.io/myimage:mytag",
+			DockerfilePath: "Dockerfile",
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.NoError(t, err)
+		assert.Contains(t, runner.Calls[0].Params, "--progress=plain")
+	})
+
+	t.Run("success case - destination in buildOptions (--tag long form)", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			BuildOptions:   []string{"--tag", "my.other.registry.com:50000/myImage:3.2.1"},
+			DockerfilePath: "Dockerfile",
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "https://my.other.registry.com:50000", commonPipelineEnvironment.container.registryURL)
+		assert.Equal(t, "myImage:3.2.1", commonPipelineEnvironment.container.imageNameTag)
+		assert.Contains(t, runner.Calls[0].Params, "--push")
+		assert.Contains(t, runner.Calls[0].Params, "--tag")
+	})
+
+	t.Run("error case - containerBuildOptions parse error", func(t *testing.T) {
+		config := &dockerBuildOptions{
+			ContainerBuildOptions: `--label "unterminated`,
+			DockerfilePath:        "Dockerfile",
+		}
+		runner := &mock.ExecMockRunner{}
+		commonPipelineEnvironment := dockerBuildCommonPipelineEnvironment{}
+		fileUtils := &mock.FilesMock{}
+
+		err := runDockerBuild(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, nil, fileUtils)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse containerBuildOptions")
+	})
 }
 
 func TestExtractDigestFromMetadata(t *testing.T) {

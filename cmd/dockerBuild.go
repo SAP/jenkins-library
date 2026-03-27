@@ -66,7 +66,11 @@ func dockerBuild(config dockerBuildOptions, telemetryData *telemetry.CustomData,
 func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *dockerBuildCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
-		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
+		parsedOpts, err := shlex.Split(config.ContainerBuildOptions)
+		if err != nil {
+			return fmt.Errorf("failed to parse containerBuildOptions: %w", err)
+		}
+		config.BuildOptions = parsedOpts
 		log.Entry().Warning("Parameter containerBuildOptions is deprecated, please use buildOptions instead.")
 		telemetryData.ContainerBuildOptions = config.ContainerBuildOptions
 	}
@@ -123,7 +127,7 @@ func runDockerBuild(config *dockerBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	if err := fileUtils.FileWrite(dockerConfigPath, dockerConfig, 0644); err != nil {
+	if err := fileUtils.FileWrite(dockerConfigPath, dockerConfig, 0600); err != nil {
 		return fmt.Errorf("failed to write file '%s': %w", dockerConfigPath, err)
 	}
 
@@ -447,6 +451,7 @@ func runDockerBuildExec(config *dockerBuildOptions, dockerfilePath string, desti
 	if err != nil {
 		return fmt.Errorf("failed to create tmp dir for dockerBuild: %w", err)
 	}
+	defer os.RemoveAll(tmpDir)
 
 	metadataFilePath := fmt.Sprintf("%s/metadata.json", tmpDir)
 

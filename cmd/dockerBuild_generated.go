@@ -240,6 +240,8 @@ Following final image names will be built:
 				}
 			}
 			log.SetStepErrors(stepErrors)
+			log.RegisterSecret(stepConfig.ContainerRegistryUser)
+			log.RegisterSecret(stepConfig.ContainerRegistryPassword)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {

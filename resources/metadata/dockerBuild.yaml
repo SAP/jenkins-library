@@ -218,6 +218,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryUsername
@@ -231,6 +232,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
