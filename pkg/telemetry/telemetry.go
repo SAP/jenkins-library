@@ -77,6 +77,10 @@ func (t *Telemetry) getPipelineURLHash() string {
 	return t.toSha1OrNA(jobURL)
 }
 
+func (t *Telemetry) GetBuildURL() string {
+	return t.provider.BuildURL()
+}
+
 func (t *Telemetry) getBuildURLHash() string {
 	buildURL := t.provider.BuildURL()
 	return t.toSha1OrNA(buildURL)
