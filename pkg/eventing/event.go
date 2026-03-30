@@ -7,6 +7,8 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/uuid"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // newEvent creates a CloudEvent v1.0 with the given type, source, and data payload,
@@ -32,6 +34,8 @@ func newEvent(eventType, source string, data any) ([]byte, error) {
 // NewEventFromJSON creates a CloudEvent v1.0 from JSON string data, optionally merging
 // additional JSON data into the event payload. Returns the serialized CloudEvent bytes.
 func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
+	log.Entry().Debugf("Creating CloudEvent (%s,%s,%s,%s)", eventType, source, jsonData, additionalJSON)
+
 	var dataMap map[string]any
 	if jsonData != "" {
 		if err := json.Unmarshal([]byte(jsonData), &dataMap); err != nil {
