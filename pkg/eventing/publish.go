@@ -54,7 +54,7 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 		"taskName":      ctx.StepName,
 		"stageName":     ctx.StageName,
 		"outcome":       outcome,
-		"pipelineRunId": ctx.PipelineId,
+		"pipelineRunId": ctx.PipelineID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)

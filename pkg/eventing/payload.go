@@ -5,5 +5,5 @@ type EventContext struct {
 	StepName   string
 	StageName  string
 	ErrorCode  string
-	PipelineId string
+	PipelineID string
 }
