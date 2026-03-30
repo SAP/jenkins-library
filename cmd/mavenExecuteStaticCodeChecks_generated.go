@@ -152,7 +152,7 @@ For PMD the failure priority and the max allowed violations are configurable via
 							StepName:   STEP_NAME,
 							StageName:  telemetryClient.GetData().StageName,
 							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineId: telemetryClient.Provider.BuildURL(),
+							PipelineID: telemetryClient.GetBuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

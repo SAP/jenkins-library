@@ -142,7 +142,7 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 							StepName:   STEP_NAME,
 							StageName:  telemetryClient.GetData().StageName,
 							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineId: telemetryClient.Provider.BuildURL(),
+							PipelineID: telemetryClient.GetBuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

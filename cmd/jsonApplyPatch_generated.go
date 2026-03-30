@@ -136,7 +136,7 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 							StepName:   STEP_NAME,
 							StageName:  telemetryClient.GetData().StageName,
 							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineId: telemetryClient.Provider.BuildURL(),
+							PipelineID: telemetryClient.GetBuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

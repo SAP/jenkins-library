@@ -138,7 +138,7 @@ Learn more about the SAP API Management API for creating an API key value map ar
 							StepName:   STEP_NAME,
 							StageName:  telemetryClient.GetData().StageName,
 							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineId: telemetryClient.Provider.BuildURL(),
+							PipelineID: telemetryClient.GetBuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

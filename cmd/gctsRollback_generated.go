@@ -147,7 +147,7 @@ If no ` + "`" + `commit` + "`" + ` parameter is specified and the remote reposit
 							StepName:   STEP_NAME,
 							StageName:  telemetryClient.GetData().StageName,
 							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineId: telemetryClient.Provider.BuildURL(),
+							PipelineID: telemetryClient.GetBuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
