@@ -174,7 +174,7 @@ spec:
       - name: useImageNameTags
         description: |
           Will use the sourceImageNameTags and targetImageNameTags parameters, instead of sourceImages and targetImages.
-          sourceImageNameTags can be set by a build step, e.g. kanikoExecute, and is then available in the pipeline environment.
+          sourceImageNameTags can be set by a build step, e.g. kanikoExecute or dockerBuild, and is then available in the pipeline environment.
         type: bool
         scope:
           - PARAMETERS
