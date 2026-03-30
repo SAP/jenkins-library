@@ -67,6 +67,17 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 		return uploadReleaseAssetList(ctx, lastRelease.GetID(), config, ghRepoClient)
 	}
 
+	if config.AutoDetectPreRelease {
+		ver := config.Version
+		// Strip build metadata if present (after '+')
+		if i := strings.Index(ver, "+"); i >= 0 {
+			ver = ver[:i]
+		}
+		// Pre-release if a hyphen exists after MAJOR.MINOR.PATCH
+		isPre := strings.Contains(ver, "-")
+		config.PreRelease = isPre
+	}
+
 	releaseBody := ""
 
 	if len(config.ReleaseBodyHeader) > 0 {
