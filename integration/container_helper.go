@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -278,4 +279,130 @@ func getProjectRoot(t *testing.T) string {
 	}
 
 	return pwd
+}
+
+// DindContainerConfig holds configuration for creating a Docker-in-Docker test environment.
+type DindContainerConfig struct {
+	TestData string // Path relative to integration/testdata (e.g., "TestDockerBuildIntegration/single-image")
+}
+
+// DindTestContext holds the running DinD environment components.
+type DindTestContext struct {
+	DindContainer     testcontainers.Container
+	RegistryContainer testcontainers.Container
+	RegistryHost      string // "registry:5000" (accessible from DinD container via network alias)
+}
+
+// StartDindContainer starts a Docker-in-Docker container with a local registry on a shared network.
+// The piper binary and test data are copied into the DinD container.
+// Everything is cleaned up via t.Cleanup.
+func StartDindContainer(t *testing.T, cfg DindContainerConfig) DindTestContext {
+	t.Helper()
+
+	ctx := context.Background()
+	projectRoot := getProjectRoot(t)
+	networkName := "dind-" + uuid.New().String()
+
+	// Create shared network
+	provider, err := testcontainers.ProviderDocker.GetProvider()
+	require.NoError(t, err, "Failed to get Docker provider")
+
+	network, err := provider.CreateNetwork(ctx, testcontainers.NetworkRequest{
+		Name:           networkName,
+		CheckDuplicate: true,
+	})
+	require.NoError(t, err, "Failed to create Docker network")
+
+	t.Cleanup(func() {
+		if err := network.Remove(ctx); err != nil {
+			t.Logf("Failed to remove network: %v", err)
+		}
+	})
+
+	// Start local registry on the network
+	registryReq := testcontainers.ContainerRequest{
+		Image:          "registry:2",
+		Networks:       []string{networkName},
+		NetworkAliases: map[string][]string{networkName: {"registry"}},
+	}
+
+	registryContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: registryReq,
+		Started:          true,
+	})
+	require.NoError(t, err, "Failed to start registry container")
+
+	t.Cleanup(func() {
+		if err := registryContainer.Terminate(ctx); err != nil {
+			t.Logf("Failed to terminate registry container: %v", err)
+		}
+	})
+
+	// Start DinD container on the same network
+	dindReq := testcontainers.ContainerRequest{
+		Image:      "docker:dind",
+		Privileged: true,
+		Env: map[string]string{
+			"DOCKER_TLS_CERTDIR": "",
+		},
+		// Pass insecure-registry flag at daemon startup so BuildKit inherits it
+		Cmd:            []string{"--insecure-registry=registry:5000"},
+		Networks:       []string{networkName},
+		NetworkAliases: map[string][]string{networkName: {"dind"}},
+		WaitingFor:     wait.ForLog("API listen on").WithStartupTimeout(60 * time.Second),
+	}
+
+	if cfg.TestData != "" {
+		dindReq.Files = []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join(projectRoot, "integration", "testdata", cfg.TestData),
+				ContainerFilePath: "/",
+				FileMode:          0o755,
+			},
+		}
+	}
+
+	dindContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: dindReq,
+		Started:          true,
+	})
+	require.NoError(t, err, "Failed to start DinD container")
+
+	t.Cleanup(func() {
+		if err := dindContainer.Terminate(ctx); err != nil {
+			t.Logf("Failed to terminate DinD container: %v", err)
+		}
+	})
+
+	// Copy piper binary into DinD container
+	piperPath := filepath.Join(projectRoot, "piper")
+	err = dindContainer.CopyFileToContainer(ctx, piperPath, "/piperbin/piper", 0o755)
+	require.NoError(t, err, "Failed to copy piper binary - build it first with: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper")
+
+	// Wait for Docker daemon to be ready
+	t.Log("Waiting for Docker daemon...")
+	require.Eventually(t, func() bool {
+		code, _, err := dindContainer.Exec(ctx, []string{"docker", "info"})
+		return err == nil && code == 0
+	}, 30*time.Second, 1*time.Second, "Docker daemon did not become ready")
+	t.Log("Docker daemon is ready")
+
+	// Pre-create ~/.docker directory — dockerBuild writes config.json there
+	// and fails if the directory doesn't exist.
+	exitCode, reader, err := dindContainer.Exec(ctx, []string{"mkdir", "-p", "/root/.docker"})
+	require.NoError(t, err, "Failed to create /root/.docker")
+	if exitCode != 0 {
+		output, _ := io.ReadAll(reader)
+		t.Fatalf("Failed to create /root/.docker: %s", string(output))
+	}
+
+	// The default buildx driver ("docker") runs BuildKit in-process within the
+	// DinD daemon, inheriting its network namespace and DNS. No explicit
+	// "docker buildx create" is needed — the "default" builder already uses it.
+
+	return DindTestContext{
+		DindContainer:     dindContainer,
+		RegistryContainer: registryContainer,
+		RegistryHost:      "registry:5000",
+	}
 }
