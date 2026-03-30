@@ -16,8 +16,8 @@ const (
 	tempBomFilename = "bom-npm.json"
 
 	// Package versions
-	cycloneDxNpmPackageVersion = "@cyclonedx/cyclonedx-npm@^2.1.0"
-	cdxgenPackageVersion       = "@cyclonedx/cdxgen@^12.1.1"
+	cycloneDxNpmPackageVersion = "@cyclonedx/cyclonedx-npm@2.1.0"
+	cdxgenPackageVersion       = "@cyclonedx/cdxgen@12.1.3"
 	cycloneDxCliVersion        = "v0.30.0"
 
 	// Configuration
@@ -148,7 +148,7 @@ func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles)
 	if err != nil {
-		return fmt.Errorf("Failed to generate BOM with @cyclonedx/cyclonedx-npm@%s: %v",
+		return fmt.Errorf("failed to generate BOM with @cyclonedx/cyclonedx-npm@%s: %w",
 			cycloneDxNpmPackageVersion, err)
 	}
 
@@ -167,10 +167,8 @@ func (exec *Execute) createBOMWithParams(packageInstallParams []string, packageR
 	for _, packageJSONFile := range packageJSONFiles {
 		path := filepath.Dir(packageJSONFile)
 		params := append(packageRunParams, filepath.Join(path, npmBomFilename))
-		executable := "npx"
-
 		params = append(params, packageJSONFile)
-		executable = tmpInstallFolder + "/node_modules/.bin/cyclonedx-npm"
+		executable := tmpInstallFolder + "/node_modules/.bin/cyclonedx-npm"
 
 		log.Entry().Debugf("Generating BOM for package: %s", packageJSONFile)
 		log.Entry().Debugf("Using executable: %s with params: %v", executable, params)

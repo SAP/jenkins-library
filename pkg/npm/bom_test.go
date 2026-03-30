@@ -30,7 +30,7 @@ func TestBom(t *testing.T) {
 			Options: options,
 		}
 		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
-		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@^2.1.0", "--prefix", "./tmp"}
+		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@2.1.0", "--prefix", "./tmp"}
 		cycloneDxNpmRunParams := []string{
 			"--output-format",
 			"XML",
@@ -56,7 +56,7 @@ func TestBom(t *testing.T) {
 		utils.AddFile("package-lock.json", []byte("{}"))
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
 		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
-		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@^2.1.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
+		utils.execRunner.ShouldFailOnCommand = map[string]error{"npm install --no-save @cyclonedx/cyclonedx-npm@2.1.0 --prefix ./tmp": fmt.Errorf("failed to install CycloneDX BOM")}
 
 		options := ExecutorOptions{}
 		options.DefaultNpmRegistry = "foo.bar"
@@ -68,6 +68,39 @@ func TestBom(t *testing.T) {
 		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
 
 		assert.Contains(t, err.Error(), "failed to install CycloneDX BOM")
+		// Only the failing npm install should have been called; no @cyclonedx/bom or npx invocation
+		if assert.Equal(t, 1, len(utils.execRunner.Calls)) {
+			assert.NotContains(t, utils.execRunner.Calls[0].Exec, "@cyclonedx/bom")
+			assert.NotContains(t, utils.execRunner.Calls[0].Exec, "npx")
+		}
+	})
+
+	t.Run("Create BOM fails if cyclonedx-npm run step fails", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("package-lock.json", []byte("{}"))
+
+		// npm install succeeds, but the cyclonedx-npm executable itself fails
+		runCmd := strings.Join([]string{
+			"./tmp/node_modules/.bin/cyclonedx-npm",
+			"--output-format", "XML",
+			"--spec-version", cycloneDxSchemaVersion,
+			"--omit", "dev",
+			"--output-file", "bom-npm.xml",
+			"package.json",
+		}, " ")
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			runCmd: fmt.Errorf("cyclonedx-npm execution failed"),
+		}
+
+		options := ExecutorOptions{DefaultNpmRegistry: "foo.bar"}
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.CreateBOM([]string{"package.json"})
+
+		assert.Contains(t, err.Error(), "cyclonedx-npm execution failed")
 	})
 
 	t.Run("Create BOM with cdxgen for pnpm project", func(t *testing.T) {
@@ -134,7 +167,7 @@ func TestBom(t *testing.T) {
 		utils.AddFile("package.json", []byte("{}"))
 		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
 		utils.execRunner.ShouldFailOnCommand = map[string]error{
-			"npm install @cyclonedx/cdxgen@^12.1.1 --prefix ./tmp": fmt.Errorf("failed to install cdxgen"),
+			"npm install @cyclonedx/cdxgen@12.1.3 --prefix ./tmp": fmt.Errorf("failed to install cdxgen"),
 		}
 
 		exec := &Execute{
@@ -144,6 +177,74 @@ func TestBom(t *testing.T) {
 		err := exec.CreateBOM([]string{"package.json"})
 
 		assert.Contains(t, err.Error(), "failed to install cdxgen")
+	})
+
+	t.Run("Create BOM fails if cdxgen execution fails", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+		// cdxgen install succeeds, but cdxgen executable itself fails when generating the BOM
+		cdxgenCmd := strings.Join([]string{
+			"./tmp/node_modules/.bin/cdxgen",
+			"-r",
+			"-o", "bom-npm.json",
+			"--spec-version", cycloneDxSchemaVersion,
+		}, " ")
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			cdxgenCmd: fmt.Errorf("cdxgen execution failed"),
+		}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.CreateBOM([]string{"package.json"})
+
+		assert.Contains(t, err.Error(), "cdxgen execution failed")
+	})
+
+	t.Run("Create BOM fails if cyclonedx-cli conversion fails after the cdxgen generation", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile("pnpm-lock.yaml", []byte("{}"))
+
+		// cdxgen download, install and execution succeed, but the cyclonedx-cli convert step fails
+		url := cycloneDxCliUrl[struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}]
+		cyclonedxExec := filepath.Join(".pipeline", filepath.Base(url))
+		outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(cycloneDxSchemaVersion, ".", "_"))
+		convertCmd := strings.Join([]string{
+			cyclonedxExec,
+			"convert",
+			"--input-file", "bom-npm.json",
+			"--output-format", "xml",
+			"--output-file", "bom-npm.xml",
+			"--output-version", outputVersion,
+		}, " ")
+		utils.execRunner.ShouldFailOnCommand = map[string]error{
+			convertCmd: fmt.Errorf("cyclonedx-cli conversion failed"),
+		}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.CreateBOM([]string{"package.json"})
+
+		assert.Contains(t, err.Error(), "cyclonedx-cli conversion failed")
+
+		// Verify cdxgen ran successfully before the conversion failure
+		cdxgenPath := tmpInstallFolder + "/node_modules/.bin/cdxgen"
+		if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
+			assert.Equal(t, mock.ExecCall{
+				Exec:   cdxgenPath,
+				Params: []string{"-r", "-o", "bom-npm.json", "--spec-version", cycloneDxSchemaVersion},
+			}, utils.execRunner.Calls[2])
+			assert.Equal(t, mock.ExecCall{
+				Exec:   cyclonedxExec,
+				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml", "--output-version", outputVersion},
+			}, utils.execRunner.Calls[3])
+		}
 	})
 
 	t.Run("Create BOM fails if cyclonedx-cli download fails with network error", func(t *testing.T) {
