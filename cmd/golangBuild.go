@@ -645,15 +645,18 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 
 func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	outBuffer := bytes.NewBufferString("")
+	errBuffer := bytes.NewBufferString("")
 	utils.Stdout(outBuffer)
-	utils.Stderr(outBuffer)
+	utils.Stderr(errBuffer)
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
 	// restore stdout/stderr to log writer after capture so subsequent commands log correctly
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
+		return false, fmt.Errorf("%w: %s", err, errBuffer.String())
 	}
+
+	log.Entry().Debugf("go list output for package %s: %q", pkg, outBuffer.String())
 
 	if strings.TrimSpace(outBuffer.String()) != "main" {
 		return false, nil
