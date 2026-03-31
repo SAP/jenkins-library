@@ -648,11 +648,14 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	utils.Stdout(outBuffer)
 	utils.Stderr(outBuffer)
 	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
+	// restore stdout/stderr to log writer after capture so subsequent commands log correctly
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
 	if err != nil {
 		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
 	}
 
-	if outBuffer.String() != "main" {
+	if strings.TrimSpace(outBuffer.String()) != "main" {
 		return false, nil
 	}
 
