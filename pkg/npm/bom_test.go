@@ -35,7 +35,7 @@ func TestBom(t *testing.T) {
 			"--output-format",
 			"XML",
 			"--spec-version",
-			cycloneDxSchemaVersion,
+			CycloneDxSchemaVersion,
 			"--omit",
 			"dev",
 			"--output-file",
@@ -84,7 +84,7 @@ func TestBom(t *testing.T) {
 		runCmd := strings.Join([]string{
 			"./tmp/node_modules/.bin/cyclonedx-npm",
 			"--output-format", "XML",
-			"--spec-version", cycloneDxSchemaVersion,
+			"--spec-version", CycloneDxSchemaVersion,
 			"--omit", "dev",
 			"--output-file", "bom-npm.xml",
 			"package.json",
@@ -148,13 +148,13 @@ func TestBom(t *testing.T) {
 				Params: []string{
 					"-r",
 					"-o", "bom-npm.json",
-					"--spec-version", cycloneDxSchemaVersion,
+					"--spec-version", CycloneDxSchemaVersion,
 				},
 			}, utils.execRunner.Calls[2])
 
 			// Check cyclonedx-cli conversion from JSON to XML
 			// The output version for cyclonedx-cli is expected to be in the format "vX_Y_Z". Ex: 1.4 => v1_4
-			outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(cycloneDxSchemaVersion, ".", "_"))
+			outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(CycloneDxSchemaVersion, ".", "_"))
 			assert.Equal(t, mock.ExecCall{
 				Exec:   cyclonedxExec,
 				Params: []string{"convert", "--input-file", "bom-npm.json", "--output-format", "xml", "--output-file", "bom-npm.xml", "--output-version", outputVersion},
@@ -189,7 +189,7 @@ func TestBom(t *testing.T) {
 			"./tmp/node_modules/.bin/cdxgen",
 			"-r",
 			"-o", "bom-npm.json",
-			"--spec-version", cycloneDxSchemaVersion,
+			"--spec-version", CycloneDxSchemaVersion,
 		}, " ")
 		utils.execRunner.ShouldFailOnCommand = map[string]error{
 			cdxgenCmd: fmt.Errorf("cdxgen execution failed"),
@@ -212,7 +212,7 @@ func TestBom(t *testing.T) {
 		// cdxgen download, install and execution succeed, but the cyclonedx-cli convert step fails
 		url := cycloneDxCliUrl[struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}]
 		cyclonedxExec := filepath.Join(".pipeline", filepath.Base(url))
-		outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(cycloneDxSchemaVersion, ".", "_"))
+		outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(CycloneDxSchemaVersion, ".", "_"))
 		convertCmd := strings.Join([]string{
 			cyclonedxExec,
 			"convert",
@@ -238,7 +238,7 @@ func TestBom(t *testing.T) {
 		if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
 			assert.Equal(t, mock.ExecCall{
 				Exec:   cdxgenPath,
-				Params: []string{"-r", "-o", "bom-npm.json", "--spec-version", cycloneDxSchemaVersion},
+				Params: []string{"-r", "-o", "bom-npm.json", "--spec-version", CycloneDxSchemaVersion},
 			}, utils.execRunner.Calls[2])
 			assert.Equal(t, mock.ExecCall{
 				Exec:   cyclonedxExec,

@@ -21,7 +21,7 @@ const (
 	cycloneDxCliVersion        = "v0.30.0"
 
 	// Configuration
-	cycloneDxSchemaVersion = "1.4"
+	CycloneDxSchemaVersion = "1.4"
 )
 
 var cycloneDxCliUrl = map[struct{ os, arch string }]string{
@@ -112,7 +112,7 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 		params := []string{
 			"-r",
 			"-o", jsonBomPath,
-			"--spec-version", cycloneDxSchemaVersion,
+			"--spec-version", CycloneDxSchemaVersion,
 		}
 
 		log.Entry().Debugf("Executing cdxgen with params: %v", params)
@@ -129,7 +129,7 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 		log.Entry().Debugf("Input file: %s, Output file: %s", jsonBomPath, xmlBomPath)
 
 		// The output version for cyclonedx-cli is expected to be in the format "vX_Y_Z". Ex: 1.4 => v1_4
-		outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(cycloneDxSchemaVersion, ".", "_"))
+		outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(CycloneDxSchemaVersion, ".", "_"))
 		if err := execRunner.RunExecutable(cliPath, "convert", "--input-file", jsonBomPath, "--output-format", "xml", "--output-file", xmlBomPath, "--output-version", outputVersion); err != nil {
 			return fmt.Errorf("failed to convert BOM to XML format for package: %s. Input: %s, Output: %s, Error: %w",
 				packageJSONFile, jsonBomPath, xmlBomPath, err)
@@ -144,7 +144,7 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 	// Primary attempt with cyclonedx-npm
 	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", tmpInstallFolder}
-	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", cycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
+	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", CycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
 
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles)
 	if err != nil {
