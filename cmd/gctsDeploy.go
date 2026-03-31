@@ -440,14 +440,14 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 func listAllRepositories(config *gctsDeployOptions, httpClient piperhttp.Sender) ([]getRepositoryResponseBody, error) {
 	var response struct {
 		Result []struct {
-			Rid            string `json:"rid"`
-			Name           string `json:"name"`
-			Role           string `json:"role"`
-			Vsid           string `json:"vsid"`
-			Status         string `json:"status"`
-			Branch         string `json:"branch"`
-			Url            string `json:"url"`
-			Config         []struct {
+			Rid    string `json:"rid"`
+			Name   string `json:"name"`
+			Role   string `json:"role"`
+			Vsid   string `json:"vsid"`
+			Status string `json:"status"`
+			Branch string `json:"branch"`
+			Url    string `json:"url"`
+			Config []struct {
 				Key      string `json:"key"`
 				Value    string `json:"value"`
 				Category string `json:"category"`
@@ -491,14 +491,14 @@ func listAllRepositories(config *gctsDeployOptions, httpClient piperhttp.Sender)
 	for _, repo := range response.Result {
 		repositories = append(repositories, getRepositoryResponseBody{
 			Result: struct {
-				Rid            string `json:"rid"`
-				Name           string `json:"name"`
-				Role           string `json:"role"`
-				Vsid           string `json:"vsid"`
-				Status         string `json:"status"`
-				Branch         string `json:"branch"`
-				Url            string `json:"url"`
-				Config         []struct {
+				Rid    string `json:"rid"`
+				Name   string `json:"name"`
+				Role   string `json:"role"`
+				Vsid   string `json:"vsid"`
+				Status string `json:"status"`
+				Branch string `json:"branch"`
+				Url    string `json:"url"`
+				Config []struct {
 					Key      string `json:"key"`
 					Value    string `json:"value"`
 					Category string `json:"category"`
@@ -507,17 +507,17 @@ func listAllRepositories(config *gctsDeployOptions, httpClient piperhttp.Sender)
 				CurrentCommit string `json:"currentCommit"`
 				Connection    string `json:"connection"`
 			}{
-				Rid:            repo.Rid,
-				Name:           repo.Name,
-				Role:           repo.Role,
-				Vsid:           repo.Vsid,
-				Status:         repo.Status,
-				Branch:         repo.Branch,
-				Url:            repo.Url,
-				Config:         repo.Config,
-				Objects:        repo.Objects,
-				CurrentCommit:  repo.CurrentCommit,
-				Connection:     repo.Connection,
+				Rid:           repo.Rid,
+				Name:          repo.Name,
+				Role:          repo.Role,
+				Vsid:          repo.Vsid,
+				Status:        repo.Status,
+				Branch:        repo.Branch,
+				Url:           repo.Url,
+				Config:        repo.Config,
+				Objects:       repo.Objects,
+				CurrentCommit: repo.CurrentCommit,
+				Connection:    repo.Connection,
 			},
 		})
 	}
@@ -584,9 +584,10 @@ func resolveRepositoryID(config *gctsDeployOptions, httpClient piperhttp.Sender)
 // Removes protocol (http/https), host, and .git suffix, keeping only org/repo path
 // This allows matching repos behind proxies or with different protocols
 // Examples:
-//   https://github.com/org/repo.git -> org/repo
-//   http://proxy.com/github.com/org/repo -> org/repo
-//   git@github.com:org/repo.git -> org/repo
+//
+//	https://github.com/org/repo.git -> org/repo
+//	http://proxy.com/github.com/org/repo -> org/repo
+//	git@github.com:org/repo.git -> org/repo
 func normalizeGitURL(url string) string {
 	if url == "" {
 		return ""

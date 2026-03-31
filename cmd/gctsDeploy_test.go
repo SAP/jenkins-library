@@ -1042,4 +1042,3 @@ func TestResolveRepositoryIDWithURLNormalization(t *testing.T) {
 		}
 	})
 }
-
