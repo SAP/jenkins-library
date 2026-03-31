@@ -549,16 +549,22 @@ func resolveRepositoryID(config *gctsDeployOptions, httpClient piperhttp.Sender)
 
 	log.Entry().Infof("Found %d repositories on ABAP system", len(repositories))
 
-	// Find repository matching the URL
+	// Normalize the search URL for comparison (remove .git suffix, normalize path)
+	normalizedSearchURL := normalizeGitURL(config.RemoteRepositoryURL)
+
+	// Find repository matching the URL (comparing normalized repository paths)
 	var matchingRepos []string
 	for _, repo := range repositories {
-		if repo.Result.Url == config.RemoteRepositoryURL {
-			matchingRepos = append(matchingRepos, repo.Result.Rid)
+		if repo.Result.Url != "" {
+			normalizedRepoURL := normalizeGitURL(repo.Result.Url)
+			if normalizedRepoURL == normalizedSearchURL {
+				matchingRepos = append(matchingRepos, repo.Result.Rid)
+			}
 		}
 	}
 
 	if len(matchingRepos) == 0 {
-		return "", fmt.Errorf("no repository found with remote URL: %v. "+
+		return "", fmt.Errorf("no repository found with remote URL matching: %v. "+
 			"Please create the repository first or provide the 'repository' parameter explicitly",
 			config.RemoteRepositoryURL)
 	}
@@ -572,6 +578,49 @@ func resolveRepositoryID(config *gctsDeployOptions, httpClient piperhttp.Sender)
 	resolvedID := matchingRepos[0]
 	log.Entry().Infof("Successfully resolved repository ID: %v", resolvedID)
 	return resolvedID, nil
+}
+
+// normalizeGitURL normalizes a Git repository URL for comparison
+// Removes protocol (http/https), host, and .git suffix, keeping only org/repo path
+// This allows matching repos behind proxies or with different protocols
+// Examples:
+//   https://github.com/org/repo.git -> org/repo
+//   http://proxy.com/github.com/org/repo -> org/repo
+//   git@github.com:org/repo.git -> org/repo
+func normalizeGitURL(url string) string {
+	if url == "" {
+		return ""
+	}
+
+	// Remove .git suffix if present
+	normalized := strings.TrimSuffix(url, ".git")
+
+	// Remove trailing slash
+	normalized = strings.TrimSuffix(normalized, "/")
+
+	// Handle SSH format (git@host:path)
+	if strings.Contains(normalized, "@") && strings.Contains(normalized, ":") {
+		// Extract path after last colon for SSH URLs
+		parts := strings.Split(normalized, ":")
+		if len(parts) >= 2 {
+			// Take everything after the first colon
+			normalized = strings.Join(parts[1:], ":")
+		}
+	}
+
+	// Remove protocol (http://, https://)
+	normalized = strings.TrimPrefix(normalized, "https://")
+	normalized = strings.TrimPrefix(normalized, "http://")
+
+	// Extract repository path (last 2 segments: org/repo)
+	// This handles proxy URLs like proxy.com/github.com/org/repo
+	parts := strings.Split(normalized, "/")
+	if len(parts) >= 2 {
+		// Take last 2 segments (org/repo)
+		normalized = parts[len(parts)-2] + "/" + parts[len(parts)-1]
+	}
+
+	return normalized
 }
 
 // Function to delete configuration key for repositories
