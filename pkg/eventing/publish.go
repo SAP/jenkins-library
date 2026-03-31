@@ -51,9 +51,10 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 
 	eventType := fmt.Sprintf("%seventTypeTaskRunFinished", cfg.TypePrefix)
 	eventData, err := newEvent(eventType, cfg.Source, map[string]string{
-		"taskName":  ctx.StepName,
-		"stageName": ctx.StageName,
-		"outcome":   outcome,
+		"taskName":      ctx.StepName,
+		"stageName":     ctx.StageName,
+		"outcome":       outcome,
+		"pipelineRunId": ctx.PipelineID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
