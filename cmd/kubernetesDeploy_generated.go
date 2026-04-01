@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -18,46 +17,46 @@ import (
 )
 
 type kubernetesDeployOptions struct {
-	AdditionalParameters       []string               `json:"additionalParameters,omitempty"`
-	APIServer                  string                 `json:"apiServer,omitempty"`
-	AppTemplate                string                 `json:"appTemplate,omitempty"`
-	ChartPath                  string                 `json:"chartPath,omitempty"`
-	ContainerRegistryPassword  string                 `json:"containerRegistryPassword,omitempty"`
-	ContainerImageName         string                 `json:"containerImageName,omitempty"`
-	ContainerImageTag          string                 `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL       string                 `json:"containerRegistryUrl,omitempty"`
-	ContainerRegistryUser      string                 `json:"containerRegistryUser,omitempty"`
-	ContainerRegistrySecret    string                 `json:"containerRegistrySecret,omitempty"`
-	CreateDockerRegistrySecret bool                   `json:"createDockerRegistrySecret,omitempty"`
-	DeploymentName             string                 `json:"deploymentName,omitempty"`
-	DeployTool                 string                 `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
-	ForceUpdates               bool                   `json:"forceUpdates,omitempty"`
-	HelmDeployWaitSeconds      int                    `json:"helmDeployWaitSeconds,omitempty"`
-	HelmTestWaitSeconds        int                    `json:"helmTestWaitSeconds,omitempty"`
-	HelmValues                 []string               `json:"helmValues,omitempty"`
-	ValuesMapping              map[string]interface{} `json:"valuesMapping,omitempty"`
-	RenderSubchartNotes        bool                   `json:"renderSubchartNotes,omitempty"`
-	GithubToken                string                 `json:"githubToken,omitempty"`
-	Image                      string                 `json:"image,omitempty"`
-	ImageNames                 []string               `json:"imageNames,omitempty"`
-	ImageNameTags              []string               `json:"imageNameTags,omitempty"`
-	ImageDigests               []string               `json:"imageDigests,omitempty"`
-	IngressHosts               []string               `json:"ingressHosts,omitempty"`
-	KeepFailedDeployments      bool                   `json:"keepFailedDeployments,omitempty"`
-	RunHelmTests               bool                   `json:"runHelmTests,omitempty"`
-	ShowTestLogs               bool                   `json:"showTestLogs,omitempty"`
-	KubeConfig                 string                 `json:"kubeConfig,omitempty"`
-	KubeContext                string                 `json:"kubeContext,omitempty"`
-	KubeToken                  string                 `json:"kubeToken,omitempty"`
-	Namespace                  string                 `json:"namespace,omitempty"`
-	TillerNamespace            string                 `json:"tillerNamespace,omitempty"`
-	DockerConfigJSON           string                 `json:"dockerConfigJSON,omitempty"`
-	DeployCommand              string                 `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
-	SetupScript                string                 `json:"setupScript,omitempty"`
-	VerificationScript         string                 `json:"verificationScript,omitempty"`
-	TeardownScript             string                 `json:"teardownScript,omitempty"`
-	InsecureSkipTLSVerify      bool                   `json:"insecureSkipTLSVerify,omitempty"`
-	CACertificate              string                 `json:"CACertificate,omitempty"`
+	AdditionalParameters       []string          `json:"additionalParameters,omitempty"`
+	APIServer                  string            `json:"apiServer,omitempty"`
+	AppTemplate                string            `json:"appTemplate,omitempty"`
+	ChartPath                  string            `json:"chartPath,omitempty"`
+	ContainerRegistryPassword  string            `json:"containerRegistryPassword,omitempty"`
+	ContainerImageName         string            `json:"containerImageName,omitempty"`
+	ContainerImageTag          string            `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL       string            `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser      string            `json:"containerRegistryUser,omitempty"`
+	ContainerRegistrySecret    string            `json:"containerRegistrySecret,omitempty"`
+	CreateDockerRegistrySecret bool              `json:"createDockerRegistrySecret,omitempty"`
+	DeploymentName             string            `json:"deploymentName,omitempty"`
+	DeployTool                 string            `json:"deployTool,omitempty" validate:"possible-values=kubectl helm helm3"`
+	ForceUpdates               bool              `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds      int               `json:"helmDeployWaitSeconds,omitempty"`
+	HelmTestWaitSeconds        int               `json:"helmTestWaitSeconds,omitempty"`
+	HelmValues                 []string          `json:"helmValues,omitempty"`
+	ValuesMapping              map[string]string `json:"valuesMapping,omitempty"`
+	RenderSubchartNotes        bool              `json:"renderSubchartNotes,omitempty"`
+	GithubToken                string            `json:"githubToken,omitempty"`
+	Image                      string            `json:"image,omitempty"`
+	ImageNames                 []string          `json:"imageNames,omitempty"`
+	ImageNameTags              []string          `json:"imageNameTags,omitempty"`
+	ImageDigests               []string          `json:"imageDigests,omitempty"`
+	IngressHosts               []string          `json:"ingressHosts,omitempty"`
+	KeepFailedDeployments      bool              `json:"keepFailedDeployments,omitempty"`
+	RunHelmTests               bool              `json:"runHelmTests,omitempty"`
+	ShowTestLogs               bool              `json:"showTestLogs,omitempty"`
+	KubeConfig                 string            `json:"kubeConfig,omitempty"`
+	KubeContext                string            `json:"kubeContext,omitempty"`
+	KubeToken                  string            `json:"kubeToken,omitempty"`
+	Namespace                  string            `json:"namespace,omitempty"`
+	TillerNamespace            string            `json:"tillerNamespace,omitempty"`
+	DockerConfigJSON           string            `json:"dockerConfigJSON,omitempty"`
+	DeployCommand              string            `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
+	SetupScript                string            `json:"setupScript,omitempty"`
+	VerificationScript         string            `json:"verificationScript,omitempty"`
+	TeardownScript             string            `json:"teardownScript,omitempty"`
+	InsecureSkipTLSVerify      bool              `json:"insecureSkipTLSVerify,omitempty"`
+	CACertificate              string            `json:"CACertificate,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -158,8 +157,10 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -188,33 +189,17 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					log.Entry().Debug("publishing event to GCP Pub/Sub...")
-					// prepare event payload
-					payload := events.NewPayloadTaskRunFinished(
-						telemetryClient.GetData().StageName,
-						STEP_NAME,
-						stepTelemetryData.ErrorCode,
-					)
-					// create event
-					eventData, err := events.NewEventTaskRunFinished(
-						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-						payload,
-					)
-					// publish cloud event via GCP Pub/Sub
-					err = gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(
-						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
-						eventData,
-					)
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineID: telemetryClient.GetBuildURL(),
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -249,7 +234,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
 	cmd.Flags().IntVar(&stepConfig.HelmTestWaitSeconds, "helmTestWaitSeconds", 300, "Number of seconds to wait for any individual Kubernetes operation (like Jobs for hooks). See https://helm.sh/docs/helm/helm_test/#options for further details")
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
-
+	cmd.Flags().StringToStringVar(&stepConfig.ValuesMapping, "valuesMapping", map[string]string{}, "")
 	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
@@ -504,9 +489,10 @@ func kubernetesDeployMetadata() config.StepData {
 						Name:        "valuesMapping",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     map[string]string{},
 					},
 					{
 						Name:        "renderSubchartNotes",

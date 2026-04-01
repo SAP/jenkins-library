@@ -2,22 +2,22 @@ package gcp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"cloud.google.com/go/pubsub"
-	piperConfig "github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )
+
+type OIDCTokenProvider func(roleID string) (string, error)
 
 type PubsubClient interface {
 	Publish(topic string, data []byte) error
 }
 
 type pubsubClient struct {
-	vaultClient   piperConfig.VaultClient
+	tokenProvider OIDCTokenProvider
 	projectNumber string
 	pool          string
 	provider      string
@@ -25,14 +25,14 @@ type pubsubClient struct {
 	oidcRoleId    string
 }
 
-func NewGcpPubsubClient(vaultClient piperConfig.VaultClient, projectNumber, pool, provider, orderingKey, oidcRoleId string) PubsubClient {
+func NewGcpPubsubClient(tokenProvider OIDCTokenProvider, projectNumber, pool, provider, orderingKey, oidcRoleId string) PubsubClient {
 	return &pubsubClient{
-		vaultClient:   vaultClient,
-		projectNumber: projectNumber,
-		pool:          pool,
-		provider:      provider,
-		orderingKey:   orderingKey,
-		oidcRoleId:    oidcRoleId,
+		tokenProvider,
+		projectNumber,
+		pool,
+		provider,
+		orderingKey,
+		oidcRoleId,
 	}
 }
 
@@ -47,11 +47,7 @@ func (cl *pubsubClient) Publish(topic string, data []byte) error {
 }
 
 func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Client, error) {
-	if cl.vaultClient == nil {
-		return nil, errors.New("Vault client is not configured")
-	}
-
-	oidcToken, err := cl.vaultClient.GetOIDCTokenByValidation(cl.oidcRoleId)
+	oidcToken, err := cl.tokenProvider(cl.oidcRoleId)
 	if err != nil {
 		return nil, fmt.Errorf("could not get oidc token: %w", err)
 	}

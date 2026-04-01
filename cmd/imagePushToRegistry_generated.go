@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -18,24 +17,25 @@ import (
 )
 
 type imagePushToRegistryOptions struct {
-	TargetImages           map[string]interface{} `json:"targetImages,omitempty"`
-	SourceImages           []string               `json:"sourceImages,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceImageTag         string                 `json:"sourceImageTag,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceRegistryURL      string                 `json:"sourceRegistryUrl,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceRegistryUser     string                 `json:"sourceRegistryUser,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	SourceRegistryPassword string                 `json:"sourceRegistryPassword,omitempty" validate:"required_if=PushLocalDockerImage false"`
-	TargetRegistryURL      string                 `json:"targetRegistryUrl,omitempty"`
-	TargetRegistryUser     string                 `json:"targetRegistryUser,omitempty"`
-	TargetRegistryPassword string                 `json:"targetRegistryPassword,omitempty"`
-	TargetImageTag         string                 `json:"targetImageTag,omitempty" validate:"required_if=TagLatest false"`
-	UseImageNameTags       bool                   `json:"useImageNameTags,omitempty"`
-	SourceImageNameTags    []string               `json:"sourceImageNameTags,omitempty"`
-	TargetImageNameTags    []string               `json:"targetImageNameTags,omitempty"`
-	TagLatest              bool                   `json:"tagLatest,omitempty"`
-	DockerConfigJSON       string                 `json:"dockerConfigJSON,omitempty"`
-	PushLocalDockerImage   bool                   `json:"pushLocalDockerImage,omitempty"`
-	LocalDockerImagePath   string                 `json:"localDockerImagePath,omitempty" validate:"required_if=PushLocalDockerImage true"`
-	TargetArchitecture     string                 `json:"targetArchitecture,omitempty"`
+	TargetImages           map[string]string `json:"targetImages,omitempty"`
+	SourceImages           []string          `json:"sourceImages,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceImageTag         string            `json:"sourceImageTag,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceRegistryURL      string            `json:"sourceRegistryUrl,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceRegistryUser     string            `json:"sourceRegistryUser,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	SourceRegistryPassword string            `json:"sourceRegistryPassword,omitempty" validate:"required_if=PushLocalDockerImage false"`
+	TargetRegistryURL      string            `json:"targetRegistryUrl,omitempty"`
+	TargetRegistryUser     string            `json:"targetRegistryUser,omitempty"`
+	TargetRegistryPassword string            `json:"targetRegistryPassword,omitempty"`
+	TargetImageTag         string            `json:"targetImageTag,omitempty" validate:"required_if=TagLatest false"`
+	UseImageNameTags       bool              `json:"useImageNameTags,omitempty"`
+	SourceImageNameTags    []string          `json:"sourceImageNameTags,omitempty"`
+	TargetImageNameTags    []string          `json:"targetImageNameTags,omitempty"`
+	TagLatest              bool              `json:"tagLatest,omitempty"`
+	DockerConfigJSON       string            `json:"dockerConfigJSON,omitempty"`
+	PushLocalDockerImage   bool              `json:"pushLocalDockerImage,omitempty"`
+	LocalDockerImagePath   string            `json:"localDockerImagePath,omitempty" validate:"required_if=PushLocalDockerImage true"`
+	TargetArchitecture     string            `json:"targetArchitecture,omitempty"`
+	DisableHTTP2           bool              `json:"disableHTTP2,omitempty"`
 }
 
 // ImagePushToRegistryCommand Allows you to copy a Docker image from a source container registry  to a destination container registry.
@@ -121,8 +121,10 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -151,33 +153,17 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					log.Entry().Debug("publishing event to GCP Pub/Sub...")
-					// prepare event payload
-					payload := events.NewPayloadTaskRunFinished(
-						telemetryClient.GetData().StageName,
-						STEP_NAME,
-						stepTelemetryData.ErrorCode,
-					)
-					// create event
-					eventData, err := events.NewEventTaskRunFinished(
-						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-						payload,
-					)
-					// publish cloud event via GCP Pub/Sub
-					err = gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(
-						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
-						eventData,
-					)
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineID: telemetryClient.GetBuildURL(),
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -195,7 +181,7 @@ Currently the imagePushToRegistry only supports copying a local image or image f
 }
 
 func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegistryOptions) {
-
+	cmd.Flags().StringToStringVar(&stepConfig.TargetImages, "targetImages", map[string]string{}, "Defines the names of the images that will be pushed to the target registry. If empty, names of sourceImages will be used.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.\n\n```yaml\nsourceImages:\n  - image-1\n  - image-2\ntargetImages:\n  image-1: target-image-1\n  image-2: target-image-2\n```\n")
 	cmd.Flags().StringSliceVar(&stepConfig.SourceImages, "sourceImages", []string{}, "Defines the names of the images that will be pulled from source registry. This is helpful for moving images from one location to another.\nPlease ensure that targetImages and sourceImages correspond to each other: the first image in sourceImages should be mapped to the first image in the targetImages parameter.\n\n```yaml\n  sourceImages:\n    - image-1\n    - image-2\n  targetImages:\n    image-1: target-image-1\n    image-2: target-image-2\n```\n")
 	cmd.Flags().StringVar(&stepConfig.SourceImageTag, "sourceImageTag", os.Getenv("PIPER_sourceImageTag"), "Tag of the sourceImages")
 	cmd.Flags().StringVar(&stepConfig.SourceRegistryURL, "sourceRegistryUrl", os.Getenv("PIPER_sourceRegistryUrl"), "Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*\"")
@@ -213,6 +199,7 @@ func addImagePushToRegistryFlags(cmd *cobra.Command, stepConfig *imagePushToRegi
 	cmd.Flags().BoolVar(&stepConfig.PushLocalDockerImage, "pushLocalDockerImage", false, "Defines if the local image should be pushed to registry")
 	cmd.Flags().StringVar(&stepConfig.LocalDockerImagePath, "localDockerImagePath", os.Getenv("PIPER_localDockerImagePath"), "If the `localDockerImagePath` is a directory, it will be read as an OCI image layout. Otherwise, `localDockerImagePath` is assumed to be a docker-style tarball.")
 	cmd.Flags().StringVar(&stepConfig.TargetArchitecture, "targetArchitecture", os.Getenv("PIPER_targetArchitecture"), "Specifies the targetArchitecture in the form os/arch[/variant][:osversion] (e.g. linux/amd64). All OS and architectures of the specified image will be copied if it is a multi-platform image. To only push a single platform to the target registry use this parameter")
+	cmd.Flags().BoolVar(&stepConfig.DisableHTTP2, "disableHTTP2", false, "Disables HTTP/2 for registry communication. Set to true if you encounter HTTP/2 stream errors during image push/pull operations.")
 
 	cmd.MarkFlagRequired("targetRegistryUrl")
 	cmd.MarkFlagRequired("targetRegistryUser")
@@ -237,9 +224,10 @@ func imagePushToRegistryMetadata() config.StepData {
 						Name:        "targetImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     map[string]string{},
 					},
 					{
 						Name: "sourceImages",
@@ -458,6 +446,15 @@ func imagePushToRegistryMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_targetArchitecture"),
+					},
+					{
+						Name:        "disableHTTP2",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

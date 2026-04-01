@@ -294,19 +294,34 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils, javaCaCertFilePath string) error {
 	// TODO: make use of java/keytool package
-	existingJavaCaCerts := filepath.Join(os.Getenv("JAVA_HOME"), "jre", "lib", "security", "cacerts")
+	var existingJavaCaCerts string
 
 	if len(javaCaCertFilePath) > 0 {
 		existingJavaCaCerts = javaCaCertFilePath
+	} else {
+		// Try Java 9+ path first, then fall back to Java 8 path
+		java9Path := filepath.Join(os.Getenv("JAVA_HOME"), "lib", "security", "cacerts")
+		java8Path := filepath.Join(os.Getenv("JAVA_HOME"), "jre", "lib", "security", "cacerts")
+
+		if exists, _ := fileUtils.FileExists(java9Path); exists {
+			existingJavaCaCerts = java9Path
+		} else if exists, _ := fileUtils.FileExists(java8Path); exists {
+			existingJavaCaCerts = java8Path
+		} else {
+			log.Entry().Warnf("java cacerts file not found at %s or %s - skipping custom TLS certificate loading", java9Path, java8Path)
+			return nil
+		}
 	}
 
 	exists, err := fileUtils.FileExists(existingJavaCaCerts)
 	if err != nil {
-		return fmt.Errorf("Could not find the existing java cacerts: %w", err)
+		log.Entry().Warnf("failed to check java cacerts file at %s: %v - skipping custom TLS certificate loading", existingJavaCaCerts, err)
+		return nil
 	}
 
 	if !exists {
-		return fmt.Errorf("Could not find the existing java cacerts: %w", err)
+		log.Entry().Warnf("java cacerts file does not exist at %s - skipping custom TLS certificate loading", existingJavaCaCerts)
+		return nil
 	}
 
 	trustStore := filepath.Join(".pipeline", "mavenCaCerts")
@@ -315,7 +330,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
 
 	if fileUtilserr != nil {
-		return fmt.Errorf("Could not copy existing cacerts into new cacerts location : %w", err)
+		return fmt.Errorf("Could not copy existing cacerts into new cacerts location: %w", fileUtilserr)
 	}
 
 	if err := fileUtils.Chmod(trustStore, 0666); err != nil {

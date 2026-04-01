@@ -50,13 +50,15 @@ type imagePushToRegistryUtilsBundle struct {
 	// imagePushToRegistryUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newImagePushToRegistryUtils() imagePushToRegistryUtils {
+func newImagePushToRegistryUtils(disableHTTP2 bool) imagePushToRegistryUtils {
+	craneBundle := docker.NewCraneUtilsBundle()
+	craneBundle.DisableHTTP2 = disableHTTP2
 	utils := imagePushToRegistryUtilsBundle{
 		Command: &command.Command{
 			StepName: "imagePushToRegistry",
 		},
 		Files:            &piperutils.Files{},
-		dockerImageUtils: &docker.CraneUtilsBundle{},
+		dockerImageUtils: craneBundle,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -67,7 +69,7 @@ func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newImagePushToRegistryUtils()
+	utils := newImagePushToRegistryUtils(config.DisableHTTP2)
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -169,10 +171,11 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 		sourceImage := sourceImage
 		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
-		targetImage, ok := config.TargetImages[sourceImage].(string)
+		targetImage, ok := config.TargetImages[sourceImage]
 		if !ok {
 			return fmt.Errorf("incorrect name of target image: %v", config.TargetImages[sourceImage])
 		}
+		log.Entry().Debugf("Current target image: %s", targetImage)
 
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
@@ -217,14 +220,9 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 		return err
 	}
 	log.Entry().Infof("Loading local image... Done")
+	log.Entry().Debugf("Selected target images: %s", config.TargetImages)
 
-	for _, trgImage := range config.TargetImages {
-		trgImage := trgImage
-		targetImage, ok := trgImage.(string)
-		if !ok {
-			return fmt.Errorf("incorrect name of target image: %v", trgImage)
-		}
-
+	for _, targetImage := range config.TargetImages {
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
 				dst := fmt.Sprintf("%s/%s:%s", config.TargetRegistryURL, targetImage, config.TargetImageTag)
@@ -288,11 +286,14 @@ func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils
 	return nil
 }
 
-func mapSourceTargetImages(sourceImages []string) map[string]any {
-	targetImages := make(map[string]any, len(sourceImages))
+func mapSourceTargetImages(sourceImages []string) map[string]string {
+	targetImages := make(map[string]string, len(sourceImages))
+
 	for _, sourceImage := range sourceImages {
 		targetImages[sourceImage] = sourceImage
 	}
+
+	log.Entry().Debugf("Mapped target images: %s", targetImages)
 
 	return targetImages
 }

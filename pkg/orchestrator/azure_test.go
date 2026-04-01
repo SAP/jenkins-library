@@ -31,7 +31,7 @@ func TestAzure(t *testing.T) {
 		os.Setenv("BUILD_REPOSITORY_URI", "github.com/foo/bar")
 		os.Setenv("SYSTEM_DEFINITIONNAME", "bar")
 		os.Setenv("SYSTEM_DEFINITIONID", "1234")
-		p, _ := GetOrchestratorConfigProvider(nil)
+		p := GetOrchestratorConfigProvider(nil)
 
 		assert.False(t, p.IsPullRequest())
 		assert.Equal(t, "feat/test-azure", p.Branch())

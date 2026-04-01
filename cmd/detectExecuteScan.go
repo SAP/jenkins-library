@@ -130,11 +130,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().WithError(err).Warning(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	utils.provider = provider
 
@@ -557,10 +553,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if len(config.DependencyPath) > 0 {
-		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
-	} else {
-		args = append(args, "--detect.source.path='.'")
+	if !checkIfArgumentIsInScanProperties(config, "detect.source.path") {
+		if len(config.DependencyPath) > 0 {
+			args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
+		} else {
+			args = append(args, "--detect.source.path='.'")
+		}
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {

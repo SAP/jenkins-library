@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/events"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -18,19 +17,20 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcConfig          string `json:"atcConfig,omitempty"`
-	Repositories       string `json:"repositories,omitempty"`
-	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
-	CfOrg              string `json:"cfOrg,omitempty"`
-	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
-	CfSpace            string `json:"cfSpace,omitempty"`
-	Username           string `json:"username,omitempty"`
-	Password           string `json:"password,omitempty"`
-	Host               string `json:"host,omitempty"`
-	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
-	GenerateHTML       bool   `json:"generateHTML,omitempty"`
-	FailOnSeverity     string `json:"failOnSeverity,omitempty"`
+	AtcConfig          string   `json:"atcConfig,omitempty"`
+	Repositories       string   `json:"repositories,omitempty"`
+	CfAPIEndpoint      string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg              string   `json:"cfOrg,omitempty"`
+	CfServiceInstance  string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string   `json:"cfServiceKeyName,omitempty"`
+	CfSpace            string   `json:"cfSpace,omitempty"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	Host               string   `json:"host,omitempty"`
+	AtcResultsFileName string   `json:"atcResultsFileName,omitempty"`
+	GenerateHTML       bool     `json:"generateHTML,omitempty"`
+	FailOnSeverity     string   `json:"failOnSeverity,omitempty"`
+	CertificateNames   []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -116,8 +116,10 @@ Regardless of the option you chose, please make sure to provide the configuratio
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -146,33 +148,17 @@ Regardless of the option you chose, please make sure to provide the configuratio
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
 				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					log.Entry().Debug("publishing event to GCP Pub/Sub...")
-					// prepare event payload
-					payload := events.NewPayloadTaskRunFinished(
-						telemetryClient.GetData().StageName,
-						STEP_NAME,
-						stepTelemetryData.ErrorCode,
-					)
-					// create event
-					eventData, err := events.NewEventTaskRunFinished(
-						GeneralConfig.HookConfig.GCPPubSubConfig.TypePrefix,
-						GeneralConfig.HookConfig.GCPPubSubConfig.Source,
-						payload,
-					)
-					// publish cloud event via GCP Pub/Sub
-					err = gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(
-						fmt.Sprintf("%spipelinetaskrun-finished", GeneralConfig.HookConfig.GCPPubSubConfig.TopicPrefix),
-						eventData,
-					)
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+					if err := eventing.Process(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineID: telemetryClient.GetBuildURL(),
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -203,6 +189,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 	cmd.Flags().StringVar(&stepConfig.FailOnSeverity, "failOnSeverity", os.Getenv("PIPER_failOnSeverity"), "Specifies the severity level, for which the ATC step should fail if at least one message with this severity (or \"higher\") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step")
+	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -350,6 +337,15 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_failOnSeverity"),
+					},
+					{
+						Name:        "certificateNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},
