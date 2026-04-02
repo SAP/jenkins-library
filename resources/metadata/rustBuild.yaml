@@ -1,0 +1,259 @@
+metadata:
+  name: rustBuild
+  description: This step executes a Rust build via Cargo.
+  longDescription: |
+    This step builds a Rust project using Cargo.
+    It supports running tests with cargo test, linting with cargo clippy, coverage reporting,
+    cross-compilation to multiple target architectures via Rust target triples, SBOM generation
+    with cargo-cyclonedx, and publishing built binaries to a target repository.
+spec:
+  inputs:
+    secrets:
+      - name: cargoRegistryTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing the registry token for cargo publish.
+        type: jenkins
+    params:
+      - name: buildFlags
+        type: "[]string"
+        description: Defines list of additional flags passed to cargo build.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildSettingsInfo
+        type: string
+        description: Build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/buildSettingsInfo
+      - name: cargoFeatures
+        type: "[]string"
+        description: List of Cargo features to activate during build and test.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: cargoProfile
+        type: string
+        description: Cargo build profile to use (e.g. release, debug).
+        default: release
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: cargoRegistryToken
+        type: string
+        description: Token for authenticating against a private Cargo registry.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: cargoRegistryTokenCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            name: cargoRegistryTokenVaultSecret
+            default: rust
+      - name: clippyArgs
+        type: "[]string"
+        description: Additional arguments passed to cargo clippy.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: coverageFormat
+        type: string
+        description: Defines the output format for coverage reports.
+        possibleValues:
+          - cobertura
+          - html
+          - lcov
+        default: html
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: coverageTool
+        type: string
+        description: Tool used for coverage reporting.
+        possibleValues:
+          - tarpaulin
+          - llvm-cov
+        default: tarpaulin
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using cargo-cyclonedx.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: failOnLintingError
+        type: bool
+        description: Defines if the step will return an error when cargo clippy reports linting issues.
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: output
+        type: string
+        description: Defines the output binary name prefix. For multiple architectures the resulting name will be in format <output>-<target-triple>.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: publish
+        type: bool
+        description: Configures the build to upload compiled binaries to a target repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: targetRepositoryPassword
+        description: "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/rawRepositoryPassword
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: targetRepositoryUser
+        description: "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/rawRepositoryUsername
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: targetRepositoryURL
+        description: "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/rawRepositoryURL
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: reportCoverage
+        type: bool
+        description: Defines if a coverage report should be created.
+        default: true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runLint
+        type: bool
+        description: Configures the build to run cargo clippy for linting.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runTests
+        type: bool
+        description: Activates execution of tests using cargo test.
+        default: true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runIntegrationTests
+        type: bool
+        description: Activates execution of integration tests located in the tests/ directory.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: targetArchitectures
+        type: "[]string"
+        description: Defines the target architectures as Rust target triples (e.g. x86_64-unknown-linux-gnu). If multiple architectures are specified, set the output parameter as well.
+        default:
+          - x86_64-unknown-linux-gnu
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: true
+      - name: testOptions
+        type: "[]string"
+        description: Additional options passed to cargo test.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: artifactVersion
+        type: string
+        description: Version of the artifact to be built.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: Metadata about the artifacts that are built and published, used by downstream pipeline steps.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/buildSettingsInfo
+          - name: custom/rustBuildArtifacts
+          - name: custom/artifacts
+            type: "piperenv.Artifacts"
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/bom-rust.xml"
+            type: sbom
+          - filePattern: "**/TEST-*.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
+  containers:
+    - name: rust
+      image: rust:1-bookworm
+      options:
+        - name: -u
+          value: "0"

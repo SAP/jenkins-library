@@ -135,6 +135,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentRunAUnitTestCommand())
 	rootCmd.AddCommand(CheckStepActiveCommand())
 	rootCmd.AddCommand(GolangBuildCommand())
+	rootCmd.AddCommand(RustBuildCommand())
 	rootCmd.AddCommand(ShellExecuteCommand())
 	rootCmd.AddCommand(ApiProxyDownloadCommand())
 	rootCmd.AddCommand(ApiKeyValueMapDownloadCommand())

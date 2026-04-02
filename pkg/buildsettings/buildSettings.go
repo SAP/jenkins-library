@@ -19,6 +19,7 @@ type BuildSettings struct {
 	PythonBuild        []BuildOptions `json:"pythonBuild,omitempty"`
 	NpmExecuteScripts  []BuildOptions `json:"npmExecuteScripts,omitempty"`
 	CnbBuild           []BuildOptions `json:"cnbBuild,omitempty"`
+	RustBuild          []BuildOptions `json:"rustBuild,omitempty"`
 }
 
 type BuildOptions struct {
@@ -113,6 +114,10 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		case "cnbBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				CnbBuild: settings,
+			})
+		case "rustBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				RustBuild: settings,
 			})
 		default:
 			log.Entry().Warningf("buildTool '%s' not supported for creation of build settings", buildTool)

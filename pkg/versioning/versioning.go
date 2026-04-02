@@ -132,6 +132,16 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		default:
 			artifact = &Versionfile{path: buildDescriptorFilePath}
 		}
+	case "rust":
+		if len(buildDescriptorFilePath) == 0 {
+			exists, err := fileExists(CargoBuildDescriptor)
+			if err != nil || !exists {
+				return artifact, fmt.Errorf("'%v' not found: Cargo.toml is required for Rust projects", CargoBuildDescriptor)
+			}
+			artifact = &Cargo{path: CargoBuildDescriptor, fileExists: fileExists}
+		} else {
+			artifact = &Versionfile{path: buildDescriptorFilePath}
+		}
 	case "helm":
 		artifact = &HelmChart{
 			path:             buildDescriptorFilePath,

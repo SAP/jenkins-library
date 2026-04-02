@@ -109,6 +109,37 @@ func TestGetArtifact(t *testing.T) {
 		assert.EqualError(t, err, "no build descriptor available, supported: [go.mod VERSION version.txt]")
 	})
 
+	t.Run("rust - Cargo.toml", func(t *testing.T) {
+		fileExists = func(s string) (bool, error) {
+			return s == "Cargo.toml", nil
+		}
+		rust, err := GetArtifact("rust", "", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := rust.(*Cargo)
+		assert.True(t, ok)
+		assert.Equal(t, "Cargo.toml", theType.path)
+		assert.Equal(t, "semver2", rust.VersioningScheme())
+	})
+
+	t.Run("rust - explicit VERSION file", func(t *testing.T) {
+		rust, err := GetArtifact("rust", "VERSION", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := rust.(*Versionfile)
+		assert.True(t, ok)
+		assert.Equal(t, "VERSION", theType.path)
+	})
+
+	t.Run("rust - error when Cargo.toml missing", func(t *testing.T) {
+		fileExists = func(string) (bool, error) { return false, nil }
+		_, err := GetArtifact("rust", "", &Options{}, nil)
+
+		assert.EqualError(t, err, "'Cargo.toml' not found: Cargo.toml is required for Rust projects")
+	})
+
 	t.Run("gradle", func(t *testing.T) {
 		gradle, err := GetArtifact("gradle", "", &Options{VersionField: "theversion"}, nil)
 
