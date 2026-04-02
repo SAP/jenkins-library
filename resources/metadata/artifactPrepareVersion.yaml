@@ -115,6 +115,7 @@ spec:
           - mta
           - npm
           - pip
+          - rust
           - sbt
           - yarn
       - name: additionalTargetDescriptors
@@ -151,6 +152,7 @@ spec:
           - mta
           - npm
           - pip
+          - rust
           - sbt
           - yarn
           - CAP
