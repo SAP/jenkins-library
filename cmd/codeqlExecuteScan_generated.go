@@ -24,7 +24,7 @@ import (
 
 type codeqlExecuteScanOptions struct {
 	GithubToken                 string `json:"githubToken,omitempty"`
-	BuildTool                   string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip yarn"`
+	BuildTool                   string `json:"buildTool,omitempty" validate:"possible-values=custom maven golang npm pip rust yarn"`
 	BuildCommand                string `json:"buildCommand,omitempty"`
 	Language                    string `json:"language,omitempty"`
 	ModulePath                  string `json:"modulePath,omitempty"`

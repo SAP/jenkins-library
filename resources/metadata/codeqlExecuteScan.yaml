@@ -57,6 +57,7 @@ spec:
           - golang
           - npm
           - pip
+          - rust
           - yarn
         default: "maven"
       - name: buildCommand
