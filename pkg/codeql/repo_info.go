@@ -97,21 +97,17 @@ func parseRepoUri(repoUri string) (string, string, string, error) {
 }
 
 func getRepoInfoFromOrchestrator(repoInfo *RepoInfo) {
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().Warn("No orchestrator found. We assume piper is running locally.")
-	} else {
-		if repoInfo.AnalyzedRef == "" {
-			repoInfo.AnalyzedRef = provider.GitReference()
-		}
-		if repoInfo.CommitId == "" || repoInfo.CommitId == "NA" {
-			repoInfo.CommitId = provider.CommitSHA()
-		}
-		if repoInfo.ServerUrl == "" {
-			err := setRepoInfoFromRepoUri(provider.RepoURL(), repoInfo)
-			if err != nil {
-				log.Entry().WithError(err).Error("failed to get repo info from orchestrator")
-			}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
+	if repoInfo.AnalyzedRef == "" {
+		repoInfo.AnalyzedRef = provider.GitReference()
+	}
+	if repoInfo.CommitId == "" || repoInfo.CommitId == "NA" {
+		repoInfo.CommitId = provider.CommitSHA()
+	}
+	if repoInfo.ServerUrl == "" {
+		err := setRepoInfoFromRepoUri(provider.RepoURL(), repoInfo)
+		if err != nil {
+			log.Entry().WithError(err).Error("failed to get repo info from orchestrator")
 		}
 	}
 }
