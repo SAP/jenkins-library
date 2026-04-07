@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/bndr/gojenkins"
 )
 
@@ -72,17 +73,20 @@ func getBuildFromQueueID(ctx context.Context, j Jenkins, job *gojenkins.Job, que
 	if err != nil {
 		return nil, err
 	}
+	log.Entry().Debugf("getBuildFromQueueID: queueID=%d initial executable number=%d URL=%q", queueID, task.Raw.Executable.Number, task.Raw.Executable.URL)
 	for task.Raw.Executable.Number == 0 {
 		time.Sleep(1000 * time.Millisecond)
 		if _, err = task.Poll(ctx); err != nil {
 			return nil, err
 		}
+		log.Entry().Debugf("getBuildFromQueueID: polled queueID=%d executable number=%d URL=%q", queueID, task.Raw.Executable.Number, task.Raw.Executable.URL)
 	}
 
 	parsedURL, err := url.Parse(task.Raw.Executable.URL)
 	if err != nil || parsedURL.Path == "" {
 		return nil, fmt.Errorf("unexpected build URL from queue item '%s'", task.Raw.Executable.URL)
 	}
+	log.Entry().Debugf("getBuildFromQueueID: executable URL=%q parsed path=%q (server=%q)", task.Raw.Executable.URL, parsedURL.Path, rawJenkins.Server)
 
 	build := &gojenkins.Build{
 		Jenkins: rawJenkins,
