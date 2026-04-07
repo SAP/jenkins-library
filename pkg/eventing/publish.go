@@ -31,7 +31,11 @@ func ProcessCDE(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.Gener
 
 	log.Entry().Debugf("publishing TaskRunFinished CDEvent to GCP Pub/Sub...")
 
-	return publish(tokenProvider, generalConfig, fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix), eventData)
+	if cfg.Topic == "" {
+		return fmt.Errorf("topic is required in gcpPubSub hook configuration")
+	}
+	topic := cfg.TopicPrefix + cfg.Topic
+	return publish(tokenProvider, generalConfig, topic, eventData)
 }
 
 // Process publishes a plain CloudEvent TaskRunFinished event via GCP Pub/Sub,
@@ -64,7 +68,11 @@ func Process(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 	log.Entry().Debugf("legacy event payload:\n%s", string(prettyJSON))
 	log.Entry().Debugf("publishing TaskRunFinished legacy event to GCP Pub/Sub...")
 
-	return publish(tokenProvider, generalConfig, fmt.Sprintf("%spipelinetaskrun-finished", cfg.TopicPrefix), eventData)
+	if cfg.Topic == "" {
+		return fmt.Errorf("topic is required in gcpPubSub hook configuration")
+	}
+	topic := cfg.TopicPrefix + cfg.Topic
+	return publish(tokenProvider, generalConfig, topic, eventData)
 }
 
 func publish(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, topic string, eventData []byte) error {
