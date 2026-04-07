@@ -1797,6 +1797,207 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
 	})
 
+	t.Run("test kubectl setImage - with image", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			Image:                 "path/to/Image:latest",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, len(mockUtils.Calls))
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec)
+		assert.Equal(t, []string{
+			"--namespace=deploymentNamespace",
+			"--insecure-skip-tls-verify=true",
+			"--server=https://my.api.server",
+			"--token=testToken",
+			"set", "image",
+			"deployment/myDeployment",
+			"myContainer=my.registry:55555/path/to/Image:latest",
+		}, mockUtils.Calls[0].Params)
+	})
+
+	t.Run("test kubectl setImage - with containerImageName and containerImageTag", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "v1.2.3",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, len(mockUtils.Calls))
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec)
+		assert.Contains(t, mockUtils.Calls[0].Params, "set")
+		assert.Contains(t, mockUtils.Calls[0].Params, "image")
+		assert.Contains(t, mockUtils.Calls[0].Params, "deployment/myDeployment")
+		assert.Contains(t, mockUtils.Calls[0].Params, "myContainer=my.registry:55555/path/to/Image:v1.2.3")
+	})
+
+	t.Run("test kubectl setImage - with kubeconfig", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			Image:                 "path/to/Image:latest",
+			KubeConfig:            "myKubeConfig",
+			KubeContext:           "testCluster",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Equal(t, []string{"KUBECONFIG=myKubeConfig"}, mockUtils.Env)
+		assert.Equal(t, 1, len(mockUtils.Calls))
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec)
+		assert.Equal(t, []string{
+			"--namespace=deploymentNamespace",
+			"--insecure-skip-tls-verify=true",
+			"--context=testCluster",
+			"set", "image",
+			"deployment/myDeployment",
+			"myContainer=my.registry:55555/path/to/Image:latest",
+		}, mockUtils.Calls[0].Params)
+	})
+
+	t.Run("test kubectl setImage - with additional parameters", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			Image:                 "path/to/Image:latest",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			AdditionalParameters:  []string{"--record"},
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Contains(t, mockUtils.Calls[0].Params, "--record")
+	})
+
+	t.Run("test kubectl setImage - fails without deploymentName", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			ContainerName:         "myContainer",
+			Image:                 "path/to/Image:latest",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.EqualError(t, err, "deploymentName has not been set, please configure deploymentName parameter")
+	})
+
+	t.Run("test kubectl setImage - fails without containerName", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			Image:                 "path/to/Image:latest",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.EqualError(t, err, "containerName has not been set, please configure containerName parameter for deployCommand 'setImage'")
+	})
+
+	t.Run("test kubectl setImage - fails without image information", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.EqualError(t, err, "failed to resolve image name: image information not given - please either set image, or containerImageName and containerImageTag")
+	})
+
+	t.Run("test kubectl setImage - with CA certificate", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			Image:                 "path/to/Image:latest",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			CACertificate:         "path/to/ca.crt",
+			InsecureSkipTLSVerify: false,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Equal(t, []string{
+			"--namespace=deploymentNamespace",
+			"--certificate-authority=path/to/ca.crt",
+			"--insecure-skip-tls-verify=false",
+			"--server=https://my.api.server",
+			"--token=testToken",
+			"set", "image",
+			"deployment/myDeployment",
+			"myContainer=my.registry:55555/path/to/Image:latest",
+		}, mockUtils.Calls[0].Params)
+	})
+
 	t.Run("test kubectl - insecureSkipTLSVerify is true with custom CA", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			APIServer:               "https://my.api.server",
