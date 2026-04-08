@@ -42,13 +42,10 @@ type HookConfiguration struct {
 }
 
 type GCPPubSubConfiguration struct {
-	Enabled          bool   `json:"enabled"`
 	ProjectNumber    string `json:"projectNumber,omitempty"`
 	IdentityPool     string `json:"identityPool,omitempty"`
 	IdentityProvider string `json:"identityProvider,omitempty"`
 	Source           string `json:"source,omitempty"`
-	Topic            string `json:"topic,omitempty"`
-	TopicPrefix      string `json:"topicPrefix,omitempty"`
 	TypePrefix       string `json:"typePrefix,omitempty"`
 }
 
