@@ -136,6 +136,8 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		buildArtifacts.Coordinates = append(buildArtifacts.Coordinates, coordinate)
 		jsonResult, _ := json.Marshal(buildArtifacts)
 		commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
+	} else {
+		log.Entry().Info("skipping creation of build artifacts metadata")
 	}
 
 	return nil
