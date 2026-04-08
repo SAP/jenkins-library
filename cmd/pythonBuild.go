@@ -137,7 +137,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		jsonResult, _ := json.Marshal(buildArtifacts)
 		commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
 	} else {
-		log.Entry().Info("skipping creation of build artifacts metadata")
+		log.Entry().Debug("skipping creation of build artifacts metadata")
 	}
 
 	return nil
