@@ -11,6 +11,8 @@ import (
 
 const (
 	TopicPipelineTaskRunFinished = "hyperspace-pipelinetaskrun-finished"
+	eventSource                  = "/default/sap.hyperspace.piper"
+	eventTypeTaskRunFinished     = "sap.hyperspace.eventTypeTaskRunFinished"
 )
 
 // PublishTaskRunFinishedCDEvent publishes a CDEvents TaskRunFinished event via GCP Pub/Sub.
@@ -20,15 +22,13 @@ func PublishTaskRunFinishedCDEvent(tokenProvider gcp.OIDCTokenProvider, generalC
 		return nil
 	}
 
-	cfg := generalConfig.HookConfig.GCPPubSubConfig
-
 	outcome := "failure"
 	if ctx.ErrorCode == "0" {
 		outcome = "success"
 	}
 
 	// TODO: pass a real pipeline URL (e.g. from orchestrator config) instead of empty string
-	eventData, err := newTaskRunFinishedCDEvent(cfg.Source, ctx.StepName, "", outcome, ctx.StageName)
+	eventData, err := newTaskRunFinishedCDEvent(eventSource, ctx.StepName, "", outcome, ctx.StageName)
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
 	}
@@ -46,15 +46,12 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		return nil
 	}
 
-	cfg := generalConfig.HookConfig.GCPPubSubConfig
-
 	outcome := "failure"
 	if ctx.ErrorCode == "0" {
 		outcome = "success"
 	}
 
-	eventType := fmt.Sprintf("%seventTypeTaskRunFinished", cfg.TypePrefix)
-	eventData, err := newEvent(eventType, cfg.Source, map[string]string{
+	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]string{
 		"taskName":      ctx.StepName,
 		"stageName":     ctx.StageName,
 		"outcome":       outcome,
