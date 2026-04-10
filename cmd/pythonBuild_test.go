@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package cmd
 
 import (
@@ -12,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/python"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
@@ -126,14 +124,14 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		// ... setup ...
-		oldCreateTemp := python.osCreateTemp
-		defer func() { python.osCreateTemp = oldCreateTemp }()
+		oldCreateTemp := python.OsCreateTemp
+		defer func() { python.OsCreateTemp = oldCreateTemp }()
 
-		var capturedPath string
-		python.osCreateTemp = func(dir, pattern string) (*os.File, error) {
+		python.OsCreateTemp = func(dir, pattern string) (*os.File, error) {
 			f, err := os.Create("test-pyproject.toml")
-			capturedPath = f.Name()
+			if err == nil {
+				return nil, nil
+			}
 			return f, err
 		}
 
