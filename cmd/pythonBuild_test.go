@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -63,7 +64,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, &utils, &cpe)
 		assert.NoError(t, err)
 		// assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
@@ -77,7 +78,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.ShouldFailOnCommand = map[string]error{"python setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, &utils, &cpe)
 		assert.EqualError(t, err, "failed to build python project: build failure")
 	})
 
@@ -94,7 +95,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, &utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
@@ -121,11 +122,19 @@ func TestRunPythonBuild(t *testing.T) {
 			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
+		tmpDir := t.TempDir()
+		utils.AddDir(tmpDir)
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(tmpDir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
 		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, &utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
@@ -217,11 +226,19 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 			VirtualEnvironmentName: "dummy",
 		}
 		utils := newPythonBuildTestsUtils()
+		tmpDir := t.TempDir()
+		utils.AddDir(tmpDir)
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(tmpDir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+		}()
 		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
-		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		err := runPythonBuild(&config, &telemetryData, &utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
