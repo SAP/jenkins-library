@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -125,6 +126,17 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
+		// ... setup ...
+		oldCreateTemp := python.osCreateTemp
+		defer func() { python.osCreateTemp = oldCreateTemp }()
+
+		var capturedPath string
+		python.osCreateTemp = func(dir, pattern string) (*os.File, error) {
+			f, err := os.Create("test-pyproject.toml")
+			capturedPath = f.Name()
+			return f, err
+		}
+
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
@@ -142,7 +154,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[6].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[6].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[7].Exec)
-		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[7].Params)
+		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4", "--pyproject", "test-pyproject.toml", "--mc-type", "application"}, utils.ExecMockRunner.Calls[7].Params)
 	})
 }
 

@@ -15,6 +15,8 @@ const (
 	BOMFilename = "bom-pip.xml"
 )
 
+var osCreateTemp = os.CreateTemp
+
 func CreateBOM(
 	executeFn func(executable string, params ...string) error,
 	existsFn func(path string) (bool, error),
@@ -49,7 +51,7 @@ func CreateBOM(
 	// parent component.metadata of the sbom see:
 	//https://github.com/CycloneDX/cyclonedx-python/issues/825#issuecomment-2457261498
 	if strings.HasSuffix(buildDescriptorFilePath, "setup.py") {
-		tmpFile, err := os.CreateTemp("", "pyproject.toml")
+		tmpFile, err := osCreateTemp("", "pyproject.toml")
 		if err != nil {
 			return fmt.Errorf("failed to create tmp toml file for cyclonedx sbom: %w", err)
 		}
