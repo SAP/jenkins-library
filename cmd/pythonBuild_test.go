@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
@@ -19,6 +20,7 @@ type pythonBuildMockUtils struct {
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	returnFileDownloadError error // expected to be set upfront
 }
 
 const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
@@ -33,6 +35,14 @@ func newPythonBuildTestsUtils() pythonBuildMockUtils {
 
 func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 	return f.config
+}
+
+func (f pythonBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if f.returnFileDownloadError != nil {
+		return f.returnFileDownloadError
+	}
+	f.AddFile(filename, []byte("content"))
+	return nil
 }
 
 func TestRunPythonBuild(t *testing.T) {
