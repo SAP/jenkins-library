@@ -26,7 +26,7 @@ type btpDeleteServiceInstanceOptions struct {
 	PollInterval          int    `json:"pollInterval,omitempty"`
 	User                  string `json:"user,omitempty"`
 	Password              string `json:"password,omitempty"`
-	DeleteServiceBindings bool   `json:"DeleteServiceBindings,omitempty"`
+	DeleteServiceBindings bool   `json:"deleteServiceBindings,omitempty"`
 }
 
 // BtpDeleteServiceInstanceCommand Delete a service instance in BTP
@@ -173,7 +173,7 @@ func addBtpDeleteServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpDeleteS
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
-	cmd.Flags().BoolVar(&stepConfig.DeleteServiceBindings, "DeleteServiceBindings", false, "Parameter to force deletion of BTP Service Bindings")
+	cmd.Flags().BoolVar(&stepConfig.DeleteServiceBindings, "deleteServiceBindings", false, "Parameter to force deletion of BTP Service Bindings")
 
 	cmd.MarkFlagRequired("url")
 	cmd.MarkFlagRequired("subdomain")
@@ -194,7 +194,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "btpCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
+					{Name: "abapCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.", Type: "jenkins", Aliases: []config.Alias{{Name: "btp/credentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -264,7 +264,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 						Name: "user",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "btpCredentialsId",
+								Name:  "abapCredentialsId",
 								Param: "username",
 								Type:  "secret",
 							},
@@ -279,7 +279,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 						Name: "password",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "btpCredentialsId",
+								Name:  "abapCredentialsId",
 								Param: "password",
 								Type:  "secret",
 							},
@@ -291,7 +291,7 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name:        "DeleteServiceBindings",
+						Name:        "deleteServiceBindings",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",

@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: btpCredentialsId
+      - name: abapCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to BTP.
         type: jenkins
         aliases:
@@ -135,7 +135,7 @@ spec:
         mandatory: true
         secret: true
         resourceRef:
-          - name: btpCredentialsId
+          - name: abapCredentialsId
             type: secret
             param: username
       - name: password
@@ -148,7 +148,7 @@ spec:
         mandatory: true
         secret: true
         resourceRef:
-          - name: btpCredentialsId
+          - name: abapCredentialsId
             type: secret
             param: password
   containers:

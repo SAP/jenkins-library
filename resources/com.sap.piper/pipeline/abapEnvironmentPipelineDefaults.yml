@@ -83,6 +83,7 @@ stages:
     planName: 'saas_oem'
     serviceBindingName: 'sap_com_0582'
     parameters: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
+    deleteServiceBindings: true
     timeout: 7200
     pollInterval: 30
 
@@ -96,4 +97,5 @@ stages:
   Post:
     ordinal: 100
     cfDeleteServiceKeys: true
+    deleteServiceBindings: true
     cfAsync: false
