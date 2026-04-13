@@ -581,46 +581,56 @@ func resolveRepositoryID(config *gctsDeployOptions, httpClient piperhttp.Sender)
 }
 
 // normalizeGitURL normalizes a Git repository URL for comparison
-// Removes protocol (http/https), host, and .git suffix, keeping only org/repo path
+// Returns the last 2 path segments (org/repo), removing protocol, host, and .git suffix
 // This allows matching repos behind proxies or with different protocols
 // Examples:
 //   https://github.com/org/repo.git -> org/repo
-//   http://proxy.com/github.com/org/repo -> org/repo
+//   http://proxy.com/github.com/org/repo.git -> org/repo (proxy host stripped)
 //   git@github.com:org/repo.git -> org/repo
-func normalizeGitURL(url string) string {
-	if url == "" {
+// Note: For complex paths (e.g., GitLab nested groups with 3+ segments), matching may fail,
+// requiring explicit repository parameter
+func normalizeGitURL(rawURL string) string {
+	if rawURL == "" {
 		return ""
 	}
 
-	// Remove .git suffix if present
-	normalized := strings.TrimSuffix(url, ".git")
+	urlToParse := rawURL
 
-	// Remove trailing slash
-	normalized = strings.TrimSuffix(normalized, "/")
-
-	// Handle SSH format (git@host:path)
-	if strings.Contains(normalized, "@") && strings.Contains(normalized, ":") {
-		// Extract path after last colon for SSH URLs
-		parts := strings.Split(normalized, ":")
-		if len(parts) >= 2 {
-			// Take everything after the first colon
-			normalized = strings.Join(parts[1:], ":")
-		}
+	// Handle SSH format (git@host:path) by converting to parseable URL format
+	// url.Parse cannot handle "git@github.com:org/repo.git" format
+	if strings.Contains(rawURL, "@") && strings.Contains(rawURL, ":") && !strings.HasPrefix(rawURL, "http") {
+		// Convert SSH format "git@github.com:org/repo.git" to "ssh://git@github.com/org/repo.git"
+		urlToParse = strings.Replace(rawURL, ":", "/", 1)
+		urlToParse = "ssh://" + urlToParse
 	}
 
-	// Remove protocol (http://, https://)
-	normalized = strings.TrimPrefix(normalized, "https://")
-	normalized = strings.TrimPrefix(normalized, "http://")
+	// Parse URL using standard library to extract path
+	parsedURL, err := url.Parse(urlToParse)
+	if err != nil {
+		log.Entry().Warnf("Failed to parse URL %s: %v. URL normalization may be inaccurate.", rawURL, err)
+		return ""
+	}
+
+	// Get the path component
+	path := parsedURL.Path
+
+	// Remove .git suffix if present
+	path = strings.TrimSuffix(path, ".git")
+
+	// Remove leading and trailing slashes
+	path = strings.Trim(path, "/")
 
 	// Extract repository path (last 2 segments: org/repo)
 	// This handles proxy URLs like proxy.com/github.com/org/repo
-	parts := strings.Split(normalized, "/")
+	// Note: This does NOT work for GitLab nested groups (e.g., group/subgroup/repo).
+	// For such cases, the repository parameter must be provided explicitly.
+	parts := strings.Split(path, "/")
 	if len(parts) >= 2 {
 		// Take last 2 segments (org/repo)
-		normalized = parts[len(parts)-2] + "/" + parts[len(parts)-1]
+		return parts[len(parts)-2] + "/" + parts[len(parts)-1]
 	}
 
-	return normalized
+	return path
 }
 
 // Function to delete configuration key for repositories
