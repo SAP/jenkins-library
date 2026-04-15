@@ -929,7 +929,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ForceUpdates:              true,
 			HelmDeployWaitSeconds:     400,
 			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ValuesMapping: map[string]interface{}{
+			ValuesMapping: map[string]string{
 				"subchart.image.registry": "image.myImage.repository",
 				"subchart.image.tag":      "image.myImage.tag",
 			},
@@ -992,8 +992,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ForceUpdates:              true,
 			HelmDeployWaitSeconds:     400,
 			HelmValues:                []string{"values1.yaml", "values2.yaml"},
-			ValuesMapping: map[string]interface{}{
-				"subchart.image.registry": false,
+			ValuesMapping: map[string]string{
+				"subchart.image.registry": "false",
 			},
 			ImageNames:            []string{"myImage", "myImage.sub1", "myImage.sub2"},
 			ImageNameTags:         []string{"myImage:myTag", "myImage-sub1:myTag", "myImage-sub2:myTag"},
@@ -1496,7 +1496,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			KubeConfig:              "This is my kubeconfig",
 			Namespace:               "deploymentNamespace",
 			DeployCommand:           "apply",
-			ValuesMapping: map[string]interface{}{
+			ValuesMapping: map[string]string{
 				"subchart.image.repository": "image.myImage.repository",
 				"subchart.image.tag":        "image.myImage.tag",
 			},
@@ -1529,7 +1529,7 @@ image3: {{ .Values.image.myImage_sub1.repository }}:{{ .Values.image.myImage_sub
 			KubeConfig:              "This is my kubeconfig",
 			Namespace:               "deploymentNamespace",
 			DeployCommand:           "apply",
-			ValuesMapping: map[string]interface{}{
+			ValuesMapping: map[string]string{
 				"subchart.image.repository": "image.myImage.repository",
 				"subchart.image.tag":        "image.myImage.tag",
 			},

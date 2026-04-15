@@ -133,9 +133,10 @@ In case a file is uploaded that is already contained in the storage, it will be 
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:  STEP_NAME,
-							StageName: telemetryClient.GetData().StageName,
-							ErrorCode: stepTelemetryData.ErrorCode,
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineID: telemetryClient.GetBuildURL(),
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
