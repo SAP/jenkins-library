@@ -100,6 +100,58 @@ func TestBTPGetServiceBinding(t *testing.T) {
 			assert.NotEmpty(t, btpServiceBinding)
 		}
 	})
+
+	t.Run("BTP GetListServiceBinding", func(t *testing.T) {
+		//given
+		btpConfig := GetServiceBindingOptions{
+			Url:             "https://api.endpoint.com",
+			Subdomain:       "xxxxxxx",
+			Subaccount:      "yyyyyyy",
+			BindingName:     "testServiceBindingName",
+			User:            "test_user",
+			Password:        "test_password",
+			ServiceInstance: "test_instance",
+		}
+
+		m := &BtpExecutorMock{
+			StdoutReturn: map[string]string{
+				"btp .* login .*": "Authentication successful",
+				"btp .* get services/instance .*": fmt.Sprintf(`
+				{
+				"id": "xxx",
+				"name": "%s",
+				"ready": true
+				}`, btpConfig.ServiceInstance),
+				"btp .* list services/binding .+": fmt.Sprintf(`[
+				{
+				"id": "xxxx",
+				"name": "%s",
+				"ready": true
+				},
+				{
+				"id": "yyyy",
+				"name": "testServiceBindingName2",
+				"ready": true
+				}]`, btpConfig.BindingName),
+			},
+		}
+
+		m.Stdout(new(bytes.Buffer))
+
+		defer loginMockCleanup(m)
+
+		//when
+		var err error
+		var btpServiceBinding string
+		btp := NewBTPUtils(m)
+
+		btpServiceBinding, err = btp.GetServiceBinding(btpConfig)
+
+		//then
+		if assert.NoError(t, err) {
+			assert.NotEmpty(t, btpServiceBinding)
+		}
+	})
 }
 
 func TestBTPListServiceBindings(t *testing.T) {
