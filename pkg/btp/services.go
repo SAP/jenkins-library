@@ -227,6 +227,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 			Subaccount:        options.Subaccount,
 			ServiceInstance:   options.ServiceInstance,
 			ServiceInstanceId: options.ServiceInstanceId,
+			BindingName:       options.BindingName,
 		})
 
 		if err != nil {
