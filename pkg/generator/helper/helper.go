@@ -319,6 +319,8 @@ func setDefaultParameters(stepData *config.StepData) error {
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
+			case "map[string]string":
+				param.Default = "map[string]string{}"
 			case "map[string]interface{}", "[]map[string]interface{}", "map[string]any", "[]map[string]any":
 				// Currently we don't need to set a default here since in this case the default
 				// is never used. Needs to be changed in case we enable cli parameter handling
@@ -354,6 +356,8 @@ func setDefaultParameters(stepData *config.StepData) error {
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
+			case "map[string]string":
+				param.Default = fmt.Sprintf("map[string]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
 			case "map[string]interface{}", "[]map[string]interface{}", "map[string]any", "[]map[string]any":
 				// Currently we don't need to set a default here since in this case the default
 				// is never used. Needs to be changed in case we enable cli parameter handling
@@ -528,7 +532,7 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 }
 
 func isCLIParam(myType string) bool {
-	return myType != "map[string]interface{}" && myType != "[]map[string]interface{}"
+	return myType != "map[string]interface{}" && myType != "[]map[string]interface{}" && myType != "[]map[string]string"
 }
 
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
@@ -647,6 +651,8 @@ func flagType(paramType string) string {
 		return "StringVar"
 	case "[]string":
 		return "StringSliceVar"
+	case "map[string]string":
+		return "StringToStringVar"
 	default: // TODO: Should it be fatal or just log and ignore the parameter?
 		log.Fatalf("Meta data type not set or not known: '%v'\n", paramType)
 	}
