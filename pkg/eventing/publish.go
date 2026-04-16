@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	TopicPipelineTaskRunFinished = "hyperspace-pipelinetaskrun-finished"
+	topicPipelineTaskRunFinished = "hyperspace-pipelinetaskrun-finished"
 	eventSource                  = "/default/sap.hyperspace.piper"
 	eventTypeTaskRunFinished     = "sap.hyperspace.eventTypeTaskRunFinished"
 )
