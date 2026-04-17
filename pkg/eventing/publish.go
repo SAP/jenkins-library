@@ -35,7 +35,7 @@ func PublishTaskRunFinishedCDEvent(tokenProvider gcp.OIDCTokenProvider, generalC
 
 	log.Entry().Debugf("publishing TaskRunFinished CDEvent to GCP Pub/Sub...")
 
-	return publish(tokenProvider, generalConfig, TopicPipelineTaskRunFinished, eventData)
+	return publish(tokenProvider, generalConfig, topicPipelineTaskRunFinished, eventData)
 }
 
 // PublishTaskRunFinishedEvent publishes a plain CloudEvent TaskRunFinished event via GCP Pub/Sub,
@@ -65,7 +65,7 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 	log.Entry().Debugf("legacy event payload:\n%s", string(prettyJSON))
 	log.Entry().Debugf("publishing TaskRunFinished legacy event to GCP Pub/Sub...")
 
-	return publish(tokenProvider, generalConfig, TopicPipelineTaskRunFinished, eventData)
+	return publish(tokenProvider, generalConfig, topicPipelineTaskRunFinished, eventData)
 }
 
 func publish(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, topic string, eventData []byte) error {
