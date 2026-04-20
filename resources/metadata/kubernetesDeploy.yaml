@@ -363,7 +363,7 @@ spec:
           - STEPS
       - name: imageNameTags
         type: "[]string"
-        description: List of full names (registry and tag) of the images to be deployed.
+        description: List of full names (name and tag) of the images to be deployed.
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTags
