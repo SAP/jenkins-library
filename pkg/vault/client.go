@@ -80,49 +80,30 @@ func NewClientWithToken(cfg *ClientConfig, token string) (*Client, error) {
 }
 
 func (c *Client) startTokenLifecycleManager(initialLoginDone chan error) {
-	loginDone := false
-	var lastErr error
-	defer func() {
-		log.Entry().Debugf("exiting Vault token lifecycle manager")
-		if !loginDone {
-			initialLoginDone <- lastErr
-			close(initialLoginDone)
-		}
-	}()
+	vaultLoginResp, err := c.login()
+	if err != nil {
+		log.Entry().WithError(err).Warn("Vault authentication failed")
+		initialLoginDone <- err
+		close(initialLoginDone)
+		return
+	}
+	initialLoginDone <- nil
+	close(initialLoginDone)
 
-	retryAttemptDuration := c.vaultApiClient.MinRetryWait()
-	for i := 0; i <= c.vaultApiClient.MaxRetries(); i++ {
-		if i != 0 {
-			log.Entry().WithField("attempt", i).WithField("maxRetries", c.vaultApiClient.MaxRetries()).WithField("retryDelay", retryAttemptDuration.Seconds()).Info("Retrying Vault login")
-			time.Sleep(retryAttemptDuration)
-		}
+	if !vaultLoginResp.Auth.Renewable {
+		log.Entry().Debugf("Vault token is not configured to be renewable.")
+		return
+	}
 
-		vaultLoginResp, err := c.login()
-		if err != nil {
-			lastErr = err
-			if i == 0 {
-				log.Entry().WithError(err).Warn("Vault authentication failed")
-			} else {
-				log.Entry().WithError(err).WithField("attempt", i).Warn("Vault authentication retry failed")
-			}
-			continue
-		}
-
-		if !loginDone {
-			initialLoginDone <- nil
-			close(initialLoginDone)
-			loginDone = true
-		}
-
-		if !vaultLoginResp.Auth.Renewable {
-			log.Entry().Debugf("Vault token is not configured to be renewable.")
+	for {
+		if tokenErr := c.manageTokenLifecycle(vaultLoginResp); tokenErr != nil {
+			log.Entry().Warnf("unable to manage token lifecycle: %v", tokenErr)
 			return
 		}
-
-		tokenErr := c.manageTokenLifecycle(vaultLoginResp)
-		if tokenErr != nil {
-			log.Entry().Warnf("unable to start managing token lifecycle: %v", tokenErr)
-			continue
+		vaultLoginResp, err = c.login()
+		if err != nil {
+			log.Entry().WithError(err).Warn("Vault re-authentication failed")
+			return
 		}
 	}
 }
