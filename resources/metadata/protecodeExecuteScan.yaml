@@ -22,6 +22,9 @@ spec:
         aliases:
           - name: dockerCredentialsId
             deprecated: true
+      - name: fetchCustomHeadersJSONMapCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing the fetch custom headers JSON map.
+        type: jenkins
     params:
       - name: excludeCVEs
         aliases:
@@ -298,6 +301,25 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: fetchCustomHeadersJSONMap
+        type: string
+        description:
+          "The JSON map of key-value pairs to be included in this scan's Custom Headers. These HTTP headers will be included in outgoing GET requests, for example 'Authorization: Foobar' (See protecode API)."
+        secret: true
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/fetchCustomHeadersJSONMap
+          - name: fetchCustomHeadersJSONMapCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            name: fetchCustomHeadersVaultSecretName
+            default: fetch-custom-headers
+
   outputs:
     resources:
       - name: influx

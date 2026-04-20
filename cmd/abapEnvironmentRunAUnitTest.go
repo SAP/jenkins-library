@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -363,7 +362,7 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 	}
 
 	//Write Results
-	err = os.WriteFile(aunitResultFileName, body, 0644)
+	err = utils.FileWrite(aunitResultFileName, body, 0644)
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
@@ -390,7 +389,7 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 			htmlString := generateHTMLDocumentAUnit(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
-			err = os.WriteFile(aUnitResultHTMLFileName, htmlStringByte, 0644)
+			err = utils.FileWrite(aUnitResultHTMLFileName, htmlStringByte, 0644)
 			if err != nil {
 				return fmt.Errorf("Writing HTML document failed: %w", err)
 			}

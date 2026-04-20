@@ -1,0 +1,10 @@
+{
+    "name": "a",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node main.js",
+        "ci-build": "echo build"
+    }
+}
