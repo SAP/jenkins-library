@@ -225,8 +225,10 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		return err
 	}
 
+	multipleArchitectures := len(platforms) > 1
+
 	for _, platform := range platforms {
-		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
+		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform, multipleArchitectures)
 		if err != nil {
 			return err
 		}
@@ -546,7 +548,7 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	return cpe.ParseTemplate(config.LdflagsTemplate)
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform, multipleArchitectures bool) ([]string, error) {
 	var binaryNames []string
 
 	envVars := os.Environ()
@@ -560,8 +562,8 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	buildOptions := []string{"build", "-trimpath"}
 
 	if len(config.Output) > 0 {
-		if len(config.Packages) > 1 {
-			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture)
+		if len(config.Packages) > 1 || !multipleArchitectures {
+			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
@@ -621,9 +623,14 @@ func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
 	return modfile.Parse(modFilePath, modFileContent, nil)
 }
 
-func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform) ([]string, string, error) {
+func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, multipleArchitectures bool) ([]string, string, error) {
 	var binaries []string
-	outDir := fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(out, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
+	var outDir string
+	if multipleArchitectures {
+		outDir = fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(out, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
+	} else {
+		outDir = strings.TrimRight(out, string(os.PathSeparator)) + string(os.PathSeparator)
+	}
 
 	for _, pkg := range packages {
 		ok, err := isMainPackage(utils, pkg)
