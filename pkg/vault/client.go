@@ -61,12 +61,11 @@ func NewClient(cfg *ClientConfig) (*Client, error) {
 	}
 	applyApiClientRetryConfiguration(c.vaultApiClient)
 
-	initialLoginDone := make(chan struct{})
-	go c.startTokenLifecycleManager(initialLoginDone) // this goroutine ends with main goroutine
-	// wait for initial login or a failure
-	<-initialLoginDone
-
-	// In case of a failure, the function returns an unauthorized client, which will cause subsequent requests to fail.
+	initialLoginDone := make(chan error)
+	go c.startTokenLifecycleManager(initialLoginDone)
+	if err := <-initialLoginDone; err != nil {
+		return nil, fmt.Errorf("vault authentication failed: %w", err)
+	}
 	return c, nil
 }
 
@@ -80,15 +79,17 @@ func NewClientWithToken(cfg *ClientConfig, token string) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
+func (c *Client) startTokenLifecycleManager(initialLoginDone chan error) {
+	loginDone := false
+	var lastErr error
 	defer func() {
-		// make sure to close channel to avoid blocking of the caller
 		log.Entry().Debugf("exiting Vault token lifecycle manager")
-		initialLoginDone <- struct{}{}
-		close(initialLoginDone)
+		if !loginDone {
+			initialLoginDone <- lastErr
+			close(initialLoginDone)
+		}
 	}()
 
-	initialLoginSucceed := false
 	retryAttemptDuration := c.vaultApiClient.MinRetryWait()
 	for i := 0; i <= c.vaultApiClient.MaxRetries(); i++ {
 		if i != 0 {
@@ -98,6 +99,7 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 
 		vaultLoginResp, err := c.login()
 		if err != nil {
+			lastErr = err
 			if i == 0 {
 				log.Entry().WithError(err).Warn("Vault authentication failed")
 			} else {
@@ -105,9 +107,11 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 			}
 			continue
 		}
-		if !initialLoginSucceed {
-			initialLoginDone <- struct{}{}
-			initialLoginSucceed = true
+
+		if !loginDone {
+			initialLoginDone <- nil
+			close(initialLoginDone)
+			loginDone = true
 		}
 
 		if !vaultLoginResp.Auth.Renewable {
@@ -117,7 +121,7 @@ func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
 
 		tokenErr := c.manageTokenLifecycle(vaultLoginResp)
 		if tokenErr != nil {
-			log.Entry().Warnf("unable to start managing token lifecycle: %v", err)
+			log.Entry().Warnf("unable to start managing token lifecycle: %v", tokenErr)
 			continue
 		}
 	}
