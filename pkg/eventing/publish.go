@@ -12,7 +12,7 @@ import (
 const (
 	topicPipelineTaskRunFinished = "hyperspace-pipelinetaskrun-finished"
 	eventSource                  = "/default/sap.hyperspace.piper"
-	eventTypeTaskRunFinished     = "sap.hyperspace.eventTypeTaskRunFinished"
+	eventTypeTaskRunFinished     = "sap.hyperspace.pipelineTaskRunFinished"
 )
 
 // PublishTaskRunFinishedCDEvent publishes a CDEvents TaskRunFinished event via GCP Pub/Sub.
