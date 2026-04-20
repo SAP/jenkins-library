@@ -1797,38 +1797,6 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		}, mockUtils.Calls[0].Params, "kubectl parameters incorrect")
 	})
 
-	t.Run("test kubectl setImage - with image", func(t *testing.T) {
-		opts := kubernetesDeployOptions{
-			APIServer:             "https://my.api.server",
-			ContainerRegistryURL:  "https://my.registry:55555",
-			DeployTool:            "kubectl",
-			DeployCommand:         "setImage",
-			DeploymentName:        "myDeployment",
-			ContainerName:         "myContainer",
-			Image:                 "path/to/Image:latest",
-			KubeToken:             "testToken",
-			Namespace:             "deploymentNamespace",
-			InsecureSkipTLSVerify: true,
-		}
-
-		mockUtils := newKubernetesDeployMockUtils()
-		var stdout bytes.Buffer
-		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.NoError(t, err)
-
-		assert.Equal(t, 1, len(mockUtils.Calls))
-		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec)
-		assert.Equal(t, []string{
-			"--namespace=deploymentNamespace",
-			"--insecure-skip-tls-verify=true",
-			"--server=https://my.api.server",
-			"--token=testToken",
-			"set", "image",
-			"deployment/myDeployment",
-			"myContainer=my.registry:55555/path/to/Image:latest",
-		}, mockUtils.Calls[0].Params)
-	})
-
 	t.Run("test kubectl setImage - with containerImageName and containerImageTag", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			APIServer:             "https://my.api.server",
@@ -1864,7 +1832,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 			DeployCommand:         "setImage",
 			DeploymentName:        "myDeployment",
 			ContainerName:         "myContainer",
-			Image:                 "path/to/Image:latest",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "latest",
 			KubeConfig:            "myKubeConfig",
 			KubeContext:           "testCluster",
 			Namespace:             "deploymentNamespace",
@@ -1897,7 +1866,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 			DeployCommand:         "setImage",
 			DeploymentName:        "myDeployment",
 			ContainerName:         "myContainer",
-			Image:                 "path/to/Image:latest",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "latest",
 			KubeToken:             "testToken",
 			Namespace:             "deploymentNamespace",
 			AdditionalParameters:  []string{"--record"},
@@ -1918,7 +1888,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 			DeployTool:            "kubectl",
 			DeployCommand:         "setImage",
 			ContainerName:         "myContainer",
-			Image:                 "path/to/Image:latest",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "latest",
 			KubeToken:             "testToken",
 			Namespace:             "deploymentNamespace",
 			InsecureSkipTLSVerify: true,
@@ -1936,7 +1907,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 			DeployTool:            "kubectl",
 			DeployCommand:         "setImage",
 			DeploymentName:        "myDeployment",
-			Image:                 "path/to/Image:latest",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "latest",
 			KubeToken:             "testToken",
 			Namespace:             "deploymentNamespace",
 			InsecureSkipTLSVerify: true,
@@ -1963,7 +1935,7 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		mockUtils := newKubernetesDeployMockUtils()
 		var stdout bytes.Buffer
 		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.EqualError(t, err, "failed to resolve image name: image information not given - please either set image, or containerImageName and containerImageTag")
+		assert.EqualError(t, err, "containerImageName and containerImageTag must be set for single image replacement mode when using deployCommand 'setImage'")
 	})
 
 	t.Run("test kubectl setImage - with CA certificate", func(t *testing.T) {
@@ -1974,7 +1946,8 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 			DeployCommand:         "setImage",
 			DeploymentName:        "myDeployment",
 			ContainerName:         "myContainer",
-			Image:                 "path/to/Image:latest",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "latest",
 			KubeToken:             "testToken",
 			Namespace:             "deploymentNamespace",
 			CACertificate:         "path/to/ca.crt",
@@ -1996,6 +1969,103 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 			"deployment/myDeployment",
 			"myContainer=my.registry:55555/path/to/Image:latest",
 		}, mockUtils.Calls[0].Params)
+	})
+
+	t.Run("test kubectl setImage - multiple images with containerNames", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerNames:        []string{"container1", "container2"},
+			ImageNameTags:         []string{"path/to/Image1:v1", "path/to/Image2:v2"},
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, len(mockUtils.Calls))
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec)
+		assert.Equal(t, []string{
+			"--namespace=deploymentNamespace",
+			"--insecure-skip-tls-verify=true",
+			"--server=https://my.api.server",
+			"--token=testToken",
+			"set", "image",
+			"deployment/myDeployment",
+			"container1=my.registry:55555/path/to/Image1:v1",
+			"container2=my.registry:55555/path/to/Image2:v2",
+		}, mockUtils.Calls[0].Params)
+	})
+
+	t.Run("test kubectl setImage - multiple images with additional parameters", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerNames:        []string{"container1", "container2"},
+			ImageNameTags:         []string{"path/to/Image1:v1", "path/to/Image2:v2"},
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			AdditionalParameters:  []string{"--record"},
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Contains(t, mockUtils.Calls[0].Params, "--record")
+		assert.Contains(t, mockUtils.Calls[0].Params, "container1=my.registry:55555/path/to/Image1:v1")
+		assert.Contains(t, mockUtils.Calls[0].Params, "container2=my.registry:55555/path/to/Image2:v2")
+	})
+
+	t.Run("test kubectl setImage - multiple images fails without imageNameTags", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerNames:        []string{"container1", "container2"},
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.EqualError(t, err, "imageNameTags has not been set, please configure imageNameTags parameter when using containerNames for deployCommand 'setImage'")
+	})
+
+	t.Run("test kubectl setImage - multiple images fails with mismatched lengths", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry:55555",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerNames:        []string{"container1", "container2"},
+			ImageNameTags:         []string{"path/to/Image1:v1"},
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.EqualError(t, err, "number of containerNames (2) must match number of imageNameTags (1)")
 	})
 
 	t.Run("test kubectl - insecureSkipTLSVerify is true with custom CA", func(t *testing.T) {
@@ -2055,6 +2125,89 @@ func TestSplitRegistryURL(t *testing.T) {
 		assert.Equal(t, test.outError, err, "Error value not as expected")
 	}
 
+}
+
+func TestBuildSingleImagePair(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerName:      "myContainer",
+			ContainerImageName: "path/to/Image",
+			ContainerImageTag:  "v1.0.0",
+			DeploymentName:     "myDeployment",
+		}
+		pairs, err := buildSingleImagePair(config, "my.registry:55555")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"myContainer=my.registry:55555/path/to/Image:v1.0.0"}, pairs)
+	})
+
+	t.Run("missing containerName", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerImageName: "path/to/Image",
+			ContainerImageTag:  "v1.0.0",
+		}
+		_, err := buildSingleImagePair(config, "my.registry:55555")
+		assert.EqualError(t, err, "containerName has not been set, please configure containerName parameter for deployCommand 'setImage'")
+	})
+
+	t.Run("missing containerImageName", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerName:     "myContainer",
+			ContainerImageTag: "v1.0.0",
+		}
+		_, err := buildSingleImagePair(config, "my.registry:55555")
+		assert.EqualError(t, err, "containerImageName and containerImageTag must be set for single image replacement mode when using deployCommand 'setImage'")
+	})
+
+	t.Run("missing containerImageTag", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerName:      "myContainer",
+			ContainerImageName: "path/to/Image",
+		}
+		_, err := buildSingleImagePair(config, "my.registry:55555")
+		assert.EqualError(t, err, "containerImageName and containerImageTag must be set for single image replacement mode when using deployCommand 'setImage'")
+	})
+}
+
+func TestBuildMultipleImagePairs(t *testing.T) {
+	t.Run("success - single pair", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerNames: []string{"container1"},
+			ImageNameTags:  []string{"path/to/Image:v1"},
+		}
+		pairs, err := buildMultipleImagePairs(config, "my.registry:55555")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"container1=my.registry:55555/path/to/Image:v1"}, pairs)
+	})
+
+	t.Run("success - multiple pairs", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerNames: []string{"container1", "container2"},
+			ImageNameTags:  []string{"path/to/Image1:v1", "path/to/Image2:v2"},
+		}
+		pairs, err := buildMultipleImagePairs(config, "my.registry:55555")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{
+			"container1=my.registry:55555/path/to/Image1:v1",
+			"container2=my.registry:55555/path/to/Image2:v2",
+		}, pairs)
+	})
+
+	t.Run("missing imageNameTags", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerNames: []string{"container1", "container2"},
+		}
+		_, err := buildMultipleImagePairs(config, "my.registry:55555")
+		assert.EqualError(t, err, "imageNameTags has not been set, please configure imageNameTags parameter when using containerNames for deployCommand 'setImage'")
+	})
+
+	t.Run("mismatched lengths", func(t *testing.T) {
+		config := kubernetesDeployOptions{
+			ContainerNames: []string{"container1", "container2"},
+			ImageNameTags:  []string{"path/to/Image1:v1"},
+		}
+		_, err := buildMultipleImagePairs(config, "my.registry:55555")
+		assert.EqualError(t, err, "number of containerNames (2) must match number of imageNameTags (1)")
+	})
 }
 
 func TestSplitImageName(t *testing.T) {

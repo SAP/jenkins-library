@@ -540,7 +540,14 @@ spec:
           - setImage
       - name: containerName
         type: string
-        description: "Only for `deployCommand: setImage`: Defines the name of the container in the Kubernetes deployment resource whose image should be updated. Used in `kubectl set image deployment/<deploymentName> <containerName>=<image>`."
+        description: "Only for `deployCommand: setImage` with a single image: Defines the name of the container in the Kubernetes deployment resource whose image should be updated. Used in `kubectl set image deployment/<deploymentName> <containerName>=<containerRegistry>/<containerImageName>:<containerImageTag>`. Must be used together with `containerImageName` and `containerImageTag`. For multiple images, use `containerNames` instead."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerNames
+        type: "[]string"
+        description: "Only for `deployCommand: setImage` with multiple images: List of container names in the Kubernetes deployment whose images should be updated. Must be used together with `imageNameTags` and `imageNames`. The number of entries must match the number of `imageNameTags`. Each `containerNames[i]` is mapped to `imageNameTags[i]`."
         scope:
           - PARAMETERS
           - STAGES

@@ -405,35 +405,35 @@ func runKubectlSetImage(config kubernetesDeployOptions, utils kubernetes.DeployU
 	if len(config.DeploymentName) == 0 {
 		return fmt.Errorf("deploymentName has not been set, please configure deploymentName parameter")
 	}
-	if len(config.ContainerName) == 0 {
-		return fmt.Errorf("containerName has not been set, please configure containerName parameter for deployCommand 'setImage'")
-	}
 
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		return fmt.Errorf("container registry url '%v' incorrect: %w", config.ContainerRegistryURL, err)
 	}
 
-	// Resolve the full image reference
-	fullImageName, err := resolveFullImageName(config, containerRegistry)
+	// Build container=image pairs based on single- or multi-image mode
+	var containerImagePairs []string
+	if len(config.ContainerNames) > 0 {
+		containerImagePairs, err = buildMultipleImagePairs(config, containerRegistry)
+	} else {
+		containerImagePairs, err = buildSingleImagePair(config, containerRegistry)
+	}
 	if err != nil {
-		return fmt.Errorf("failed to resolve image name: %w", err)
+		return err
 	}
 
+	// Execute kubectl set image
 	kubeParams := buildKubeParams(config, utils, stdout)
-
-	// kubectl set image deployment/<deploymentName> <containerName>=<image>
 	setImageParams := append(kubeParams,
 		"set", "image",
 		fmt.Sprintf("deployment/%v", config.DeploymentName),
-		fmt.Sprintf("%v=%v", config.ContainerName, fullImageName),
 	)
+	setImageParams = append(setImageParams, containerImagePairs...)
 
 	if len(config.AdditionalParameters) > 0 {
 		setImageParams = append(setImageParams, config.AdditionalParameters...)
 	}
 
-	log.Entry().Infof("Calling kubectl set image deployment/%v %v=%v ...", config.DeploymentName, config.ContainerName, fullImageName)
 	log.Entry().Debugf("kubectl parameters: %v", setImageParams)
 	if err := utils.RunExecutable("kubectl", setImageParams...); err != nil {
 		return fmt.Errorf("kubectl set image failed: %w", err)
@@ -442,24 +442,39 @@ func runKubectlSetImage(config kubernetesDeployOptions, utils kubernetes.DeployU
 	return nil
 }
 
-func resolveFullImageName(config kubernetesDeployOptions, containerRegistry string) (string, error) {
-	if len(config.Image) > 0 {
-		imageName, imageTag, err := splitFullImageName(config.Image)
-		if err != nil {
-			return "", fmt.Errorf("container image '%v' incorrect: %w", config.Image, err)
-		}
-		if len(imageTag) > 0 {
-			return fmt.Sprintf("%v/%v:%v", containerRegistry, imageName, imageTag), nil
-		}
-		return fmt.Sprintf("%v/%v", containerRegistry, imageName), nil
+// buildSingleImagePair resolves a single container=image pair for the single-image mode.
+func buildSingleImagePair(config kubernetesDeployOptions, containerRegistry string) ([]string, error) {
+	if len(config.ContainerName) == 0 {
+		return nil, fmt.Errorf("containerName has not been set, please configure containerName parameter for deployCommand 'setImage'")
 	}
-	if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		return fmt.Sprintf("%v/%v:%v", containerRegistry, config.ContainerImageName, config.ContainerImageTag), nil
+
+	if len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
+		return nil, fmt.Errorf("containerImageName and containerImageTag must be set for single image replacement mode when using deployCommand 'setImage'")
 	}
-	if len(config.ImageNameTags) > 0 {
-		return fmt.Sprintf("%v/%v", containerRegistry, config.ImageNameTags[0]), nil
+
+	fullImageName := fmt.Sprintf("%v/%v:%v", containerRegistry, config.ContainerImageName, config.ContainerImageTag)
+
+	log.Entry().Infof("Calling kubectl set image deployment/%v %v=%v ...", config.DeploymentName, config.ContainerName, fullImageName)
+	return []string{fmt.Sprintf("%v=%v", config.ContainerName, fullImageName)}, nil
+}
+
+// buildMultipleImagePairs builds container=image pairs for the multi-image mode using containerNames and imageNameTags.
+func buildMultipleImagePairs(config kubernetesDeployOptions, containerRegistry string) ([]string, error) {
+	if len(config.ImageNameTags) == 0 {
+		return nil, fmt.Errorf("imageNameTags has not been set, please configure imageNameTags parameter when using containerNames for deployCommand 'setImage'")
 	}
-	return "", fmt.Errorf("image information not given - please either set image, or containerImageName and containerImageTag")
+	if len(config.ContainerNames) != len(config.ImageNameTags) {
+		return nil, fmt.Errorf("number of containerNames (%d) must match number of imageNameTags (%d)", len(config.ContainerNames), len(config.ImageNameTags))
+	}
+
+	var pairs []string
+	for i, containerName := range config.ContainerNames {
+		fullImage := fmt.Sprintf("%v/%v", containerRegistry, config.ImageNameTags[i])
+		pairs = append(pairs, fmt.Sprintf("%v=%v", containerName, fullImage))
+		log.Entry().Infof("Setting image for container %v: %v", containerName, fullImage)
+	}
+
+	return pairs, nil
 }
 
 type deploymentValues struct {
