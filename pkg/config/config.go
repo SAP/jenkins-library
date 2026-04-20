@@ -279,6 +279,27 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
+	// hooks need to have been loaded from the defaults before the server URL is known
+	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
+	var systemTrustClient *piperhttp.Client
+	if err != nil {
+		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
+	} else {
+		systemTrustClient = systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
+		// If PIPER_vaultToken is already set, use it directly (pre-fetched by the GPP system-trust-action).
+		// Otherwise obtain it from System Trust now — this is the primary path for pipelines without
+		// AppRole credentials (e.g. monorepos). A failure here is not silently swallowed: it is logged
+		// and Vault initialisation will subsequently fail or be skipped, surfacing the misconfiguration.
+		if c.vaultCredentials.VaultToken != "" {
+			log.Entry().Debug("Using pre-fetched Vault token from environment (PIPER_vaultToken)")
+		} else if vaultToken, err := systemtrust.GetToken("vault", systemTrustClient, c.systemTrustConfiguration); err != nil {
+			log.Entry().WithError(err).Warn("Could not obtain Vault token from System Trust — Vault will be unavailable for this step")
+		} else {
+			log.Entry().Debug("Successfully obtained Vault token from System Trust")
+			c.vaultCredentials.VaultToken = vaultToken
+		}
+	}
+
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// Revocation of Vault token will happen at the of each step execution (see _generated.go part)
@@ -293,12 +314,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 
-	// hooks need to have been loaded from the defaults before the server URL is known
-	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
-	if err != nil {
-		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
-	} else {
-		systemTrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
+	if systemTrustClient != nil {
 		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemTrustClient)
 	}
 
