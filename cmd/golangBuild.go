@@ -653,8 +653,6 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	if err != nil {
-		// prefer stderr for error details; fall back to stdout if stderr is empty
-		// (test mocks only write to stdout, real go toolchain writes errors to stderr)
 		errDetails := errBuffer.String()
 		if errDetails == "" {
 			errDetails = outBuffer.String()
