@@ -653,7 +653,11 @@ func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", err, errBuffer.String())
+		errDetails := errBuffer.String()
+		if errDetails == "" {
+			errDetails = outBuffer.String()
+		}
+		return false, fmt.Errorf("%w: %s", err, errDetails)
 	}
 
 	log.Entry().Debugf("go list output for package %s: %q", pkg, outBuffer.String())
