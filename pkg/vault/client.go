@@ -61,6 +61,7 @@ func NewClient(cfg *ClientConfig) (*Client, error) {
 	applyApiClientRetryConfiguration(c.vaultApiClient)
 
 	initialLoginDone := make(chan error)
+	// No outer retry loop: transient failures are retried at the HTTP layer by applyApiClientRetryConfiguration (up to 3 attempts, 5–90s backoff).
 	go c.startTokenLifecycleManager(initialLoginDone)
 	if err := <-initialLoginDone; err != nil {
 		return nil, fmt.Errorf("vault authentication failed: %w", err)
