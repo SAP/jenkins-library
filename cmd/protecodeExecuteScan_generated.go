@@ -47,6 +47,7 @@ type protecodeExecuteScanOptions struct {
 	VersioningModel             string `json:"versioningModel,omitempty" validate:"possible-values=major major-minor semantic full"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
 	CustomDataJSONMap           string `json:"customDataJSONMap,omitempty"`
+	FetchCustomHeadersJSONMap   string `json:"fetchCustomHeadersJSONMap,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -194,6 +195,7 @@ BDBA (Protecode) uses a combination of static binary analysis techniques to X-ra
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.UserAPIKey)
+			log.RegisterSecret(stepConfig.FetchCustomHeadersJSONMap)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -309,6 +311,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
 	cmd.Flags().StringVar(&stepConfig.CustomDataJSONMap, "customDataJSONMap", os.Getenv("PIPER_customDataJSONMap"), "The JSON map of key-value pairs to be included in this scan's Custom Data (See protecode API).")
+	cmd.Flags().StringVar(&stepConfig.FetchCustomHeadersJSONMap, "fetchCustomHeadersJSONMap", os.Getenv("PIPER_fetchCustomHeadersJSONMap"), "The JSON map of key-value pairs to be included in this scan's Custom Headers. These HTTP headers will be included in outgoing GET requests, for example 'Authorization: Foobar' (See protecode API).")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("group")
@@ -330,6 +333,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
 					{Name: "protecodeApiKeyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing API Key/token to authenticate to BDBA server.", Type: "jenkins"},
 					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
+					{Name: "fetchCustomHeadersJSONMapCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the fetch custom headers JSON map.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -634,6 +638,31 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_customDataJSONMap"),
+					},
+					{
+						Name: "fetchCustomHeadersJSONMap",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/fetchCustomHeadersJSONMap",
+							},
+
+							{
+								Name: "fetchCustomHeadersJSONMapCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:    "fetchCustomHeadersVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "fetch-custom-headers",
+							},
+						},
+						Scope:     []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_fetchCustomHeadersJSONMap"),
 					},
 				},
 			},
