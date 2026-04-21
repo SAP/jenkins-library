@@ -70,9 +70,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 	if config.AutoDetectPreRelease {
 		ver := config.Version
 		// Strip build metadata if present (after '+')
-		if i := strings.Index(ver, "+"); i >= 0 {
-			ver = ver[:i]
-		}
+		ver, _, _ = strings.Cut(ver, "+")
 		// Pre-release if a hyphen exists after MAJOR.MINOR.PATCH
 		config.PreRelease = strings.Contains(ver, "-")
 	}
