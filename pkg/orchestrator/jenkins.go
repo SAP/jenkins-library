@@ -27,7 +27,7 @@ func (j *jenkinsConfigProvider) Configure(opts *Options) error {
 		Username:         opts.JenkinsUsername,
 		Password:         opts.JenkinsToken,
 		MaxRetries:       3,
-		TransportTimeout: time.Second * 10,
+		TransportTimeout: time.Second * 30,
 	})
 
 	log.Entry().Debug("Successfully initialized Jenkins config provider")
