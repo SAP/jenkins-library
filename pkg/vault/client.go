@@ -3,7 +3,6 @@ package vault
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -195,17 +194,22 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 			isEOF = true
 		}
 
-		retry, err := vaultAPI.DefaultRetryPolicy(ctx, resp, err)
+		originalErr := err
+		retry, retryPolicyErr := vaultAPI.DefaultRetryPolicy(ctx, resp, err)
 
-		if err != nil || err == io.EOF || isEOF || retry {
+		if retryPolicyErr != nil || isEOF || retry {
 			if resp != nil {
-				if err != nil {
-					log.Entry().Infof("Retrying vault request... %s (err: %v)", resp.Status, err)
+				if originalErr != nil {
+					log.Entry().Infof("Retrying vault request... %s (err: %v)", resp.Status, originalErr)
 				} else {
 					log.Entry().Infof("Retrying vault request... %s", resp.Status)
 				}
 			} else {
-				log.Entry().Infof("Retrying vault request... (err: %v)", err)
+				logErr := originalErr
+				if logErr == nil {
+					logErr = retryPolicyErr
+				}
+				log.Entry().Infof("Retrying vault request... (err: %v)", logErr)
 			}
 			return true, nil
 		}
