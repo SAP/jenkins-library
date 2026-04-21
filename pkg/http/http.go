@@ -246,6 +246,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
+	c.httpClient = nil // reset cached client so next request rebuilds transport with new settings
 	if options.MaxRetries < 0 {
 		c.maxRetries = 0
 	} else if options.MaxRetries == 0 {

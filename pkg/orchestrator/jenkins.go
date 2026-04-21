@@ -23,14 +23,15 @@ func newJenkinsConfigProvider() *jenkinsConfigProvider {
 
 // Configure initializes the Jenkins orchestrator with credentials
 func (j *jenkinsConfigProvider) Configure(opts *Options) error {
+	timeout := time.Second * 30
 	j.client.SetOptions(piperHttp.ClientOptions{
 		Username:         opts.JenkinsUsername,
 		Password:         opts.JenkinsToken,
 		MaxRetries:       3,
-		TransportTimeout: time.Second * 30,
+		TransportTimeout: timeout,
 	})
 
-	log.Entry().Debug("Successfully initialized Jenkins config provider")
+	log.Entry().Debugf("Successfully initialized Jenkins config provider (TransportTimeout: %v)", timeout)
 	return nil
 }
 
@@ -143,29 +144,22 @@ func (j *jenkinsConfigProvider) FullLogs() ([]byte, error) {
 
 // PipelineStartTime returns the pipeline start time in UTC
 func (j *jenkinsConfigProvider) PipelineStartTime() time.Time {
-	URL := j.BuildURL() + "api/json"
-	response, err := j.client.GetRequest(URL, nil, nil)
-	if err != nil {
-		log.Entry().WithError(err).Errorf("could not getRequest to URL %s", URL)
+	j.fetchAPIInformation()
+
+	val, ok := j.apiInformation["timestamp"]
+	if !ok {
+		log.Entry().Errorf("could not get timestamp from Jenkins API information, returning 1970")
 		return time.Time{}.UTC()
 	}
 
-	if response.StatusCode != 200 { //http.StatusNoContent -> also empty log!
-		log.Entry().Errorf("response code is %v . \n Could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
-		return time.Time{}.UTC()
-	}
-	var responseInterface map[string]interface{}
-	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
-	if err != nil {
-		log.Entry().WithError(err).Infof("could not parse http response, returning 1970")
+	rawTimeStamp, ok := val.(float64)
+	if !ok {
+		log.Entry().Errorf("could not parse timestamp from Jenkins API information, returning 1970")
 		return time.Time{}.UTC()
 	}
 
-	rawTimeStamp := responseInterface["timestamp"].(float64)
 	timeStamp := time.Unix(int64(rawTimeStamp)/1000, 0)
-
 	log.Entry().Debugf("Pipeline start time: %v", timeStamp.String())
-	defer response.Body.Close()
 	return timeStamp.UTC()
 }
 
