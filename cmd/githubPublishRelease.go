@@ -74,8 +74,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 			ver = ver[:i]
 		}
 		// Pre-release if a hyphen exists after MAJOR.MINOR.PATCH
-		isPre := strings.Contains(ver, "-")
-		config.PreRelease = isPre
+		config.PreRelease = strings.Contains(ver, "-")
 	}
 
 	releaseBody := ""
