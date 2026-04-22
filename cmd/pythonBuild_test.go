@@ -254,7 +254,7 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[8].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[9].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[9].Exec)
-		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[10].Params)
+		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4", "--pyproject", "pyproject.toml", "--mc-type", "application"}, utils.ExecMockRunner.Calls[10].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[10].Exec)
 	})
 }
