@@ -89,9 +89,9 @@ func CreateBOM(
 
 	// Add pyproject.toml only if it exists AND contains [project] metadata
 	// Without [project] metadata, cyclonedx-py will fail when using --pyproject flag
-	if hasMetadata := pyprojectHasMetadata(readFileFn, "pyproject.toml"); hasMetadata {
-		args = append(args, "--pyproject", "pyproject.toml")
-	}
+	//if hasMetadata := pyprojectHasMetadata(readFileFn, "pyproject.toml"); hasMetadata {
+	//	args = append(args, "--pyproject", "pyproject.toml")
+	//}
 
 	if err := executeFn(getBinary(virtualEnv, "cyclonedx-py"), args...); err != nil {
 		return fmt.Errorf("failed to create BOM: %w", err)

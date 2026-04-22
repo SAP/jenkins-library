@@ -119,7 +119,9 @@ build-backend = "setuptools.build_meta"
 		"env",
 		"--output-file", "bom-pip.xml",
 		"--output-format", "XML",
-		"--spec-version", "1.4"}, mockRunner.Calls[2].Params)
+		"--spec-version", "1.4"
+		"--pyproject", "pyproject.toml",
+		"--mc-type", "application"}, mockRunner.Calls[2].Params)
 }
 
 func TestPyprojectHasMetadata(t *testing.T) {
