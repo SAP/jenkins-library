@@ -91,7 +91,7 @@ version = "0.0.1"
 		"--output-file", "bom-pip.xml",
 		"--output-format", "XML",
 		"--spec-version", "1.4",
-		"--pyproject", "pyproject.toml"
+		"--pyproject", "pyproject.toml",
 		"--mc-type", "application"}, mockRunner.Calls[2].Params)
 }
 
