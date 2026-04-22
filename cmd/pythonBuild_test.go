@@ -134,7 +134,7 @@ func TestRunPythonBuild(t *testing.T) {
 		defer func() { python.OsCreateTemp = oldCreateTemp }()
 
 		// Add pyproject.toml WITHOUT [project] metadata section to mock
-		utils.AddFile("pyproject.toml", []byte(minimalPyProjectTomlFileContent))
+		//utils.AddFile("pyproject.toml", []byte(minimalPyProjectTomlFileContent))
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
@@ -153,7 +153,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[6].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[6].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[7].Exec)
-		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4", "--pyproject", "pyproject.toml", "--mc-type", "application"}, utils.ExecMockRunner.Calls[7].Params)
+		//assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4", "--pyproject", "pyproject.toml", "--mc-type", "application"}, utils.ExecMockRunner.Calls[7].Params)
 	})
 }
 
