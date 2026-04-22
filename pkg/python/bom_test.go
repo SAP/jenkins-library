@@ -16,7 +16,14 @@ func TestCreateBOM(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockFiles := mock.FilesMock{}
 	coordinate := versioning.Coordinates{ArtifactID: "MyPackageName", Version: "1.0.0"}
+	// Add pyproject.toml with [project] metadata section to mock
+	mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
+requires = ["setuptools"]
 
+[project]
+name = "example-pkg"
+version = "0.0.1"
+`))
 	// test
 	err := CreateBOM(mockRunner.RunExecutable, mockFiles.FileExists, mockFiles.ReadFile, ".venv", "requirements.txt", "1.2.3", "16", "setup.py", coordinate)
 
@@ -40,7 +47,9 @@ func TestCreateBOM(t *testing.T) {
 		"env",
 		"--output-file", "bom-pip.xml",
 		"--output-format", "XML",
-		"--spec-version", "16"}, mockRunner.Calls[2].Params)
+		"--spec-version", "16",
+		"--pyproject", "pyproject.toml",
+		"--mc-type", "application"}, mockRunner.Calls[2].Params)
 }
 
 func TestCreateBOMWithPyProjectToml(t *testing.T) {
@@ -82,7 +91,8 @@ version = "0.0.1"
 		"--output-file", "bom-pip.xml",
 		"--output-format", "XML",
 		"--spec-version", "1.4",
-		"--pyproject", "pyproject.toml"}, mockRunner.Calls[2].Params)
+		"--pyproject", "pyproject.toml"
+		"--mc-type", "application"}, mockRunner.Calls[2].Params)
 }
 
 func TestCreateBOMWithMinimalPyProjectToml(t *testing.T) {
