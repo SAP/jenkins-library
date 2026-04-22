@@ -11,7 +11,7 @@ metadata:
         Currently the following are supported:
 
         * [Helm](https://helm.sh/) command line tool and [Helm Charts](https://docs.helm.sh/developing_charts/#charts).
-        * [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and `kubectl apply` command.
+        * [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and `kubectl apply`, `kubectl replace`, and `kubectl set image` command.
 
     ## Helm
     Following helm command will be executed by default:
@@ -23,6 +23,41 @@ metadata:
     * `yourRegistry` will be retrieved from `containerRegistryUrl`
     * `yourImageName`, `yourImageTag` will be retrieved from `image`
     * `dockerSecret` will be calculated with a call to `kubectl create secret generic <containerRegistrySecret> --from-file=.dockerconfigjson=<dockerConfigJson> --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json`
+
+    ## Kubectl
+    The kubectl deploy tool supports three commands via the `deployCommand` parameter:
+
+    ### kubectl apply
+    Applies a Kubernetes manifest template defined via `appTemplate`:
+
+    ```
+    kubectl --insecure-skip-tls-verify=<insecureSkipTLSVerify> apply --filename <appTemplate> --namespace <namespace>
+    ```
+
+    ### kubectl replace
+    Replaces resources defined in the manifest template:
+
+    ```
+    kubectl --insecure-skip-tls-verify=<insecureSkipTLSVerify> replace --filename <appTemplate> --namespace <namespace> --force
+    ```
+
+    ### kubectl set image
+    Updates a container image in an existing deployment without requiring an `appTemplate`:
+
+    **Single image:**
+
+    ```
+    kubectl set image deployment/<deploymentName> <containerName>=<containerRegistryUrl>/<containerImageName>:<containerImageTag> --namespace <namespace>
+    ```
+
+    **Multiple images:**
+
+    ```
+    kubectl set image deployment/<deploymentName> <containerNames[0]>=<imageNameTags[0]> <containerNames[1]>=<imageNameTags[1]> ... --namespace <namespace>
+    ```
+
+    * For single image updates, use `containerName`, `containerImageName`, and `containerImageTag`.
+    * For multi-image updates, use `containerNames` together with `imageNames` and `imageNameTags`.
 spec:
   inputs:
     secrets:
@@ -243,7 +278,7 @@ spec:
         aliases:
           - name: helmDeploymentName
         type: string
-        description: Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
+        description: Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`. Also required when `deployCommand:setImage`, where it specifies the Kubernetes deployment resource to update (used as `deployment/<deploymentName>`).
         scope:
           - PARAMETERS
           - STAGES

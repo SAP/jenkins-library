@@ -403,7 +403,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 
 func runKubectlSetImage(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) error {
 	if len(config.DeploymentName) == 0 {
-		return fmt.Errorf("deploymentName has not been set, please configure deploymentName parameter")
+		return fmt.Errorf("deploymentName has not been set, please configure deploymentName parameter when using 'setImage'")
 	}
 
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)

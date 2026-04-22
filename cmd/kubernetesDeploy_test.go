@@ -1898,7 +1898,7 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		mockUtils := newKubernetesDeployMockUtils()
 		var stdout bytes.Buffer
 		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
-		assert.EqualError(t, err, "deploymentName has not been set, please configure deploymentName parameter")
+		assert.EqualError(t, err, "deploymentName has not been set, please configure deploymentName parameter when using 'setImage'")
 	})
 
 	t.Run("test kubectl setImage - fails without containerName", func(t *testing.T) {
