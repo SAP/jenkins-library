@@ -25,6 +25,10 @@ type pythonBuildMockUtils struct {
 }
 
 const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
+const minimalPyProjectTomlFileContent = `[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+`
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	utils := pythonBuildMockUtils{
@@ -130,10 +134,7 @@ func TestRunPythonBuild(t *testing.T) {
 		defer func() { python.OsCreateTemp = oldCreateTemp }()
 
 		// Add pyproject.toml WITHOUT [project] metadata section to mock
-		mockFiles.AddFile("pyproject.toml", []byte(`[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-`))
+		utils.AddFile("pyproject.toml", []byte(minimalPyProjectTomlFileContent))
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
