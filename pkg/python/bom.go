@@ -51,26 +51,31 @@ func CreateBOM(
 	// parent component.metadata of the sbom see:
 	//https://github.com/CycloneDX/cyclonedx-python/issues/825#issuecomment-2457261498
 	if strings.HasSuffix(buildDescriptorFilePath, "setup.py") {
-		tmpFile, err := OsCreateTemp("", "pyproject.toml")
-		if err != nil {
-			return fmt.Errorf("failed to create tmp toml file for cyclonedx sbom: %w", err)
+		// if project use both during transition from setup.py to pyproject.toml, we prefer the pyproject.toml for sbom generation as it contains more complete metadata. If it doesn't exist, we create a minimal temporary one with the necessary metadata for cyclonedx-py to generate a meaningful BOM
+		if exists, _ := existsFn("pyproject.toml"); exists {
+			buildDescriptorFilePath = "pyproject.toml"
+		} else {
+			tmpFile, err := OsCreateTemp("", "pyproject.toml")
+			if err != nil {
+				return fmt.Errorf("failed to create tmp toml file for cyclonedx sbom: %w", err)
+			}
+
+			defer os.Remove(tmpFile.Name())
+
+			name := coordinate.ArtifactID
+			version := coordinate.Version
+
+			content := fmt.Sprintf("[project]\nname = \"%s\"\nversion = \"%s\"\n", name, version)
+
+			if _, err := tmpFile.WriteString(content); err != nil {
+				return fmt.Errorf("failed to write tmp toml file for cyclonedx sbom: %w", err)
+			}
+
+			// Close it so other processes (like cyclonedx-py) can access it if needed
+			tmpFile.Close()
+
+			buildDescriptorFilePath = tmpFile.Name()
 		}
-
-		defer os.Remove(tmpFile.Name())
-
-		name := coordinate.ArtifactID
-		version := coordinate.Version
-
-		content := fmt.Sprintf("[project]\nname = \"%s\"\nversion = \"%s\"\n", name, version)
-
-		if _, err := tmpFile.WriteString(content); err != nil {
-			return fmt.Errorf("failed to write tmp toml file for cyclonedx sbom: %w", err)
-		}
-
-		// Close it so other processes (like cyclonedx-py) can access it if needed
-		tmpFile.Close()
-
-		buildDescriptorFilePath = tmpFile.Name()
 	}
 
 	log.Entry().Debug("creating BOM")
