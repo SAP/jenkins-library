@@ -33,8 +33,9 @@ spec:
     - name: getConfig
       description: Read pipeline stage configuration.`
 
-var stageConditionsExpected string = `"apiVersion: project-piper.io/v1\nkind: PipelineDefinition\nmetadata:\n  description: |-\n    This is a multiline\n    test description\n  displayName: Piper general purpose pipeline\n  name: sap-piper.general.purpose.pipeline\nspec:\n` +
-	`  stages:\n  - description: Test description\n    displayName: Init\n    name: init\n    steps:\n    - description: Read pipeline stage configuration.\n      name: getConfig\n"`
+var stageConditionsExpected string = `{"content":"apiVersion: project-piper.io/v1\nkind: PipelineDefinition\nmetadata:\n    name: sap-piper.general.purpose.pipeline\n    displayName: Piper general purpose pipeline\n    description: |-\n
+This is a multiline\n        test description\nspec:\n    stages:\n        - name: init\n          displayName: Init\n          description: Test description\n          steps:\n            - name: getConfig\n
+description: Read pipeline stage configuration.\n","filepath":"stage_conditions.yaml"}`
 
 func defaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
@@ -95,13 +96,12 @@ func TestGenerateDefaults(t *testing.T) {
 		{
 			name:          "Single defaults file",
 			defaultsFiles: []string{"test"},
-			expected:      `{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test"}`,
+			expected:      `{"content":"general: {}\nstages: {}\nsteps: {}\n","filepath":"test"}`,
 		},
 		{
 			name:          "Multiple defaults files",
 			defaultsFiles: []string{"test1", "test2"},
-			expected: `[{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test1"},` +
-				`{"content":"general: null\nstages: null\nsteps: null\n","filepath":"test2"}]`,
+			expected:      `[{"content":"general: {}\nstages: {}\nsteps: {}\n","filepath":"test1"},{"content":"general: {}\nstages: {}\nsteps: {}\n","filepath":"test2"}]`,
 		},
 		{
 			name:          "Single file + useV1",
