@@ -30,7 +30,7 @@ func (j *jenkinsConfigProvider) Configure(opts *Options) error {
 		TransportTimeout: time.Second * 30,
 	})
 
-	log.Entry().Debugf("Successfully initialized Jenkins config provider (TransportTimeout: %v)", timeout)
+	log.Entry().Debugf("Successfully initialized Jenkins config provider (TransportTimeout: %v)", 30 * time.Second)
 	return nil
 }
 
