@@ -35,6 +35,7 @@ type githubPublishReleaseOptions struct {
 	Token                 string   `json:"token,omitempty"`
 	UploadURL             string   `json:"uploadUrl,omitempty"`
 	Version               string   `json:"version,omitempty"`
+	AutoDetectPreRelease  bool     `json:"autoDetectPreRelease,omitempty"`
 }
 
 // GithubPublishReleaseCommand Publish a release in GitHub
@@ -199,6 +200,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringVar(&stepConfig.UploadURL, "uploadUrl", `https://uploads.github.com`, "Set the GitHub API url.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
+	cmd.Flags().BoolVar(&stepConfig.AutoDetectPreRelease, "autoDetectPreRelease", false, "If set to `true`, the pre-release flag will be determined automatically from the version per SemVer (versions with a hyphenated pre-release like `1.2.3-beta` are marked as pre-releases). Build metadata (`+...`) is ignored.")
 
 	cmd.MarkFlagRequired("apiUrl")
 	cmd.MarkFlagRequired("owner")
@@ -415,6 +417,15 @@ func githubPublishReleaseMetadata() config.StepData {
 						Mandatory: true,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_version"),
+					},
+					{
+						Name:        "autoDetectPreRelease",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
