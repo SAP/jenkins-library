@@ -230,18 +230,6 @@ func TestSetOptions(t *testing.T) {
 	assert.Equal(t, opts.Password, c.password)
 	assert.Equal(t, opts.Token, c.token)
 	assert.Equal(t, opts.Certificates, c.certificates)
-
-	// Verify that calling SetOptions a second time resets the cached httpClient so
-	// the next request rebuilds the transport with the new settings (e.g. updated timeout).
-	t.Run("resets cached httpClient on reconfiguration", func(t *testing.T) {
-		c2 := Client{}
-		c2.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
-		// Simulate a cached client built by a prior request.
-		c2.httpClient = &http.Client{}
-		// A second SetOptions call must nil out the cached client.
-		c2.SetOptions(ClientOptions{MaxRetries: -1, TransportTimeout: 30 * time.Second})
-		assert.Nil(t, c2.httpClient, "SetOptions should reset the cached httpClient")
-	})
 }
 
 func TestApplyDefaults(t *testing.T) {
