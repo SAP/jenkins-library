@@ -23,12 +23,11 @@ func newJenkinsConfigProvider() *jenkinsConfigProvider {
 
 // Configure initializes the Jenkins orchestrator with credentials
 func (j *jenkinsConfigProvider) Configure(opts *Options) error {
-	timeout := time.Second * 30
 	j.client.SetOptions(piperHttp.ClientOptions{
 		Username:         opts.JenkinsUsername,
 		Password:         opts.JenkinsToken,
 		MaxRetries:       3,
-		TransportTimeout: timeout,
+		TransportTimeout: time.Second * 30,
 	})
 
 	log.Entry().Debugf("Successfully initialized Jenkins config provider (TransportTimeout: %v)", timeout)
