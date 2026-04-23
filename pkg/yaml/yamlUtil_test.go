@@ -367,11 +367,11 @@ object-variable:
 
 				t.Run("Check string variable (composed 1)", func(t *testing.T) {
 					assert.IsType(t, "string", env["string-variable"])
-					assert.Regexp(t, "^true-0.25-1-.*", env["string-variable"])
+					assert.Regexp(t, "^Yes-0.25-1-.*", env["string-variable"])
 				})
 
 				t.Run("Check string variable (composed 2)", func(t *testing.T) {
-					assert.Equal(t, "true-with-some-more-text", env["single-var-with-string-constants"])
+					assert.Equal(t, "Yes-with-some-more-text", env["single-var-with-string-constants"])
 				})
 
 				t.Run("Assert correct variable substitution - xsuaa-instance-name", func(t *testing.T) {
