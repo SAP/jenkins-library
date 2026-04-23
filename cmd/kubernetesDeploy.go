@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -424,7 +425,8 @@ func runKubectlSetImage(config kubernetesDeployOptions, utils kubernetes.DeployU
 
 	// Execute kubectl set image
 	kubeParams := buildKubeParams(config, utils, stdout)
-	setImageParams := append(kubeParams,
+	setImageParams := slices.Clone(kubeParams)
+	setImageParams = append(setImageParams,
 		"set", "image",
 		fmt.Sprintf("deployment/%v", config.DeploymentName),
 	)
