@@ -63,8 +63,8 @@ AbapEnvironment*                                @SAP/jenkins-library-abap
 ascAppUpload*                                   @Mau04 @inf2381
 AscAppUpload*                                   @Mau04 @inf2381
 
-credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins 
-CredentialdiggerScan*                           @SAP/credential-digger-admins @SAP/credential-digger-members 
+credentialdiggerScan*                           @SAP/credential-digger-members @SAP/credential-digger-admins
+CredentialdiggerScan*                           @SAP/credential-digger-admins @SAP/credential-digger-members
 
 detectExecuteScan*                              @SAP/oss-team
 DetectExecuteScan*                              @SAP/oss-team
@@ -77,27 +77,29 @@ ProtecodeExecuteScan*                           @SAP/oss-team
 ##### BUILD STEPS #####
 #######################
 
-mavenBuild*                                     @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-MavenBuild*                                     @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-gradleExecuteBuild*                             @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-GradleExecuteBuild*                             @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-npmExecuteScripts*                              @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-NpmExecuteScripts*                              @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-golangBuild*                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-GolangBuild*                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-kanikoExecute*                                  @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-KanikoExecute*                                  @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-pythonBuild*                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-PythonBuild*                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-mtaBuild*                                       @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-MtaBuild*                                       @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-helmExecute*                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-HelmExecute*                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-/pkg/golang/                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-/pkg/gradle/                                    @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-/pkg/maven/                                     @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-/pkg/npm/                                       @SAP/build-team @SAP/jenkins-library-team                                                                                                                                              
-/pkg/python/                                    @SAP/build-team @SAP/jenkins-library-team  
+mavenBuild*                                     @SAP/build-team @SAP/jenkins-library-team
+MavenBuild*                                     @SAP/build-team @SAP/jenkins-library-team
+gradleExecuteBuild*                             @SAP/build-team @SAP/jenkins-library-team
+GradleExecuteBuild*                             @SAP/build-team @SAP/jenkins-library-team
+npmExecuteScripts*                              @SAP/build-team @SAP/jenkins-library-team
+NpmExecuteScripts*                              @SAP/build-team @SAP/jenkins-library-team
+golangBuild*                                    @SAP/build-team @SAP/jenkins-library-team
+GolangBuild*                                    @SAP/build-team @SAP/jenkins-library-team
+kanikoExecute*                                  @SAP/build-team @SAP/jenkins-library-team
+KanikoExecute*                                  @SAP/build-team @SAP/jenkins-library-team
+pythonBuild*                                    @SAP/build-team @SAP/jenkins-library-team
+PythonBuild*                                    @SAP/build-team @SAP/jenkins-library-team
+mtaBuild*                                       @SAP/build-team @SAP/jenkins-library-team
+MtaBuild*                                       @SAP/build-team @SAP/jenkins-library-team
+helmExecute*                                    @SAP/build-team @SAP/jenkins-library-team
+HelmExecute*                                    @SAP/build-team @SAP/jenkins-library-team
+/pkg/golang/                                    @SAP/build-team @SAP/jenkins-library-team
+/pkg/gradle/                                    @SAP/build-team @SAP/jenkins-library-team
+/pkg/maven/                                     @SAP/build-team @SAP/jenkins-library-team
+/pkg/npm/                                       @SAP/build-team @SAP/jenkins-library-team
+/pkg/python/                                    @SAP/build-team @SAP/jenkins-library-team
+/pkg/docker/                                    @SAP/build-team @SAP/jenkins-library-team
+/pkg/syft/                                      @SAP/build-team @SAP/jenkins-library-team
 
 #####################
 # Integration tests #
