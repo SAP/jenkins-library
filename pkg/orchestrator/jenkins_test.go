@@ -110,6 +110,7 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 		wantHTTPErr             bool
 		wantHTTPStatusCodeError bool
 		wantHTTPJSONParseError  bool
+		wantMissingTimestamp    bool
 	}{
 		{
 			name: "Retrieve correct time",
@@ -131,8 +132,9 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 			wantHTTPStatusCodeError: true,
 		},
 		{
-			name: "timestamp field missing from API response",
-			want: time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+			name:                 "timestamp field missing from API response",
+			want:                 time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+			wantMissingTimestamp: true,
 		},
 	}
 
@@ -171,7 +173,7 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 					if tt.wantHTTPJSONParseError {
 						return httpmock.NewJsonResponse(200, "timestamp:asdffd")
 					}
-					if tt.name == "timestamp field missing from API response" {
+					if tt.wantMissingTimestamp {
 						return httpmock.NewStringResponse(200, `{"url":"https://jaas.url/"}`), nil
 					}
 					return httpmock.NewStringResponse(200, `{"timestamp":1647901800932,"url":"https://jaas.url/view/piperpipelines/job/foo/job/bar/job/main/3731/"}`), nil
