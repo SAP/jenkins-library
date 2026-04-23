@@ -2068,6 +2068,62 @@ image4: my.registry:55555/myImage-sub2:myTag@sha256:333`, "kubectl parameters in
 		assert.EqualError(t, err, "number of containerNames (2) must match number of imageNameTags (1)")
 	})
 
+	t.Run("test kubectl setImage - fails with malformed ContainerRegistryURL", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "no-protocol-here",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerName:         "myContainer",
+			ContainerImageName:    "path/to/Image",
+			ContainerImageTag:     "latest",
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "container registry url")
+		assert.Contains(t, err.Error(), "incorrect")
+	})
+
+	t.Run("test kubectl setImage - multiple images with registry URL without port", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			APIServer:             "https://my.api.server",
+			ContainerRegistryURL:  "https://my.registry",
+			DeployTool:            "kubectl",
+			DeployCommand:         "setImage",
+			DeploymentName:        "myDeployment",
+			ContainerNames:        []string{"container1", "container2"},
+			ImageNameTags:         []string{"path/to/Image1:v1", "path/to/Image2:v2"},
+			KubeToken:             "testToken",
+			Namespace:             "deploymentNamespace",
+			InsecureSkipTLSVerify: true,
+		}
+
+		mockUtils := newKubernetesDeployMockUtils()
+		var stdout bytes.Buffer
+		err := runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+		assert.NoError(t, err)
+
+		assert.Equal(t, 1, len(mockUtils.Calls))
+		assert.Equal(t, "kubectl", mockUtils.Calls[0].Exec)
+		assert.Equal(t, []string{
+			"--namespace=deploymentNamespace",
+			"--insecure-skip-tls-verify=true",
+			"--server=https://my.api.server",
+			"--token=testToken",
+			"set", "image",
+			"deployment/myDeployment",
+			"container1=my.registry/path/to/Image1:v1",
+			"container2=my.registry/path/to/Image2:v2",
+		}, mockUtils.Calls[0].Params)
+	})
+
 	t.Run("test kubectl - insecureSkipTLSVerify is true with custom CA", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			APIServer:               "https://my.api.server",
