@@ -389,7 +389,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, customDataJSONMap, fileP
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, customDataJSONMap, fetchURL, version string, productID int, replaceBinary bool) *ResultData {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, customDataJSONMap, fetchCustomHeadersJSONMap, fetchURL, version string, productID int, replaceBinary bool) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
 
 	var headers = make(map[string][]string)
@@ -400,6 +400,21 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, customDataJSONMap, fetc
 		} else {
 			for k, v := range customDataHeaders {
 				headers["META-"+strings.ToUpper(k)] = []string{v}
+			}
+		}
+	}
+
+	if len(fetchCustomHeadersJSONMap) > 0 {
+		customHeadersMap := map[string]string{}
+		if err := json.Unmarshal([]byte(fetchCustomHeadersJSONMap), &customHeadersMap); err != nil {
+			log.Entry().Warn("[WARN] ===> fetchCustomHeadersJSONMap flag must be a valid JSON map. Check the value of --fetchCustomHeadersJSONMap and try again.")
+		} else {
+			for k, v := range customHeadersMap {
+				if k == "Authorization" {
+					log.RegisterSecret(v)
+				}
+
+				headers["Custom-Header"] = append(headers["Custom-Header"], fmt.Sprintf("%v: %v", k, v))
 			}
 		}
 	}

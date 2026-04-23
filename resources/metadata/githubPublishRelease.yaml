@@ -200,3 +200,11 @@ spec:
           - STEPS
         type: string
         mandatory: true
+      - name: autoDetectPreRelease
+        description: "If set to `true`, the pre-release flag will be determined automatically from the version per SemVer (versions with a hyphenated pre-release like `1.2.3-beta` are marked as pre-releases). Build metadata (`+...`) is ignored."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: false
