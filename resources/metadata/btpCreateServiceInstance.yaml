@@ -92,7 +92,7 @@ spec:
           - name: btp/instanceName
       - name: parameters
         type: string
-        description: Path to JSON file or JSON in-line string for a Service creation
+        description: Path to JSON file or JSON in-line string for a Service creation. If given, you no more need to provide `abapSystemAdminEmail`, `abapSystemDescription`, `abapSystemIsDevelopmentAllowed`, `abapSystemID`, `abapSystemSizeOfPersistence`, `abapSystemSizeOfRuntime` as they are suppose to be in the JSON.
         scope:
           - PARAMETERS
           - STAGES
@@ -101,6 +101,57 @@ spec:
         mandatory: false
         aliases:
           - name: btp/parameters
+      - name: abapSystemAdminEmail
+        type: string
+        description: Admin E-Mail address for the initial administrator of the system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapSystemDescription
+        description: Description for the ABAP Environment system
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: 'Test system created by an automated pipeline'
+      - name: abapSystemIsDevelopmentAllowed
+        type: bool
+        description: This parameter determines, if development is allowed on the system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: true
+      - name: abapSystemID
+        description: The three character name of the system - maps to 'sapSystemName'
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: 'H02'
+      - name: abapSystemSizeOfPersistence
+        description: The size of the persistence
+        type: int
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapSystemSizeOfRuntime
+        description: The size of the runtime
+        type: int
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: timeout
         type: int
         description: Timeout in seconds for creation/polling

@@ -69,6 +69,57 @@ func TestRunBtpCreateService(t *testing.T) {
 		}
 	})
 
+	t.Run("Create service: no parameter : use Abap attributes", func(t *testing.T) {
+		defer btpMockCleanup(m)
+
+		utils := btp.NewBTPUtils(m)
+		m.StdoutReturn = map[string]string{
+			"btp .* login .+": "Authentication successful",
+			"btp .* get services/instance": fmt.Sprintf(`
+				{
+					"id": "xxx",
+					"name": "%s",
+					"ready": true
+				}`, InstanceName),
+		}
+
+		// init
+		config := btpCreateServiceInstanceOptions{
+			Url:                            "https://api.endpoint.com",
+			Subdomain:                      "testSubdomain",
+			Subaccount:                     "testSubaccount",
+			PlanName:                       "testPlan",
+			OfferingName:                   "testOffering",
+			ServiceInstanceName:            InstanceName,
+			AbapSystemAdminEmail:           "user@example.com",
+			AbapSystemID:                   "H02",
+			AbapSystemIsDevelopmentAllowed: true,
+			AbapSystemSizeOfPersistence:    4,
+			AbapSystemSizeOfRuntime:        4,
+			Timeout:                        60,
+			PollInterval:                   5,
+			User:                           "testUser",
+			Password:                       "testPassword",
+		}
+
+		// test
+		err := runBtpCreateServiceInstance(&config, &telemetryData, *utils)
+		parameters, err := generateBTPServiceParameterString(&config)
+
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t,
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
+				m.Calls[0])
+			assert.Equal(t,
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--plan-name", config.PlanName, "--offering-name", config.OfferingName, "--parameters", parameters}},
+				m.Calls[1])
+			assert.Equal(t,
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
+				m.Calls[len(m.Calls)-1])
+		}
+	})
+
 	t.Run("Create service: no parameters", func(t *testing.T) {
 		defer btpMockCleanup(m)
 
@@ -131,22 +182,27 @@ func TestRunBtpCreateService(t *testing.T) {
 
 		// init
 		config := btpCreateServiceInstanceOptions{
-			Url:                 "https://api.endpoint.com",
-			Subdomain:           "testSubdomain",
-			Idp:                 "testIdentityProvider",
-			Subaccount:          "testSubaccount",
-			PlanName:            "testPlan",
-			OfferingName:        "testOffering",
-			ServiceInstanceName: InstanceName,
-			Parameters:          "testCreateServiceConfig.json",
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			Url:                            "https://api.endpoint.com",
+			Subdomain:                      "testSubdomain",
+			Idp:                            "testIdentityProvider",
+			Subaccount:                     "testSubaccount",
+			PlanName:                       "testPlan",
+			OfferingName:                   "testOffering",
+			ServiceInstanceName:            InstanceName,
+			AbapSystemAdminEmail:           "user@example.com",
+			AbapSystemID:                   "H02",
+			AbapSystemIsDevelopmentAllowed: true,
+			AbapSystemSizeOfPersistence:    4,
+			AbapSystemSizeOfRuntime:        4,
+			Timeout:                        60,
+			PollInterval:                   5,
+			User:                           "testUser",
+			Password:                       "testPassword",
 		}
 
 		// test
 		err := runBtpCreateServiceInstance(&config, &telemetryData, *utils)
+		parameters, err := generateBTPServiceParameterString(&config)
 
 		// assert
 		if assert.NoError(t, err) {
@@ -154,7 +210,7 @@ func TestRunBtpCreateService(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--plan-name", config.PlanName, "--offering-name", config.OfferingName, "--parameters", config.Parameters}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/instance", "--name", config.ServiceInstanceName, "--subaccount", config.Subaccount, "--plan-name", config.PlanName, "--offering-name", config.OfferingName, "--parameters", parameters}},
 				m.Calls[1])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
