@@ -357,7 +357,7 @@ steps:
 		myConfig := io.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{io.NopCloser(strings.NewReader("invalid defaults"))}
 		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, false, StepFilters{}, StepData{}, nil, "stage1", "step1")
-		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `invalid...` into config.Config", "default error expected")
 	})
 
 	t.Run("Test reporting parameters with aliases and cpe resources", func(t *testing.T) {

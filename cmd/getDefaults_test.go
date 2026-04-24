@@ -33,9 +33,7 @@ spec:
     - name: getConfig
       description: Read pipeline stage configuration.`
 
-var stageConditionsExpected string = `{"content":"apiVersion: project-piper.io/v1\nkind: PipelineDefinition\nmetadata:\n    name: sap-piper.general.purpose.pipeline\n    displayName: Piper general purpose pipeline\n    description: |-\n
-This is a multiline\n        test description\nspec:\n    stages:\n        - name: init\n          displayName: Init\n          description: Test description\n          steps:\n            - name: getConfig\n
-description: Read pipeline stage configuration.\n","filepath":"stage_conditions.yaml"}`
+var stageConditionsExpected string = `"apiVersion: project-piper.io/v1\nkind: PipelineDefinition\nmetadata:\n    name: sap-piper.general.purpose.pipeline\n    displayName: Piper general purpose pipeline\n    description: |-\n        This is a multiline\n        test description\nspec:\n    stages:\n        - name: init\n          displayName: Init\n          description: Test description\n          steps:\n            - name: getConfig\n              description: Read pipeline stage configuration.\n"`
 
 func defaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
