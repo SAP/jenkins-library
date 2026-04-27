@@ -51,11 +51,18 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		outcome = "success"
 	}
 
+	var errorDetail string
+	rawErrorDetail := log.GetFatalErrorDetail()
+	if ctx.ErrorCode != "0" && rawErrorDetail != nil {
+		errorDetail = string(rawErrorDetail)
+	}
+
 	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]string{
 		"taskName":      ctx.StepName,
 		"stageName":     ctx.StageName,
 		"outcome":       outcome,
 		"pipelineRunId": ctx.PipelineID,
+		"errorDetail":   errorDetail,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
