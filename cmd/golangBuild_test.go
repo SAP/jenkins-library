@@ -970,7 +970,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false)
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{})
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg"}, binaries)
@@ -984,7 +984,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true)
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true, []string{})
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir-linux-amd64/", outDir)
 		assert.Equal(t, []string{"outputDir-linux-amd64/somePkg"}, binaries)
@@ -998,7 +998,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false)
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{})
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg.exe"}, binaries)
@@ -1013,7 +1013,7 @@ func TestIsMainPackageError(t *testing.T) {
 	utils.StdoutReturn = map[string]string{
 		"go list -f {{ .Name }} package/foo": "some specific error log",
 	}
-	ok, err := isMainPackage(utils, "package/foo")
+	ok, err := isMainPackage(utils, "package/foo", []string{})
 	assert.False(t, ok)
 	assert.EqualError(t, err, "some error: some specific error log")
 }

@@ -563,7 +563,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 
 	if len(config.Output) > 0 {
 		if len(config.Packages) > 0 && (len(config.Packages) > 1 || !multipleArchitectures) {
-			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures)
+			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
@@ -623,7 +623,7 @@ func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
 	return modfile.Parse(modFilePath, modFileContent, nil)
 }
 
-func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, multipleArchitectures bool) ([]string, string, error) {
+func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, multipleArchitectures bool, buildFlags []string) ([]string, string, error) {
 	var binaries []string
 	var outDir string
 	if multipleArchitectures {
@@ -633,7 +633,7 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 	}
 
 	for _, pkg := range packages {
-		ok, err := isMainPackage(utils, pkg)
+		ok, err := isMainPackage(utils, pkg, buildFlags)
 		if err != nil {
 			return nil, "", err
 		}
@@ -650,12 +650,12 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 	return binaries, outDir, nil
 }
 
-func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
+func isMainPackage(utils golangBuildUtils, pkg string, buildFlags []string) (bool, error) {
 	outBuffer := bytes.NewBufferString("")
 	errBuffer := bytes.NewBufferString("")
 	utils.Stdout(outBuffer)
 	utils.Stderr(errBuffer)
-	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
+	err := utils.RunExecutable("go", append([]string{"list", "-f", "{{ .Name }}"}, append(buildFlags, pkg)...)...)
 	// restore stdout/stderr to log writer after capture so subsequent commands log correctly
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
