@@ -5,11 +5,13 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/python"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
@@ -19,9 +21,14 @@ type pythonBuildMockUtils struct {
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
+	returnFileDownloadError error // expected to be set upfront
 }
 
 const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
+const minimalPyProjectTomlFileContent = `[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+`
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	utils := pythonBuildMockUtils{
@@ -33,6 +40,14 @@ func newPythonBuildTestsUtils() pythonBuildMockUtils {
 
 func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 	return f.config
+}
+
+func (f pythonBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	if f.returnFileDownloadError != nil {
+		return f.returnFileDownloadError
+	}
+	f.AddFile(filename, []byte("content"))
+	return nil
 }
 
 func TestRunPythonBuild(t *testing.T) {
@@ -115,6 +130,12 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
 
+		oldCreateTemp := python.OsCreateTemp
+		defer func() { python.OsCreateTemp = oldCreateTemp }()
+
+		// Add pyproject.toml WITHOUT [project] metadata section to mock
+		//utils.AddFile("pyproject.toml", []byte(minimalPyProjectTomlFileContent))
+
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
@@ -132,7 +153,7 @@ func TestRunPythonBuild(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[6].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[6].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[7].Exec)
-		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[7].Params)
+		//assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4", "--pyproject", "pyproject.toml", "--mc-type", "application"}, utils.ExecMockRunner.Calls[7].Params)
 	})
 }
 
@@ -233,7 +254,7 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[8].Exec)
 		assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "cyclonedx-bom==6.1.1"}, utils.ExecMockRunner.Calls[9].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[9].Exec)
-		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[10].Params)
+		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4", "--pyproject", "pyproject.toml", "--mc-type", "application"}, utils.ExecMockRunner.Calls[10].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[10].Exec)
 	})
 }

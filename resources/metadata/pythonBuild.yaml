@@ -109,12 +109,21 @@ spec:
           - STAGES
           - PARAMETERS
         default: requirements.txt
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/pythonBuildArtifacts
   containers:
     - name: python
       image: python:3.11
