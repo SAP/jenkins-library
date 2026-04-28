@@ -562,7 +562,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	buildOptions := []string{"build", "-trimpath"}
 
 	if len(config.Output) > 0 {
-		if len(config.Packages) > 1 || !multipleArchitectures {
+		if len(config.Packages) > 0 && (len(config.Packages) > 1 || !multipleArchitectures) {
 			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
