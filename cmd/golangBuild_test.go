@@ -962,6 +962,20 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 func TestGetOutputBinaries(t *testing.T) {
 	t.Parallel()
 
+	t.Run("single arch - dot package", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"."}, utils, architecture, false, []string{}, "golang-hello-world")
+		assert.NoError(t, err)
+		assert.Equal(t, "outputDir/", outDir)
+		assert.Equal(t, []string{"outputDir/golang-hello-world"}, binaries)
+	})
+
 	t.Run("single arch - linux", func(t *testing.T) {
 		t.Parallel()
 		utils := newGolangBuildTestsUtils()
@@ -970,7 +984,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{})
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{}, "testBinary")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg"}, binaries)
@@ -984,7 +998,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true, []string{})
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true, []string{}, "testBinary")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir-linux-amd64/", outDir)
 		assert.Equal(t, []string{"outputDir-linux-amd64/somePkg"}, binaries)
@@ -998,7 +1012,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{})
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{}, "testBinary")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg.exe"}, binaries)

@@ -563,7 +563,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 
 	if len(config.Output) > 0 {
 		if len(config.Packages) > 0 && (len(config.Packages) > 1 || !multipleArchitectures) {
-			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags)
+			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags, path.Base(goModFile.Module.Mod.Path))
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
@@ -623,7 +623,7 @@ func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
 	return modfile.Parse(modFilePath, modFileContent, nil)
 }
 
-func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, multipleArchitectures bool, buildFlags []string) ([]string, string, error) {
+func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, multipleArchitectures bool, buildFlags []string, modBaseName string) ([]string, string, error) {
 	var binaries []string
 	var outDir string
 	if multipleArchitectures {
@@ -643,7 +643,11 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 			if architecture.OS == "windows" {
 				fileExt = ".exe"
 			}
-			binaries = append(binaries, filepath.Join(outDir, filepath.Base(pkg)+fileExt))
+			binName := filepath.Base(pkg)
+			if binName == "." {
+				binName = modBaseName
+			}
+			binaries = append(binaries, filepath.Join(outDir, binName+fileExt))
 		}
 	}
 
