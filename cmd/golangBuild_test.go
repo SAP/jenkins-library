@@ -1291,7 +1291,7 @@ func TestRetrieveGolangciLint(t *testing.T) {
 			utils.returnFileUntarError = test.untarErr
 			utils.untarFileNames = []string{"golangci-lint"}
 			config := golangBuildOptions{
-				GolangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.0-darwin-amd64.tar.gz",
+				GolangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.11.4/golangci-lint-2.11.4-darwin-amd64.tar.gz",
 			}
 			err := retrieveGolangciLint(utils, golangciLintDir, config.GolangciLintURL)
 
