@@ -69,17 +69,28 @@ func GetBomSchemaVersion(bomFilePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return bomSchemaVersionFromXmlns(bom.Xmlns)
+}
 
-	if strings.Contains(bom.Xmlns, "/1.4") {
+// GetBomSchemaVersionFromContent extracts the CycloneDX schema version from BOM content bytes
+func GetBomSchemaVersionFromContent(bomContent []byte) (string, error) {
+	var bom Bom
+	if err := xml.Unmarshal(bomContent, &bom); err != nil {
+		return "", fmt.Errorf("failed to parse BOM: %w", err)
+	}
+	return bomSchemaVersionFromXmlns(bom.Xmlns)
+}
+
+func bomSchemaVersionFromXmlns(xmlns string) (string, error) {
+	if strings.Contains(xmlns, "/1.4") {
 		return "1.4", nil
 	}
-	if strings.Contains(bom.Xmlns, "/1.5") {
+	if strings.Contains(xmlns, "/1.5") {
 		return "1.5", nil
 	}
-	if strings.Contains(bom.Xmlns, "/1.6") {
+	if strings.Contains(xmlns, "/1.6") {
 		return "1.6", nil
 	}
-
 	return "", fmt.Errorf("unable to determine CycloneDX version from BOM")
 }
 
