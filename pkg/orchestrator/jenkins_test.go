@@ -36,7 +36,7 @@ func TestJenkins(t *testing.T) {
 		assert.Equal(t, "refs/heads/main", p.GitReference())
 		assert.Equal(t, "abcdef42713", p.CommitSHA())
 		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
-		assert.Equal(t, "Jenkins", p.OrchestratorType())
+		assert.Equal(t, OrchestratorTypeJenkins, p.OrchestratorType())
 	})
 
 	t.Run("TagBuild", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestJenkins(t *testing.T) {
 		assert.Equal(t, "refs/tags/rel-1.0.0", p.GitReference())
 		assert.Equal(t, "abcdef42713", p.CommitSHA())
 		assert.Equal(t, "github.com/foo/bar", p.RepoURL())
-		assert.Equal(t, "Jenkins", p.OrchestratorType())
+		assert.Equal(t, OrchestratorTypeJenkins, p.OrchestratorType())
 	})
 
 	t.Run("PR", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestJenkins(t *testing.T) {
 		assert.Equal(t, "1234", p.BuildID())
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main", p.JobURL())
 		assert.Equal(t, "42", p.OrchestratorVersion())
-		assert.Equal(t, "Jenkins", p.OrchestratorType())
+		assert.Equal(t, OrchestratorTypeJenkins, p.OrchestratorType())
 		assert.Equal(t, "foo/bar/BRANCH", p.JobName())
 		assert.Equal(t, "Promote", p.StageName())
 		assert.Equal(t, "https://jaas.url/job/foo/job/bar/job/main/1234/", p.BuildURL())
