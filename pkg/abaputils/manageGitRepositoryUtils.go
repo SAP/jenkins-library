@@ -102,6 +102,9 @@ func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputMan
 		// Print Details
 		if len(results) != 0 {
 			for _, logEntryForDetails := range results {
+				if logOutputManager.LogOutput == "ERROR_ONLY" && logEntryForDetails.Status != "Error" {
+					continue
+				}
 				printLog(logEntryForDetails, api)
 			}
 		}
