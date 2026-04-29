@@ -7,7 +7,7 @@ replace github.com/imdario/mergo => github.com/imdario/mergo v0.3.16
 require (
 	cloud.google.com/go/pubsub/v2 v2.6.0
 	cloud.google.com/go/storage v1.56.0
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Jeffail/gabs/v2 v2.7.0
