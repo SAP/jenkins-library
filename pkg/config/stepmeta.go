@@ -476,7 +476,7 @@ func getFilterForResourceReferences(params []StepParameters) []string {
 			reference = param.GetReference("vaultSecretFile")
 		}
 		if reference == nil {
-			return filter
+			continue
 		}
 		if reference.Name != "" {
 			filter = append(filter, reference.Name)
