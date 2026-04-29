@@ -707,7 +707,8 @@ func isMainPackage(utils golangBuildUtils, pkg string, buildFlags []string) (boo
 	errBuffer := bytes.NewBufferString("")
 	utils.Stdout(outBuffer)
 	utils.Stderr(errBuffer)
-	err := utils.RunExecutable("go", append([]string{"list", "-f", "{{ .Name }}"}, append(filterFlagsForGoList(buildFlags), pkg)...)...)
+	args := append([]string{"list", "-f", "{{ .Name }}"}, append(filterFlagsForGoList(buildFlags), pkg)...)
+	err := utils.RunExecutable("go", args...)
 	// restore stdout/stderr to log writer after capture so subsequent commands log correctly
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())

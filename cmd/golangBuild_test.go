@@ -885,6 +885,24 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, binaryNames, "outputDir/somePkg.exe")
 	})
 
+	t.Run("success - single pkg multi-arch uses os.arch suffix (bypasses getOutputBinaries)", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		utils := newGolangBuildTestsUtils()
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
+		assert.NoError(t, err)
+		// go list must NOT be called — single-pkg multi-arch bypasses getOutputBinaries
+		assert.Equal(t, "go", utils.Calls[0].Exec)
+		assert.Equal(t, "build", utils.Calls[0].Params[0])
+		assert.Contains(t, utils.Calls[0].Params, "outputDir-linux.amd64")
+		assert.Len(t, binaryNames, 1)
+		assert.Equal(t, "outputDir-linux.amd64", binaryNames[0])
+	})
+
 	t.Run("success - windows", func(t *testing.T) {
 		t.Parallel()
 		config := golangBuildOptions{Output: "testBin"}
@@ -1106,6 +1124,11 @@ func TestFilterFlagsForGoList(t *testing.T) {
 			name:     "strips gcflags and asmflags",
 			input:    []string{"-gcflags=all=-trimpath", "-asmflags=all=-trimpath", "-mod=vendor"},
 			expected: []string{"-mod=vendor"},
+		},
+		{
+			name:     "passes mod two-arg form",
+			input:    []string{"-mod", "vendor"},
+			expected: []string{"-mod", "vendor"},
 		},
 		{
 			name:     "mixed: strips build-only, keeps list-compatible",
