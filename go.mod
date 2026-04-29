@@ -23,7 +23,7 @@ require (
 	github.com/docker/cli v29.3.0+incompatible
 	github.com/docker/docker v28.5.2+incompatible
 	github.com/evanphx/json-patch v5.9.11+incompatible
-	github.com/getsentry/sentry-go v0.31.1
+	github.com/getsentry/sentry-go v0.46.1
 	github.com/go-git/go-billy/v5 v5.8.0
 	github.com/go-git/go-git/v5 v5.18.0
 	github.com/go-openapi/runtime v0.24.1
