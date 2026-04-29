@@ -98,7 +98,7 @@ jobs:
           -d '{"prerelease": false, "make_latest": true}'
 
       # Workaround for https://github.com/SAP/jenkins-library/issues/1723, build only works with jdk8 currently
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: 8
           distribution: zulu
