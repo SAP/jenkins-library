@@ -17,15 +17,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	"github.com/ghodss/yaml"
-	"github.com/stretchr/testify/assert"
-	"helm.sh/helm/v3/pkg/chart"
-
 	"github.com/go-git/go-git/v5"
 	gitConfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/stretchr/testify/assert"
+	"go.yaml.in/yaml/v3"
 )
+
+type Metadata struct {
+	AppVersion string `json:"appVersion" yaml:"appVersion"`
+	Version    string `json:"version" yaml:"version"`
+}
 
 type artifactVersioningMock struct {
 	originalVersion  string
@@ -803,7 +806,7 @@ func TestPropagateVersion(t *testing.T) {
 			AdditionalTargetTools: []string{"helm"},
 		}
 
-		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		chartMetadata := Metadata{Version: "1.2.3"}
 		content, err := yaml.Marshal(chartMetadata)
 		assert.NoError(t, err)
 
@@ -823,7 +826,7 @@ func TestPropagateVersion(t *testing.T) {
 			IncludeCommitID:             true,
 		}
 
-		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		chartMetadata := Metadata{Version: "1.2.3"}
 		content, err := yaml.Marshal(chartMetadata)
 		assert.NoError(t, err)
 
@@ -836,7 +839,7 @@ func TestPropagateVersion(t *testing.T) {
 
 		chartContent, err := utils.FileRead("myChart/Chart.yaml")
 		assert.NoError(t, err)
-		chartMeta := chart.Metadata{}
+		chartMeta := Metadata{}
 		err = yaml.Unmarshal(chartContent, &chartMeta)
 		assert.NoError(t, err)
 
@@ -851,7 +854,7 @@ func TestPropagateVersion(t *testing.T) {
 			AdditionalTargetDescriptors: []string{"myChart/Chart.yaml"},
 		}
 
-		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		chartMetadata := Metadata{Version: "1.2.3"}
 		content, err := yaml.Marshal(chartMetadata)
 		assert.NoError(t, err)
 
@@ -864,7 +867,7 @@ func TestPropagateVersion(t *testing.T) {
 
 		chartContent, err := utils.FileRead("myChart/Chart.yaml")
 		assert.NoError(t, err)
-		chartMeta := chart.Metadata{}
+		chartMeta := Metadata{}
 		err = yaml.Unmarshal(chartContent, &chartMeta)
 		assert.NoError(t, err)
 
