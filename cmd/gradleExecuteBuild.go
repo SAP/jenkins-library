@@ -209,8 +209,8 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	}
 	pipelineEnv.custom.buildSettingsInfo = buildSettingsInfo
 
-	log.Entry().Info("Publishing of artifacts to staging repository...")
 	if config.Publish {
+		log.Entry().Info("Publishing of artifacts to staging repository...")
 		if err := publishArtifacts(config, utils, pipelineEnv); err != nil {
 			return err
 		}
