@@ -51,7 +51,7 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		outcome = "success"
 	}
 
-	var fatalError map[string]interface{}
+	var fatalError = map[string]interface{}{}
 	rawErrorDetail := log.GetFatalErrorDetail()
 	if ctx.ErrorCode != "0" && rawErrorDetail != nil {
 		// retrieve the error information from the logCollector
