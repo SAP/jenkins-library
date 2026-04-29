@@ -14,8 +14,8 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
+	"go.yaml.in/yaml/v3"
 )
 
 type mtaBuildTestUtilsBundle struct {

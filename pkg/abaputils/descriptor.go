@@ -8,8 +8,6 @@ import (
 	"reflect"
 
 	"errors"
-
-	"github.com/ghodss/yaml"
 )
 
 /*
@@ -109,7 +107,7 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFun
 	}
 
 	var jsonBytes []byte
-	jsonBytes, err = yaml.YAMLToJSON(fileContent)
+	jsonBytes, err = YAMLToJSON(fileContent)
 	if err != nil {
 		return fmt.Errorf("Could not parse %v", FileName)
 	}
