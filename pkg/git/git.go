@@ -1,6 +1,7 @@
 package git
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -210,7 +211,7 @@ func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
 // This workaround is from this issue: https://github.com/go-git/go-git/pull/1982
 func unsetWorktreeConfig(repoPath string) error {
 	configPath := filepath.Join(repoPath, ".git", "config")
-	f, err := os.Open(configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -219,24 +220,19 @@ func unsetWorktreeConfig(repoPath string) error {
 	}
 
 	cfg := gogitconfig.New()
-	if err := gogitconfig.NewDecoder(f).Decode(cfg); err != nil {
-		f.Close()
+	if err := gogitconfig.NewDecoder(bytes.NewReader(data)).Decode(cfg); err != nil {
 		return fmt.Errorf("decoding git config: %w", err)
 	}
-	f.Close()
 
-	if !cfg.Section("extensions").HasOption("worktreeConfig") {
+	section := cfg.Section("extensions")
+	if !section.HasOption("worktreeConfig") {
 		return nil
 	}
-	cfg.Section("extensions").RemoveOption("worktreeConfig")
+	section.RemoveOption("worktreeConfig")
 
-	f, err = os.Create(configPath)
-	if err != nil {
-		return fmt.Errorf("opening git config for writing: %w", err)
-	}
-	defer f.Close()
-	if err := gogitconfig.NewEncoder(f).Encode(cfg); err != nil {
+	var buf bytes.Buffer
+	if err := gogitconfig.NewEncoder(&buf).Encode(cfg); err != nil {
 		return fmt.Errorf("writing git config: %w", err)
 	}
-	return nil
+	return os.WriteFile(configPath, buf.Bytes(), 0644)
 }
