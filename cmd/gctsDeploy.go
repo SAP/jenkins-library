@@ -78,6 +78,11 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	currentBranch := repoMetadataInitState.Result.Branch
 	// If Repository does not exist in the system then Create and Clone Repository
 	if getRepositoryErr != nil || repoMetadataInitState.Result.Rid == "" {
+		// If failOnMissingRepository is set to true, fail the step
+		if config.FailOnMissingRepository {
+			log.Entry().Errorf("Repository %v does not exist in the gCTS backend and failOnMissingRepository is set to true", config.Repository)
+			return fmt.Errorf("repository %v does not exist and failOnMissingRepository is enabled", config.Repository)
+		}
 		// If scope is set for a new repository then creation/cloning of the repository cannot be done
 		if config.Scope != "" {
 			log.Entry().Error("Error during deploy : deploy scope cannot be provided while deploying a new repo")

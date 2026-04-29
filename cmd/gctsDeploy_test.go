@@ -643,6 +643,35 @@ func TestGctsDeployToAbapSystemFailure(t *testing.T) {
 
 }
 
+func TestGctsDeployFailOnMissingRepository(t *testing.T) {
+	t.Run("Parameter is correctly set to true", func(t *testing.T) {
+		config := gctsDeployOptions{
+			Host:                    "http://testHost.com:50000",
+			Client:                  "000",
+			Repository:              "testRepo",
+			Username:                "testUser",
+			Password:                "testPassword",
+			RemoteRepositoryURL:     "http://testRepoUrl.com",
+			FailOnMissingRepository: true,
+		}
+
+		assert.True(t, config.FailOnMissingRepository)
+	})
+
+	t.Run("Parameter is correctly set to false by default", func(t *testing.T) {
+		config := gctsDeployOptions{
+			Host:                "http://testHost.com:50000",
+			Client:              "000",
+			Repository:          "testRepo",
+			Username:            "testUser",
+			Password:            "testPassword",
+			RemoteRepositoryURL: "http://testRepoUrl.com",
+		}
+
+		assert.False(t, config.FailOnMissingRepository)
+	})
+}
+
 func TestGctsSplitConfigurationToMap(t *testing.T) {
 	config := []configMetadata{
 		{
