@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 type githubIssueService interface {

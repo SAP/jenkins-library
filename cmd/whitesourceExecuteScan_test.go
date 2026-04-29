@@ -17,7 +17,7 @@ import (
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 type whitesourceUtilsMock struct {

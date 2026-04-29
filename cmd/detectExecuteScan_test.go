@@ -20,7 +20,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

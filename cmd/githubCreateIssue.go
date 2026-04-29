@@ -8,7 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
-	github "github.com/google/go-github/v68/github"
+	github "github.com/google/go-github/v85/github"
 )
 
 type githubCreateIssueUtils interface {

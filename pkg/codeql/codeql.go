@@ -4,7 +4,7 @@ import (
 	"context"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 type CodeqlScanAudit interface {

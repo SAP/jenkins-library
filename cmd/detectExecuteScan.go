@@ -31,7 +31,7 @@ import (
 
 	"errors"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 const NO_VERSION_SUFFIX = ""
