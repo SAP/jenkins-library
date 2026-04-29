@@ -302,6 +302,33 @@ go 1.17`
 		}
 	})
 
+	t.Run("success - publishes binaries (single arch with dot package)", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:          []string{"linux,amd64"},
+			Output:                       "outputDir",
+			Packages:                     []string{"."},
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: false,
+			TargetRepositoryURL:          "https://my.target.repository.local",
+			TargetRepositoryUser:         "user",
+			TargetRepositoryPassword:     "password",
+			ArtifactVersion:              "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1, len(utils.fileUploads))
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir/module", utils.fileUploads["outputDir/module"])
+		}
+	})
+
 	t.Run("success - create BOM", func(t *testing.T) {
 		config := golangBuildOptions{
 			CreateBOM:           true,
@@ -1030,6 +1057,55 @@ func TestIsMainPackageError(t *testing.T) {
 	ok, err := isMainPackage(utils, "package/foo", []string{})
 	assert.False(t, ok)
 	assert.EqualError(t, err, "some error: some specific error log")
+}
+
+func TestFilterFlagsForGoList(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "passes buildvcs combined form",
+			input:    []string{"-buildvcs=false"},
+			expected: []string{"-buildvcs=false"},
+		},
+		{
+			name:     "passes tags combined form",
+			input:    []string{"-tags=unit"},
+			expected: []string{"-tags=unit"},
+		},
+		{
+			name:     "passes tags two-arg form",
+			input:    []string{"-tags", "unit"},
+			expected: []string{"-tags", "unit"},
+		},
+		{
+			name:     "strips ldflags",
+			input:    []string{"-ldflags=-s -w", "-buildvcs=false"},
+			expected: []string{"-buildvcs=false"},
+		},
+		{
+			name:     "strips gcflags and asmflags",
+			input:    []string{"-gcflags=all=-trimpath", "-asmflags=all=-trimpath", "-mod=vendor"},
+			expected: []string{"-mod=vendor"},
+		},
+		{
+			name:     "empty input",
+			input:    []string{},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := filterFlagsForGoList(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestPrepareGolangEnvironment(t *testing.T) {

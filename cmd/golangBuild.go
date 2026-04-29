@@ -654,12 +654,34 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 	return binaries, outDir, nil
 }
 
+// filterFlagsForGoList returns only the flags from buildFlags that are understood by `go list`.
+// Flags like -ldflags, -gcflags, -asmflags are build-only and cause `go list` to fail.
+func filterFlagsForGoList(buildFlags []string) []string {
+	allowed := []string{"-buildvcs", "-tags", "-mod", "-modfile", "-overlay"}
+	var filtered []string
+	for i := 0; i < len(buildFlags); i++ {
+		flag := buildFlags[i]
+		for _, prefix := range allowed {
+			if strings.HasPrefix(flag, prefix+"=") || flag == prefix {
+				filtered = append(filtered, flag)
+				// two-arg form: `-tags unit` — consume the value token too
+				if flag == prefix && i+1 < len(buildFlags) && !strings.HasPrefix(buildFlags[i+1], "-") {
+					i++
+					filtered = append(filtered, buildFlags[i])
+				}
+				break
+			}
+		}
+	}
+	return filtered
+}
+
 func isMainPackage(utils golangBuildUtils, pkg string, buildFlags []string) (bool, error) {
 	outBuffer := bytes.NewBufferString("")
 	errBuffer := bytes.NewBufferString("")
 	utils.Stdout(outBuffer)
 	utils.Stderr(errBuffer)
-	err := utils.RunExecutable("go", append([]string{"list", "-f", "{{ .Name }}"}, append(buildFlags, pkg)...)...)
+	err := utils.RunExecutable("go", append([]string{"list", "-f", "{{ .Name }}"}, append(filterFlagsForGoList(buildFlags), pkg)...)...)
 	// restore stdout/stderr to log writer after capture so subsequent commands log correctly
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
