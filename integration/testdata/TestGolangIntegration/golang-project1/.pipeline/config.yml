@@ -9,5 +9,5 @@ steps:
     targetArchitectures: 
       - linux,amd64
     output: golang-app
-    packages: 
-      - cmd/server/server.go
+    packages:
+      - ./cmd/server
