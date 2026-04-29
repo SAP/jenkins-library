@@ -30,7 +30,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/xuri/excelize/v2"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 // ScanOptions is just used to make the lines less long

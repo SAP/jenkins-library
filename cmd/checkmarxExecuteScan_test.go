@@ -21,7 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 type fileInfo struct {

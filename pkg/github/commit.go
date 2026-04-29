@@ -3,7 +3,7 @@ package github
 import (
 	"fmt"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 )
 
 // FetchCommitOptions to configure the lookup

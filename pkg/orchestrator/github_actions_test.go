@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v85/github"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
