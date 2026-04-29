@@ -62,7 +62,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/text v0.35.0
 	google.golang.org/api v0.274.0
-	gopkg.in/ini.v1 v1.67.0
+	gopkg.in/ini.v1 v1.67.1
 	helm.sh/helm/v3 v3.20.2
 	mvdan.cc/xurls/v2 v2.4.0
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
