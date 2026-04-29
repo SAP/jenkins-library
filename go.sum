@@ -217,8 +217,8 @@ github.com/buildpacks/imgutil v0.0.0-20230919143643-4ec9360d5f02 h1:Ac/FoFzAhz34
 github.com/buildpacks/imgutil v0.0.0-20230919143643-4ec9360d5f02/go.mod h1:Ade+4Q1OovFw6Zdzd+/UVaqWptZSlpnZ8n/vlkgS7M8=
 github.com/buildpacks/lifecycle v0.18.5 h1:lfoUX8jYCUZ2/Tr2AopaRjinqDivkNkcTChzysQTo00=
 github.com/buildpacks/lifecycle v0.18.5/go.mod h1:Kvuu9IWABPLXc6yHCMtbdmgrGEi7QEiVzi5GGtcAkW0=
-github.com/cdevents/sdk-go v0.4.1 h1:Cr/iH/I51Z+slxKRx9AV7stn6hr2pjRHQ5wpPJhRLTU=
-github.com/cdevents/sdk-go v0.4.1/go.mod h1:3IhWLoY4vsyUEzv7XJbyr0BRQ0KPgvNx+wiD2hQGFNU=
+github.com/cdevents/sdk-go v0.5.0 h1:DLEadQBBxSHAhdbSJL4LdM/ES4tAt8lmlGY1Rxqtt+Y=
+github.com/cdevents/sdk-go v0.5.0/go.mod h1:kXb/bQX7SfJrAVr62GTuQnITWLHeEg+sRB3zlhQK5Lw=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
