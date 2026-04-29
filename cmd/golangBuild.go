@@ -562,6 +562,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	buildOptions := []string{"build", "-trimpath"}
 
 	if len(config.Output) > 0 {
+		// Call getOutputBinaries for multi-package builds and for single-package single-arch builds.
+		// Single-package multi-arch is excluded: each arch pass produces one binary named output-os.arch,
+		// which is handled by the else branch below.
 		if len(config.Packages) > 0 && (len(config.Packages) > 1 || !multipleArchitectures) {
 			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags, path.Base(goModFile.Module.Mod.Path))
 			if err != nil {
@@ -657,15 +660,38 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 // filterFlagsForGoList returns only the flags from buildFlags that are understood by `go list`.
 // Flags like -ldflags, -gcflags, -asmflags are build-only and cause `go list` to fail.
 func filterFlagsForGoList(buildFlags []string) []string {
-	allowed := []string{"-buildvcs", "-tags", "-mod", "-modfile", "-overlay"}
+	// Boolean flags: standalone (-buildvcs) or combined (-buildvcs=false); never followed by a separate value token.
+	boolFlags := []string{"-buildvcs"}
+	// Value flags: combined (-tags=unit) or two-arg (-tags unit); the value token is consumed unconditionally
+	// because values can start with '-' (e.g. -tags=-race, -modfile=-backup.mod).
+	valueFlags := []string{"-tags", "-mod", "-modfile", "-overlay"}
+
 	var filtered []string
 	for i := 0; i < len(buildFlags); i++ {
 		flag := buildFlags[i]
-		for _, prefix := range allowed {
-			if strings.HasPrefix(flag, prefix+"=") || flag == prefix {
+		matched := false
+
+		for _, prefix := range boolFlags {
+			if flag == prefix || strings.HasPrefix(flag, prefix+"=") {
 				filtered = append(filtered, flag)
-				// two-arg form: `-tags unit` — consume the value token too
-				if flag == prefix && i+1 < len(buildFlags) && !strings.HasPrefix(buildFlags[i+1], "-") {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			continue
+		}
+
+		for _, prefix := range valueFlags {
+			if strings.HasPrefix(flag, prefix+"=") {
+				filtered = append(filtered, flag)
+				break
+			}
+			if flag == prefix {
+				filtered = append(filtered, flag)
+				// Two-arg form: always consume the next token as the value.
+				// Values can start with '-' (e.g. -tags=-race), so we do not check the prefix.
+				if i+1 < len(buildFlags) {
 					i++
 					filtered = append(filtered, buildFlags[i])
 				}

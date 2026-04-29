@@ -997,7 +997,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"."}, utils, architecture, false, []string{}, "golang-hello-world")
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"."}, utils, architecture, false, nil, "golang-hello-world")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/golang-hello-world"}, binaries)
@@ -1011,7 +1011,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{}, "testBinary")
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, nil, "testBinary")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg"}, binaries)
@@ -1025,7 +1025,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true, []string{}, "testBinary")
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true, nil, "testBinary")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir-linux-amd64/", outDir)
 		assert.Equal(t, []string{"outputDir-linux-amd64/somePkg"}, binaries)
@@ -1039,7 +1039,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, []string{}, "testBinary")
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, nil, "testBinary")
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg.exe"}, binaries)
@@ -1054,7 +1054,7 @@ func TestIsMainPackageError(t *testing.T) {
 	utils.StdoutReturn = map[string]string{
 		"go list -f {{ .Name }} package/foo": "some specific error log",
 	}
-	ok, err := isMainPackage(utils, "package/foo", []string{})
+	ok, err := isMainPackage(utils, "package/foo", nil)
 	assert.False(t, ok)
 	assert.EqualError(t, err, "some error: some specific error log")
 }
@@ -1073,6 +1073,11 @@ func TestFilterFlagsForGoList(t *testing.T) {
 			expected: []string{"-buildvcs=false"},
 		},
 		{
+			name:     "passes buildvcs standalone (boolean, no value token)",
+			input:    []string{"-buildvcs"},
+			expected: []string{"-buildvcs"},
+		},
+		{
 			name:     "passes tags combined form",
 			input:    []string{"-tags=unit"},
 			expected: []string{"-tags=unit"},
@@ -1081,6 +1086,16 @@ func TestFilterFlagsForGoList(t *testing.T) {
 			name:     "passes tags two-arg form",
 			input:    []string{"-tags", "unit"},
 			expected: []string{"-tags", "unit"},
+		},
+		{
+			name:     "passes tags two-arg form with dash-prefixed value",
+			input:    []string{"-tags", "-race"},
+			expected: []string{"-tags", "-race"},
+		},
+		{
+			name:     "passes modfile two-arg form with dash-prefixed value",
+			input:    []string{"-modfile", "-backup.mod"},
+			expected: []string{"-modfile", "-backup.mod"},
 		},
 		{
 			name:     "strips ldflags",
@@ -1093,8 +1108,18 @@ func TestFilterFlagsForGoList(t *testing.T) {
 			expected: []string{"-mod=vendor"},
 		},
 		{
+			name:     "mixed: strips build-only, keeps list-compatible",
+			input:    []string{"-ldflags=-s", "-tags", "-race", "-gcflags=x", "-buildvcs=false"},
+			expected: []string{"-tags", "-race", "-buildvcs=false"},
+		},
+		{
+			name:     "tags standalone at end of slice (no value token)",
+			input:    []string{"-tags"},
+			expected: []string{"-tags"},
+		},
+		{
 			name:     "empty input",
-			input:    []string{},
+			input:    nil,
 			expected: nil,
 		},
 	}
