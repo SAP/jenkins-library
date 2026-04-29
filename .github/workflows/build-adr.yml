@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "14"
+          node-version: "24"
       - name: Install Log4brains And Build ADRs
         run: |
           npm install -g log4brains
