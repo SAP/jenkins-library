@@ -139,7 +139,7 @@ jobs:
           done
       - name: Notify Piper team on failure or cancelled
         if: steps.smtp_secrets.conclusion == 'success'
-        uses: dawidd6/action-send-mail@v3
+        uses: dawidd6/action-send-mail@v17
         with:
           connection_url: ${{ env.smtp_url }}
           subject: Workflow failure in ${{ github.repository }}
