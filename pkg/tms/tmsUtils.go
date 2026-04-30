@@ -12,8 +12,8 @@ import (
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/ghodss/yaml"
 	"github.com/sirupsen/logrus"
+	"go.yaml.in/yaml/v3"
 )
 
 type TmsUtils interface {

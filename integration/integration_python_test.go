@@ -9,6 +9,7 @@ package main
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
@@ -28,7 +29,7 @@ func TestPythonIntegrationBuildProject(t *testing.T) {
 
 	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/python -m build --no-isolation")
 	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore cyclonedx-bom==")
-	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4 --pyproject pyproject.toml")
+	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version "+cmd.CycloneDxSchemaVersion+" --pyproject pyproject.toml")
 	assert.Contains(output, "info  pythonBuild - SUCCESS")
 
 	assert.FileExists(container,
@@ -48,13 +49,18 @@ func TestPythonIntegrationBuildWithBOMValidation(t *testing.T) {
 	})
 
 	output := RunPiper(t, container, "/python-project", "pythonBuild")
-	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4 --pyproject pyproject.toml")
+	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version "+cmd.CycloneDxSchemaVersion+" --pyproject pyproject.toml")
 	assert.Contains(output, "info  pythonBuild - SUCCESS")
 
 	// Read BOM content and validate
 	bomContent := ReadFile(t, container, "/python-project/bom-pip.xml")
 	err := piperutils.ValidateBOM(bomContent)
 	assert.NoError(err, "BOM validation should pass for Python project with valid metadata")
+
+	// Verify BOM references correct CycloneDX schema version
+	schemaVersion, err := piperutils.GetBomSchemaVersionFromContent(bomContent)
+	assert.NoError(err, "bom-pip.xml should contain the CycloneDX schema version")
+	assert.Equal(schemaVersion, cmd.CycloneDxSchemaVersion, "bom-pip.xml should reference CycloneDX schema version "+cmd.CycloneDxSchemaVersion)
 }
 
 func TestPythonIntegrationBuildLegacy(t *testing.T) {
@@ -78,6 +84,11 @@ func TestPythonIntegrationBuildLegacy(t *testing.T) {
 	err := piperutils.ValidateBOM(bomContent)
 	assert.Error(err, "BOM validation should fail for legacy Python project without metadata")
 	assert.Regexp("metadata\\.component\\.(name|purl)", err.Error())
+
+	// Verify BOM references correct CycloneDX schema version
+	schemaVersion, err := piperutils.GetBomSchemaVersionFromContent(bomContent)
+	assert.NoError(err, "bom-pip.xml should contain the CycloneDX schema version")
+	assert.Equal(schemaVersion, cmd.CycloneDxSchemaVersion, "bom-pip.xml should reference CycloneDX schema version "+cmd.CycloneDxSchemaVersion)
 }
 
 func TestPythonIntegrationBuildMinimal(t *testing.T) {
@@ -95,7 +106,7 @@ func TestPythonIntegrationBuildMinimal(t *testing.T) {
 	// Should build using python -m build (modern approach)
 	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/python -m build --no-isolation")
 	// Should generate BOM without --pyproject flag (no [project] metadata)
-	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version 1.4")
+	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/cyclonedx-py env --output-file bom-pip.xml --output-format XML --spec-version "+cmd.CycloneDxSchemaVersion)
 	assert.NotContains(output, "--pyproject")
 	assert.Contains(output, "info  pythonBuild - SUCCESS")
 
@@ -107,4 +118,9 @@ func TestPythonIntegrationBuildMinimal(t *testing.T) {
 	err := piperutils.ValidateBOM(bomContent)
 	assert.Error(err, "BOM validation should fail for minimal Python project without metadata")
 	assert.Regexp("metadata\\.component\\.(name|purl)", err.Error())
+
+	// Verify BOM references correct CycloneDX schema version
+	schemaVersion, err := piperutils.GetBomSchemaVersionFromContent(bomContent)
+	assert.NoError(err, "bom-pip.xml should contain the CycloneDX schema version")
+	assert.Equal(schemaVersion, cmd.CycloneDxSchemaVersion, "bom-pip.xml should reference CycloneDX schema version "+cmd.CycloneDxSchemaVersion)
 }

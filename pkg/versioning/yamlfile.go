@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 // YAMLDescriptor holds the unique identifier combination for an artifact

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 // PipelineDefaults defines the structure of the pipeline defaults
 type PipelineDefaults struct {
-	Defaults []Config `json:"defaults"`
+	Defaults []Config `json:"defaults" yaml:"defaults"`
 }
 
 // ReadPipelineDefaults loads defaults and returns its content
