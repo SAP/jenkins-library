@@ -48,7 +48,7 @@ func initGcsClient(ctx context.Context, keyFile, token string, opts ...option.Cl
 
 var (
 	initWithKeyFile = func(ctx context.Context, keyFile string, opts ...option.ClientOption) (*storage.Client, error) {
-		o := append([]option.ClientOption{option.WithCredentialsFile(keyFile)}, opts...)
+		o := append([]option.ClientOption{option.WithAuthCredentialsFile(option.ServiceAccount, keyFile)}, opts...)
 		return storage.NewClient(ctx, o...)
 	}
 	initWithToken = func(ctx context.Context, token string, opts ...option.ClientOption) (*storage.Client, error) {

@@ -51,7 +51,9 @@ type kubernetesDeployOptions struct {
 	Namespace                  string            `json:"namespace,omitempty"`
 	TillerNamespace            string            `json:"tillerNamespace,omitempty"`
 	DockerConfigJSON           string            `json:"dockerConfigJSON,omitempty"`
-	DeployCommand              string            `json:"deployCommand,omitempty" validate:"possible-values=apply replace"`
+	DeployCommand              string            `json:"deployCommand,omitempty" validate:"possible-values=apply replace setImage"`
+	ContainerName              string            `json:"containerName,omitempty"`
+	ContainerNames             []string          `json:"containerNames,omitempty"`
 	SetupScript                string            `json:"setupScript,omitempty"`
 	VerificationScript         string            `json:"verificationScript,omitempty"`
 	TeardownScript             string            `json:"teardownScript,omitempty"`
@@ -79,7 +81,7 @@ func KubernetesDeployCommand() *cobra.Command {
     Currently the following are supported:
 
     * [Helm](https://helm.sh/) command line tool and [Helm Charts](https://docs.helm.sh/developing_charts/#charts).
-    * [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and ` + "`" + `kubectl apply` + "`" + ` command.
+    * [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/) and ` + "`" + `kubectl apply` + "`" + `, ` + "`" + `kubectl replace` + "`" + `, and ` + "`" + `kubectl set image` + "`" + ` command.
 
 ## Helm
 Following helm command will be executed by default:
@@ -90,7 +92,42 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 
 * ` + "`" + `yourRegistry` + "`" + ` will be retrieved from ` + "`" + `containerRegistryUrl` + "`" + `
 * ` + "`" + `yourImageName` + "`" + `, ` + "`" + `yourImageTag` + "`" + ` will be retrieved from ` + "`" + `image` + "`" + `
-* ` + "`" + `dockerSecret` + "`" + ` will be calculated with a call to ` + "`" + `kubectl create secret generic <containerRegistrySecret> --from-file=.dockerconfigjson=<dockerConfigJson> --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json` + "`" + ``,
+* ` + "`" + `dockerSecret` + "`" + ` will be calculated with a call to ` + "`" + `kubectl create secret generic <containerRegistrySecret> --from-file=.dockerconfigjson=<dockerConfigJson> --type=kubernetes.io/dockerconfigjson --insecure-skip-tls-verify=true --dry-run=client --output=json` + "`" + `
+
+## Kubectl
+The kubectl deploy tool supports three commands via the ` + "`" + `deployCommand` + "`" + ` parameter:
+
+### kubectl apply
+Applies a Kubernetes manifest template defined via ` + "`" + `appTemplate` + "`" + `:
+
+` + "`" + `` + "`" + `` + "`" + `
+kubectl --insecure-skip-tls-verify=<insecureSkipTLSVerify> apply --filename <appTemplate> --namespace <namespace>
+` + "`" + `` + "`" + `` + "`" + `
+
+### kubectl replace
+Replaces resources defined in the manifest template:
+
+` + "`" + `` + "`" + `` + "`" + `
+kubectl --insecure-skip-tls-verify=<insecureSkipTLSVerify> replace --filename <appTemplate> --namespace <namespace> --force
+` + "`" + `` + "`" + `` + "`" + `
+
+### kubectl set image
+Updates a container image in an existing deployment without requiring an ` + "`" + `appTemplate` + "`" + `:
+
+**Single image:**
+
+` + "`" + `` + "`" + `` + "`" + `
+kubectl set image deployment/<deploymentName> <containerName>=<containerRegistryUrl>/<containerImageName>:<containerImageTag> --namespace <namespace>
+` + "`" + `` + "`" + `` + "`" + `
+
+**Multiple images:**
+
+` + "`" + `` + "`" + `` + "`" + `
+kubectl set image deployment/<deploymentName> <containerNames[0]>=<imageNameTags[0]> <containerNames[1]>=<imageNameTags[1]> ... --namespace <namespace>
+` + "`" + `` + "`" + `` + "`" + `
+
+* For single image updates, use ` + "`" + `containerName` + "`" + `, ` + "`" + `containerImageName` + "`" + `, and ` + "`" + `containerImageTag` + "`" + `.
+* For multi-image updates, use ` + "`" + `containerNames` + "`" + ` together with ` + "`" + `imageNames` + "`" + ` and ` + "`" + `imageNameTags` + "`" + `.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -188,8 +225,8 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+				if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) > 0 {
+					if err := eventing.PublishTaskRunFinishedEvent(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
@@ -228,7 +265,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
-	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
+	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`. Also required when `deployCommand:setImage`, where it specifies the Kubernetes deployment resource to update (used as `deployment/<deploymentName>`).")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Adds `--force` flag to a helm resource update command or to a kubectl replace command. It is enabled by default and this can cause race conditions, blocked deletions or lost in-cluster state. If it's not a required behavior, then disable it.")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
@@ -239,7 +276,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageNames, "imageNames", []string{}, "List of names of the images to be deployed.")
-	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "List of full names (registry and tag) of the images to be deployed.")
+	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "List of full names (name and tag) of the images to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageDigests, "imageDigests", []string{}, "List of image digests of the images to be deployed, in the format `sha256:<hash>`. If provided, image digests will be appended to the image tag, e.g. `<repository>/<name>:<tag>@<digest>`")
 	cmd.Flags().StringSliceVar(&stepConfig.IngressHosts, "ingressHosts", []string{}, "(Deprecated) List of ingress hosts to be exposed via helm deployment.")
 	cmd.Flags().BoolVar(&stepConfig.KeepFailedDeployments, "keepFailedDeployments", false, "Defines whether a failed deployment will be purged")
@@ -251,7 +288,9 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", `.pipeline/docker/config.json`, "Docker registry authentication (config.json) handling:\n\n1. If a Vault secret (default name: docker-config) exists with the required key, its content is copied to:\n   .pipeline/docker/config.json (this path is used as the parameter value).\n2. Usage by deploy tool:\n   - deployTool: kubectl\n     The file is read to create (or reuse) a Kubernetes Secret of type kubernetes.io/dockerconfigjson.\n   - deployTool: helm\n     The base64 content is passed as Helm value secret.dockerconfigjson. Your Helm chart MUST template a Secret using these values.\n3. Helm chart requirement:\n   Provide a template that creates the secret (e.g. templates/secret.yaml) and reference it in workload specs (Deployment/StatefulSet/etc.) via imagePullSecrets so pods can pull images.\n\nExample Helm templates:\n\ntemplates/secret.yaml:\n  {{`{{- if and .Values.secret.enabled (ne .Values.secret.name \\\"\\\") -}}`}}\n  apiVersion: v1\n  kind: Secret\n  metadata:\n    name: {{`{{ .Values.secret.name }}`}}\n  type: kubernetes.io/dockerconfigjson\n  data:\n    .dockerconfigjson: {{`{{ .Values.secret.dockerconfigjson | quote }}`}}\n  {{`{{- end }}`}}\n\ntemplates/deployment.yaml (excerpt):\n  spec:\n    template:\n      spec:\n        imagePullSecrets:\n          - name: {{`{{ .Values.secret.name }}`}}\n\nMore details about Docker credentials: https://docs.docker.com/engine/reference/commandline/login/")
-	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "Only for `deployTool: kubectl`: defines the command `apply` or `replace`. The default is `apply`.")
+	cmd.Flags().StringVar(&stepConfig.DeployCommand, "deployCommand", `apply`, "Only for `deployTool: kubectl`: defines the command `apply`, `replace`, or `setImage`. The default is `apply`. When using `setImage`, the step executes `kubectl set image` to update a container image in an existing deployment without requiring an appTemplate.")
+	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "Only for `deployCommand: setImage` with a single image: Defines the name of the container in the Kubernetes deployment resource whose image should be updated. Used in `kubectl set image deployment/<deploymentName> <containerName>=<containerRegistry>/<containerImageName>:<containerImageTag>`. Must be used together with `containerImageName` and `containerImageTag`. For multiple images, use `containerNames` instead.")
+	cmd.Flags().StringSliceVar(&stepConfig.ContainerNames, "containerNames", []string{}, "Only for `deployCommand: setImage` with multiple images: List of container names in the Kubernetes deployment whose images should be updated. Must be used together with `imageNameTags` and `imageNames`. The number of entries must match the number of `imageNameTags`. Each `containerNames[i]` is mapped to `imageNameTags[i]`.")
 	cmd.Flags().StringVar(&stepConfig.SetupScript, "setupScript", os.Getenv("PIPER_setupScript"), "HTTP location of setup script")
 	cmd.Flags().StringVar(&stepConfig.VerificationScript, "verificationScript", os.Getenv("PIPER_verificationScript"), "HTTP location of verification script")
 	cmd.Flags().StringVar(&stepConfig.TeardownScript, "teardownScript", os.Getenv("PIPER_teardownScript"), "HTTP location of teardown script")
@@ -705,6 +744,24 @@ func kubernetesDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `apply`,
+					},
+					{
+						Name:        "containerName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerName"),
+					},
+					{
+						Name:        "containerNames",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "setupScript",
