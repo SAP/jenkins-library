@@ -60,7 +60,7 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		}
 	}
 
-	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]interface{}{
+	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]any{
 		"taskName":      ctx.StepName,
 		"stageName":     ctx.StageName,
 		"outcome":       outcome,
