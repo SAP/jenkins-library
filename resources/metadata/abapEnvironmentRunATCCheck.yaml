@@ -163,6 +163,66 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: url
+        type: string
+        description: BTP CLI API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        aliases:
+          - name: btp/url
+      - name: subdomain
+        type: string
+        description: BTP Global Account subdomain
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        aliases:
+          - name: btp/subdomain
+      - name: subaccount
+        type: string
+        description: BTP Subaccount name
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        aliases:
+          - name: btp/subaccount
+      - name: idp
+        type: string
+        description: BTP Identity Provider
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        aliases:
+          - name: btp/idp
+      - name: serviceInstanceName
+        type: string
+        description: BTP service instance name
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        aliases:
+          - name: btp/instanceName
+      - name: serviceBindingName
+        type: string
+        description: BTP service binding name
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        aliases:
+          - name: btp/bindingName
   containers:
     - name: cf
       image: ppiper/cf-cli:latest

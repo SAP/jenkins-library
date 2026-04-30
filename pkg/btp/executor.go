@@ -66,7 +66,9 @@ func handleInitialCheck(e *Executor, opts RunSyncOptions) error {
 	}
 
 	if errorData.Error == "Conflict" {
-		return errors.Wrap(errors.New(errorData.Description), "command returned a conflict error.")
+		//return errors.Wrap(errors.New(errorData.Description), "command returned a conflict error.")
+		log.Entry().Infof("Conflict detected and ignored as it is the first call : %s", errorData.Description)
+		return nil
 	} else {
 		if !opts.IgnoreErrorOnFirstCall {
 			return errors.Wrap(err, "failed to execute BTP CLI (Sync)")

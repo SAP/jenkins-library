@@ -4,16 +4,18 @@ import com.sap.piper.ConfigurationHelper
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
-@Field Set GENERAL_CONFIG_KEYS = [
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STAGE_STEP_KEYS = [
     /** Deletes a SAP BTP ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryDeleteService',
+    /** Deletes a BTP service instance */
+    'btpDeleteServiceInstance',
     /** If set to true, a confirmation is required to delete the system in case the pipeline was not successful */
     'confirmDeletion',
     /** If set to true, the system is never deleted */
     'debug'
 ]
-@Field Set STAGE_STEP_KEYS = GENERAL_CONFIG_KEYS
-@Field Set STEP_CONFIG_KEYS = STAGE_STEP_KEYS
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 /**
  * This stage cleans up the ABAP Environment Pipeline run
@@ -39,7 +41,12 @@ void call(Map parameters = [:]) {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
             if (!config.debug) {
-                cloudFoundryDeleteService script: parameters.script
+                if (config.subdomain && config.subaccount) {
+                    btpDeleteServiceInstance script: parameters.script
+                } else {
+                    // Cloud Foundry path: Use existing cleanup
+                    cloudFoundryDeleteService script: parameters.script
+                }
             }
         }
     }

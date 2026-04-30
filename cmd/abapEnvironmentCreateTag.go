@@ -176,5 +176,13 @@ func convertTagConfig(config *abapEnvironmentCreateTagOptions) abaputils.AbapEnv
 	subOptions.Password = config.Password
 	subOptions.Username = config.Username
 
+	// BTP configuration
+	subOptions.URL = config.Url
+	subOptions.Subdomain = config.Subdomain
+	subOptions.Subaccount = config.Subaccount
+	subOptions.Idp = config.Idp
+	subOptions.ServiceInstanceName = config.ServiceInstanceName
+	subOptions.ServiceBindingName = config.ServiceBindingName
+
 	return subOptions
 }
