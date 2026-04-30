@@ -29,15 +29,16 @@ import (
 )
 
 const (
-	coverageFile                = "cover.out"
-	golangUnitTestOutput        = "TEST-go.xml"
-	golangIntegrationTestOutput = "TEST-integration.xml"
-	unitJsonReport              = "unit-report.out"
-	integrationJsonReport       = "integration-report.out"
-	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
-	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0"
-	sbomFilename                = "bom-golang.xml"
+	coverageFile                 = "cover.out"
+	golangUnitTestOutput         = "TEST-go.xml"
+	golangIntegrationTestOutput  = "TEST-integration.xml"
+	unitJsonReport               = "unit-report.out"
+	integrationJsonReport        = "integration-report.out"
+	golangCoberturaPackage       = "github.com/boumenot/gocover-cobertura@latest"
+	golangTestsumPackage         = "gotest.tools/gotestsum@latest"
+	GolangCycloneDXPackage       = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.10.0"
+	sbomFilename                 = "bom-golang.xml"
+	GolangCycloneDxSchemaVersion = "1.4"
 )
 
 type golangBuildUtils interface {
@@ -143,7 +144,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
+		if err := utils.RunExecutable("go", "install", GolangCycloneDXPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -614,7 +615,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", GolangCycloneDxSchemaVersion); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
