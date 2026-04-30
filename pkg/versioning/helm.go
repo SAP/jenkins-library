@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ghodss/yaml"
-	"helm.sh/helm/v3/pkg/chart"
+	"go.yaml.in/yaml/v3"
 )
 
 // JSONfile defines an artifact using a json file for versioning
 type HelmChart struct {
 	path             string
-	metadata         chart.Metadata
+	metadata         Metadata
 	utils            Utils
 	updateAppVersion bool
 }

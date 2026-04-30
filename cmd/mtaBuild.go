@@ -28,7 +28,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 const templateMtaYml = `_schema-version: "3.1"

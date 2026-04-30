@@ -250,7 +250,7 @@ func TestWriteManifest(t *testing.T) {
 	})
 
 	t.Run("Check content", func(t *testing.T) {
-		assert.Equal(t, "applications:\n- buildpack: sap_java_buildpack\n  name: manifestAppName\n  no-route: true\n", _content)
+		assert.Equal(t, "applications:\n    - buildpack: sap_java_buildpack\n      name: manifestAppName\n      no-route: true\n", _content)
 	})
 }
 
