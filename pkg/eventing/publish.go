@@ -51,12 +51,11 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		outcome = "success"
 	}
 
-	var fatalError = map[string]interface{}{}
+	var fatalError = map[string]any{}
 	rawErrorDetail := log.GetFatalErrorDetail()
 	if ctx.ErrorCode != "0" && rawErrorDetail != nil {
 		// retrieve the error information from the logCollector
-		err := json.Unmarshal(rawErrorDetail, &fatalError)
-		if err != nil {
+		if err := json.Unmarshal(rawErrorDetail, &fatalError); err != nil {
 			log.Entry().WithError(err).Warn("could not unmarshal fatal error struct")
 		}
 	}
