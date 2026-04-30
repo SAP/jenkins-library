@@ -1,14 +1,17 @@
 package git
 
 import (
-	"fmt"
-	"time"
-
+	"bytes"
 	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	gogitconfig "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
@@ -197,5 +200,39 @@ func (abstractionGit) plainClone(path string, isBare bool, o *git.CloneOptions) 
 }
 
 func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
+	if err := unsetWorktreeConfig(path); err != nil {
+		return nil, fmt.Errorf("unsetting extensions.worktreeConfig: %w", err)
+	}
 	return git.PlainOpen(path)
+}
+
+// Workaround for go-git v1.17.0+ rejecting the 'worktreeconfig' extension
+// Equivalent to running 'git config --unset extensions.worktreeConfig'
+// This workaround is from this issue: https://github.com/go-git/go-git/pull/1982
+func unsetWorktreeConfig(repoPath string) error {
+	configPath := filepath.Join(repoPath, ".git", "config")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("opening git config: %w", err)
+	}
+
+	cfg := gogitconfig.New()
+	if err := gogitconfig.NewDecoder(bytes.NewReader(data)).Decode(cfg); err != nil {
+		return fmt.Errorf("decoding git config: %w", err)
+	}
+
+	section := cfg.Section("extensions")
+	if !section.HasOption("worktreeConfig") {
+		return nil
+	}
+	section.RemoveOption("worktreeConfig")
+
+	var buf bytes.Buffer
+	if err := gogitconfig.NewEncoder(&buf).Encode(cfg); err != nil {
+		return fmt.Errorf("writing git config: %w", err)
+	}
+	return os.WriteFile(configPath, buf.Bytes(), 0644)
 }

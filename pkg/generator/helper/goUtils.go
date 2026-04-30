@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 // StepHelperData is used to transport the needed parameters and functions from the step generator to the step generation.
@@ -17,22 +17,22 @@ type StepHelperData struct {
 
 // ContextDefaultData holds the meta data and the default data for the context default parameter descriptions
 type ContextDefaultData struct {
-	Metadata   ContextDefaultMetadata     `json:"metadata"`
-	Parameters []ContextDefaultParameters `json:"params"`
+	Metadata   ContextDefaultMetadata     `json:"metadata" yaml:"metadata"`
+	Parameters []ContextDefaultParameters `json:"params" yaml:"params"`
 }
 
 // ContextDefaultMetadata holds meta data for the context default parameter descripten (name, description, long description)
 type ContextDefaultMetadata struct {
-	Name            string `json:"name"`
-	Description     string `json:"description"`
-	LongDescription string `json:"longDescription,omitempty"`
+	Name            string `json:"name" yaml:"name"`
+	Description     string `json:"description" yaml:"description"`
+	LongDescription string `json:"longDescription,omitempty" yaml:"longDescription,omitempty"`
 }
 
 // ContextDefaultParameters holds the description for the context default parameters
 type ContextDefaultParameters struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Scope       []string `json:"scope"`
+	Name        string   `json:"name" yaml:"name"`
+	Description string   `json:"description" yaml:"description"`
+	Scope       []string `json:"scope" yaml:"scope"`
 }
 
 // ReadPipelineContextDefaultData loads step definition in yaml format
