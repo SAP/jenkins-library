@@ -69,6 +69,11 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				buildTool: "cnbBuild",
 				expected:  "{\"cnbBuild\":[{\"dockerImage\":\"builder:latest\"}]}",
 			},
+			{
+				config:    BuildOptions{DockerImage: "docker:latest"},
+				buildTool: "dockerBuild",
+				expected:  "{\"dockerBuild\":[{\"dockerImage\":\"docker:latest\"}]}",
+			},
 		}
 
 		for _, testCase := range testTableConfig {
