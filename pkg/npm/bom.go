@@ -144,7 +144,7 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 	// Primary attempt with cyclonedx-npm
 	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", tmpInstallFolder}
-	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", CycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
+	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", CycloneDxSchemaVersion, "--omit", "dev", "--omit", "optional", "--output-file"}
 
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles)
 	if err != nil {
