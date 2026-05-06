@@ -2,6 +2,9 @@
 
 ## ${docGenDescription}
 
+> **Note:** For pipelines running on **GitHub Actions**, consider using the [`dockerBuild`](dockerBuild.md) step instead.
+> It uses Docker BuildKit natively and does not require a Kaniko sidecar container.
+
 ## Prerequisites
 
 When pushing to a container registry, you need to maintain the respective credentials in your Jenkins credentials store:
