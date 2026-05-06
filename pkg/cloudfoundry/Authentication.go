@@ -15,7 +15,9 @@ func (cf *CFUtils) LoginCheck(options LoginOptions) (bool, error) {
 }
 
 // Login logs user in to Cloud Foundry via cf cli.
-// Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
+// Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters.
+// If ClientID and ClientSecret are provided, client credentials flow is used instead:
+// cf api → cf auth --client-credentials → cf target
 func (cf *CFUtils) Login(options LoginOptions) error {
 	var err error
 
@@ -25,8 +27,17 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 		_c = &command.Command{}
 	}
 
-	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
-		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
+	// Decide authentication flow
+	useClientCredentials := options.ClientID != "" && options.ClientSecret != ""
+
+	if useClientCredentials {
+		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" {
+			return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org and Space for client credentials login"))
+		}
+	} else {
+		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
+			return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
+		}
 	}
 
 	var loggedIn bool
@@ -39,19 +50,31 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 
 	if err == nil {
 		log.Entry().Info("Logging in to Cloud Foundry")
-
-		var cfLoginScript = append([]string{
-			"login",
-			"-a", options.CfAPIEndpoint,
-			"-o", options.CfOrg,
-			"-s", options.CfSpace,
-			"-u", options.Username,
-			"-p", options.Password,
-		}, options.CfLoginOpts...)
-
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
-		err = _c.RunExecutable("cf", cfLoginScript...)
+		if useClientCredentials {
+			// Step 1: set API endpoint
+			err = _c.RunExecutable("cf", "api", options.CfAPIEndpoint)
+			if err == nil {
+				// Step 2: authenticate with client credentials
+				authArgs := append([]string{"auth", options.ClientID, options.ClientSecret, "--client-credentials"}, options.CfLoginOpts...)
+				err = _c.RunExecutable("cf", authArgs...)
+			}
+			if err == nil {
+				// Step 3: target org and space
+				err = _c.RunExecutable("cf", "target", "-o", options.CfOrg, "-s", options.CfSpace)
+			}
+		} else {
+			var cfLoginScript = append([]string{
+				"login",
+				"-a", options.CfAPIEndpoint,
+				"-o", options.CfOrg,
+				"-s", options.CfSpace,
+				"-u", options.Username,
+				"-p", options.Password,
+			}, options.CfLoginOpts...)
+			err = _c.RunExecutable("cf", cfLoginScript...)
+		}
 	}
 
 	if err != nil {
@@ -92,7 +115,11 @@ type LoginOptions struct {
 	CfSpace       string
 	Username      string
 	Password      string
-	CfLoginOpts   []string
+	// ClientID and ClientSecret enable XSUAA client credentials authentication.
+	// When both are set, 'cf auth --client-credentials' is used instead of 'cf login'.
+	ClientID     string
+	ClientSecret string
+	CfLoginOpts  []string
 }
 
 // CFUtils ...
