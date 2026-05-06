@@ -38,6 +38,8 @@ func TestBom(t *testing.T) {
 			CycloneDxSchemaVersion,
 			"--omit",
 			"dev",
+			"--omit",
+			"optional",
 			"--output-file",
 		}
 
@@ -86,6 +88,7 @@ func TestBom(t *testing.T) {
 			"--output-format", "XML",
 			"--spec-version", CycloneDxSchemaVersion,
 			"--omit", "dev",
+			"--omit", "optional",
 			"--output-file", "bom-npm.xml",
 			"package.json",
 		}, " ")
