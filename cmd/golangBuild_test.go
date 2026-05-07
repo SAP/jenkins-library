@@ -1013,6 +1013,38 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		_, err := runGolangBuildPerArchitecture(&config, nil, utils, ldflags, architecture, false)
 		assert.EqualError(t, err, "go.mod not found: cannot determine default binary name")
 	})
+
+	t.Run("failure - go list error propagated from getOutputBinaries", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"go list -f {{ .Name }} ./cmd/somePkg": errors.New("go list error"),
+		}
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "error detail",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
+		assert.EqualError(t, err, "failed to calculate output binaries or directory: go list error: error detail")
+	})
+
+	t.Run("failure - nil goModFile with dot package", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"."}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		_, err := runGolangBuildPerArchitecture(&config, nil, utils, ldflags, architecture, false)
+		assert.EqualError(t, err, "failed to calculate output binaries or directory: cannot determine binary name for package '.': go.mod not found or has no module declaration")
+	})
 }
 
 func TestGetOutputBinaries(t *testing.T) {
@@ -1128,6 +1160,7 @@ func TestGetOutputBinaries(t *testing.T) {
 }
 
 func TestIsMainPackageError(t *testing.T) {
+	t.Parallel()
 	utils := newGolangBuildTestsUtils()
 	utils.ShouldFailOnCommand = map[string]error{
 		"go list -f {{ .Name }} package/foo": errors.New("some error"),
@@ -1202,6 +1235,16 @@ func TestFilterFlagsForGoList(t *testing.T) {
 			name:     "tags standalone at end of slice (no value token)",
 			input:    []string{"-tags"},
 			expected: []string{"-tags"},
+		},
+		{
+			name:     "mod standalone at end of slice (no value token)",
+			input:    []string{"-mod"},
+			expected: []string{"-mod"},
+		},
+		{
+			name:     "modfile standalone at end of slice (no value token)",
+			input:    []string{"-modfile"},
+			expected: []string{"-modfile"},
 		},
 		{
 			name:     "empty input",

@@ -573,7 +573,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags, modBaseName)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
-				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
+				return nil, fmt.Errorf("failed to calculate output binaries or directory: %w", err)
 			}
 			buildOptions = append(buildOptions, "-o", outputDir)
 			binaryNames = append(binaryNames, binaries...)
