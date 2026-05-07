@@ -562,11 +562,15 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	buildOptions := []string{"build", "-trimpath"}
 
 	if len(config.Output) > 0 {
-		// Call getOutputBinaries for multi-package builds and for single-package single-arch builds.
+		var modBaseName string
+		if goModFile != nil && goModFile.Module != nil {
+			modBaseName = path.Base(goModFile.Module.Mod.Path)
+		}
+		// Use getOutputBinaries when building multiple packages or a single package for a single architecture.
 		// Single-package multi-arch is excluded: each arch pass produces one binary named output-os.arch,
 		// which is handled by the else branch below.
-		if len(config.Packages) > 0 && (len(config.Packages) > 1 || !multipleArchitectures) {
-			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags, path.Base(goModFile.Module.Mod.Path))
+		if len(config.Packages) > 1 || (len(config.Packages) == 1 && !multipleArchitectures) {
+			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags, modBaseName)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
@@ -584,6 +588,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 		}
 	} else {
 		// use default name in case no name is defined via Output
+		if goModFile == nil || goModFile.Module == nil {
+			return nil, fmt.Errorf("go.mod not found: cannot determine default binary name")
+		}
 		binaryName := path.Base(goModFile.Module.Mod.Path)
 		binaryNames = append(binaryNames, binaryName)
 	}
@@ -648,6 +655,9 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 			}
 			binName := filepath.Base(pkg)
 			if binName == "." {
+				if modBaseName == "" {
+					return nil, "", fmt.Errorf("cannot determine binary name for package '.': go.mod not found or has no module declaration")
+				}
 				binName = modBaseName
 			}
 			binaries = append(binaries, filepath.Join(outDir, binName+fileExt))

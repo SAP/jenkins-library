@@ -1002,6 +1002,17 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
 	})
+
+	t.Run("failure - nil goModFile and no output (cannot determine default binary name)", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{}
+		utils := newGolangBuildTestsUtils()
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		_, err := runGolangBuildPerArchitecture(&config, nil, utils, ldflags, architecture, false)
+		assert.EqualError(t, err, "go.mod not found: cannot determine default binary name")
+	})
 }
 
 func TestGetOutputBinaries(t *testing.T) {
@@ -1061,6 +1072,58 @@ func TestGetOutputBinaries(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg.exe"}, binaries)
+	})
+
+	t.Run("error - go list fails for one package in multi-package build", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"go list -f {{ .Name }} package/bar": errors.New("go list error"),
+		}
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} package/foo": "main",
+			"go list -f {{ .Name }} package/bar": "error detail",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"package/foo", "package/bar"}, utils, architecture, true, nil, "testBinary")
+		assert.EqualError(t, err, "go list error: error detail")
+		assert.Empty(t, binaries)
+		assert.Empty(t, outDir)
+	})
+
+	t.Run("buildFlags forwarded to go list after filtering build-only flags", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		// StdoutReturn key uses only the filtered flags (-tags=unit kept, -ldflags stripped).
+		// If filterFlagsForGoList didn't strip -ldflags or didn't forward -tags=unit,
+		// the key wouldn't match → isMainPackage returns false → binaries would be empty → assertion fails.
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} -tags=unit ./cmd/pkg": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/pkg"}, utils, architecture, false, []string{"-tags=unit", "-ldflags=-s"}, "testBinary")
+		assert.NoError(t, err)
+		assert.Equal(t, "outputDir/", outDir)
+		assert.Equal(t, []string{"outputDir/pkg"}, binaries)
+		listCall := utils.Calls[0]
+		assert.Equal(t, "go", listCall.Exec)
+		assert.Contains(t, listCall.Params, "-tags=unit")
+		assert.NotContains(t, listCall.Params, "-ldflags=-s")
+	})
+
+	t.Run("error - dot package with no module info (nil modBaseName)", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		// modBaseName="" simulates goModFile being nil at the call site
+		_, _, err := getOutputBinaries("outputDir", []string{"."}, utils, architecture, false, nil, "")
+		assert.EqualError(t, err, "cannot determine binary name for package '.': go.mod not found or has no module declaration")
 	})
 }
 
