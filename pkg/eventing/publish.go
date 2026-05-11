@@ -51,11 +51,21 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		outcome = "success"
 	}
 
-	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]string{
+	var fatalError = map[string]any{}
+	rawErrorDetail := log.GetFatalErrorDetail()
+	if ctx.ErrorCode != "0" && rawErrorDetail != nil {
+		// retrieve the error information from the logCollector
+		if err := json.Unmarshal(rawErrorDetail, &fatalError); err != nil {
+			log.Entry().WithError(err).Warn("could not unmarshal fatal error struct")
+		}
+	}
+
+	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]any{
 		"taskName":      ctx.StepName,
 		"stageName":     ctx.StageName,
 		"outcome":       outcome,
 		"pipelineRunId": ctx.PipelineID,
+		"errorDetail":   fatalError,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
