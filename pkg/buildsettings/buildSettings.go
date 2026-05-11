@@ -41,12 +41,13 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		dockerImage = envDockerImage
 	}
 
+	// BuildSettingsInfo is intentionally omitted to avoid recursive nesting.
 	currentBuildSettingsInfo := BuildOptions{
-		CreateBOM:                   config.CreateBOM,
-		GlobalSettingsFile:          config.GlobalSettingsFile,
-		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		Profiles:                    config.Profiles,
 		Publish:                     config.Publish,
+		CreateBOM:                   config.CreateBOM,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
 		DefaultNpmRegistry:          config.DefaultNpmRegistry,
 		DockerImage:                 dockerImage,
 	}
