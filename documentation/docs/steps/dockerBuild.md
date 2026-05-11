@@ -29,10 +29,16 @@ steps:
 
 ### Building multiple images from sub-directories
 
+`containerRegistryUrl`, `containerRegistryUser`, and `containerRegistryPassword` are required —
+the multi-image build path will fail immediately if `containerRegistryUrl` is empty.
+
 ```yaml
 steps:
   dockerBuild:
     containerImageName: myImage
+    containerRegistryUrl: my.registry.example.com
+    containerRegistryUser: myUser
+    containerRegistryPassword: myPassword
     containerMultiImageBuild: true
 ```
 
