@@ -61,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Build
@@ -118,7 +118,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ needs.start.outputs.go_version }}
       - name: Download Piper binary

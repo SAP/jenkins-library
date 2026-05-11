@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -52,6 +53,9 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 		}
 		return err
 	} else if config.DeployTool == "kubectl" {
+		if config.DeployCommand == "setImage" {
+			return runKubectlSetImage(config, utils, stdout)
+		}
 		return runKubectlDeploy(config, utils, stdout)
 	}
 	return fmt.Errorf("Failed to execute deployments")
@@ -257,12 +261,9 @@ func runHelmDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils,
 	return nil
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) error {
-	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
-	if err != nil {
-		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
-	}
-
+// buildKubeParams constructs common kubectl connection parameters (namespace, TLS, authentication)
+// and configures the utils environment accordingly (KUBECONFIG, stdout).
+func buildKubeParams(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) []string {
 	kubeParams := []string{
 		fmt.Sprintf("--namespace=%v", config.Namespace),
 	}
@@ -287,7 +288,6 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		if len(config.KubeContext) > 0 {
 			kubeParams = append(kubeParams, fmt.Sprintf("--context=%v", config.KubeContext))
 		}
-
 	} else {
 		log.Entry().Info("Using --token parameter for authentication.")
 		kubeParams = append(kubeParams, fmt.Sprintf("--server=%v", config.APIServer))
@@ -295,6 +295,17 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 	}
 
 	utils.Stdout(stdout)
+
+	return kubeParams
+}
+
+func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) error {
+	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
+	if err != nil {
+		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
+	}
+
+	kubeParams := buildKubeParams(config, utils, stdout)
 
 	if len(config.ContainerRegistryUser) == 0 && len(config.ContainerRegistryPassword) == 0 {
 		log.Entry().Info("No/incomplete container registry credentials provided: skipping secret creation")
@@ -389,6 +400,83 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil
+}
+
+func runKubectlSetImage(config kubernetesDeployOptions, utils kubernetes.DeployUtils, stdout io.Writer) error {
+	if len(config.DeploymentName) == 0 {
+		return fmt.Errorf("deploymentName has not been set, please configure deploymentName parameter when using 'setImage'")
+	}
+
+	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
+	if err != nil {
+		return fmt.Errorf("container registry url '%v' incorrect: %w", config.ContainerRegistryURL, err)
+	}
+
+	// Build container=image pairs based on single- or multi-image mode
+	var containerImagePairs []string
+	if len(config.ContainerNames) > 0 {
+		containerImagePairs, err = buildMultipleImagePairs(config, containerRegistry)
+	} else {
+		containerImagePairs, err = buildSingleImagePair(config, containerRegistry)
+	}
+	if err != nil {
+		return err
+	}
+
+	// Execute kubectl set image
+	kubeParams := buildKubeParams(config, utils, stdout)
+	setImageParams := slices.Clone(kubeParams)
+	setImageParams = append(setImageParams,
+		"set", "image",
+		fmt.Sprintf("deployment/%v", config.DeploymentName),
+	)
+	setImageParams = append(setImageParams, containerImagePairs...)
+
+	if len(config.AdditionalParameters) > 0 {
+		setImageParams = append(setImageParams, config.AdditionalParameters...)
+	}
+
+	log.Entry().Debugf("kubectl parameters: %v", setImageParams)
+	if err := utils.RunExecutable("kubectl", setImageParams...); err != nil {
+		return fmt.Errorf("kubectl set image failed: %w", err)
+	}
+
+	return nil
+}
+
+// buildSingleImagePair resolves a single container=image pair for the single-image mode.
+func buildSingleImagePair(config kubernetesDeployOptions, containerRegistry string) ([]string, error) {
+	if len(config.ContainerName) == 0 {
+		return nil, fmt.Errorf("containerName has not been set, please configure containerName parameter for deployCommand 'setImage'")
+	}
+
+	if len(config.ContainerImageName) == 0 || len(config.ContainerImageTag) == 0 {
+		return nil, fmt.Errorf("containerImageName and containerImageTag must be set for single image replacement mode when using deployCommand 'setImage'")
+	}
+
+	fullImageName := fmt.Sprintf("%v/%v:%v", containerRegistry, config.ContainerImageName, config.ContainerImageTag)
+
+	log.Entry().Infof("Calling kubectl set image deployment/%v %v=%v ...", config.DeploymentName, config.ContainerName, fullImageName)
+	return []string{fmt.Sprintf("%v=%v", config.ContainerName, fullImageName)}, nil
+}
+
+// buildMultipleImagePairs builds container=image pairs for the multi-image mode using containerNames and imageNameTags.
+func buildMultipleImagePairs(config kubernetesDeployOptions, containerRegistry string) ([]string, error) {
+	if len(config.ImageNameTags) == 0 {
+		return nil, fmt.Errorf("imageNameTags has not been set, please configure imageNameTags parameter when using containerNames for deployCommand 'setImage'")
+	}
+	if len(config.ContainerNames) != len(config.ImageNameTags) {
+		return nil, fmt.Errorf("number of containerNames (%d) must match number of imageNameTags (%d)", len(config.ContainerNames), len(config.ImageNameTags))
+	}
+
+	var pairs []string
+	for i, containerName := range config.ContainerNames {
+		fullImage := fmt.Sprintf("%v/%v", containerRegistry, config.ImageNameTags[i])
+		pairs = append(pairs, fmt.Sprintf("%v=%v", containerName, fullImage))
+		log.Entry().Infof("Setting image for container %v: %v", containerName, fullImage)
+	}
+
+	return pairs, nil
 }
 
 type deploymentValues struct {
