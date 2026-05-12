@@ -5,6 +5,7 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
 )
 
 // Client handles communication with InfluxDB
@@ -27,19 +28,15 @@ func NewClient(influxClient influxdb2.Client, organization string, bucket string
 	return &client
 }
 
-// WriteMetrics writes metrics to InfluxDB
+// WriteMetrics writes metrics to InfluxDB in a single batched request
 func (c *Client) WriteMetrics(dataMap map[string]map[string]interface{}, dataMapTags map[string]map[string]string) error {
 	writeAPI := c.client.WriteAPIBlocking(c.organization, c.bucket)
 
+	points := make([]*write.Point, 0, len(dataMap))
 	for measurement, fields := range dataMap {
 		tags := dataMapTags[measurement]
-		point := influxdb2.NewPoint(measurement,
-			tags,
-			fields,
-			time.Now())
-		if err := writeAPI.WritePoint(c.ctx, point); err != nil {
-			return err
-		}
+		points = append(points, influxdb2.NewPoint(measurement, tags, fields, time.Now()))
 	}
-	return nil
+
+	return writeAPI.WritePoint(c.ctx, points...)
 }

@@ -53,7 +53,7 @@ func TestWriteMetrics(t *testing.T) {
 			influxClientMock := &mocks.Client{}
 			client := NewClient(influxClientMock, "org", "piper")
 			writeAPIBlockingMock := &mocks.WriteAPIBlocking{}
-			writeAPIBlockingMock.On("WritePoint", client.ctx, mock.Anything).Return(tt.writePointErr)
+			writeAPIBlockingMock.On("WritePoint", mock.Anything, mock.Anything, mock.Anything).Return(tt.writePointErr)
 			influxClientMock.On("WriteAPIBlocking", client.organization, client.bucket).Return(writeAPIBlockingMock)
 			err := client.WriteMetrics(tt.dataMap, tt.dataMapTags)
 			if err != tt.err {
