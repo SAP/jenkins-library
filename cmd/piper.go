@@ -168,11 +168,7 @@ func Execute() {
 }
 
 func addRootFlags(rootCmd *cobra.Command) {
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().Error(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", provider.BuildURL(), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
@@ -242,20 +238,16 @@ func initStageName(outputToLog bool) {
 	}
 
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
-	} else {
-		stageNameSource = "env variable"
-		GeneralConfig.StageName = provider.StageName()
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
+	stageNameSource = "env variable"
+	GeneralConfig.StageName = provider.StageName()
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
 	}
 
 	var params map[string]interface{}
-	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
+	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
 	if err != nil {
 		if outputToLog {
 			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)

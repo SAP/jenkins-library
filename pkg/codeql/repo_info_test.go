@@ -117,14 +117,9 @@ func TestGetRepoInfo(t *testing.T) {
 
 		repoInfo, err := GetRepoInfo(repo, analyzedRef, commitID, "", "")
 		assert.NoError(t, err)
-		_, err = orchestrator.GetOrchestratorConfigProvider(nil)
+		orchestrator.GetOrchestratorConfigProvider(nil)
 		assert.Equal(t, "abcd1234", repoInfo.CommitId)
 		assert.Equal(t, "refs/heads/branch", repoInfo.AnalyzedRef)
-		if err != nil {
-			assert.Equal(t, "", repoInfo.Owner)
-			assert.Equal(t, "", repoInfo.Repo)
-			assert.Equal(t, "", repoInfo.ServerUrl)
-		}
 	})
 
 	t.Run("Non-Github SCM, TargetGithubRepo is not empty", func(t *testing.T) {

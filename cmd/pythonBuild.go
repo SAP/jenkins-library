@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	cycloneDxVersion       = "6.1.1"
-	cycloneDxSchemaVersion = "1.4"
+	cycloneDxVersion       = "7.3.0"
+	CycloneDxSchemaVersion = "1.4"
 	stepName               = "pythonBuild"
 )
 
@@ -87,7 +87,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, cycloneDxSchemaVersion); err != nil {
+		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, CycloneDxSchemaVersion); err != nil {
 			return fmt.Errorf("failed to create BOM: %w", err)
 		}
 	}

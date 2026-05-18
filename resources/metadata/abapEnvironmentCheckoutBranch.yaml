@@ -86,6 +86,7 @@ spec:
         possibleValues:
           - ZIP
           - STANDARD
+          - ERROR_ONLY
         default: STANDARD
       - name: cfApiEndpoint
         type: string

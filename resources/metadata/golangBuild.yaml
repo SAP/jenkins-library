@@ -98,7 +98,14 @@ spec:
           - STEPS
       - name: output
         type: string
-        description: Defines the resulting executable or object name as per `go build` documentation. For multiple architectures, output serves as prefix, and the resulting name will be in format `<output>-<os>.<arch>`.
+        description: |
+          Defines the output path/name for the compiled binary or binaries.
+
+          **Single package** (zero or one entry in `packages`): produces a single binary named `<output>-<os>.<arch>` (e.g. `myapp-linux.amd64`).
+
+          **Multiple packages** (two or more entries in `packages`): produces a **directory** named `<output>-<os>-<arch>/` (e.g. `myapp-linux-amd64/`) containing one binary per `main` package, where each binary is named after the last path element of the package (e.g. `myapp-linux-amd64/datasync-consumer`).
+
+          Note: only packages whose entry point is `package main` are included in the output directory; library packages are silently skipped.
         scope:
           - PARAMETERS
           - STAGES

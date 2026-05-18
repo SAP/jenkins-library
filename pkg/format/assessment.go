@@ -5,15 +5,15 @@ import (
 	"io"
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
-	"github.com/ghodss/yaml"
 	"github.com/package-url/packageurl-go"
+	"go.yaml.in/yaml/v3"
 )
 
 type Assessment struct {
-	Vulnerability string             `json:"vulnerability"`
-	Status        AssessmentStatus   `json:"status"`
-	Analysis      AssessmentAnalysis `json:"analysis"`
-	Purls         []Purl             `json:"purls"`
+	Vulnerability string             `json:"vulnerability" yaml:"vulnerability"`
+	Status        AssessmentStatus   `json:"status" yaml:"status"`
+	Analysis      AssessmentAnalysis `json:"analysis" yaml:"analysis"`
+	Purls         []Purl             `json:"purls" yaml:"purls"`
 }
 
 type AssessmentStatus string
@@ -39,7 +39,7 @@ const (
 )
 
 type Purl struct {
-	Purl string `json:"purl"`
+	Purl string `json:"purl" yaml:"purl"`
 }
 
 func (p Purl) ToPackageUrl() (packageurl.PackageURL, error) {
@@ -106,7 +106,7 @@ func (a Assessment) ToImpactAnalysisResponse() *[]cdx.ImpactAnalysisResponse {
 func ReadAssessments(assessmentFile io.ReadCloser) (*[]Assessment, error) {
 	defer assessmentFile.Close()
 	ignore := struct {
-		Assessments []Assessment `json:"ignore"`
+		Assessments []Assessment `json:"ignore" yaml:"ignore"`
 	}{
 		Assessments: []Assessment{},
 	}

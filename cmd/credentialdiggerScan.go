@@ -41,11 +41,7 @@ func newCDUtils() credentialdiggerUtils {
 func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *telemetry.CustomData) error {
 	utils := newCDUtils()
 	// 0: Get attributes from orchestrator
-	provider, prov_err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if prov_err != nil {
-		log.Entry().WithError(prov_err).Error(
-			"Unable to load orchestrator specific configuration.")
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 	if config.Repository == "" {
 		// Get current repository from orchestrator
 		log.Entry().Debug("Repository URL not defined in step configuration. Try get it from orchestrators")

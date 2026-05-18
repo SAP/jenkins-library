@@ -223,6 +223,49 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		assert.Equal(t, releaseID, ghRepoClient.uploadID)
 	})
 
+	t.Run("Success - auto-detect pre-release from SemVer (hyphen)", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{
+			latestStatusCode: 404,
+			latestErr:        fmt.Errorf("not found"),
+		}
+
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:                "TEST",
+			Repository:           "test",
+			Version:              "1.2.3-beta.1",
+			AutoDetectPreRelease: true,
+			// PreRelease intentionally not set to verify auto-detection kicks in
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+		assert.NoError(t, err, "Error occurred but none expected.")
+
+		assert.Equal(t, true, ghRepoClient.release.GetPrerelease(), "Pre-release should be auto-detected as true")
+		assert.Equal(t, "1.2.3-beta.1", ghRepoClient.release.GetTagName())
+		assert.Equal(t, "1.2.3-beta.1", ghRepoClient.release.GetName())
+	})
+
+	t.Run("Success - auto-detect ignores build metadata", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{
+			latestStatusCode: 404,
+			latestErr:        fmt.Errorf("not found"),
+		}
+
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:                "TEST",
+			Repository:           "test",
+			Version:              "2.0.0+build.123",
+			AutoDetectPreRelease: true,
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+		assert.NoError(t, err, "Error occurred but none expected.")
+
+		assert.Equal(t, false, ghRepoClient.release.GetPrerelease(), "Pre-release should remain false when only build metadata is present")
+		assert.Equal(t, "2.0.0+build.123", ghRepoClient.release.GetTagName())
+		assert.Equal(t, "2.0.0+build.123", ghRepoClient.release.GetName())
+	})
+
 	t.Run("Error - get release", func(t *testing.T) {
 		ghIssueClient := ghICMock{}
 		ghRepoClient := ghRCMock{
