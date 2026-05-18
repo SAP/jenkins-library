@@ -24,6 +24,8 @@ func AvailableFlagValues(cmd *cobra.Command, filters *StepFilters) map[string]in
 			flagValues[pflag.Name], _ = flags.GetBool(pflag.Name)
 		case "int":
 			flagValues[pflag.Name], _ = flags.GetInt(pflag.Name)
+		case "stringToString":
+			flagValues[pflag.Name], _ = flags.GetStringToString(pflag.Name)
 		default:
 			fmt.Printf("Meta data type not set or not known: '%v'\n", pflag.Value.Type())
 			os.Exit(1)

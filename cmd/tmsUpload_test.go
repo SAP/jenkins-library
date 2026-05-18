@@ -307,7 +307,7 @@ func TestRunTmsUpload(t *testing.T) {
 		err := runTmsUpload(config, &communicationInstance, utils)
 
 		// assert
-		assert.EqualError(t, err, "failed to get mta.yaml as map: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type map[string]interface {}")
+		assert.EqualError(t, err, "failed to get mta.yaml as map: yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `The con...` into map[string]interface {}")
 	})
 
 	t.Run("error path: no 'ID' and 'version' parameters found in mta.yaml", func(t *testing.T) {
@@ -368,11 +368,11 @@ func TestRunTmsUpload(t *testing.T) {
 
 		// assert
 		var expectedErrorMessage string
-		expectedErrorMessage += "tried to parse wrong_content.mtaext as yaml, but got an error: error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type map[string]interface {}\n"
-		expectedErrorMessage += "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
-		expectedErrorMessage += "parameter 'extends' in MTA extension descriptor files [missing_extends_parameter.mtaext wrong_extends_parameter.mtaext] is not the same as MTA ID or is missing at all\n"
-		expectedErrorMessage += "MTA extension descriptor files [unexisting.mtaext] do not exist\n"
-		expectedErrorMessage += "nodes [ONE_MORE_UNEXISTING_NODE ONE_MORE_UNEXISTING_NODE_2 ONE_MORE_UNEXISTING_NODE_3 UNEXISTING_NODE] do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n"
+		expectedErrorMessage += "tried to parse wrong_content.mtaext as yaml, but got an error: yaml: unmarshal errors:\n  " +
+			"line 1: cannot unmarshal !!str `The con...` into map[string]interface {}\nparameter 'mtaVersion' does not match the MTA version in mta.yaml\n" +
+			"parameter 'extends' in MTA extension descriptor files [missing_extends_parameter.mtaext wrong_extends_parameter.mtaext] is not the same as MTA ID or is missing at all\n" +
+			"MTA extension descriptor files [unexisting.mtaext] do not exist\nnodes [ONE_MORE_UNEXISTING_NODE ONE_MORE_UNEXISTING_NODE_2 ONE_MORE_UNEXISTING_NODE_3 UNEXISTING_NODE] do not exist. " +
+			"Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n"
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 

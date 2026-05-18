@@ -104,62 +104,39 @@ func TestJenkins(t *testing.T) {
 }
 
 func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
-	type fields struct {
-		client  piperhttp.Client
-		options piperhttp.ClientOptions
-	}
 	tests := []struct {
 		name                    string
-		fields                  fields
 		want                    time.Time
 		wantHTTPErr             bool
 		wantHTTPStatusCodeError bool
 		wantHTTPJSONParseError  bool
+		wantMissingTimestamp    bool
 	}{
 		{
-			name:                    "Retrieve correct time",
-			want:                    time.Date(2022, time.March, 21, 22, 30, 0, 0, time.UTC),
-			wantHTTPErr:             false,
-			wantHTTPStatusCodeError: false,
+			name: "Retrieve correct time",
+			want: time.Date(2022, time.March, 21, 22, 30, 0, 0, time.UTC),
 		},
 		{
-			name:                    "ParseHTTPResponseBodyJSON error",
-			want:                    time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
-			wantHTTPErr:             false,
-			wantHTTPStatusCodeError: false,
+			name:                   "parseResponseBodyJson fails",
+			want:                   time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+			wantHTTPJSONParseError: true,
 		},
 		{
-			name:                    "GetRequest fails",
-			want:                    time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
-			wantHTTPErr:             true,
-			wantHTTPStatusCodeError: false,
+			name:        "GetRequest fails",
+			want:        time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+			wantHTTPErr: true,
 		},
 		{
 			name:                    "response code != 200 http.StatusNoContent",
 			want:                    time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
-			wantHTTPErr:             false,
 			wantHTTPStatusCodeError: true,
 		},
 		{
-			name:                    "parseResponseBodyJson fails",
-			want:                    time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
-			wantHTTPErr:             false,
-			wantHTTPStatusCodeError: false,
-			wantHTTPJSONParseError:  true,
+			name:                 "timestamp field missing from API response",
+			want:                 time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC),
+			wantMissingTimestamp: true,
 		},
 	}
-
-	j := &jenkinsConfigProvider{
-		client: piperhttp.Client{},
-	}
-	j.client.SetOptions(piperhttp.ClientOptions{
-		MaxRequestDuration:        5 * time.Second,
-		Token:                     "TOKEN",
-		TransportSkipVerification: true,
-		UseDefaultTransport:       true,
-		MaxRetries:                -1,
-	})
-	httpmock.Activate()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -168,7 +145,18 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 			buildURl := "https://jaas.url/job/foo/job/bar/job/main/1234/"
 			os.Setenv("BUILD_URL", buildURl)
 
+			// Each sub-test gets its own provider so apiInformation cache is clean.
+			j := &jenkinsConfigProvider{}
+			j.client.SetOptions(piperhttp.ClientOptions{
+				MaxRequestDuration:        5 * time.Second,
+				Token:                     "TOKEN",
+				TransportSkipVerification: true,
+				UseDefaultTransport:       true,
+				MaxRetries:                -1,
+			})
+
 			fakeUrl := buildURl + "api/json"
+			httpmock.Activate()
 			defer httpmock.DeactivateAndReset()
 			httpmock.RegisterResponder("GET", fakeUrl,
 				func(req *http.Request) (*http.Response, error) {
@@ -183,10 +171,12 @@ func TestJenkinsConfigProvider_GetPipelineStartTime(t *testing.T) {
 						}, nil
 					}
 					if tt.wantHTTPJSONParseError {
-						// Intentionally malformed JSON response
 						return httpmock.NewJsonResponse(200, "timestamp:asdffd")
 					}
-					return httpmock.NewStringResponse(200, "{\"timestamp\":1647901800932,\"url\":\"https://jaas.url/view/piperpipelines/job/foo/job/bar/job/main/3731/\"}"), nil
+					if tt.wantMissingTimestamp {
+						return httpmock.NewStringResponse(200, `{"url":"https://jaas.url/"}`), nil
+					}
+					return httpmock.NewStringResponse(200, `{"timestamp":1647901800932,"url":"https://jaas.url/view/piperpipelines/job/foo/job/bar/job/main/3731/"}`), nil
 				},
 			)
 

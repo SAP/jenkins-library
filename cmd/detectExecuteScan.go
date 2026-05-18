@@ -130,11 +130,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().WithError(err).Warning(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	utils.provider = provider
 

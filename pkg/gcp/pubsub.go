@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/v2"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
@@ -62,7 +62,7 @@ func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Cli
 }
 
 func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, topic, orderingKey string, data []byte) error {
-	t := psClient.Topic(topic)
+	t := psClient.Publisher(topic)
 	t.EnableMessageOrdering = true
 	publishResult := t.Publish(ctx, &pubsub.Message{Data: data, OrderingKey: orderingKey})
 
