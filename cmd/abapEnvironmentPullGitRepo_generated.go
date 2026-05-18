@@ -24,7 +24,7 @@ type abapEnvironmentPullGitRepoOptions struct {
 	RepositoryName    string   `json:"repositoryName,omitempty"`
 	CommitID          string   `json:"commitID,omitempty"`
 	Host              string   `json:"host,omitempty"`
-	LogOutput         string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD"`
+	LogOutput         string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD ERROR_ONLY"`
 	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string   `json:"cfOrg,omitempty"`
 	CfSpace           string   `json:"cfSpace,omitempty"`
