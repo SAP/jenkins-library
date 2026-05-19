@@ -570,11 +570,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 		// Single-package multi-arch is excluded: each arch pass produces one binary named output-os.arch,
 		// which is handled by the else branch below.
 		if len(config.Packages) > 1 || (len(config.Packages) == 1 && !multipleArchitectures) {
-			var outDir string
+			outDir := strings.TrimRight(config.Output, string(os.PathSeparator)) + string(os.PathSeparator)
 			if multipleArchitectures {
 				outDir = fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(config.Output, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
-			} else {
-				outDir = strings.TrimRight(config.Output, string(os.PathSeparator)) + string(os.PathSeparator)
 			}
 			binaries, err := getOutputBinaries(outDir, config.Packages, utils, architecture, config.BuildFlags, modBaseName)
 			if err != nil {
