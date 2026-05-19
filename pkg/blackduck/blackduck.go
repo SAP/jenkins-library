@@ -24,6 +24,7 @@ const (
 	HEADER_USER_V4            = "application/vnd.blackducksoftware.user-4+json"
 	HEADER_BOM_V6             = "application/vnd.blackducksoftware.bill-of-materials-6+json"
 	HEADER_BOM_V7             = "application/vnd.blackducksoftware.bill-of-materials-7+json"
+	HEADER_POLICY_DETAILS_V5  = "application/vnd.blackducksoftware.policy-5+json"
 )
 
 // Projects defines the response to a BlackDuck project API request
@@ -487,7 +488,7 @@ func (b *Client) GetPolicyRuleDetails(policyRule ComponentPolicyRule) (PolicyRul
 	}
 
 	headers := http.Header{}
-	headers.Add("Accept", HEADER_BOM_V7)
+	headers.Add("Accept", HEADER_POLICY_DETAILS_V5)
 
 	respBody, err := b.sendRequest(http.MethodGet, policyRuleDetailsUrl, map[string]string{}, nil, headers)
 	if err != nil {
