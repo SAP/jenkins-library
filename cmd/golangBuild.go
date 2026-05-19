@@ -570,12 +570,18 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 		// Single-package multi-arch is excluded: each arch pass produces one binary named output-os.arch,
 		// which is handled by the else branch below.
 		if len(config.Packages) > 1 || (len(config.Packages) == 1 && !multipleArchitectures) {
-			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture, multipleArchitectures, config.BuildFlags, modBaseName)
+			var outDir string
+			if multipleArchitectures {
+				outDir = fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(config.Output, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
+			} else {
+				outDir = strings.TrimRight(config.Output, string(os.PathSeparator)) + string(os.PathSeparator)
+			}
+			binaries, err := getOutputBinaries(outDir, config.Packages, utils, architecture, config.BuildFlags, modBaseName)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
 				return nil, fmt.Errorf("failed to calculate output binaries or directory: %w", err)
 			}
-			buildOptions = append(buildOptions, "-o", outputDir)
+			buildOptions = append(buildOptions, "-o", outDir)
 			binaryNames = append(binaryNames, binaries...)
 		} else {
 			fileExtension := ""
@@ -633,19 +639,13 @@ func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
 	return modfile.Parse(modFilePath, modFileContent, nil)
 }
 
-func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, multipleArchitectures bool, buildFlags []string, modBaseName string) ([]string, string, error) {
+func getOutputBinaries(outDir string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, buildFlags []string, modBaseName string) ([]string, error) {
 	var binaries []string
-	var outDir string
-	if multipleArchitectures {
-		outDir = fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(out, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
-	} else {
-		outDir = strings.TrimRight(out, string(os.PathSeparator)) + string(os.PathSeparator)
-	}
 
 	for _, pkg := range packages {
 		ok, err := isMainPackage(utils, pkg, buildFlags)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 
 		if ok {
@@ -656,7 +656,7 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 			binName := filepath.Base(pkg)
 			if binName == "." {
 				if modBaseName == "" {
-					return nil, "", fmt.Errorf("cannot determine binary name for package '.': go.mod not found or has no module declaration")
+					return nil, fmt.Errorf("cannot determine binary name for package '.': go.mod not found or has no module declaration")
 				}
 				binName = modBaseName
 			}
@@ -664,11 +664,13 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 		}
 	}
 
-	return binaries, outDir, nil
+	return binaries, nil
 }
 
 // filterFlagsForGoList returns only the flags from buildFlags that are understood by `go list`.
-// Flags like -ldflags, -gcflags, -asmflags are build-only and cause `go list` to fail.
+// The allowed set is intentionally short: build-only flags (-ldflags, -gcflags, -asmflags, -race,
+// -trimpath, etc.) are excluded because passing them to `go list` causes it to fail.
+// Only flags that affect package resolution or module behaviour are forwarded.
 func filterFlagsForGoList(buildFlags []string) []string {
 	// Boolean flags: standalone (-buildvcs) or combined (-buildvcs=false); never followed by a separate value token.
 	boolFlags := []string{"-buildvcs"}

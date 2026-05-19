@@ -1058,9 +1058,8 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"."}, utils, architecture, false, nil, "golang-hello-world")
+		binaries, err := getOutputBinaries("outputDir/", []string{"."}, utils, architecture, nil, "golang-hello-world")
 		assert.NoError(t, err)
-		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/golang-hello-world"}, binaries)
 	})
 
@@ -1072,9 +1071,8 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, nil, "testBinary")
+		binaries, err := getOutputBinaries("outputDir/", []string{"./cmd/somePkg"}, utils, architecture, nil, "testBinary")
 		assert.NoError(t, err)
-		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg"}, binaries)
 	})
 
@@ -1086,9 +1084,8 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, true, nil, "testBinary")
+		binaries, err := getOutputBinaries("outputDir-linux-amd64/", []string{"./cmd/somePkg"}, utils, architecture, nil, "testBinary")
 		assert.NoError(t, err)
-		assert.Equal(t, "outputDir-linux-amd64/", outDir)
 		assert.Equal(t, []string{"outputDir-linux-amd64/somePkg"}, binaries)
 	})
 
@@ -1100,9 +1097,8 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/somePkg"}, utils, architecture, false, nil, "testBinary")
+		binaries, err := getOutputBinaries("outputDir/", []string{"./cmd/somePkg"}, utils, architecture, nil, "testBinary")
 		assert.NoError(t, err)
-		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/somePkg.exe"}, binaries)
 	})
 
@@ -1118,10 +1114,9 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"package/foo", "package/bar"}, utils, architecture, true, nil, "testBinary")
+		binaries, err := getOutputBinaries("outputDir-linux-amd64/", []string{"package/foo", "package/bar"}, utils, architecture, nil, "testBinary")
 		assert.EqualError(t, err, "go list error: error detail")
 		assert.Empty(t, binaries)
-		assert.Empty(t, outDir)
 	})
 
 	t.Run("buildFlags forwarded to go list after filtering build-only flags", func(t *testing.T) {
@@ -1135,9 +1130,8 @@ func TestGetOutputBinaries(t *testing.T) {
 		}
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
-		binaries, outDir, err := getOutputBinaries("outputDir", []string{"./cmd/pkg"}, utils, architecture, false, []string{"-tags=unit", "-ldflags=-s"}, "testBinary")
+		binaries, err := getOutputBinaries("outputDir/", []string{"./cmd/pkg"}, utils, architecture, []string{"-tags=unit", "-ldflags=-s"}, "testBinary")
 		assert.NoError(t, err)
-		assert.Equal(t, "outputDir/", outDir)
 		assert.Equal(t, []string{"outputDir/pkg"}, binaries)
 		listCall := utils.Calls[0]
 		assert.Equal(t, "go", listCall.Exec)
@@ -1154,7 +1148,7 @@ func TestGetOutputBinaries(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		// modBaseName="" simulates goModFile being nil at the call site
-		_, _, err := getOutputBinaries("outputDir", []string{"."}, utils, architecture, false, nil, "")
+		_, err := getOutputBinaries("outputDir/", []string{"."}, utils, architecture, nil, "")
 		assert.EqualError(t, err, "cannot determine binary name for package '.': go.mod not found or has no module declaration")
 	})
 }
