@@ -32,8 +32,10 @@ func resolveAllSystemTrustReferences(config *StepConfig, params []StepParameters
 	}
 }
 
-// setSystemTrustConfiguration sets the server URL for the System Trust by taking it from the hooks
-func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) error {
+// setSystemTrustConfiguration sets the server URL for the System Trust by taking it from the hooks.
+// If stepConfig contains a "systemTrustURL" value (e.g. set via CPE or pipeline config), it takes
+// precedence over the default hook serverURL, allowing users to point to a staging instance.
+func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}, stepConfig map[string]interface{}) error {
 	systemTrustHook, ok := hookConfig["systemtrust"].(map[string]interface{})
 	if !ok {
 		return errors.New("no System Trust hook configuration found")
@@ -42,6 +44,12 @@ func (c *Config) setSystemTrustConfiguration(hookConfig map[string]interface{}) 
 		c.systemTrustConfiguration.ServerURL = serverURL
 	} else {
 		return errors.New("no System Trust server URL found")
+	}
+	// Allow the user to override the default hook serverURL via a "systemTrustURL" parameter
+	// (e.g. set in .pipeline/config.yml, via CPE, or as a step parameter).
+	if overrideURL, ok := stepConfig["systemTrustURL"].(string); ok && overrideURL != "" {
+		log.Entry().Infof("Overriding System Trust server URL with user-provided value: %s", overrideURL)
+		c.systemTrustConfiguration.ServerURL = overrideURL
 	}
 	if tokenEndPoint, ok := systemTrustHook["tokenEndPoint"].(string); ok {
 		c.systemTrustConfiguration.TokenEndPoint = tokenEndPoint

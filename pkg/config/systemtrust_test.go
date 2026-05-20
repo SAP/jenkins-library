@@ -23,6 +23,7 @@ const testServerURL = "https://www.project-piper.io"
 const testTokenEndPoint = "tokens"
 const testTokenQueryParamName = "systems" // no longer used by the new implementation, but kept in config
 const mockSonarToken = "mockSonarToken"
+const testStagingServerURL = "https://staging.trust.tools.sap"
 
 var testFullURL = fmt.Sprintf("%s/%s", testServerURL, testTokenEndPoint)
 var mockSingleTokenResponse = fmt.Sprintf("{\"sonar\": \"%s\"}", mockSonarToken)
@@ -108,4 +109,49 @@ func mustCompactJSON(t *testing.T, s string) string {
 		t.Fatalf("failed to compact json: %v", err)
 	}
 	return buf.String()
+}
+
+func TestSetSystemTrustConfiguration(t *testing.T) {
+	hookConfig := map[string]interface{}{
+		"systemtrust": map[string]interface{}{
+			"serverURL":           testServerURL,
+			"tokenEndPoint":       testTokenEndPoint,
+			"tokenQueryParamName": testTokenQueryParamName,
+		},
+	}
+
+	t.Run("Uses hook serverURL when no systemTrustURL in stepConfig", func(t *testing.T) {
+		c := &Config{}
+		c.systemTrustConfiguration.Token = "testToken"
+		err := c.setSystemTrustConfiguration(hookConfig, map[string]interface{}{})
+		assert.NoError(t, err)
+		assert.Equal(t, testServerURL, c.systemTrustConfiguration.ServerURL)
+	})
+
+	t.Run("Overrides serverURL with user-provided systemTrustURL from stepConfig", func(t *testing.T) {
+		c := &Config{}
+		c.systemTrustConfiguration.Token = "testToken"
+		err := c.setSystemTrustConfiguration(hookConfig, map[string]interface{}{
+			"systemTrustURL": testStagingServerURL,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, testStagingServerURL, c.systemTrustConfiguration.ServerURL)
+	})
+
+	t.Run("Does not override when systemTrustURL is empty string", func(t *testing.T) {
+		c := &Config{}
+		c.systemTrustConfiguration.Token = "testToken"
+		err := c.setSystemTrustConfiguration(hookConfig, map[string]interface{}{
+			"systemTrustURL": "",
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, testServerURL, c.systemTrustConfiguration.ServerURL)
+	})
+
+	t.Run("Returns error when no token set", func(t *testing.T) {
+		c := &Config{}
+		err := c.setSystemTrustConfiguration(hookConfig, map[string]interface{}{})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no System Trust token found")
+	})
 }
