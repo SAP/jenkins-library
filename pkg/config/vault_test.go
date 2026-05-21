@@ -30,7 +30,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -44,7 +44,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 
 		vaultMock.On("GetKvSecret", path.Join("team1", "overrideSecretName")).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -58,7 +58,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 
 		assert.Equal(t, "preset value", stepConfig.Config[secretName])
 	})
@@ -72,7 +72,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
@@ -84,7 +84,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(nil, fmt.Errorf("test"))
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Len(t, stepConfig.Config, 1)
 	})
 
@@ -95,7 +95,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(nil, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Len(t, stepConfig.Config, 1)
 	})
 
@@ -110,7 +110,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{param}
 		vaultData := map[string]string{aliasName: "value1"}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -126,7 +126,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(nil, nil)
 		vaultMock.On("GetKvSecret", path.Join("team2/GROUP-SECRETS", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -134,7 +134,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultMock := &mocks.VaultClient{}
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.Nil(t, stepConfig.Config[secretName])
 		vaultMock.AssertNotCalled(t, "GetKvSecret", mock.AnythingOfType("string"))
 	})
@@ -151,7 +151,7 @@ func TestVaultSecretFiles(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.NotNil(t, stepConfig.Config[secretName])
 		path := stepConfig.Config[secretName].(string)
 		contentByte, err := os.ReadFile(path)
@@ -172,7 +172,7 @@ func TestVaultSecretFiles(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 		assert.NoDirExists(t, VaultSecretFileDirectory)
 		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams, nil)
 		assert.NotNil(t, stepConfig.Config[secretName])
 		path := stepConfig.Config[secretName].(string)
 		assert.DirExists(t, VaultSecretFileDirectory)

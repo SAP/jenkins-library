@@ -294,6 +294,15 @@ func {{ .StepName }}Metadata() config.StepData {
 						{{- end}}
 					},{{ end }}
 				},
+				{{ if .AuthAlternatives -}}
+				AuthAlternatives: []config.AuthAlternative{
+					{{- range $alt := .AuthAlternatives }}
+					{
+						{{- if $alt.ID }} ID: {{ $alt.ID | quote }},{{- end }}
+						Params: []string{ {{- range $i, $p := $alt.Params }} {{ $p | quote }}, {{- end }} },
+					},{{- end }}
+				},
+				{{ end -}}
 			},
 			{{ if .Containers -}}
 			Containers: []config.Container{

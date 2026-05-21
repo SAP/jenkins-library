@@ -146,18 +146,35 @@ func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredenti
 	return client, nil
 }
 
-func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters) {
+func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []StepParameters, authAltStatus *authAlternativeStatus) {
 	for _, param := range params {
 		if ref := param.GetReference("vaultSecret"); ref != nil {
-			resolveVaultReference(ref, config, client, param)
+			resolveVaultReference(ref, config, client, param, authAltStatus)
 		}
 		if ref := param.GetReference("vaultSecretFile"); ref != nil {
-			resolveVaultReference(ref, config, client, param)
+			resolveVaultReference(ref, config, client, param, authAltStatus)
 		}
 	}
 }
 
-func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) {
+func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters, authAltStatus *authAlternativeStatus) {
+	if skip, resolvedGroup := authAltStatus.shouldSkipVault(param.Name); skip {
+		log.Entry().Infof("Skipping Vault lookup for '%s': authentication alternative %q already resolved", param.Name, resolvedGroup)
+		return
+	}
+
+	// When the same parameter declares both a Vault and a System Trust source,
+	// honour System Trust if it has already populated the value. Without this
+	// guard the System-Trust-first ordering established by the framework would
+	// be undone by an unconditional Vault overwrite. This is independent of
+	// vaultDisableOverwrite, which is a user-facing global opt-in.
+	if param.GetReference(RefTypeSystemTrustSecret) != nil {
+		if paramValue, _ := config.Config[param.Name].(string); paramValue != "" {
+			log.Entry().Debugf("Skipping Vault lookup for '%s': value already provided by System Trust", param.Name)
+			return
+		}
+	}
+
 	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
 	if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
 		log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)

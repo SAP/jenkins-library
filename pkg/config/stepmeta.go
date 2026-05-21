@@ -3,13 +3,12 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-
-	"errors"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -41,9 +40,27 @@ type StepSpec struct {
 
 // StepInputs defines the spec details for a step, like step inputs, containers, sidecars, ...
 type StepInputs struct {
-	Parameters []StepParameters `json:"params" yaml:"params"`
-	Resources  []StepResources  `json:"resources,omitempty" yaml:"resources,omitempty"`
-	Secrets    []StepSecrets    `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+	Parameters       []StepParameters  `json:"params" yaml:"params"`
+	Resources        []StepResources   `json:"resources,omitempty" yaml:"resources,omitempty"`
+	Secrets          []StepSecrets     `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+	AuthAlternatives []AuthAlternative `json:"authAlternatives,omitempty" yaml:"authAlternatives,omitempty"`
+}
+
+// AuthAlternative declares a group of parameters that together provide one
+// authentication method for a step. Multiple groups in the same step are
+// considered mutually-exclusive alternatives: when any one group has all of
+// its parameters resolved (e.g. via System Trust or explicit user input),
+// the framework MUST skip Vault lookups for parameters belonging to the
+// other groups. Steps without any AuthAlternative entries keep the legacy
+// behaviour of fetching every declared resourceRef.
+type AuthAlternative struct {
+	// ID is a human-readable identifier used in logs and diagnostics.
+	// It is not interpreted by the framework.
+	ID string `json:"id,omitempty" yaml:"id,omitempty"`
+	// Params lists the names of step parameters that together form this
+	// authentication alternative. All listed parameters must resolve to a
+	// non-empty value for the group to be considered "resolved".
+	Params []string `json:"params" yaml:"params"`
 }
 
 // StepParameters defines the parameters for a step
@@ -108,7 +125,7 @@ type StepOutputs struct {
 
 // Container defines an execution container
 type Container struct {
-	//ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
+	// ToDo: check dockerOptions, dockerVolumeBind, containerPortMappings, sidecarOptions, sidecarVolumeBind
 	Command         []string      `json:"command" yaml:"command"`
 	EnvVars         []EnvVar      `json:"env" yaml:"env"`
 	Image           string        `json:"image" yaml:"image"`
@@ -253,7 +270,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 				}
 			}
 		}
-		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
+		// ToDo: support fallback for "dockerName" configuration property -> via aliasing?
 		contextFilters = append(contextFilters, parameterKeysForSideCar...)
 	}
 
@@ -272,17 +289,18 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 }
 
 func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
-	contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
-		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
+	contextFilters = append(contextFilters, []string{
+		"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId",
+	}...)
 	return contextFilters
 }
 
 // GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
 // It only supports scenarios with one container and optionally one sidecar
 func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
-
-	//ToDo error handling empty Containers/Sidecars
-	//ToDo handle empty Command
+	// ToDo error handling empty Containers/Sidecars
+	// ToDo handle empty Command
 	root := map[string]interface{}{}
 	if len(m.Spec.Containers) > 0 {
 		for _, container := range m.Spec.Containers {
@@ -295,7 +313,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			p := map[string]interface{}{}
 			if key != "" {
 				root[key] = p
-				//add default for condition parameter if available
+				// add default for condition parameter if available
 				for _, inputParam := range m.Spec.Inputs.Parameters {
 					if inputParam.Name == conditionParam {
 						root[conditionParam] = inputParam.Default
@@ -313,9 +331,8 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			container.commonConfiguration("docker", &p)
 
 			// Ready command not relevant for main runtime container so far
-			//putStringIfNotEmpty(p, ..., container.ReadyCommand)
+			// putStringIfNotEmpty(p, ..., container.ReadyCommand)
 		}
-
 	}
 
 	if len(m.Spec.Sidecars) > 0 {
@@ -338,7 +355,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 				p := map[string]interface{}{}
 				if key != "" {
 					root[key] = p
-					//add default for condition parameter if available
+					// add default for condition parameter if available
 					for _, inputParam := range m.Spec.Inputs.Parameters {
 						if inputParam.Name == conditionParam {
 							root[conditionParam] = inputParam.Default
@@ -357,7 +374,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			}
 		}
 		// not filled for now since this is not relevant in Kubernetes case
-		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+		// putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
 	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {
@@ -436,7 +453,6 @@ func (container *Container) commonConfiguration(keyPrefix string, config *map[st
 	putStringIfNotEmpty(*config, keyPrefix+"Workspace", container.WorkingDir)
 	putSliceIfNotEmpty(*config, keyPrefix+"Options", OptionsAsStringSlice(container.Options))
 	putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
-
 }
 
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
@@ -513,7 +529,6 @@ func OptionsAsStringSlice(options []Option) []string {
 		} else {
 			e = append(e, fmt.Sprintf("%v=", v.Name))
 		}
-
 	}
 	return e
 }
@@ -537,7 +552,6 @@ func putSliceIfNotEmpty(config map[string]interface{}, key string, value []strin
 }
 
 func ResolveMetadata(gitHubTokens map[string]string, metaDataResolver func() map[string]StepData, stepMetadata string, stepName string) (StepData, error) {
-
 	var metadata StepData
 
 	if stepMetadata != "" {

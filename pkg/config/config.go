@@ -71,7 +71,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
-		//copy stage configuration with Build name
+		// copy stage configuration with Build name
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
 		}
@@ -84,7 +84,7 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		if c.Steps[stepName] != nil {
 			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
-		//copy stage secrets configuration with Build name
+		// copy stage secrets configuration with Build name
 		if centralBuild, ok := c.Stages["Central Build"]; ok {
 			c.Stages["Build"] = centralBuild
 		}
@@ -279,6 +279,21 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
+	// hooks need to have been loaded from the defaults before the server URL is known
+	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
+	if err != nil {
+		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
+	} else {
+		systemTrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
+		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemTrustClient)
+	}
+
+	// authAlternatives gate: if any declared authentication-alternative group
+	// is fully resolved at this point (e.g. token has been populated by
+	// System Trust or by an explicit user input), Vault lookups for the
+	// parameters that belong to OTHER groups will be skipped below.
+	authAltStatus := newAuthAlternativeStatus(metadata.Spec.Inputs.AuthAlternatives, stepConfig.Config, parameters)
+
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// Revocation of Vault token will happen at the of each step execution (see _generated.go part)
@@ -287,19 +302,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			return StepConfig{}, err
 		}
 		if vaultClient != nil {
-			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...))
+			resolveAllVaultReferences(&stepConfig, vaultClient, append(parameters, ReportingParameters.Parameters...), authAltStatus)
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
-	}
-
-	// hooks need to have been loaded from the defaults before the server URL is known
-	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
-	if err != nil {
-		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
-	} else {
-		systemTrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
-		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemTrustClient)
 	}
 
 	// finally do the condition evaluation post processing
