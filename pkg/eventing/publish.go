@@ -72,8 +72,8 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 	}
 
 	prettyJSON, _ := json.MarshalIndent(json.RawMessage(eventData), "", "  ")
-	log.Entry().Debugf("legacy event payload:\n%s", string(prettyJSON))
-	log.Entry().Debugf("publishing TaskRunFinished legacy event to GCP Pub/Sub...")
+	log.Entry().Debugf("CloudEvent event payload:\n%s", string(prettyJSON))
+	log.Entry().Debugf("publishing TaskRunFinished event to GCP Pub/Sub...")
 
 	return publish(tokenProvider, generalConfig, topicPipelineTaskRunFinished, eventData)
 }
