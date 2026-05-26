@@ -607,7 +607,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		log.Entry().Debug("pull request detected")
 		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
-		if err == nil {
+		if err == nil && !checkIfArgumentIsInScanProperties(config, "detect.blackduck.rapid.compare.mode") {
 			args = append(args, "--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'")
 		}
 		args = append(args, "--detect.cleanup=false")
