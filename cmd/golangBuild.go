@@ -38,7 +38,7 @@ const (
 	golangTestsumPackage         = "gotest.tools/gotestsum@latest"
 	GolangCycloneDXPackage       = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.10.0"
 	sbomFilename                 = "bom-golang.xml"
-	GolangCycloneDxSchemaVersion = "1.4"
+	GolangCycloneDXSchemaVersion = "1.4"
 )
 
 type golangBuildUtils interface {
@@ -615,7 +615,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", GolangCycloneDxSchemaVersion); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", GolangCycloneDXSchemaVersion); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil

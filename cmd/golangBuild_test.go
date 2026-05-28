@@ -100,6 +100,8 @@ func newGolangBuildTestsUtils() *golangBuildMockUtils {
 }
 
 func TestRunGolangBuild(t *testing.T) {
+	t.Parallel()
+
 	cpe := golangBuildCommonPipelineEnvironment{}
 	modTestFile := `module private.example.com/test
 
@@ -344,7 +346,7 @@ go 1.17`
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"install", GolangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDxSchemaVersion}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -540,7 +542,7 @@ go 1.17`
 		}
 		GeneralConfig.Verbose = false
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDxSchemaVersion: fmt.Errorf("BOM creation failure")}
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDXSchemaVersion: fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -1729,4 +1731,56 @@ func Test_gitConfigurationForPrivateModules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunBOMCreation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - verbose disabled", func(t *testing.T) {
+		GeneralConfig.Verbose = false
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - verbose enabled", func(t *testing.T) {
+		GeneralConfig.Verbose = true
+		defer func() { GeneralConfig.Verbose = false }()
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=true", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - custom output filename", func(t *testing.T) {
+		GeneralConfig.Verbose = false
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "custom-bom.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Contains(t, utils.ExecMockRunner.Calls[0].Params, "custom-bom.xml")
+	})
+
+	t.Run("failure - cyclonedx-gomod execution fails", func(t *testing.T) {
+		GeneralConfig.Verbose = false
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDXSchemaVersion: fmt.Errorf("BOM creation failure"),
+		}
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
+	})
 }
