@@ -35,7 +35,7 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 	assert.Contains(output, "info  golangBuild - DONE 8 tests")
 	assert.Contains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
 	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version "+cmd.GolangCycloneDXSchemaVersion)
 	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app/ ./cmd/server")
 	assert.Contains(output, "info  golangBuild - SUCCESS")
 
