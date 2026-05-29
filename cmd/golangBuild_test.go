@@ -342,9 +342,9 @@ go 1.17`
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", golangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", GolangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -389,7 +389,7 @@ go 1.17`
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install " + golangCycloneDXPackage: fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install " + GolangCycloneDXPackage: fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -540,7 +540,7 @@ go 1.17`
 		}
 		GeneralConfig.Verbose = false
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version 1.4": fmt.Errorf("BOM creation failure")}
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDXSchemaVersion: fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -1729,4 +1729,62 @@ func Test_gitConfigurationForPrivateModules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setVerbose(t *testing.T, v bool) {
+	t.Helper()
+	orig := GeneralConfig.Verbose
+	t.Cleanup(func() { GeneralConfig.Verbose = orig })
+	GeneralConfig.Verbose = v
+}
+
+func TestRunBOMCreation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - verbose disabled", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - verbose enabled", func(t *testing.T) {
+		setVerbose(t, true)
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=true", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - custom output filename", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "custom-bom.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Contains(t, utils.ExecMockRunner.Calls[0].Params, "custom-bom.xml")
+	})
+
+	t.Run("failure - cyclonedx-gomod execution fails", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDXSchemaVersion: fmt.Errorf("BOM creation failure"),
+		}
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
+	})
 }
