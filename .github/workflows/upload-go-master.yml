@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+permissions:
+  contents: write  # githubPublishRelease uploads the master binaries to the GitHub release
+  actions: write   # styfle/cancel-workflow-action cancels previous runs
+
 jobs:
   build:
     runs-on: ubuntu-latest
