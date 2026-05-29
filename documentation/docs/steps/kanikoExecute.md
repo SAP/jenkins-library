@@ -2,8 +2,10 @@
 
 ## ${docGenDescription}
 
+<!-- beta: uncomment when dockerBuild is GA
 > **Note:** For pipelines running on **GitHub Actions**, consider using the [`dockerBuild`](dockerBuild.md) step instead.
 > It uses Docker BuildKit natively and does not require a Kaniko sidecar container.
+-->
 
 ## Prerequisites
 
