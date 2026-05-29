@@ -607,7 +607,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		log.Entry().Debug("pull request detected")
 		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
-		if err == nil {
+		if err == nil && !checkIfArgumentIsInScanProperties(config, "detect.blackduck.rapid.compare.mode") {
 			args = append(args, "--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'")
 		}
 		args = append(args, "--detect.cleanup=false")
@@ -1004,7 +1004,10 @@ func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths
 		return fmt.Errorf("failed to get License Policy Violations: %w", err), 0
 	}
 
-	violationCount := getActivePolicyViolations(components)
+	violationCount, err := countComponentsActiveLicensePolicyViolations(sys, components)
+	if err != nil {
+		return fmt.Errorf("failed to get License Policy Violations: %w", err), 0
+	}
 	violations := struct {
 		PolicyViolations int      `json:"policyViolations"`
 		Reports          []string `json:"reports"`
@@ -1034,21 +1037,44 @@ func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths
 	return nil, violationCount
 }
 
-func getActivePolicyViolations(components *bd.Components) int {
+func countComponentsActiveLicensePolicyViolations(sys *blackduckSystem, components *bd.Components) (int, error) {
 	if components.TotalCount == 0 {
-		return 0
+		return 0, nil
 	}
 	activeViolations := 0
 	for _, component := range components.Items {
-		if isActivePolicyViolation(component.PolicyStatus) {
+		hasActiveViolations, err := hasActiveLicensePolicyViolations(sys, component)
+		if err != nil {
+			return 0, err
+		}
+		if hasActiveViolations {
 			activeViolations++
 		}
 	}
-	return activeViolations
+	return activeViolations, nil
 }
 
-func isActivePolicyViolation(status string) bool {
-	return status == "IN_VIOLATION"
+func hasActiveLicensePolicyViolations(sys *blackduckSystem, component bd.Component) (bool, error) {
+	if component.PolicyStatus != "IN_VIOLATION" {
+		return false, nil
+	}
+
+	policyRules, err := sys.Client.GetComponentPolicyRules(component)
+	if err != nil {
+		return false, err
+	}
+
+	for _, policyRule := range policyRules {
+		policyRuleDetails, err := sys.Client.GetPolicyRuleDetails(policyRule)
+		if err != nil {
+			return false, err
+		}
+		if policyRuleDetails.Category == "LICENSE" && policyRule.PolicyApprovalStatus == "IN_VIOLATION" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // create toolrecord file for detectExecute
