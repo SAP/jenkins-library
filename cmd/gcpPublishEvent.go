@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -40,7 +41,10 @@ func runGcpPublishEvent(publisher gcp.PubsubClient, cfg *gcpPublishEventOptions)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
-	log.Entry().Debugf("CloudEvent created: %s", string(data))
+
+	prettyJSON, _ := json.MarshalIndent(json.RawMessage(eventData), "", "  ")
+	
+	log.Entry().Debugf("CloudEvent event created: %s", prettyJSON)
 
 	if err = publisher.Publish(cfg.Topic, data); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
