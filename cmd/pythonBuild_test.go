@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
@@ -235,5 +236,187 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 		assert.Equal(t, filepath.Join("dummy", "bin", "pip"), utils.ExecMockRunner.Calls[9].Exec)
 		assert.Equal(t, []string{"env", "--output-file", "bom-pip.xml", "--output-format", "XML", "--spec-version", "1.4"}, utils.ExecMockRunner.Calls[10].Params)
 		assert.Equal(t, filepath.Join("dummy", "bin", "cyclonedx-py"), utils.ExecMockRunner.Calls[10].Exec)
+	})
+}
+
+func TestRunPythonBuildWithTests(t *testing.T) {
+	t.Parallel()
+	cpe := pythonBuildCommonPipelineEnvironment{}
+
+	SetConfigOptions(ConfigCommandOptions{
+		OpenFile: config.OpenPiperFile,
+	})
+
+	t.Run("runTests=false - no pytest calls", func(t *testing.T) {
+		t.Parallel()
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+			RunTests:               false,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		for _, call := range utils.ExecMockRunner.Calls {
+			assert.NotEqual(t, filepath.Join("dummy", "bin", "pytest"), call.Exec)
+			assert.NotContains(t, call.Params, "pytest")
+			assert.NotContains(t, call.Params, "pytest-cov")
+		}
+	})
+
+	t.Run("runTests=true - happy path: install pytest, pytest-cov, run pytest", func(t *testing.T) {
+		t.Parallel()
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+			RunTests:               true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+
+		// Find the indices of pytest-related calls
+		var installPytestIdx, installPytestCovIdx, pytestIdx int
+		installPytestIdx = -1
+		installPytestCovIdx = -1
+		pytestIdx = -1
+		for i, call := range utils.ExecMockRunner.Calls {
+			if call.Exec == filepath.Join("dummy", "bin", "pip") {
+				for _, p := range call.Params {
+					if p == "pytest" && installPytestIdx == -1 {
+						installPytestIdx = i
+					}
+					if p == "pytest-cov" && installPytestCovIdx == -1 {
+						installPytestCovIdx = i
+					}
+				}
+			}
+			if call.Exec == filepath.Join("dummy", "bin", "pytest") {
+				pytestIdx = i
+			}
+		}
+		assert.GreaterOrEqual(t, installPytestIdx, 0, "pip install pytest not found")
+		assert.GreaterOrEqual(t, installPytestCovIdx, 0, "pip install pytest-cov not found")
+		assert.GreaterOrEqual(t, pytestIdx, 0, "pytest execution not found")
+		assert.Less(t, installPytestIdx, pytestIdx, "pip install pytest must occur before pytest")
+		assert.Less(t, installPytestCovIdx, pytestIdx, "pip install pytest-cov must occur before pytest")
+
+		pytestCall := utils.ExecMockRunner.Calls[pytestIdx]
+		assert.Equal(t, filepath.Join("dummy", "bin", "pytest"), pytestCall.Exec)
+		assert.Equal(t, []string{
+			"--junitxml=" + pythonUnitTestOutput,
+			"--cov",
+			"--cov-report=xml:" + pythonCoberturaCoverageOutput,
+		}, pytestCall.Params)
+	})
+
+	t.Run("runTests=true - testOptions appended after report flags", func(t *testing.T) {
+		t.Parallel()
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+			RunTests:               true,
+			TestOptions:            []string{"-v", "--tb=short"},
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+
+		var pytestCall *mock.ExecCall
+		for i := range utils.ExecMockRunner.Calls {
+			if utils.ExecMockRunner.Calls[i].Exec == filepath.Join("dummy", "bin", "pytest") {
+				pytestCall = &utils.ExecMockRunner.Calls[i]
+				break
+			}
+		}
+		assert.NotNil(t, pytestCall, "pytest call not found")
+		assert.Equal(t, []string{
+			"--junitxml=" + pythonUnitTestOutput,
+			"--cov",
+			"--cov-report=xml:" + pythonCoberturaCoverageOutput,
+			"-v",
+			"--tb=short",
+		}, pytestCall.Params)
+	})
+
+	t.Run("runTests=true - pytest failure sets ErrorTest category", func(t *testing.T) {
+		t.Parallel()
+		log.SetErrorCategory(log.ErrorUndefined)
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+			RunTests:               true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{
+			filepath.Join("dummy", "bin", "pytest"): fmt.Errorf("exit status 1"),
+		}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "python tests")
+		assert.Equal(t, log.ErrorTest, log.GetErrorCategory())
+	})
+
+	t.Run("runTests=true - pytest install failure sets ErrorBuild category", func(t *testing.T) {
+		t.Parallel()
+		log.SetErrorCategory(log.ErrorUndefined)
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+			RunTests:               true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{
+			filepath.Join("dummy", "bin", "pip") + " install --upgrade --root-user-action=ignore pytest": fmt.Errorf("pip install failed"),
+		}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "install pytest")
+		assert.Equal(t, log.ErrorBuild, log.GetErrorCategory())
+	})
+
+	t.Run("runTests=true, createBOM=true - pytest runs before BOM", func(t *testing.T) {
+		t.Parallel()
+		config := pythonBuildOptions{
+			VirtualEnvironmentName: "dummy",
+			RunTests:               true,
+			CreateBOM:              true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+
+		pytestIdx := -1
+		cyclonedxIdx := -1
+		for i, call := range utils.ExecMockRunner.Calls {
+			if call.Exec == filepath.Join("dummy", "bin", "pytest") {
+				pytestIdx = i
+			}
+			if call.Exec == filepath.Join("dummy", "bin", "cyclonedx-py") {
+				cyclonedxIdx = i
+			}
+		}
+		assert.GreaterOrEqual(t, pytestIdx, 0, "pytest not found in calls")
+		assert.GreaterOrEqual(t, cyclonedxIdx, 0, "cyclonedx not found in calls")
+		assert.Less(t, pytestIdx, cyclonedxIdx, "pytest must run before BOM creation")
 	})
 }

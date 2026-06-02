@@ -88,3 +88,19 @@ func InstallCycloneDX(
 	log.Entry().Debug("installing cyclonedx-bom")
 	return install(executeFn, virtualEnv, "cyclonedx-bom", cycloneDXVersion, nil)
 }
+
+func InstallPytest(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing pytest")
+	return install(executeFn, virtualEnv, "pytest", "", nil)
+}
+
+func InstallPytestCov(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing pytest-cov")
+	return install(executeFn, virtualEnv, "pytest-cov", "", nil)
+}

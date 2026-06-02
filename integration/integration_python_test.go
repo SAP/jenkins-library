@@ -91,6 +91,45 @@ func TestPythonIntegrationBuildLegacy(t *testing.T) {
 	assert.Equal(schemaVersion, cmd.CycloneDxSchemaVersion, "bom-pip.xml should reference CycloneDX schema version "+cmd.CycloneDxSchemaVersion)
 }
 
+func TestPythonIntegrationRunTests(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-with-tests",
+		WorkDir:  "/python-project-with-tests",
+	})
+
+	output := RunPiper(t, container, "/python-project-with-tests", "pythonBuild")
+
+	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore pytest")
+	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore pytest-cov")
+	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pytest --junitxml=TEST-python.xml --cov --cov-report=xml:cobertura-coverage.xml")
+	assert.Contains(output, "info  pythonBuild - SUCCESS")
+
+	assert.FileExists(container,
+		"/python-project-with-tests/TEST-python.xml",
+		"/python-project-with-tests/cobertura-coverage.xml",
+	)
+}
+
+func TestPythonIntegrationRunTestsFailure(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-with-failing-tests",
+		WorkDir:  "/python-project-with-failing-tests",
+	})
+
+	exitCode, output := RunPiperExpectFailure(t, container, "/python-project-with-failing-tests", "pythonBuild")
+
+	assert.NotEqual(0, exitCode)
+	assert.Contains(output, "failed to run python tests")
+}
+
 func TestPythonIntegrationBuildMinimal(t *testing.T) {
 	t.Parallel()
 	assert := NewContainerAssert(t)
