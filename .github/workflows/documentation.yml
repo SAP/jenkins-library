@@ -8,6 +8,10 @@ on:
     branches:
       - master
 
+permissions:
+  contents: write  # peaceiris/actions-gh-pages deploys docs to gh-pages (master push only)
+  actions: write   # styfle/cancel-workflow-action cancels previous runs
+
 jobs:
   Build:
     runs-on: ubuntu-latest
