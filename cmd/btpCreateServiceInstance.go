@@ -29,7 +29,7 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 
 	btpConfig := btp.CreateServiceInstanceOptions{
 		Url:              config.BtpAPIEndpoint,
-		Subdomain:        config.Subdomain,
+		Subdomain:        config.BtpSubdomain,
 		Subaccount:       config.Subaccount,
 		User:             config.User,
 		Password:         config.Password,

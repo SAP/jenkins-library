@@ -25,7 +25,7 @@ func btpDeleteServiceInstance(config btpDeleteServiceInstanceOptions, telemetryD
 func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.DeleteServiceInstanceOptions{
 		Url:              config.BtpAPIEndpoint,
-		Subdomain:        config.Subdomain,
+		Subdomain:        config.BtpSubdomain,
 		Subaccount:       config.Subaccount,
 		User:             config.User,
 		Password:         config.Password,
@@ -40,7 +40,7 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 	if config.DeleteServiceBindings {
 		serviceBindings, err := utils.ListServiceBindings(btp.ListServiceBindingOptions{
 			Url:              config.BtpAPIEndpoint,
-			Subdomain:        config.Subdomain,
+			Subdomain:        config.BtpSubdomain,
 			Subaccount:       config.Subaccount,
 			User:             config.User,
 			Password:         config.Password,
@@ -78,7 +78,7 @@ func btpDeleteServiceBindings(config btpDeleteServiceInstanceOptions, serviceBin
 		log.Entry().WithField("bindingName", serviceBinding.Name).Info("Deleting Service Binding")
 		deleteConfig := btpDeleteServiceBindingOptions{
 			BtpAPIEndpoint:      config.BtpAPIEndpoint,
-			Subdomain:           config.Subdomain,
+			BtpSubdomain:        config.BtpSubdomain,
 			Subaccount:          config.Subaccount,
 			User:                config.User,
 			Password:            config.Password,

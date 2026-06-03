@@ -18,7 +18,7 @@ import (
 
 type btpCreateServiceInstanceOptions struct {
 	BtpAPIEndpoint                 string `json:"btpApiEndpoint,omitempty"`
-	Subdomain                      string `json:"subdomain,omitempty"`
+	BtpSubdomain                   string `json:"btpSubdomain,omitempty"`
 	Idp                            string `json:"idp,omitempty"`
 	Subaccount                     string `json:"subaccount,omitempty"`
 	PlanName                       string `json:"planName,omitempty"`
@@ -174,7 +174,7 @@ func BtpCreateServiceInstanceCommand() *cobra.Command {
 
 func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceInstanceOptions) {
 	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", `https://cli.btp.cloud.sap`, "BTP API endpoint")
-	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain (Global Account). It will be used during login.")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP subdomain (Global Account). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
@@ -193,7 +193,7 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
 	cmd.MarkFlagRequired("btpApiEndpoint")
-	cmd.MarkFlagRequired("subdomain")
+	cmd.MarkFlagRequired("btpSubdomain")
 	cmd.MarkFlagRequired("subaccount")
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
@@ -226,13 +226,13 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     `https://cli.btp.cloud.sap`,
 					},
 					{
-						Name:        "subdomain",
+						Name:        "btpSubdomain",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
-						Default:     os.Getenv("PIPER_subdomain"),
+						Default:     os.Getenv("PIPER_btpSubdomain"),
 					},
 					{
 						Name:        "idp",

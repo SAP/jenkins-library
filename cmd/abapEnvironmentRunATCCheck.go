@@ -422,7 +422,7 @@ func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.Aba
 
 	// BTP configuration
 	subOptions.URL = options.BtpAPIEndpoint
-	subOptions.Subdomain = options.Subdomain
+	subOptions.Subdomain = options.BtpSubdomain
 	subOptions.Subaccount = options.Subaccount
 	subOptions.Idp = options.Idp
 	subOptions.ServiceInstanceName = options.ServiceInstanceName

@@ -25,7 +25,7 @@ func btpCreateServiceBinding(config btpCreateServiceBindingOptions, telemetryDat
 func runBtpCreateServiceBinding(config *btpCreateServiceBindingOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.CreateServiceBindingOptions{
 		Url:              config.BtpAPIEndpoint,
-		Subdomain:        config.Subdomain,
+		Subdomain:        config.BtpSubdomain,
 		Subaccount:       config.Subaccount,
 		User:             config.User,
 		Password:         config.Password,

@@ -24,7 +24,7 @@ spec:
         aliases:
           - name: btp/url
         default: "https://cli.btp.cloud.sap"
-      - name: subdomain
+      - name: btpSubdomain
         type: string
         description: BTP subdomain (Global Account). It will be used during login.
         scope:

@@ -31,7 +31,7 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	GenerateHTML         bool   `json:"generateHTML,omitempty"`
 	EvaluateResults      bool   `json:"evaluateResults,omitempty"`
 	BtpAPIEndpoint       string `json:"btpApiEndpoint,omitempty"`
-	Subdomain            string `json:"subdomain,omitempty"`
+	BtpSubdomain         string `json:"btpSubdomain,omitempty"`
 	Subaccount           string `json:"subaccount,omitempty"`
 	Idp                  string `json:"idp,omitempty"`
 	ServiceInstanceName  string `json:"serviceInstanceName,omitempty"`
@@ -195,7 +195,7 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 	cmd.Flags().BoolVar(&stepConfig.EvaluateResults, "evaluateResults", false, "Evaluation will parse the result file and fail the step execution in case of unsuccessful (error/failure) ABAP Unit test cases")
 	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
-	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP Global Account subdomain")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "BTP service instance name")
@@ -358,13 +358,13 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_btpApiEndpoint"),
 					},
 					{
-						Name:        "subdomain",
+						Name:        "btpSubdomain",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
-						Default:     os.Getenv("PIPER_subdomain"),
+						Default:     os.Getenv("PIPER_btpSubdomain"),
 					},
 					{
 						Name:        "subaccount",

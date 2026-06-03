@@ -33,7 +33,7 @@ type abapEnvironmentCloneGitRepoOptions struct {
 	CfServiceInstance   string   `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName    string   `json:"cfServiceKeyName,omitempty"`
 	BtpAPIEndpoint      string   `json:"btpApiEndpoint,omitempty"`
-	Subdomain           string   `json:"subdomain,omitempty"`
+	BtpSubdomain        string   `json:"btpSubdomain,omitempty"`
 	Subaccount          string   `json:"subaccount,omitempty"`
 	Idp                 string   `json:"idp,omitempty"`
 	ServiceInstanceName string   `json:"serviceInstanceName,omitempty"`
@@ -200,7 +200,7 @@ func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
-	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP Global Account subdomain")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "BTP service instance name")
@@ -397,13 +397,13 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_btpApiEndpoint"),
 					},
 					{
-						Name:        "subdomain",
+						Name:        "btpSubdomain",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
-						Default:     os.Getenv("PIPER_subdomain"),
+						Default:     os.Getenv("PIPER_btpSubdomain"),
 					},
 					{
 						Name:        "subaccount",

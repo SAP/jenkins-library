@@ -176,7 +176,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/url
-      - name: subdomain
+      - name: btpSubdomain
         type: string
         description: BTP Global Account subdomain
         scope:
