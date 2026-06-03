@@ -5,6 +5,10 @@ on:
       - main
     paths:
       - 'documentation/adr/**'
+
+permissions:
+  contents: write  # JamesIves/github-pages-deploy-action pushes to the gh-pages branch
+
 jobs:
   build-adr-publish:
     runs-on: ubuntu-latest

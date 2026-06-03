@@ -376,8 +376,14 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 		if x.Status == "Completed" {
 			return x.Link[0].Key, err
 		}
+		if x.Status == "Aborted" {
+			return "", fmt.Errorf("ATC run was aborted")
+		}
 		if x.Status == "" {
 			return "", fmt.Errorf("Could not get any response from ATC poll: %v", errors.New("Status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started"))
+		}
+		if x.Status != "Running" {
+			return "", fmt.Errorf("ATC run ended with unexpected status: %s", x.Status)
 		}
 		time.Sleep(5 * time.Second)
 	}

@@ -175,7 +175,7 @@ func TestFetchXcsrfToken(t *testing.T) {
 }
 
 func TestPollATCRun(t *testing.T) {
-	t.Run("ATC run Poll Test", func(t *testing.T) {
+	t.Run("ATC run Poll Test - empty status", func(t *testing.T) {
 		tokenExpected := "myToken"
 
 		client := &abaputils.ClientMock{
@@ -192,8 +192,22 @@ func TestPollATCRun(t *testing.T) {
 		if err != nil {
 			assert.Equal(t, "", resp)
 			assert.EqualError(t, err, "Could not get any response from ATC poll: Status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started")
-
 		}
+	})
+
+	t.Run("ATC run Poll Test - aborted status", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			Body: `<?xml version="1.0" encoding="utf-8"?><run status="Aborted"></run>`,
+		}
+
+		con := abaputils.ConnectionDetailsHTTP{
+			User:     "Test",
+			Password: "Test",
+			URL:      "https://api.endpoint.com/Entity/",
+		}
+		resp, err := pollATCRun(con, []byte(client.Body), client)
+		assert.Equal(t, "", resp)
+		assert.EqualError(t, err, "ATC run was aborted")
 	})
 }
 

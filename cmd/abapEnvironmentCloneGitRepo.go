@@ -155,6 +155,7 @@ func getCheckoutOptions(config *abapEnvironmentCloneGitRepoOptions, repo abaputi
 		CfServiceInstance: config.CfServiceInstance,
 		CfServiceKeyName:  config.CfServiceKeyName,
 		CfSpace:           config.CfSpace,
+		LogOutput:         config.LogOutput,
 	}
 	return &checkoutOptions
 }
