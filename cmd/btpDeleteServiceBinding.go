@@ -26,7 +26,7 @@ func runBtpDeleteServiceBinding(config *btpDeleteServiceBindingOptions, telemetr
 	btpConfig := btp.DeleteServiceBindingOptions{
 		Url:              config.BtpAPIEndpoint,
 		Subdomain:        config.BtpSubdomain,
-		Subaccount:       config.Subaccount,
+		Subaccount:       config.BtpSubaccount,
 		User:             config.User,
 		Password:         config.Password,
 		IdentityProvider: config.Idp,

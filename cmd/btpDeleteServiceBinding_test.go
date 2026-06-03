@@ -50,7 +50,7 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 		config := btpDeleteServiceBindingOptions{
 			BtpAPIEndpoint:      "https://api.endpoint.com",
 			BtpSubdomain:        "testSubdomain",
-			Subaccount:          "testSubaccount",
+			BtpSubaccount:       "testSubaccount",
 			ServiceBindingName:  BindingName,
 			ServiceInstanceName: InstanceName,
 			Timeout:             60,
@@ -68,7 +68,7 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/binding", "--subaccount", config.Subaccount, "--id", BindingId, "--confirm"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/binding", "--subaccount", config.BtpSubaccount, "--id", BindingId, "--confirm"}},
 				m.Calls[3])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
@@ -108,7 +108,7 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 			BtpAPIEndpoint:      "https://api.endpoint.com",
 			BtpSubdomain:        "testSubdomain",
 			Idp:                 "testIdentityProvider",
-			Subaccount:          "testSubaccount",
+			BtpSubaccount:       "testSubaccount",
 			ServiceBindingName:  BindingName,
 			ServiceInstanceName: InstanceName,
 			Timeout:             60,
@@ -126,7 +126,7 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/binding", "--subaccount", config.Subaccount, "--id", BindingId, "--confirm"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/binding", "--subaccount", config.BtpSubaccount, "--id", BindingId, "--confirm"}},
 				m.Calls[3])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},

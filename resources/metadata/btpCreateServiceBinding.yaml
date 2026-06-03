@@ -46,7 +46,7 @@ spec:
         mandatory: false
         aliases:
           - name: btp/idp
-      - name: subaccount
+      - name: btpSubaccount
         type: string
         description: BTP subaccount where the service instance will be created
         scope:

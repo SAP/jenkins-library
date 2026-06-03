@@ -20,7 +20,7 @@ type btpCreateServiceInstanceOptions struct {
 	BtpAPIEndpoint                 string `json:"btpApiEndpoint,omitempty"`
 	BtpSubdomain                   string `json:"btpSubdomain,omitempty"`
 	Idp                            string `json:"idp,omitempty"`
-	Subaccount                     string `json:"subaccount,omitempty"`
+	BtpSubaccount                  string `json:"btpSubaccount,omitempty"`
 	PlanName                       string `json:"planName,omitempty"`
 	OfferingName                   string `json:"offeringName,omitempty"`
 	ServiceInstanceName            string `json:"serviceInstanceName,omitempty"`
@@ -176,7 +176,7 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP subdomain (Global Account). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
-	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
+	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
@@ -194,7 +194,7 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 
 	cmd.MarkFlagRequired("btpApiEndpoint")
 	cmd.MarkFlagRequired("btpSubdomain")
-	cmd.MarkFlagRequired("subaccount")
+	cmd.MarkFlagRequired("btpSubaccount")
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
 	cmd.MarkFlagRequired("serviceInstanceName")
@@ -244,13 +244,13 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_idp"),
 					},
 					{
-						Name:        "subaccount",
+						Name:        "btpSubaccount",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
-						Default:     os.Getenv("PIPER_subaccount"),
+						Default:     os.Getenv("PIPER_btpSubaccount"),
 					},
 					{
 						Name:        "planName",

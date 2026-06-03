@@ -168,7 +168,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/subdomain
-      - name: subaccount
+      - name: btpSubaccount
         type: string
         description: BTP Subaccount name
         scope:
