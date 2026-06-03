@@ -29,7 +29,7 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 		Subaccount:       config.BtpSubaccount,
 		User:             config.User,
 		Password:         config.Password,
-		IdentityProvider: config.Idp,
+		IdentityProvider: config.BtpIDp,
 		InstanceName:     config.ServiceInstanceName,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
@@ -44,7 +44,7 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 			Subaccount:       config.BtpSubaccount,
 			User:             config.User,
 			Password:         config.Password,
-			IdentityProvider: config.Idp,
+			IdentityProvider: config.BtpIDp,
 			ServiceInstance:  config.ServiceInstanceName,
 		})
 		if err != nil {
@@ -82,7 +82,7 @@ func btpDeleteServiceBindings(config btpDeleteServiceInstanceOptions, serviceBin
 			BtpSubaccount:       config.BtpSubaccount,
 			User:                config.User,
 			Password:            config.Password,
-			Idp:                 config.Idp,
+			BtpIDp:              config.BtpIDp,
 			ServiceInstanceName: config.ServiceInstanceName,
 			ServiceBindingName:  serviceBinding.Name,
 			Timeout:             config.Timeout,

@@ -144,7 +144,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		config := btpCreateServiceBindingOptions{
 			BtpAPIEndpoint:      "https://api.endpoint.com",
 			BtpSubdomain:        "testSubdomain",
-			Idp:                 "testIdentityProvider",
+			BtpIDp:              "testIdentityProvider",
 			BtpSubaccount:       "testSubaccount",
 			ServiceInstanceName: InstanceName,
 			ServiceBindingName:  BindingName,
@@ -161,7 +161,7 @@ func TestRunBtpCreateServiceBinding(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password, "--idp", config.BtpIDp}},
 				m.Calls[0])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "create", "services/binding", "--name", config.ServiceBindingName, "--instance-name", config.ServiceInstanceName, "--subaccount", config.BtpSubaccount, "--parameters", config.Parameters}},

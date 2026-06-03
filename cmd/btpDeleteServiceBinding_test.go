@@ -107,7 +107,7 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 		config := btpDeleteServiceBindingOptions{
 			BtpAPIEndpoint:      "https://api.endpoint.com",
 			BtpSubdomain:        "testSubdomain",
-			Idp:                 "testIdentityProvider",
+			BtpIDp:              "testIdentityProvider",
 			BtpSubaccount:       "testSubaccount",
 			ServiceBindingName:  BindingName,
 			ServiceInstanceName: InstanceName,
@@ -123,7 +123,7 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password, "--idp", config.BtpIDp}},
 				m.Calls[0])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/binding", "--subaccount", config.BtpSubaccount, "--id", BindingId, "--confirm"}},

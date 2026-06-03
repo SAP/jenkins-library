@@ -191,7 +191,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/subaccount
-      - name: idp
+      - name: btpIdp
         type: string
         description: BTP Identity Provider
         scope:

@@ -522,7 +522,7 @@ func convertATCSysOptions(options *abapEnvironmentPushATCSystemConfigOptions) ab
 	subOptions.URL = options.BtpAPIEndpoint
 	subOptions.Subdomain = options.BtpSubdomain
 	subOptions.Subaccount = options.BtpSubaccount
-	subOptions.Idp = options.Idp
+	subOptions.Idp = options.BtpIDp
 	subOptions.ServiceInstanceName = options.ServiceInstanceName
 	subOptions.ServiceBindingName = options.ServiceBindingName
 

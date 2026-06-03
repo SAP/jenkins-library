@@ -30,7 +30,7 @@ type abapEnvironmentPushATCSystemConfigOptions struct {
 	BtpAPIEndpoint          string `json:"btpApiEndpoint,omitempty"`
 	BtpSubdomain            string `json:"btpSubdomain,omitempty"`
 	BtpSubaccount           string `json:"btpSubaccount,omitempty"`
-	Idp                     string `json:"idp,omitempty"`
+	BtpIDp                  string `json:"btpIdp,omitempty"`
 	ServiceInstanceName     string `json:"serviceInstanceName,omitempty"`
 	ServiceBindingName      string `json:"serviceBindingName,omitempty"`
 }
@@ -189,7 +189,7 @@ func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *
 	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
 	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP Global Account subdomain")
 	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP Subaccount name")
-	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
+	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP Identity Provider")
 	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "BTP service instance name")
 	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "BTP service binding name")
 
@@ -342,13 +342,13 @@ func abapEnvironmentPushATCSystemConfigMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_btpSubaccount"),
 					},
 					{
-						Name:        "idp",
+						Name:        "btpIdp",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/idp"}},
-						Default:     os.Getenv("PIPER_idp"),
+						Default:     os.Getenv("PIPER_btpIdp"),
 					},
 					{
 						Name:        "serviceInstanceName",

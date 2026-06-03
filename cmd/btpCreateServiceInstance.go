@@ -33,7 +33,7 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 		Subaccount:       config.BtpSubaccount,
 		User:             config.User,
 		Password:         config.Password,
-		IdentityProvider: config.Idp,
+		IdentityProvider: config.BtpIDp,
 		PlanName:         config.PlanName,
 		OfferingName:     config.OfferingName,
 		InstanceName:     config.ServiceInstanceName,

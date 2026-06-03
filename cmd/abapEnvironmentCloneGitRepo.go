@@ -215,7 +215,7 @@ func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.Ab
 	subOptions.URL = config.BtpAPIEndpoint
 	subOptions.Subdomain = config.BtpSubdomain
 	subOptions.Subaccount = config.BtpSubaccount
-	subOptions.Idp = config.Idp
+	subOptions.Idp = config.BtpIDp
 	subOptions.ServiceInstanceName = config.ServiceInstanceName
 	subOptions.ServiceBindingName = config.ServiceBindingName
 

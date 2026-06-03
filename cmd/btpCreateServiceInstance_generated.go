@@ -19,7 +19,7 @@ import (
 type btpCreateServiceInstanceOptions struct {
 	BtpAPIEndpoint                 string `json:"btpApiEndpoint,omitempty"`
 	BtpSubdomain                   string `json:"btpSubdomain,omitempty"`
-	Idp                            string `json:"idp,omitempty"`
+	BtpIDp                         string `json:"btpIdp,omitempty"`
 	BtpSubaccount                  string `json:"btpSubaccount,omitempty"`
 	PlanName                       string `json:"planName,omitempty"`
 	OfferingName                   string `json:"offeringName,omitempty"`
@@ -175,7 +175,7 @@ func BtpCreateServiceInstanceCommand() *cobra.Command {
 func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceInstanceOptions) {
 	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP subdomain (Global Account). It will be used during login.")
-	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
+	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
@@ -235,13 +235,13 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_btpSubdomain"),
 					},
 					{
-						Name:        "idp",
+						Name:        "btpIdp",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/idp"}},
-						Default:     os.Getenv("PIPER_idp"),
+						Default:     os.Getenv("PIPER_btpIdp"),
 					},
 					{
 						Name:        "btpSubaccount",

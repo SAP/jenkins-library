@@ -35,7 +35,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/subdomain
-      - name: idp
+      - name: btpIdp
         type: string
         description: BTP idp (Identity Provider) (optional). It will be used during login.
         scope:
