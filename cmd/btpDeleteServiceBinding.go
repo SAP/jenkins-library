@@ -24,7 +24,7 @@ func btpDeleteServiceBinding(config btpDeleteServiceBindingOptions, telemetryDat
 
 func runBtpDeleteServiceBinding(config *btpDeleteServiceBindingOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 	btpConfig := btp.DeleteServiceBindingOptions{
-		Url:              config.Url,
+		Url:              config.BtpAPIEndpoint,
 		Subdomain:        config.Subdomain,
 		Subaccount:       config.Subaccount,
 		User:             config.User,

@@ -27,7 +27,7 @@ type abapEnvironmentPushATCSystemConfigOptions struct {
 	Username                string `json:"username,omitempty"`
 	Password                string `json:"password,omitempty"`
 	Host                    string `json:"host,omitempty"`
-	Url                     string `json:"url,omitempty"`
+	BtpAPIEndpoint          string `json:"btpApiEndpoint,omitempty"`
 	Subdomain               string `json:"subdomain,omitempty"`
 	Subaccount              string `json:"subaccount,omitempty"`
 	Idp                     string `json:"idp,omitempty"`
@@ -186,7 +186,7 @@ func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0763")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0763")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP SAP BTP, ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
@@ -315,13 +315,13 @@ func abapEnvironmentPushATCSystemConfigMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_host"),
 					},
 					{
-						Name:        "url",
+						Name:        "btpApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/url"}},
-						Default:     os.Getenv("PIPER_url"),
+						Default:     os.Getenv("PIPER_btpApiEndpoint"),
 					},
 					{
 						Name:        "subdomain",

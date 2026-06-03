@@ -31,7 +31,7 @@ type abapEnvironmentRunATCCheckOptions struct {
 	GenerateHTML        bool     `json:"generateHTML,omitempty"`
 	FailOnSeverity      string   `json:"failOnSeverity,omitempty"`
 	CertificateNames    []string `json:"certificateNames,omitempty"`
-	Url                 string   `json:"url,omitempty"`
+	BtpAPIEndpoint      string   `json:"btpApiEndpoint,omitempty"`
 	Subdomain           string   `json:"subdomain,omitempty"`
 	Subaccount          string   `json:"subaccount,omitempty"`
 	Idp                 string   `json:"idp,omitempty"`
@@ -196,7 +196,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 	cmd.Flags().StringVar(&stepConfig.FailOnSeverity, "failOnSeverity", os.Getenv("PIPER_failOnSeverity"), "Specifies the severity level, for which the ATC step should fail if at least one message with this severity (or \"higher\") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
-	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
@@ -360,13 +360,13 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
-						Name:        "url",
+						Name:        "btpApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/url"}},
-						Default:     os.Getenv("PIPER_url"),
+						Default:     os.Getenv("PIPER_btpApiEndpoint"),
 					},
 					{
 						Name:        "subdomain",

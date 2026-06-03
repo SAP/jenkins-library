@@ -30,7 +30,7 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
 	GenerateHTML         bool   `json:"generateHTML,omitempty"`
 	EvaluateResults      bool   `json:"evaluateResults,omitempty"`
-	Url                  string `json:"url,omitempty"`
+	BtpAPIEndpoint       string `json:"btpApiEndpoint,omitempty"`
 	Subdomain            string `json:"subdomain,omitempty"`
 	Subaccount           string `json:"subaccount,omitempty"`
 	Idp                  string `json:"idp,omitempty"`
@@ -194,7 +194,7 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 	cmd.Flags().BoolVar(&stepConfig.EvaluateResults, "evaluateResults", false, "Evaluation will parse the result file and fail the step execution in case of unsuccessful (error/failure) ABAP Unit test cases")
-	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
@@ -349,13 +349,13 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						Default:     false,
 					},
 					{
-						Name:        "url",
+						Name:        "btpApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/url"}},
-						Default:     os.Getenv("PIPER_url"),
+						Default:     os.Getenv("PIPER_btpApiEndpoint"),
 					},
 					{
 						Name:        "subdomain",

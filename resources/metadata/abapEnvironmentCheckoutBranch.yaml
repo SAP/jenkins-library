@@ -148,7 +148,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: url
+      - name: btpApiEndpoint
         type: string
         description: BTP CLI API endpoint
         scope:

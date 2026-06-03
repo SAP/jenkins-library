@@ -12,7 +12,7 @@ spec:
         aliases:
           - name: btp/credentialsId
     params:
-      - name: url
+      - name: btpApiEndpoint
         type: string
         description: BTP API endpoint
         scope:

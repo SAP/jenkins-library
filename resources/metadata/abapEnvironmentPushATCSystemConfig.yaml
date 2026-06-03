@@ -126,7 +126,7 @@ spec:
           - STEPS
           - GENERAL
         mandatory: false
-      - name: url
+      - name: btpApiEndpoint
         type: string
         description: BTP CLI API endpoint
         scope:

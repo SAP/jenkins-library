@@ -17,7 +17,7 @@ import (
 )
 
 type btpCreateServiceBindingOptions struct {
-	Url                 string `json:"url,omitempty"`
+	BtpAPIEndpoint      string `json:"btpApiEndpoint,omitempty"`
 	Subdomain           string `json:"subdomain,omitempty"`
 	Idp                 string `json:"idp,omitempty"`
 	Subaccount          string `json:"subaccount,omitempty"`
@@ -166,7 +166,7 @@ func BtpCreateServiceBindingCommand() *cobra.Command {
 }
 
 func addBtpCreateServiceBindingFlags(cmd *cobra.Command, stepConfig *btpCreateServiceBindingOptions) {
-	cmd.Flags().StringVar(&stepConfig.Url, "url", `https://cli.btp.cloud.sap`, "BTP API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", `https://cli.btp.cloud.sap`, "BTP API endpoint")
 	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain (Global Account). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
@@ -178,7 +178,7 @@ func addBtpCreateServiceBindingFlags(cmd *cobra.Command, stepConfig *btpCreateSe
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
-	cmd.MarkFlagRequired("url")
+	cmd.MarkFlagRequired("btpApiEndpoint")
 	cmd.MarkFlagRequired("subdomain")
 	cmd.MarkFlagRequired("subaccount")
 	cmd.MarkFlagRequired("serviceInstanceName")
@@ -202,7 +202,7 @@ func btpCreateServiceBindingMetadata() config.StepData {
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "url",
+						Name:        "btpApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",

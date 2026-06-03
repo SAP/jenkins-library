@@ -28,7 +28,7 @@ func btpCreateServiceInstance(config btpCreateServiceInstanceOptions, telemetryD
 func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
 
 	btpConfig := btp.CreateServiceInstanceOptions{
-		Url:              config.Url,
+		Url:              config.BtpAPIEndpoint,
 		Subdomain:        config.Subdomain,
 		Subaccount:       config.Subaccount,
 		User:             config.User,
