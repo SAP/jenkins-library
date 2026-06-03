@@ -26,7 +26,7 @@ type abapEnvironmentCloneGitRepoOptions struct {
 	RepositoryName         string   `json:"repositoryName,omitempty"`
 	BranchName             string   `json:"branchName,omitempty"`
 	Host                   string   `json:"host,omitempty"`
-	LogOutput              string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD"`
+	LogOutput              string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD ERROR_ONLY"`
 	CfAPIEndpoint          string   `json:"cfApiEndpoint,omitempty"`
 	CfOrg                  string   `json:"cfOrg,omitempty"`
 	CfSpace                string   `json:"cfSpace,omitempty"`
