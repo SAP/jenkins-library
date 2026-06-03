@@ -212,7 +212,7 @@ func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.Ab
 	subOptions.ByogAuthMethod = config.ByogAuthMethod
 
 	// BTP configuration
-	subOptions.URL = config.Url
+	subOptions.URL = config.BtpAPIEndpoint
 	subOptions.Subdomain = config.Subdomain
 	subOptions.Subaccount = config.Subaccount
 	subOptions.Idp = config.Idp

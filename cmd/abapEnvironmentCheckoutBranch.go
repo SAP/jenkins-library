@@ -171,7 +171,7 @@ func convertCheckoutConfig(config *abapEnvironmentCheckoutBranchOptions) abaputi
 	subOptions.Username = config.Username
 
 	// BTP configuration
-	subOptions.URL = config.Url
+	subOptions.URL = config.BtpAPIEndpoint
 	subOptions.Subdomain = config.Subdomain
 	subOptions.Subaccount = config.Subaccount
 	subOptions.Idp = config.Idp
