@@ -48,15 +48,15 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 
 		// init
 		config := btpDeleteServiceBindingOptions{
-			BtpAPIEndpoint:      "https://api.endpoint.com",
-			BtpSubdomain:        "testSubdomain",
-			BtpSubaccount:       "testSubaccount",
-			ServiceBindingName:  BindingName,
-			ServiceInstanceName: InstanceName,
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			BtpAPIEndpoint:         "https://api.endpoint.com",
+			BtpSubdomain:           "testSubdomain",
+			BtpSubaccount:          "testSubaccount",
+			ServiceBindingName:     BindingName,
+			BtpServiceInstanceName: InstanceName,
+			Timeout:                60,
+			PollInterval:           5,
+			User:                   "testUser",
+			Password:               "testPassword",
 		}
 
 		// test
@@ -105,16 +105,16 @@ func TestRunBtpDeleteServiceBinding(t *testing.T) {
 
 		// init
 		config := btpDeleteServiceBindingOptions{
-			BtpAPIEndpoint:      "https://api.endpoint.com",
-			BtpSubdomain:        "testSubdomain",
-			BtpIDp:              "testIdentityProvider",
-			BtpSubaccount:       "testSubaccount",
-			ServiceBindingName:  BindingName,
-			ServiceInstanceName: InstanceName,
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			BtpAPIEndpoint:         "https://api.endpoint.com",
+			BtpSubdomain:           "testSubdomain",
+			BtpIDp:                 "testIdentityProvider",
+			BtpSubaccount:          "testSubaccount",
+			ServiceBindingName:     BindingName,
+			BtpServiceInstanceName: InstanceName,
+			Timeout:                60,
+			PollInterval:           5,
+			User:                   "testUser",
+			Password:               "testPassword",
 		}
 
 		// test

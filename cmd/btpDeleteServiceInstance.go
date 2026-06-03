@@ -30,7 +30,7 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 		User:             config.User,
 		Password:         config.Password,
 		IdentityProvider: config.BtpIDp,
-		InstanceName:     config.ServiceInstanceName,
+		InstanceName:     config.BtpServiceInstanceName,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
 		MaxRetries:       6,
@@ -45,7 +45,7 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 			User:             config.User,
 			Password:         config.Password,
 			IdentityProvider: config.BtpIDp,
-			ServiceInstance:  config.ServiceInstanceName,
+			ServiceInstance:  config.BtpServiceInstanceName,
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to list service bindings of the service instance")
@@ -77,16 +77,16 @@ func btpDeleteServiceBindings(config btpDeleteServiceInstanceOptions, serviceBin
 	for _, serviceBinding := range serviceBindings {
 		log.Entry().WithField("bindingName", serviceBinding.Name).Info("Deleting Service Binding")
 		deleteConfig := btpDeleteServiceBindingOptions{
-			BtpAPIEndpoint:      config.BtpAPIEndpoint,
-			BtpSubdomain:        config.BtpSubdomain,
-			BtpSubaccount:       config.BtpSubaccount,
-			User:                config.User,
-			Password:            config.Password,
-			BtpIDp:              config.BtpIDp,
-			ServiceInstanceName: config.ServiceInstanceName,
-			ServiceBindingName:  serviceBinding.Name,
-			Timeout:             config.Timeout,
-			PollInterval:        config.PollInterval,
+			BtpAPIEndpoint:         config.BtpAPIEndpoint,
+			BtpSubdomain:           config.BtpSubdomain,
+			BtpSubaccount:          config.BtpSubaccount,
+			User:                   config.User,
+			Password:               config.Password,
+			BtpIDp:                 config.BtpIDp,
+			BtpServiceInstanceName: config.BtpServiceInstanceName,
+			ServiceBindingName:     serviceBinding.Name,
+			Timeout:                config.Timeout,
+			PollInterval:           config.PollInterval,
 		}
 
 		err := runBtpDeleteServiceBinding(&deleteConfig, telemetryData, utils)

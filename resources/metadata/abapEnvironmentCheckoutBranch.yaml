@@ -188,7 +188,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/idp
-      - name: serviceInstanceName
+      - name: btpServiceInstanceName
         type: string
         description: BTP service instance name
         scope:

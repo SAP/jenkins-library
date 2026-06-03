@@ -36,7 +36,7 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 		IdentityProvider: config.BtpIDp,
 		PlanName:         config.PlanName,
 		OfferingName:     config.OfferingName,
-		InstanceName:     config.ServiceInstanceName,
+		InstanceName:     config.BtpServiceInstanceName,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
 		MaxRetries:       6,

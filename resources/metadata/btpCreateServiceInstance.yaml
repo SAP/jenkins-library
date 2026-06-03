@@ -79,7 +79,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/offeringName
-      - name: serviceInstanceName
+      - name: btpServiceInstanceName
         type: string
         description: Name of the service instance to create
         scope:

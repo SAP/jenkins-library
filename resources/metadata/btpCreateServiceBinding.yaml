@@ -57,7 +57,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/subaccount
-      - name: serviceInstanceName
+      - name: btpServiceInstanceName
         type: string
         description: Name of the service instance for which the service binding will be created
         scope:

@@ -17,16 +17,16 @@ import (
 )
 
 type btpDeleteServiceInstanceOptions struct {
-	BtpAPIEndpoint        string `json:"btpApiEndpoint,omitempty"`
-	BtpSubdomain          string `json:"btpSubdomain,omitempty"`
-	BtpIDp                string `json:"btpIdp,omitempty"`
-	BtpSubaccount         string `json:"btpSubaccount,omitempty"`
-	ServiceInstanceName   string `json:"serviceInstanceName,omitempty"`
-	Timeout               int    `json:"timeout,omitempty"`
-	PollInterval          int    `json:"pollInterval,omitempty"`
-	User                  string `json:"user,omitempty"`
-	Password              string `json:"password,omitempty"`
-	DeleteServiceBindings bool   `json:"deleteServiceBindings,omitempty"`
+	BtpAPIEndpoint         string `json:"btpApiEndpoint,omitempty"`
+	BtpSubdomain           string `json:"btpSubdomain,omitempty"`
+	BtpIDp                 string `json:"btpIdp,omitempty"`
+	BtpSubaccount          string `json:"btpSubaccount,omitempty"`
+	BtpServiceInstanceName string `json:"btpServiceInstanceName,omitempty"`
+	Timeout                int    `json:"timeout,omitempty"`
+	PollInterval           int    `json:"pollInterval,omitempty"`
+	User                   string `json:"user,omitempty"`
+	Password               string `json:"password,omitempty"`
+	DeleteServiceBindings  bool   `json:"deleteServiceBindings,omitempty"`
 }
 
 // BtpDeleteServiceInstanceCommand Delete a service instance in BTP
@@ -169,7 +169,7 @@ func addBtpDeleteServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpDeleteS
 	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP subdomain (Global Account). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
 	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP subaccount where the service instance will be deleted")
-	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to delete")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "Name of the service instance to delete")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 3600, "Timeout in seconds for deletion operation")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
@@ -179,7 +179,7 @@ func addBtpDeleteServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpDeleteS
 	cmd.MarkFlagRequired("btpApiEndpoint")
 	cmd.MarkFlagRequired("btpSubdomain")
 	cmd.MarkFlagRequired("btpSubaccount")
-	cmd.MarkFlagRequired("serviceInstanceName")
+	cmd.MarkFlagRequired("btpServiceInstanceName")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -235,13 +235,13 @@ func btpDeleteServiceInstanceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_btpSubaccount"),
 					},
 					{
-						Name:        "serviceInstanceName",
+						Name:        "btpServiceInstanceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
-						Default:     os.Getenv("PIPER_serviceInstanceName"),
+						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
 					},
 					{
 						Name:        "timeout",

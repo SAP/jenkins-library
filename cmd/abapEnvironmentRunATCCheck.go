@@ -425,7 +425,7 @@ func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.Aba
 	subOptions.Subdomain = options.BtpSubdomain
 	subOptions.Subaccount = options.BtpSubaccount
 	subOptions.Idp = options.BtpIDp
-	subOptions.ServiceInstanceName = options.ServiceInstanceName
+	subOptions.ServiceInstanceName = options.BtpServiceInstanceName
 	subOptions.ServiceBindingName = options.ServiceBindingName
 
 	return subOptions

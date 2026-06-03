@@ -23,7 +23,7 @@ type btpCreateServiceInstanceOptions struct {
 	BtpSubaccount                  string `json:"btpSubaccount,omitempty"`
 	PlanName                       string `json:"planName,omitempty"`
 	OfferingName                   string `json:"offeringName,omitempty"`
-	ServiceInstanceName            string `json:"serviceInstanceName,omitempty"`
+	BtpServiceInstanceName         string `json:"btpServiceInstanceName,omitempty"`
 	Parameters                     string `json:"parameters,omitempty"`
 	AbapSystemAdminEmail           string `json:"abapSystemAdminEmail,omitempty"`
 	AbapSystemDescription          string `json:"abapSystemDescription,omitempty"`
@@ -179,7 +179,7 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
-	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "Name of the service instance to create")
 	cmd.Flags().StringVar(&stepConfig.Parameters, "parameters", os.Getenv("PIPER_parameters"), "Path to JSON file or JSON in-line string for a Service creation. If given, you no more need to provide `abapSystemAdminEmail`, `abapSystemDescription`, `abapSystemIsDevelopmentAllowed`, `abapSystemID`, `abapSystemSizeOfPersistence`, `abapSystemSizeOfRuntime` as they are suppose to be in the JSON.")
 	cmd.Flags().StringVar(&stepConfig.AbapSystemAdminEmail, "abapSystemAdminEmail", os.Getenv("PIPER_abapSystemAdminEmail"), "Admin E-Mail address for the initial administrator of the system")
 	cmd.Flags().StringVar(&stepConfig.AbapSystemDescription, "abapSystemDescription", `Test system created by an automated pipeline`, "Description for the ABAP Environment system")
@@ -197,7 +197,7 @@ func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateS
 	cmd.MarkFlagRequired("btpSubaccount")
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
-	cmd.MarkFlagRequired("serviceInstanceName")
+	cmd.MarkFlagRequired("btpServiceInstanceName")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -271,13 +271,13 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_offeringName"),
 					},
 					{
-						Name:        "serviceInstanceName",
+						Name:        "btpServiceInstanceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
-						Default:     os.Getenv("PIPER_serviceInstanceName"),
+						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
 					},
 					{
 						Name:        "parameters",

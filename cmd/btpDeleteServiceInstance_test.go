@@ -41,14 +41,14 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 
 		// init
 		config := btpDeleteServiceInstanceOptions{
-			BtpAPIEndpoint:      "https://api.endpoint.com",
-			BtpSubdomain:        "testSubdomain",
-			BtpSubaccount:       "testSubaccount",
-			ServiceInstanceName: InstanceName,
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			BtpAPIEndpoint:         "https://api.endpoint.com",
+			BtpSubdomain:           "testSubdomain",
+			BtpSubaccount:          "testSubaccount",
+			BtpServiceInstanceName: InstanceName,
+			Timeout:                60,
+			PollInterval:           5,
+			User:                   "testUser",
+			Password:               "testPassword",
 		}
 
 		// test
@@ -91,15 +91,15 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 
 		// init
 		config := btpDeleteServiceInstanceOptions{
-			BtpAPIEndpoint:      "https://api.endpoint.com",
-			BtpSubdomain:        "testSubdomain",
-			BtpIDp:              "testIdentityProvider",
-			BtpSubaccount:       "testSubaccount",
-			ServiceInstanceName: InstanceName,
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			BtpAPIEndpoint:         "https://api.endpoint.com",
+			BtpSubdomain:           "testSubdomain",
+			BtpIDp:                 "testIdentityProvider",
+			BtpSubaccount:          "testSubaccount",
+			BtpServiceInstanceName: InstanceName,
+			Timeout:                60,
+			PollInterval:           5,
+			User:                   "testUser",
+			Password:               "testPassword",
 		}
 
 		// test

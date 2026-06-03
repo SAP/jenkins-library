@@ -157,7 +157,7 @@ func convertPullConfig(config *abapEnvironmentPullGitRepoOptions) abaputils.Abap
 	subOptions.Subdomain = config.BtpSubdomain
 	subOptions.Subaccount = config.BtpSubaccount
 	subOptions.Idp = config.BtpIDp
-	subOptions.ServiceInstanceName = config.ServiceInstanceName
+	subOptions.ServiceInstanceName = config.BtpServiceInstanceName
 	subOptions.ServiceBindingName = config.ServiceBindingName
 
 	return subOptions

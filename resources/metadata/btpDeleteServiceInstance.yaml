@@ -57,7 +57,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/subaccount
-      - name: serviceInstanceName
+      - name: btpServiceInstanceName
         type: string
         description: Name of the service instance to delete
         scope:
