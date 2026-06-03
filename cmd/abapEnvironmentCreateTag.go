@@ -182,7 +182,7 @@ func convertTagConfig(config *abapEnvironmentCreateTagOptions) abaputils.AbapEnv
 	subOptions.Subaccount = config.BtpSubaccount
 	subOptions.Idp = config.BtpIDp
 	subOptions.ServiceInstanceName = config.BtpServiceInstanceName
-	subOptions.ServiceBindingName = config.ServiceBindingName
+	subOptions.ServiceBindingName = config.BtpServiceBindingName
 
 	return subOptions
 }

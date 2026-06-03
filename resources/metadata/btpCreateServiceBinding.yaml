@@ -68,7 +68,7 @@ spec:
         mandatory: true
         aliases:
           - name: btp/instanceName
-      - name: serviceBindingName
+      - name: btpServiceBindingName
         type: string
         description: Name of the service binding to create
         scope:

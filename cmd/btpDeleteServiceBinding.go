@@ -30,7 +30,7 @@ func runBtpDeleteServiceBinding(config *btpDeleteServiceBindingOptions, telemetr
 		User:             config.User,
 		Password:         config.Password,
 		IdentityProvider: config.BtpIDp,
-		BindingName:      config.ServiceBindingName,
+		BindingName:      config.BtpServiceBindingName,
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
 		ServiceInstance:  config.BtpServiceInstanceName,

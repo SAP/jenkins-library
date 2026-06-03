@@ -84,7 +84,7 @@ func btpDeleteServiceBindings(config btpDeleteServiceInstanceOptions, serviceBin
 			Password:               config.Password,
 			BtpIDp:                 config.BtpIDp,
 			BtpServiceInstanceName: config.BtpServiceInstanceName,
-			ServiceBindingName:     serviceBinding.Name,
+			BtpServiceBindingName:  serviceBinding.Name,
 			Timeout:                config.Timeout,
 			PollInterval:           config.PollInterval,
 		}

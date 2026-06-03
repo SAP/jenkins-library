@@ -32,7 +32,7 @@ type abapEnvironmentPushATCSystemConfigOptions struct {
 	BtpSubaccount           string `json:"btpSubaccount,omitempty"`
 	BtpIDp                  string `json:"btpIdp,omitempty"`
 	BtpServiceInstanceName  string `json:"btpServiceInstanceName,omitempty"`
-	ServiceBindingName      string `json:"serviceBindingName,omitempty"`
+	BtpServiceBindingName   string `json:"btpServiceBindingName,omitempty"`
 }
 
 // AbapEnvironmentPushATCSystemConfigCommand Create/Update ATC System Configuration
@@ -191,7 +191,7 @@ func addAbapEnvironmentPushATCSystemConfigFlags(cmd *cobra.Command, stepConfig *
 	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP Subaccount name")
 	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP Identity Provider")
 	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "BTP service instance name")
-	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "BTP service binding name")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceBindingName, "btpServiceBindingName", os.Getenv("PIPER_btpServiceBindingName"), "BTP service binding name")
 
 	cmd.MarkFlagRequired("atcSystemConfigFilePath")
 	cmd.MarkFlagRequired("username")
@@ -360,13 +360,13 @@ func abapEnvironmentPushATCSystemConfigMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
 					},
 					{
-						Name:        "serviceBindingName",
+						Name:        "btpServiceBindingName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
-						Default:     os.Getenv("PIPER_serviceBindingName"),
+						Default:     os.Getenv("PIPER_btpServiceBindingName"),
 					},
 				},
 			},

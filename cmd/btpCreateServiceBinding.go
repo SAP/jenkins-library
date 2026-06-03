@@ -34,7 +34,7 @@ func runBtpCreateServiceBinding(config *btpCreateServiceBindingOptions, telemetr
 		Timeout:          config.Timeout,
 		PollInterval:     config.PollInterval,
 		ServiceInstance:  config.BtpServiceInstanceName,
-		BindingName:      config.ServiceBindingName,
+		BindingName:      config.BtpServiceBindingName,
 		MaxRetries:       6,
 		MaxBadRequests:   10,
 	}

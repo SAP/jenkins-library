@@ -140,7 +140,7 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	subOptions.Subaccount = options.BtpSubaccount
 	subOptions.Idp = options.BtpIDp
 	subOptions.ServiceInstanceName = options.BtpServiceInstanceName
-	subOptions.ServiceBindingName = options.ServiceBindingName
+	subOptions.ServiceBindingName = options.BtpServiceBindingName
 
 	return subOptions
 }
