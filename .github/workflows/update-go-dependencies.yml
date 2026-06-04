@@ -5,6 +5,10 @@ on:
   repository_dispatch:
     types: update-dependencies
 
+permissions:
+  contents: write  # `git push` of the gh-action-update-golang-dependencies branch via the checkout token
+  actions: write   # styfle/cancel-workflow-action cancels previous runs
+
 jobs:
   build:
     runs-on: ubuntu-latest

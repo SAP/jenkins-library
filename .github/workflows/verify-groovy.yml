@@ -8,6 +8,10 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read  # checkout
+  actions: write  # styfle/cancel-workflow-action cancels previous runs
+
 jobs:
   unit:
     runs-on: ubuntu-latest
