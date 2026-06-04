@@ -169,6 +169,9 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            default: docker-$(org)-$(space)
+            name: dockerVaultSecretName
       - name: dockerUsername
         type: string
         description:
@@ -184,6 +187,9 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            default: docker-$(org)-$(space)
+            name: dockerVaultSecretName
       - name: keepOldInstance
         type: bool
         description:
