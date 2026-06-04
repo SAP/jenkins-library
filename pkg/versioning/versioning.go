@@ -40,6 +40,8 @@ type Options struct {
 	VersionSource           string
 	VersionSection          string
 	VersionField            string
+	ArtifactIDSection       string
+	ArtifactIDField         string
 	VersioningScheme        string
 	HelmUpdateAppVersion    bool
 	CAPVersioningPreference string
@@ -87,7 +89,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	switch buildTool {
 	case "custom":
 		var err error
-		artifact, err = customArtifact(buildDescriptorFilePath, opts.VersionField, opts.VersionSection, opts.VersioningScheme)
+		artifact, err = customArtifact(buildDescriptorFilePath, opts.VersionField, opts.VersionSection, opts.ArtifactIDField, opts.ArtifactIDSection, opts.VersioningScheme)
 		if err != nil {
 			return artifact, err
 		}
@@ -226,14 +228,16 @@ func searchDescriptor(supported []string, existsFunc func(string) (bool, error))
 	return descriptor, nil
 }
 
-func customArtifact(buildDescriptorFilePath, field, section, scheme string) (Artifact, error) {
+func customArtifact(buildDescriptorFilePath, field, section, artifactIDField, artifactIDSection, scheme string) (Artifact, error) {
 	switch filepath.Ext(buildDescriptorFilePath) {
 	case ".cfg", ".ini":
 		return &INIfile{
-			path:             buildDescriptorFilePath,
-			versionField:     field,
-			versionSection:   section,
-			versioningScheme: scheme,
+			path:              buildDescriptorFilePath,
+			versionField:      field,
+			versionSection:    section,
+			artifactIDField:   artifactIDField,
+			artifactIDSection: artifactIDSection,
+			versioningScheme:  scheme,
 		}, nil
 	case ".json":
 		return &JSONfile{

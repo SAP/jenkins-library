@@ -25,6 +25,8 @@ type artifactPrepareVersionOptions struct {
 	CommitUserName              string   `json:"commitUserName,omitempty"`
 	CustomVersionField          string   `json:"customVersionField,omitempty"`
 	CustomVersionSection        string   `json:"customVersionSection,omitempty"`
+	CustomArtifactIDField       string   `json:"customArtifactIdField,omitempty"`
+	CustomArtifactIDSection     string   `json:"customArtifactIdSection,omitempty"`
 	CustomVersioningScheme      string   `json:"customVersioningScheme,omitempty" validate:"possible-values=docker maven pep440 semver2"`
 	DockerVersionSource         string   `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates            bool     `json:"fetchCoordinates,omitempty"`
@@ -296,6 +298,8 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", `Project Piper`, "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionField, "customVersionField", os.Getenv("PIPER_customVersionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionSection, "customVersionSection", os.Getenv("PIPER_customVersionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
+	cmd.Flags().StringVar(&stepConfig.CustomArtifactIDField, "customArtifactIdField", os.Getenv("PIPER_customArtifactIdField"), "For `buildTool: custom`: Defines the field which contains the artifact id (name) in the descriptor file. Used to populate the artifactId coordinate (e.g. for *.ini/*.cfg files).")
+	cmd.Flags().StringVar(&stepConfig.CustomArtifactIDSection, "customArtifactIdSection", os.Getenv("PIPER_customArtifactIdSection"), "For `buildTool: custom`: Defines the section for artifact id (name) retrieval in case a *.ini/*.cfg file is used. Defaults to `customVersionSection` when not set.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", `maven`, "For `buildTool: custom`: Defines the versioning scheme to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
 	cmd.Flags().BoolVar(&stepConfig.FetchCoordinates, "fetchCoordinates", false, "If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.")
@@ -387,6 +391,24 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_customVersionSection"),
+					},
+					{
+						Name:        "customArtifactIdField",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customArtifactIdField"),
+					},
+					{
+						Name:        "customArtifactIdSection",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customArtifactIdSection"),
 					},
 					{
 						Name:        "customVersioningScheme",

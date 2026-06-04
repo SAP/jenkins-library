@@ -122,6 +122,8 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		ProjectSettingsFile:     config.ProjectSettingsFile,
 		VersionField:            config.CustomVersionField,
 		VersionSection:          config.CustomVersionSection,
+		ArtifactIDField:         config.CustomArtifactIDField,
+		ArtifactIDSection:       config.CustomArtifactIDSection,
 		VersioningScheme:        config.CustomVersioningScheme,
 		VersionSource:           config.DockerVersionSource,
 		CAPVersioningPreference: config.CAPVersioningPreference,

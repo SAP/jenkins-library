@@ -10,13 +10,15 @@ import (
 
 // INIfile defines an artifact using a ini file for versioning
 type INIfile struct {
-	path             string
-	content          *ini.File
-	versioningScheme string
-	versionSection   string
-	versionField     string
-	readFile         func(string) ([]byte, error)
-	writeFile        func(string, []byte, os.FileMode) error
+	path              string
+	content           *ini.File
+	versioningScheme  string
+	versionSection    string
+	versionField      string
+	artifactIDSection string
+	artifactIDField   string
+	readFile          func(string) ([]byte, error)
+	writeFile         func(string, []byte, os.FileMode) error
 }
 
 func (i *INIfile) init() error {
@@ -86,5 +88,37 @@ func (i *INIfile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (i *INIfile) GetCoordinates() (Coordinates, error) {
-	return Coordinates{}, nil
+	result := Coordinates{}
+
+	// No artifact id field configured: nothing to extract from the descriptor,
+	// keep backward-compatible behaviour and return empty coordinates.
+	if len(i.artifactIDField) == 0 {
+		return result, nil
+	}
+
+	if i.content == nil {
+		if err := i.init(); err != nil {
+			return result, err
+		}
+	}
+
+	// The artifact id may live in its own section; fall back to the version
+	// section when none is configured (common for single-section descriptors).
+	artifactIDSection := i.artifactIDSection
+	if len(artifactIDSection) == 0 {
+		artifactIDSection = i.versionSection
+	}
+
+	section := i.content.Section(artifactIDSection)
+	if !section.HasKey(i.artifactIDField) {
+		return result, fmt.Errorf("field '%v' not found in section '%v'", i.artifactIDField, artifactIDSection)
+	}
+	result.ArtifactID = section.Key(i.artifactIDField).String()
+
+	// Populate the version as well so the coordinates are self-contained.
+	if version, err := i.GetVersion(); err == nil {
+		result.Version = version
+	}
+
+	return result, nil
 }
