@@ -59,7 +59,9 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			versionSection:    "general",
 			artifactIDField:   "name",
 			artifactIDSection: "general",
-			readFile:          func(filename string) ([]byte, error) { return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil },
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil
+			},
 		}
 		coordinates, err := inifile.GetCoordinates()
 		assert.NoError(t, err)
@@ -73,7 +75,9 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			versionField:    "version",
 			versionSection:  "general",
 			artifactIDField: "name",
-			readFile:        func(filename string) ([]byte, error) { return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil },
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil
+			},
 		}
 		coordinates, err := inifile.GetCoordinates()
 		assert.NoError(t, err)
@@ -85,7 +89,9 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			path:           "lib_version.ini",
 			versionField:   "version",
 			versionSection: "general",
-			readFile:       func(filename string) ([]byte, error) { return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil },
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil
+			},
 		}
 		coordinates, err := inifile.GetCoordinates()
 		assert.NoError(t, err)
