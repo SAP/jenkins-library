@@ -15,11 +15,9 @@ import (
 )
 
 const (
-	cycloneDxVersion              = "7.3.0"
-	CycloneDxSchemaVersion        = "1.4"
-	stepName                      = "pythonBuild"
-	pythonUnitTestOutput          = "TEST-python.xml"
-	pythonCoberturaCoverageOutput = "cobertura-coverage.xml"
+	cycloneDxVersion       = "7.3.0"
+	CycloneDxSchemaVersion = "1.4"
+	stepName               = "pythonBuild"
 )
 
 type pythonBuildUtils interface {
@@ -89,15 +87,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.RunTests {
-		if err := python.InstallPytest(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
+		if err := python.InstallTestDependencies(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
-			return fmt.Errorf("failed to install pytest dependencies (required when runTests=true): %w", err)
+			return fmt.Errorf("failed to install test dependencies: %w", err)
 		}
-		if err := python.InstallPytestCov(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
-			log.SetErrorCategory(log.ErrorBuild)
-			return fmt.Errorf("failed to install pytest-cov: %w", err)
-		}
-		if err := python.RunTests(utils.RunExecutable, config.VirtualEnvironmentName, config.TestOptions, pythonUnitTestOutput, pythonCoberturaCoverageOutput); err != nil {
+		if err := python.RunTests(utils.RunExecutable, config.VirtualEnvironmentName, config.TestOptions, python.JUnitReportFile, python.CoverageReportFile); err != nil {
 			log.SetErrorCategory(log.ErrorTest)
 			return fmt.Errorf("failed to run python tests: %w", err)
 		}

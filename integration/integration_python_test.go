@@ -103,9 +103,6 @@ func TestPythonIntegrationRunTests(t *testing.T) {
 
 	output := RunPiper(t, container, "/python-project-with-tests", "pythonBuild")
 
-	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore pytest")
-	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pip install --upgrade --root-user-action=ignore pytest-cov")
-	assert.Contains(output, "info  pythonBuild - running command: piperBuild-env/bin/pytest --junitxml=TEST-python.xml --cov --cov-report=xml:cobertura-coverage.xml")
 	assert.Contains(output, "info  pythonBuild - SUCCESS")
 
 	assert.FileExists(container,
@@ -128,6 +125,22 @@ func TestPythonIntegrationRunTestsFailure(t *testing.T) {
 
 	assert.NotEqual(0, exitCode)
 	assert.Contains(output, "failed to run python tests")
+}
+
+func TestPythonIntegrationRunTestsNoTests(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-no-tests",
+		WorkDir:  "/python-project-no-tests",
+	})
+
+	exitCode, output := RunPiperExpectFailure(t, container, "/python-project-no-tests", "pythonBuild")
+
+	assert.NotEqual(0, exitCode)
+	assert.Contains(output, "pytest collected no tests")
 }
 
 func TestPythonIntegrationBuildMinimal(t *testing.T) {
