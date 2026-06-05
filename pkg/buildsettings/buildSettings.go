@@ -10,6 +10,7 @@ import (
 )
 
 type BuildSettings struct {
+	DockerBuild        []BuildOptions `json:"dockerBuild,omitempty"`
 	GolangBuild        []BuildOptions `json:"golangBuild,omitempty"`
 	GradleExecuteBuild []BuildOptions `json:"gradleExecuteBuild,omitempty"`
 	HelmExecute        []BuildOptions `json:"helmExecute,omitempty"`
@@ -40,12 +41,13 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		dockerImage = envDockerImage
 	}
 
+	// BuildSettingsInfo is intentionally omitted to avoid recursive nesting.
 	currentBuildSettingsInfo := BuildOptions{
-		CreateBOM:                   config.CreateBOM,
-		GlobalSettingsFile:          config.GlobalSettingsFile,
-		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		Profiles:                    config.Profiles,
 		Publish:                     config.Publish,
+		CreateBOM:                   config.CreateBOM,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
 		DefaultNpmRegistry:          config.DefaultNpmRegistry,
 		DockerImage:                 dockerImage,
 	}
@@ -78,6 +80,10 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		settings = append(settings, currentBuildSettingsInfo)
 		var err error
 		switch buildTool {
+		case "dockerBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				DockerBuild: settings,
+			})
 		case "golangBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				GolangBuild: settings,

@@ -166,7 +166,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: url
+      - name: btpApiEndpoint
         type: string
         description: BTP CLI API endpoint
         scope:
@@ -176,7 +176,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/url
-      - name: subdomain
+      - name: btpSubdomain
         type: string
         description: BTP Global Account subdomain
         scope:
@@ -186,7 +186,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/subdomain
-      - name: subaccount
+      - name: btpSubaccount
         type: string
         description: BTP Subaccount name
         scope:
@@ -196,7 +196,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/subaccount
-      - name: idp
+      - name: btpIdp
         type: string
         description: BTP Identity Provider
         scope:
@@ -206,7 +206,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/idp
-      - name: serviceInstanceName
+      - name: btpServiceInstanceName
         type: string
         description: BTP service instance name
         scope:
@@ -216,7 +216,7 @@ spec:
           - GENERAL
         aliases:
           - name: btp/instanceName
-      - name: serviceBindingName
+      - name: btpServiceBindingName
         type: string
         description: BTP service binding name
         scope:

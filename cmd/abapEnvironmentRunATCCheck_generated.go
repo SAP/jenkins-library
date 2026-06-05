@@ -17,26 +17,26 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcConfig           string   `json:"atcConfig,omitempty"`
-	Repositories        string   `json:"repositories,omitempty"`
-	CfAPIEndpoint       string   `json:"cfApiEndpoint,omitempty"`
-	CfOrg               string   `json:"cfOrg,omitempty"`
-	CfServiceInstance   string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName    string   `json:"cfServiceKeyName,omitempty"`
-	CfSpace             string   `json:"cfSpace,omitempty"`
-	Username            string   `json:"username,omitempty"`
-	Password            string   `json:"password,omitempty"`
-	Host                string   `json:"host,omitempty"`
-	AtcResultsFileName  string   `json:"atcResultsFileName,omitempty"`
-	GenerateHTML        bool     `json:"generateHTML,omitempty"`
-	FailOnSeverity      string   `json:"failOnSeverity,omitempty"`
-	CertificateNames    []string `json:"certificateNames,omitempty"`
-	Url                 string   `json:"url,omitempty"`
-	Subdomain           string   `json:"subdomain,omitempty"`
-	Subaccount          string   `json:"subaccount,omitempty"`
-	Idp                 string   `json:"idp,omitempty"`
-	ServiceInstanceName string   `json:"serviceInstanceName,omitempty"`
-	ServiceBindingName  string   `json:"serviceBindingName,omitempty"`
+	AtcConfig              string   `json:"atcConfig,omitempty"`
+	Repositories           string   `json:"repositories,omitempty"`
+	CfAPIEndpoint          string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg                  string   `json:"cfOrg,omitempty"`
+	CfServiceInstance      string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName       string   `json:"cfServiceKeyName,omitempty"`
+	CfSpace                string   `json:"cfSpace,omitempty"`
+	Username               string   `json:"username,omitempty"`
+	Password               string   `json:"password,omitempty"`
+	Host                   string   `json:"host,omitempty"`
+	AtcResultsFileName     string   `json:"atcResultsFileName,omitempty"`
+	GenerateHTML           bool     `json:"generateHTML,omitempty"`
+	FailOnSeverity         string   `json:"failOnSeverity,omitempty"`
+	CertificateNames       []string `json:"certificateNames,omitempty"`
+	BtpAPIEndpoint         string   `json:"btpApiEndpoint,omitempty"`
+	BtpSubdomain           string   `json:"btpSubdomain,omitempty"`
+	BtpSubaccount          string   `json:"btpSubaccount,omitempty"`
+	BtpIDp                 string   `json:"btpIdp,omitempty"`
+	BtpServiceInstanceName string   `json:"btpServiceInstanceName,omitempty"`
+	BtpServiceBindingName  string   `json:"btpServiceBindingName,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -196,12 +196,12 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 	cmd.Flags().StringVar(&stepConfig.FailOnSeverity, "failOnSeverity", os.Getenv("PIPER_failOnSeverity"), "Specifies the severity level, for which the ATC step should fail if at least one message with this severity (or \"higher\") level is returned by the ATC Check Run (possible values - error, warning, info). Initial value is default behavior and ATC findings of any severity do not fail the step")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
-	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "BTP CLI API endpoint")
-	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP Global Account subdomain")
-	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP Subaccount name")
-	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP Identity Provider")
-	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "BTP service instance name")
-	cmd.Flags().StringVar(&stepConfig.ServiceBindingName, "serviceBindingName", os.Getenv("PIPER_serviceBindingName"), "BTP service binding name")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP Subaccount name")
+	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP Identity Provider")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "BTP service instance name")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceBindingName, "btpServiceBindingName", os.Getenv("PIPER_btpServiceBindingName"), "BTP service binding name")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -360,58 +360,58 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
-						Name:        "url",
+						Name:        "btpApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/url"}},
-						Default:     os.Getenv("PIPER_url"),
+						Default:     os.Getenv("PIPER_btpApiEndpoint"),
 					},
 					{
-						Name:        "subdomain",
+						Name:        "btpSubdomain",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
-						Default:     os.Getenv("PIPER_subdomain"),
+						Default:     os.Getenv("PIPER_btpSubdomain"),
 					},
 					{
-						Name:        "subaccount",
+						Name:        "btpSubaccount",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
-						Default:     os.Getenv("PIPER_subaccount"),
+						Default:     os.Getenv("PIPER_btpSubaccount"),
 					},
 					{
-						Name:        "idp",
+						Name:        "btpIdp",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/idp"}},
-						Default:     os.Getenv("PIPER_idp"),
+						Default:     os.Getenv("PIPER_btpIdp"),
 					},
 					{
-						Name:        "serviceInstanceName",
+						Name:        "btpServiceInstanceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
-						Default:     os.Getenv("PIPER_serviceInstanceName"),
+						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
 					},
 					{
-						Name:        "serviceBindingName",
+						Name:        "btpServiceBindingName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
-						Default:     os.Getenv("PIPER_serviceBindingName"),
+						Default:     os.Getenv("PIPER_btpServiceBindingName"),
 					},
 				},
 			},

@@ -17,18 +17,24 @@ import (
 )
 
 type btpCreateServiceInstanceOptions struct {
-	Url                 string `json:"url,omitempty"`
-	Subdomain           string `json:"subdomain,omitempty"`
-	Idp                 string `json:"idp,omitempty"`
-	Subaccount          string `json:"subaccount,omitempty"`
-	PlanName            string `json:"planName,omitempty"`
-	OfferingName        string `json:"offeringName,omitempty"`
-	ServiceInstanceName string `json:"serviceInstanceName,omitempty"`
-	Parameters          string `json:"parameters,omitempty"`
-	Timeout             int    `json:"timeout,omitempty"`
-	PollInterval        int    `json:"pollInterval,omitempty"`
-	User                string `json:"user,omitempty"`
-	Password            string `json:"password,omitempty"`
+	BtpAPIEndpoint                 string `json:"btpApiEndpoint,omitempty"`
+	BtpSubdomain                   string `json:"btpSubdomain,omitempty"`
+	BtpIDp                         string `json:"btpIdp,omitempty"`
+	BtpSubaccount                  string `json:"btpSubaccount,omitempty"`
+	PlanName                       string `json:"planName,omitempty"`
+	OfferingName                   string `json:"offeringName,omitempty"`
+	BtpServiceInstanceName         string `json:"btpServiceInstanceName,omitempty"`
+	Parameters                     string `json:"parameters,omitempty"`
+	AbapSystemAdminEmail           string `json:"abapSystemAdminEmail,omitempty"`
+	AbapSystemDescription          string `json:"abapSystemDescription,omitempty"`
+	AbapSystemIsDevelopmentAllowed bool   `json:"abapSystemIsDevelopmentAllowed,omitempty"`
+	AbapSystemID                   string `json:"abapSystemID,omitempty"`
+	AbapSystemSizeOfPersistence    int    `json:"abapSystemSizeOfPersistence,omitempty"`
+	AbapSystemSizeOfRuntime        int    `json:"abapSystemSizeOfRuntime,omitempty"`
+	Timeout                        int    `json:"timeout,omitempty"`
+	PollInterval                   int    `json:"pollInterval,omitempty"`
+	User                           string `json:"user,omitempty"`
+	Password                       string `json:"password,omitempty"`
 }
 
 // BtpCreateServiceInstanceCommand Creates a service instance in BTP
@@ -167,25 +173,31 @@ func BtpCreateServiceInstanceCommand() *cobra.Command {
 }
 
 func addBtpCreateServiceInstanceFlags(cmd *cobra.Command, stepConfig *btpCreateServiceInstanceOptions) {
-	cmd.Flags().StringVar(&stepConfig.Url, "url", `https://cli.btp.cloud.sap`, "BTP API endpoint")
-	cmd.Flags().StringVar(&stepConfig.Subdomain, "subdomain", os.Getenv("PIPER_subdomain"), "BTP subdomain (Global Account). It will be used during login.")
-	cmd.Flags().StringVar(&stepConfig.Idp, "idp", os.Getenv("PIPER_idp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
-	cmd.Flags().StringVar(&stepConfig.Subaccount, "subaccount", os.Getenv("PIPER_subaccount"), "BTP subaccount where the service instance will be created")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", `https://cli.btp.cloud.sap`, "BTP API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP subdomain (Global Account). It will be used during login.")
+	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP idp (Identity Provider) (optional). It will be used during login.")
+	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP subaccount where the service instance will be created")
 	cmd.Flags().StringVar(&stepConfig.PlanName, "planName", os.Getenv("PIPER_planName"), "Plan name of the offering to use")
 	cmd.Flags().StringVar(&stepConfig.OfferingName, "offeringName", os.Getenv("PIPER_offeringName"), "Offering name to be used when creating the service instance")
-	cmd.Flags().StringVar(&stepConfig.ServiceInstanceName, "serviceInstanceName", os.Getenv("PIPER_serviceInstanceName"), "Name of the service instance to create")
-	cmd.Flags().StringVar(&stepConfig.Parameters, "parameters", os.Getenv("PIPER_parameters"), "Path to JSON file or JSON in-line string for a Service creation")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "Name of the service instance to create")
+	cmd.Flags().StringVar(&stepConfig.Parameters, "parameters", os.Getenv("PIPER_parameters"), "Path to JSON file or JSON in-line string for a Service creation. If given, you no more need to provide `abapSystemAdminEmail`, `abapSystemDescription`, `abapSystemIsDevelopmentAllowed`, `abapSystemID`, `abapSystemSizeOfPersistence`, `abapSystemSizeOfRuntime` as they are suppose to be in the JSON.")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemAdminEmail, "abapSystemAdminEmail", os.Getenv("PIPER_abapSystemAdminEmail"), "Admin E-Mail address for the initial administrator of the system")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemDescription, "abapSystemDescription", `Test system created by an automated pipeline`, "Description for the ABAP Environment system")
+	cmd.Flags().BoolVar(&stepConfig.AbapSystemIsDevelopmentAllowed, "abapSystemIsDevelopmentAllowed", true, "This parameter determines, if development is allowed on the system")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemID, "abapSystemID", `H02`, "The three character name of the system - maps to 'sapSystemName'")
+	cmd.Flags().IntVar(&stepConfig.AbapSystemSizeOfPersistence, "abapSystemSizeOfPersistence", 0, "The size of the persistence")
+	cmd.Flags().IntVar(&stepConfig.AbapSystemSizeOfRuntime, "abapSystemSizeOfRuntime", 0, "The size of the runtime")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 7200, "Timeout in seconds for creation/polling")
 	cmd.Flags().IntVar(&stepConfig.PollInterval, "pollInterval", 30, "Poll interval in seconds for checking instance readiness")
 	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User or E-Mail for BTP")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for BTP")
 
-	cmd.MarkFlagRequired("url")
-	cmd.MarkFlagRequired("subdomain")
-	cmd.MarkFlagRequired("subaccount")
+	cmd.MarkFlagRequired("btpApiEndpoint")
+	cmd.MarkFlagRequired("btpSubdomain")
+	cmd.MarkFlagRequired("btpSubaccount")
 	cmd.MarkFlagRequired("planName")
 	cmd.MarkFlagRequired("offeringName")
-	cmd.MarkFlagRequired("serviceInstanceName")
+	cmd.MarkFlagRequired("btpServiceInstanceName")
 	cmd.MarkFlagRequired("user")
 	cmd.MarkFlagRequired("password")
 }
@@ -205,7 +217,7 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name:        "url",
+						Name:        "btpApiEndpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
@@ -214,31 +226,31 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     `https://cli.btp.cloud.sap`,
 					},
 					{
-						Name:        "subdomain",
+						Name:        "btpSubdomain",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
-						Default:     os.Getenv("PIPER_subdomain"),
+						Default:     os.Getenv("PIPER_btpSubdomain"),
 					},
 					{
-						Name:        "idp",
+						Name:        "btpIdp",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/idp"}},
-						Default:     os.Getenv("PIPER_idp"),
+						Default:     os.Getenv("PIPER_btpIdp"),
 					},
 					{
-						Name:        "subaccount",
+						Name:        "btpSubaccount",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
-						Default:     os.Getenv("PIPER_subaccount"),
+						Default:     os.Getenv("PIPER_btpSubaccount"),
 					},
 					{
 						Name:        "planName",
@@ -259,13 +271,13 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_offeringName"),
 					},
 					{
-						Name:        "serviceInstanceName",
+						Name:        "btpServiceInstanceName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
-						Default:     os.Getenv("PIPER_serviceInstanceName"),
+						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
 					},
 					{
 						Name:        "parameters",
@@ -275,6 +287,60 @@ func btpCreateServiceInstanceMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "btp/parameters"}},
 						Default:     os.Getenv("PIPER_parameters"),
+					},
+					{
+						Name:        "abapSystemAdminEmail",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapSystemAdminEmail"),
+					},
+					{
+						Name:        "abapSystemDescription",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `Test system created by an automated pipeline`,
+					},
+					{
+						Name:        "abapSystemIsDevelopmentAllowed",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
+					},
+					{
+						Name:        "abapSystemID",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `H02`,
+					},
+					{
+						Name:        "abapSystemSizeOfPersistence",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
+					},
+					{
+						Name:        "abapSystemSizeOfRuntime",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
 					},
 					{
 						Name:        "timeout",

@@ -22,6 +22,9 @@ on:
         description: "Integration test status (success/failure)"
         value: ${{ jobs.finish.outputs.status }}
 
+permissions:
+  contents: read  # default for all jobs (checkout + artifacts); only `start` overrides for the cancel action
+
 jobs:
   start:
     name: Start
@@ -29,6 +32,9 @@ jobs:
       go_version: ${{ steps.go_version.outputs.go_version }}
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # checkout (status updates use the INTEGRATION_TEST_VOTING_TOKEN secret, not GITHUB_TOKEN)
+      actions: write  # styfle/cancel-workflow-action cancels previous runs
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
       - uses: actions/checkout@v4
