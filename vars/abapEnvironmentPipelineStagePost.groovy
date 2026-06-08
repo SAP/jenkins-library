@@ -41,7 +41,7 @@ void call(Map parameters = [:]) {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
             if (!config.debug) {
-                if (config.subdomain && config.subaccount) {
+                if (config.btpSubdomain && config.btpSubaccount) {
                     btpDeleteServiceInstance script: parameters.script
                 } else {
                     // Cloud Foundry path: Use existing cleanup
