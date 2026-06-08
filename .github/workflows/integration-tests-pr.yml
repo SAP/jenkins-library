@@ -26,8 +26,9 @@ jobs:
       sha: ${{ steps.sha.outputs.sha }}
     runs-on: ubuntu-latest
     permissions:
-      contents: read  # checkout (status updates use the INTEGRATION_TEST_VOTING_TOKEN secret, not GITHUB_TOKEN)
-      actions: write  # styfle/cancel-workflow-action cancels previous runs
+      contents: read   # checkout
+      actions: write   # styfle/cancel-workflow-action cancels previous runs
+      statuses: write  # update commit status via GITHUB_TOKEN
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
       - name: Get pull request URL
@@ -69,7 +70,7 @@ jobs:
             --data '{"state": "pending",
                     "context": "Go / integration-tests",
                     "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-            -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
+            -H 'Authorization: token ${{secrets.GITHUB_TOKEN}}'
 
   build_piper:
     name: Build Piper
@@ -152,8 +153,6 @@ jobs:
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
           PIPER_INTEGRATION_GITHUB_HOST: ${{secrets.PIPER_INTEGRATION_GITHUB_HOST}}
-          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
-          PIPER_tmsServiceKey: ${{secrets.PIPER_TMSSERVICEKEY}}
         run: |
           chmod +x piper
           cd ./integration
@@ -169,6 +168,8 @@ jobs:
       - build_integration_tests
       - run_integration_tests
     runs-on: ubuntu-latest
+    permissions:
+      statuses: write  # update commit status via GITHUB_TOKEN
     steps:
       - name: Update status
         run: |
@@ -181,7 +182,7 @@ jobs:
               --data '{"state": "success",
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+              -H 'Authorization: token ${{secrets.GITHUB_TOKEN}}' && \
             exit 0
           else
             curl \
@@ -191,6 +192,6 @@ jobs:
               --data '{"state": "failure",
                       "context": "Go / integration-tests",
                       "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' \
-              -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}' && \
+              -H 'Authorization: token ${{secrets.GITHUB_TOKEN}}' && \
             exit 1
           fi
