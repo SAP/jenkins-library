@@ -50,7 +50,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (config.integrationTestOption == 'systemProvisioning') {
             try {
-                if (config.subdomain && config.subaccount) {
+                if (config.btpSubdomain && config.btpSubaccount) {
                     // BTP path: Create BTP service instance and binding
                     btpCreateServiceInstance(script: parameters.script, includeAddon: true)
                     btpCreateServiceBinding script: parameters.script
@@ -69,7 +69,7 @@ void call(Map parameters = [:]) {
                 }
 
                 if (!config.debug) {
-                    if (config.subdomain && config.subaccount) {
+                    if (config.btpSubdomain && config.btpSubaccount) {
                         // BTP path: Clean up BTP resources
                         btpDeleteServiceInstance script: parameters.script
                     } else {
