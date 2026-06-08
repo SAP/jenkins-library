@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 // can be executed with
 // go test -v -tags integration -run TestSonarIntegration ./integration/...
@@ -18,22 +17,13 @@ import (
 )
 
 func TestSonarIntegrationIssueSearch(t *testing.T) {
-	// t.Parallel()
+	t.Skip("Disabled for security hardening: PIPER_INTEGRATION_SONAR_TOKEN removed")
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
 	require.NotEmpty(t, token, "SonarQube API Token is missing")
-	host := os.Getenv("PIPER_INTEGRATION_SONAR_HOST")
-	if len(host) == 0 {
-		host = "https://sonarcloud.io"
-	}
-	organization := os.Getenv("PIPER_INTEGRATION_SONAR_ORGANIZATION")
-	if len(organization) == 0 {
-		organization = "sap-1"
-	}
-	componentKey := os.Getenv("PIPER_INTEGRATION_SONAR_PROJECT")
-	if len(componentKey) == 0 {
-		componentKey = "SAP_jenkins-library"
-	}
+	host := "https://sonarcloud.io"
+	organization := "sap-1"
+	componentKey := "SAP_jenkins-library"
 	options := &sonar.IssuesSearchOption{
 		ComponentKeys: componentKey,
 		Severities:    "MINOR",
@@ -52,22 +42,13 @@ func TestSonarIntegrationIssueSearch(t *testing.T) {
 }
 
 func TestSonarIntegrationMeasuresComponentSearch(t *testing.T) {
-	// t.Parallel()
+	t.Skip("Disabled for security hardening: PIPER_INTEGRATION_SONAR_TOKEN removed")
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
 	require.NotEmpty(t, token, "SonarQube API Token is missing")
-	host := os.Getenv("PIPER_INTEGRATION_SONAR_HOST")
-	if len(host) == 0 {
-		host = "https://sonarcloud.io"
-	}
-	organization := os.Getenv("PIPER_INTEGRATION_SONAR_ORGANIZATION")
-	if len(organization) == 0 {
-		organization = "sap-1"
-	}
-	componentKey := os.Getenv("PIPER_INTEGRATION_SONAR_PROJECT")
-	if len(componentKey) == 0 {
-		componentKey = "SAP_jenkins-library"
-	}
+	host := "https://sonarcloud.io"
+	organization := "sap-1"
+	componentKey := "SAP_jenkins-library"
 
 	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, "", "", &piperhttp.Client{})
 	// test
@@ -77,22 +58,13 @@ func TestSonarIntegrationMeasuresComponentSearch(t *testing.T) {
 }
 
 func TestSonarIntegrationGetLinesOfCode(t *testing.T) {
-	// t.Parallel()
+	t.Skip("Disabled for security hardening: PIPER_INTEGRATION_SONAR_TOKEN removed")
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
 	require.NotEmpty(t, token, "SonarQube API Token is missing")
-	host := os.Getenv("PIPER_INTEGRATION_SONAR_HOST")
-	if len(host) == 0 {
-		host = "https://sonarcloud.io"
-	}
-	organization := os.Getenv("PIPER_INTEGRATION_SONAR_ORGANIZATION")
-	if len(organization) == 0 {
-		organization = "sap-1"
-	}
-	componentKey := os.Getenv("PIPER_INTEGRATION_SONAR_PROJECT")
-	if len(componentKey) == 0 {
-		componentKey = "SAP_jenkins-library"
-	}
+	host := "https://sonarcloud.io"
+	organization := "sap-1"
+	componentKey := "SAP_jenkins-library"
 
 	componentService := sonar.NewMeasuresComponentService(host, token, componentKey, organization, "", "", &piperhttp.Client{})
 	// test

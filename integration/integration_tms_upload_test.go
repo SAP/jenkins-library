@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 // can be executed with
 // go test -v -tags integration -run TestTmsIntegration ./integration
@@ -28,6 +27,7 @@ func readEnv() {
 }
 
 func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
+	t.Skip("Disabled for security hardening: PIPER_TMSSERVICEKEY removed")
 	// success case: run cmd without nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -54,6 +54,7 @@ func TestTmsUploadIntegrationBinSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
+	t.Skip("Disabled for security hardening: PIPER_TMSSERVICEKEY removed")
 	// success case: run cmd without --nodeExtDescriptorMapping and --customDescription
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -79,6 +80,7 @@ func TestTmsUploadIntegrationBinNoDescriptionSuccess(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
+	t.Skip("Disabled for security hardening: PIPER_TMSSERVICEKEY removed")
 	// error case: run cmd with nodeExtDescriptorMapping
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -101,6 +103,7 @@ func TestTmsUploadIntegrationBinFailParam(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
+	t.Skip("Disabled for security hardening: PIPER_TMSSERVICEKEY removed")
 	// error case: run cmd with invalid description
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
@@ -123,6 +126,7 @@ func TestTmsUploadIntegrationBinFailDescription(t *testing.T) {
 }
 
 func TestTmsUploadIntegrationYaml(t *testing.T) {
+	t.Skip("Disabled for security hardening: PIPER_TMSSERVICEKEY removed")
 	// success case: run with custom config
 	readEnv()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
