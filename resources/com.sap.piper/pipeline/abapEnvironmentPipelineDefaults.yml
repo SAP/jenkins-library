@@ -26,7 +26,7 @@ stages:
     ordinal: 30
     logOutput: STANDARD
     # BTP service binding defaults for Clone Repositories (SAP_COM_0948)
-    serviceBindingName: 'sap_com_0948'
+    btpServiceBindingName: 'sap_com_0948'
     parameters: '{"scenario_id":"SAP_COM_0948","type":"basic"}'
     timeout: 600
     pollInterval: 5
@@ -37,7 +37,7 @@ stages:
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0901","type":"basic"}'
     cfAsync: false
     # BTP service binding defaults for ATC (SAP_COM_0901)
-    serviceBindingName: 'sap_com_0901'
+    btpServiceBindingName: 'sap_com_0901'
     parameters: '{"scenario_id":"SAP_COM_0901","type":"basic"}'
     timeout: 600
     pollInterval: 5
@@ -48,7 +48,7 @@ stages:
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0735","type":"basic"}'
     cfAsync: false
     # BTP service binding defaults for AUnit (SAP_COM_0735)
-    serviceBindingName: 'sap_com_0735'
+    btpServiceBindingName: 'sap_com_0735'
     parameters: '{"scenario_id":"SAP_COM_0735","type":"basic"}'
     timeout: 600
     pollInterval: 5
@@ -59,7 +59,7 @@ stages:
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
     cfAsync: false
     # BTP service binding defaults for Build (SAP_COM_0582)
-    serviceBindingName: 'sap_com_0582'
+    btpServiceBindingName: 'sap_com_0582'
     parameters: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
     timeout: 600
     pollInterval: 5
@@ -81,7 +81,7 @@ stages:
     # BTP service instance and binding defaults for Integration Tests
     offeringName: 'abap'
     planName: 'saas_oem'
-    serviceBindingName: 'sap_com_0582'
+    btpServiceBindingName: 'sap_com_0582'
     parameters: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
     deleteServiceBindings: true
     timeout: 7200
