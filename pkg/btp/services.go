@@ -214,9 +214,39 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 		WithTarget("services/binding").
 		WithSubAccount(options.Subaccount)
 
-	if options.BindingName != "" && options.ServiceInstanceId != "" {
-		builder = builder.WithAction("list").
-			WithFieldsFilter(fmt.Sprintf("\"service_instance_id eq '%s' and name eq '%s'\"", options.ServiceInstanceId, options.BindingName))
+	serviceBindingJSON := ""
+
+	checkIfListMode := options.BindingName != "" && (options.ServiceInstanceId != "" || options.ServiceInstance != "")
+	if checkIfListMode {
+		serviceBindings, err := btp.RunListServiceBindings(ListServiceBindingOptions{
+			Url:               options.Url,
+			Subdomain:         options.Subdomain,
+			User:              options.User,
+			Password:          options.Password,
+			IdentityProvider:  options.IdentityProvider,
+			Subaccount:        options.Subaccount,
+			ServiceInstance:   options.ServiceInstance,
+			ServiceInstanceId: options.ServiceInstanceId,
+			BindingName:       options.BindingName,
+		})
+
+		if err != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return "", errors.Wrap(err, "listing service bindings failed")
+		}
+
+		if len(serviceBindings) == 0 {
+			log.SetErrorCategory(log.ErrorService)
+			return "", errors.New("no service binding found with the given name and service instance id")
+		}
+
+		data := serviceBindings[0]
+		foundedServiceBindingBytes, err := json.Marshal(data)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return "", errors.Wrap(err, "failed to marshal service binding data")
+		}
+		serviceBindingJSON = string(foundedServiceBindingBytes)
 	} else {
 		builder = builder.WithAction("get")
 
@@ -225,43 +255,143 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 		} else {
 			builder = builder.WithName(options.BindingName)
 		}
-	}
 
-	btpGetBindingScript, _ := builder.Build()
-	err := btp.Exec.Run(btpGetBindingScript)
+		btpGetBindingScript, _ := builder.Build()
+		err := btp.Exec.Run(btpGetBindingScript)
 
-	if err != nil {
-		// error while getting service binding
-		log.SetErrorCategory(log.ErrorService)
-		return "", errors.Wrapf(err, "retrieve service binding %v failed", options.BindingName)
-	}
-
-	// parse and return service binding
-	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
-
-	if err != nil {
-		log.SetErrorCategory(log.ErrorService)
-		return "", errors.Wrap(err, "parsing service binding JSON failed")
-	}
-
-	if options.BindingName != "" && options.ServiceInstanceId != "" {
-		dataList := []ServiceBindingData{}
-		err = json.Unmarshal([]byte(serviceBindingJSON), &dataList)
-		if err == nil && len(dataList) > 0 {
-			data := dataList[0]
-			foundedServiceBindingBytes, err := json.Marshal(data)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorService)
-				return "", errors.Wrap(err, "failed to marshal service binding data")
-			}
-			serviceBindingJSON = string(foundedServiceBindingBytes)
-		} else {
+		if err != nil {
+			// error while getting service binding
 			log.SetErrorCategory(log.ErrorService)
-			return "", errors.New("no service binding found with the given name and service instance id")
+			return "", errors.Wrapf(err, "retrieve service binding %v failed", options.BindingName)
+		}
+
+		// parse and return service binding
+		serviceBindingJSON, err = GetJSON(serviceBindingBytes.String())
+
+		if err != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return "", errors.Wrap(err, "parsing service binding JSON failed")
 		}
 	}
-
 	return serviceBindingJSON, nil
+}
+
+func (btp *BTPUtils) RunListServiceBindings(options ListServiceBindingOptions) ([]ServiceBindingData, error) {
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
+	}
+
+	parametersCheck := options.Subaccount == "" || (options.ServiceInstance == "" && options.ServiceInstanceId == "")
+	if parametersCheck {
+		errorMsg := "Parameters missing. Please provide: "
+		missingParams := []string{}
+		if options.Subaccount == "" {
+			missingParams = append(missingParams, "Subaccount")
+		}
+		if options.ServiceInstance == "" && options.ServiceInstanceId == "" {
+			missingParams = append(missingParams, "ServiceInstance or ServiceInstanceId")
+		}
+		errorMsg += strings.Join(missingParams, ", ")
+
+		return nil, errors.Wrap(errors.New(errorMsg), "failed to list service bindings")
+	}
+
+	instanceID := options.ServiceInstanceId
+	if instanceID == "" {
+		instanceData, err := GetServiceInstanceData(btp, GetServiceInstanceOptions{
+			Url:              options.Url,
+			Subdomain:        options.Subdomain,
+			User:             options.User,
+			Password:         options.Password,
+			IdentityProvider: options.IdentityProvider,
+			Subaccount:       options.Subaccount,
+			InstanceName:     options.ServiceInstance,
+		})
+
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get service instance data")
+		}
+
+		instanceID = instanceData.ID
+	}
+
+	log.Entry().WithField("subaccount", options.Subaccount).WithField("serviceInstanceId", instanceID)
+
+	fieldsFilter := ""
+	if options.BindingName != "" {
+		fieldsFilter = fmt.Sprintf("\"service_instance_id eq '%s' and name eq '%s'\"", instanceID, options.BindingName)
+	} else {
+		fieldsFilter = fmt.Sprintf("\"service_instance_id eq '%s'\"", instanceID)
+	}
+
+	builder := NewBTPCommandBuilder().
+		WithAction("list").
+		WithTarget("services/binding").
+		WithSubAccount(options.Subaccount).
+		WithFieldsFilter(fieldsFilter)
+
+	btpGetBindingScript, _ := builder.Build()
+
+	var serviceBindingBytes bytes.Buffer
+	btp.Exec.Stdout(&serviceBindingBytes)
+
+	var errorResBytes bytes.Buffer
+	btp.Exec.Stderr(&errorResBytes)
+
+	err := btp.Exec.Run(btpGetBindingScript)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return nil, errors.Wrapf(err, "list service bindings failed for instance id: %s", instanceID)
+	}
+
+	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
+	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
+		return nil, errors.Wrap(err, "parsing service bindings JSON failed")
+	}
+
+	serviceBindingData := []ServiceBindingData{}
+	err = json.Unmarshal([]byte(serviceBindingJSON), &serviceBindingData)
+	if err != nil {
+		// fallback: if result is a single object instead of array
+		singleBinding := ServiceBindingData{}
+		err2 := json.Unmarshal([]byte(serviceBindingJSON), &singleBinding)
+		if err2 != nil {
+			log.SetErrorCategory(log.ErrorService)
+			return nil, errors.Wrap(err, "failed to unmarshal service bindings JSON")
+		}
+		serviceBindingData = append(serviceBindingData, singleBinding)
+	}
+
+	return serviceBindingData, nil
+}
+
+func (btp *BTPUtils) ListServiceBindings(options ListServiceBindingOptions) ([]ServiceBindingData, error) {
+	if btp.Exec == nil {
+		btp.Exec = &Executor{}
+	}
+
+	loginOptions := LoginOptions{
+		Url:              options.Url,
+		Subdomain:        options.Subdomain,
+		User:             options.User,
+		Password:         options.Password,
+		IdentityProvider: options.IdentityProvider,
+	}
+	if err := btp.Login(loginOptions); err != nil {
+		return nil, errors.Wrap(err, "login to BTP failed")
+	}
+
+	bindings, err := btp.RunListServiceBindings(options)
+	if err != nil {
+		return nil, errors.Wrap(err, "retrieving service bindings failed")
+	}
+
+	if err := btp.Logout(); err != nil {
+		return bindings, errors.Wrap(err, "logout of BTP failed")
+	}
+
+	return bindings, nil
 }
 
 func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) error {
@@ -781,6 +911,18 @@ type GetServiceBindingOptions struct {
 	BindingId         string
 	ServiceInstance   string
 	ServiceInstanceId string
+}
+
+type ListServiceBindingOptions struct {
+	Url               string
+	Subdomain         string
+	Subaccount        string
+	User              string
+	Password          string
+	IdentityProvider  string
+	ServiceInstance   string
+	ServiceInstanceId string
+	BindingName       string
 }
 
 type DeleteServiceBindingOptions struct {

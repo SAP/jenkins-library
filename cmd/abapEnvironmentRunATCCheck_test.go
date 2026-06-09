@@ -78,10 +78,10 @@ func TestHostConfig(t *testing.T) {
 		}
 
 		_, err := autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER: 1. Host of the ABAP server OR 2. BTP parameters (subdomain, subaccount) OR 3. Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 
 		_, err = autils.GetAbapCommunicationArrangementInfo(options.AbapEnvOptions, "")
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER: 1. Host of the ABAP server OR 2. BTP parameters (subdomain, subaccount) OR 3. Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
