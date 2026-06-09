@@ -17,7 +17,7 @@ jobs:
     uses: ./.github/workflows/integration-tests.yml
     permissions:
       contents: read
-      actions: read
+      actions: write
       statuses: write  # update commit status via GITHUB_TOKEN in the called workflow
     secrets:
       PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
