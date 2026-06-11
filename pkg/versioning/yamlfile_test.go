@@ -45,6 +45,16 @@ func TestYAMLfileGetArtifactID(t *testing.T) {
 		assert.Equal(t, "artifact-id", artifactID)
 	})
 
+	t.Run("field not found returns empty string instead of '<nil>'", func(t *testing.T) {
+		yamlfile := YAMLfile{
+			path:     "my.yaml",
+			readFile: func(filename string) ([]byte, error) { return []byte(`version: 1.2.3`), nil },
+		}
+		artifactID, err := yamlfile.GetArtifactID()
+		assert.NoError(t, err)
+		assert.Equal(t, "", artifactID)
+	})
+
 	t.Run("error case", func(t *testing.T) {
 		yamlfile := YAMLfile{
 			path:            "my.yaml",
@@ -54,6 +64,30 @@ func TestYAMLfileGetArtifactID(t *testing.T) {
 		artifactID, err := yamlfile.GetArtifactID()
 		assert.EqualError(t, err, "failed to get key theArtifact: failed to read file 'my.yaml': read error")
 		assert.Equal(t, "", artifactID)
+	})
+}
+
+func TestYAMLfileGetCoordinates(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		yamlfile := YAMLfile{
+			path:     "my.yaml",
+			readFile: func(filename string) ([]byte, error) { return []byte("ID: artifact-id\nversion: 1.2.3"), nil },
+		}
+		coordinates, err := yamlfile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "artifact-id", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+
+	t.Run("missing ID returns empty artifactID instead of '<nil>'", func(t *testing.T) {
+		yamlfile := YAMLfile{
+			path:     "my.yaml",
+			readFile: func(filename string) ([]byte, error) { return []byte(`version: 1.2.3`), nil },
+		}
+		coordinates, err := yamlfile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Empty(t, coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
 	})
 }
 
