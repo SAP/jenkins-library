@@ -5,12 +5,26 @@ package python
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
+
+// exitError returns a real *exec.ExitError with the given exit code by running
+// a short-lived subprocess. This is necessary because errors.As cannot match
+// a plain fmt.Errorf against *exec.ExitError.
+func exitError(t *testing.T, code int) error {
+	t.Helper()
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("exit %d", code))
+	err := cmd.Run()
+	if err == nil {
+		t.Fatalf("expected non-zero exit, got nil for code %d", code)
+	}
+	return err
+}
 
 // TestReportFileConstants pins JUnitReportFile and CoverageReportFile to their
 // expected string values. These constants are duplicated as glob patterns in
@@ -89,24 +103,6 @@ func TestRunTests(t *testing.T) {
 			},
 		},
 		{
-			name:         "pytest non-zero exit returns wrapped error mentioning pytest",
-			testOptions:  nil,
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			execErr:      fmt.Errorf("exit status 1"),
-			wantErr:      true,
-			errContains:  "pytest",
-		},
-		{
-			name:         "pytest exit status 5 (no tests collected) returns actionable message",
-			testOptions:  nil,
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			execErr:      fmt.Errorf("exit status 5"),
-			wantErr:      true,
-			errContains:  "pytest collected no tests",
-		},
-		{
 			name:         "conflicting --junitxml in testOptions is rejected",
 			testOptions:  []string{"--junitxml=my-results.xml"},
 			junitPath:    "TEST-python.xml",
@@ -180,4 +176,26 @@ func TestRunTests(t *testing.T) {
 			assert.Equal(t, tt.wantParams, mockRunner.Calls[0].Params)
 		})
 	}
+}
+
+func TestRunTestsNonZeroExit(t *testing.T) {
+	t.Parallel()
+	mockRunner := mock.ExecMockRunner{}
+	mockRunner.ShouldFailOnCommand = map[string]error{"pytest": exitError(t, 1)}
+
+	err := RunTests(mockRunner.RunExecutable, "", nil, "TEST-python.xml", "cobertura-coverage.xml")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pytest")
+}
+
+func TestRunTestsExitCode5(t *testing.T) {
+	t.Parallel()
+	mockRunner := mock.ExecMockRunner{}
+	mockRunner.ShouldFailOnCommand = map[string]error{"pytest": exitError(t, 5)}
+
+	err := RunTests(mockRunner.RunExecutable, "", nil, "TEST-python.xml", "cobertura-coverage.xml")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "pytest collected no tests")
 }

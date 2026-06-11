@@ -140,6 +140,7 @@ func TestPythonIntegrationRunTestsNoTests(t *testing.T) {
 	exitCode, output := RunPiperExpectFailure(t, container, "/python-project-no-tests", "pythonBuild")
 
 	assert.NotEqual(0, exitCode)
+	// "pytest collected no tests" is the prefix of the error returned by pkg/python/test.go RunTests — keep in sync.
 	assert.Contains(output, "pytest collected no tests")
 }
 

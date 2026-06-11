@@ -1,7 +1,9 @@
 package python
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -40,7 +42,8 @@ func RunTests(
 	}
 	args = append(args, testOptions...)
 	if err := executeFn(getBinary(virtualEnv, "pytest"), args...); err != nil {
-		if strings.Contains(err.Error(), "exit status 5") {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 5 {
 			return fmt.Errorf("pytest collected no tests — ensure your project has tests under a discoverable path (default: ./tests): %w", err)
 		}
 		return fmt.Errorf("pytest execution failed: %w", err)

@@ -4,6 +4,7 @@
 package python
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -169,4 +170,16 @@ func TestInstallTestDependencies(t *testing.T) {
 			assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pytest-cov"}, mockRunner.Calls[1].Params)
 		})
 	}
+}
+
+func TestInstallTestDependenciesPytestFailure(t *testing.T) {
+	t.Parallel()
+	mockRunner := mock.ExecMockRunner{
+		ShouldFailOnCommand: map[string]error{"pip install --upgrade --root-user-action=ignore pytest": fmt.Errorf("pip install failed")},
+	}
+
+	err := InstallTestDependencies(mockRunner.RunExecutable, "")
+
+	assert.Error(t, err)
+	assert.Len(t, mockRunner.Calls, 1, "pytest-cov install must not be attempted after pytest install fails")
 }
