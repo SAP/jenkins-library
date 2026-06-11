@@ -377,6 +377,7 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 
 	if config.GoProxy != "" {
 		os.Setenv("GOPROXY", config.GoProxy)
+		log.Entry().Debugf("GOPROXY set to: %s", config.GoProxy)
 	}
 
 	if config.PrivateModules == "" {
