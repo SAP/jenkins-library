@@ -35,7 +35,7 @@ require (
 	github.com/google/go-containerregistry v0.19.0
 	github.com/google/go-github/v68 v68.0.0
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/hashicorp/vault/api/auth/approle v0.8.0
 	github.com/iancoleman/orderedmap v0.2.0
