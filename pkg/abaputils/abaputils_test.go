@@ -46,7 +46,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
+		assert.EqualError(t, err, "Parameters missing. Please provide EITHER: 1. Host of the ABAP server OR 2. BTP parameters (subdomain, subaccount) OR 3. Cloud Foundry API Endpoint, Organization, Space, Service Instance and Service Key")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
 		//given
@@ -74,7 +74,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.EqualError(t, err, "Read service key failed: Parsing the service key failed for all supported formats. Service key is empty")
+		assert.EqualError(t, err, "Read CF service key failed: Parsing the service key failed for all supported formats. Service key is empty")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Success V8", func(t *testing.T) {
 
@@ -347,5 +347,246 @@ func TestHandleHTTPError(t *testing.T) {
 		assert.Equal(t, 5, len(hook.Entries), "Expected a different number of entries")
 		assert.Equal(t, `A connection could not be established to the ABAP system. The typical root cause is the network configuration (firewall, IP allowlist, etc.)`, hook.AllEntries()[2].Message, "Expected a different message")
 		hook.Reset()
+	})
+}
+
+func TestBTPGetAbapCommunicationInfo(t *testing.T) {
+	t.Run("BTP GetAbapCommunicationArrangementInfo - Path Detection with BTP Parameters", func(t *testing.T) {
+		//given
+		options := AbapEnvironmentOptions{
+			Subdomain:           "test-global-account",
+			Subaccount:          "test-subaccount",
+			ServiceInstanceName: "H02-instance",
+			ServiceBindingName:  "test-binding",
+			URL:                 "https://cli.btp.cloud.sap",
+			Username:            "btpuser",
+			Password:            "btppass",
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		// This will attempt to call BTP CLI, which will fail with the mock executor
+		// But it demonstrates the path selection is working
+		_, err := autils.GetAbapCommunicationArrangementInfo(options, "")
+
+		//then
+		// The BTP path should be attempted (not CF path)
+		// Error will occur because BTP executor can't authenticate with mock
+		assert.Error(t, err)
+		// The error should be about BTP, not about CF parameters missing
+		assert.Contains(t, err.Error(), "BTP service binding failed")
+	})
+
+	t.Run("BTP GetAbapCommunicationArrangementInfo - Missing BTP Parameters", func(t *testing.T) {
+		//given
+		options := AbapEnvironmentOptions{
+			// Missing Subdomain and Subaccount - should trigger error path
+			Username: "testUser",
+			Password: "testPassword",
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		var connectionDetails ConnectionDetailsHTTP
+		var err error
+		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
+
+		//then
+		assert.Equal(t, "", connectionDetails.URL)
+		assert.Equal(t, "", connectionDetails.User)
+		assert.Equal(t, "", connectionDetails.Password)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Parameters missing")
+	})
+
+	t.Run("BTP GetAbapCommunicationArrangementInfo - Partial BTP Parameters (only subdomain)", func(t *testing.T) {
+		//given - Only Subdomain provided, missing Subaccount
+		options := AbapEnvironmentOptions{
+			Subdomain: "test-global-account",
+			// Missing Subaccount - should not trigger BTP path
+			Username: "testUser",
+			Password: "testPassword",
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		_, err := autils.GetAbapCommunicationArrangementInfo(options, "")
+
+		//then
+		// Should fail with CF parameter error, not BTP error
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Parameters missing")
+	})
+}
+
+func TestCredentialPathSelection(t *testing.T) {
+	t.Run("Credential Path Selection - Direct Host Takes Priority", func(t *testing.T) {
+		//given - All three credential sources provided
+		const testURL = "https://direct.host.com"
+		const oDataURL = "/odata"
+		const username = "directuser"
+		const password = "directpass"
+
+		options := AbapEnvironmentOptions{
+			Host:              testURL,
+			Username:          username,
+			Password:          password,
+			Subdomain:         "should-be-ignored",
+			Subaccount:        "should-be-ignored",
+			CfAPIEndpoint:     "should-be-ignored",
+			CfOrg:             "should-be-ignored",
+			CfSpace:           "should-be-ignored",
+			CfServiceInstance: "should-be-ignored",
+			CfServiceKeyName:  "should-be-ignored",
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(options, oDataURL)
+
+		//then
+		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
+		assert.Equal(t, username, connectionDetails.User)
+		assert.Equal(t, password, connectionDetails.Password)
+		assert.NoError(t, err)
+		// Verify that CF path was NOT called (no CF CLI commands executed)
+		assert.Equal(t, 0, len(m.Calls))
+	})
+
+	t.Run("Credential Path Selection - BTP Takes Priority Over CF", func(t *testing.T) {
+		//given - BTP and CF both provided (but no Host)
+		options := AbapEnvironmentOptions{
+			Subdomain:         "btp-account",
+			Subaccount:        "btp-subaccount",
+			CfAPIEndpoint:     "should-be-ignored",
+			CfOrg:             "should-be-ignored",
+			CfSpace:           "should-be-ignored",
+			CfServiceInstance: "should-be-ignored",
+			CfServiceKeyName:  "should-be-ignored",
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		_, err := autils.GetAbapCommunicationArrangementInfo(options, "")
+
+		//then
+		// Should attempt BTP path, not CF path
+		assert.Error(t, err)
+		// BTP error will occur (mock executor can't handle BTP CLI), but not CF error
+		assert.NotContains(t, err.Error(), "Cloud Foundry")
+	})
+
+	t.Run("Credential Path Selection - CF Used When No Host or BTP", func(t *testing.T) {
+		//given - Only CF parameters provided
+		options := AbapEnvironmentOptions{
+			CfAPIEndpoint:     "https://api.cf.com",
+			CfOrg:             "testorg",
+			CfSpace:           "testspace",
+			CfServiceInstance: "testinstance",
+			CfServiceKeyName:  "testkey",
+			Username:          "cfuser",
+			Password:          "cfpass",
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		_, err := autils.GetAbapCommunicationArrangementInfo(options, "")
+
+		//then
+		// Should attempt CF path
+		assert.Error(t, err)
+		// CF path will be attempted (mock doesn't return service key, so error occurs)
+		assert.Contains(t, err.Error(), "Parsing the service key failed")
+	})
+}
+
+func TestBackwardCompatibility(t *testing.T) {
+	t.Run("Backward Compatibility - Direct Host Mode Still Works", func(t *testing.T) {
+		//given
+		const testURL = "https://testurl.com"
+		const oDataURL = "/sap/opu/odata/sap/TEST/Operation"
+		const username = "test_user"
+		const password = "test_password"
+
+		options := AbapEnvironmentOptions{
+			Host:     testURL,
+			Username: username,
+			Password: password,
+		}
+
+		m := &mock.ExecMockRunner{}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(options, oDataURL)
+
+		//then
+		assert.NoError(t, err)
+		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
+		assert.Equal(t, username, connectionDetails.User)
+		assert.Equal(t, password, connectionDetails.Password)
+	})
+
+	t.Run("Backward Compatibility - CF Mode Still Works", func(t *testing.T) {
+		//given
+		const testURL = "https://testurl.com"
+		const oDataURL = "/sap/opu/odata/sap/TEST/Operation"
+		const username = "cf_test_user"
+		const password = "cf_test_password"
+		// Must include newlines at the beginning because CF utility skips first 2 lines
+		const serviceKey = `line1
+line2
+{ "credentials": {"sap.cloud.service":"com.sap.cloud.abap","url": "` + testURL + `" ,"systemid":"H01","abap":{"username":"` + username + `","password":"` + password + `","communication_scenario_id": "SAP_COM_0948","communication_arrangement_id": "TEST_ARRANGE","communication_system_id": "TEST_SYSTEM","communication_inbound_user_id": "CC0000000001","communication_inbound_user_auth_mode": "2"},"binding":{"env": "cf","version": "1.0.0","type": "basic","id": "test-id"},"preserve_host_header": true} }`
+
+		options := AbapEnvironmentOptions{
+			CfAPIEndpoint:     "https://api.cf.com",
+			CfOrg:             "testorg",
+			CfSpace:           "testspace",
+			CfServiceInstance: "testinstance",
+			CfServiceKeyName:  "testkey",
+			Username:          "cfuser",
+			Password:          "cfpass",
+		}
+
+		m := &mock.ExecMockRunner{}
+		m.StdoutReturn = map[string]string{"cf service-key testinstance testkey": serviceKey}
+		var autils = AbapUtils{
+			Exec: m,
+		}
+
+		//when
+		connectionDetails, err := autils.GetAbapCommunicationArrangementInfo(options, oDataURL)
+
+		//then
+		assert.NoError(t, err)
+		assert.Equal(t, testURL+oDataURL, connectionDetails.URL)
+		assert.Equal(t, username, connectionDetails.User)
+		assert.Equal(t, password, connectionDetails.Password)
 	})
 }
