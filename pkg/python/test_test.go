@@ -95,6 +95,12 @@ func TestRunTests(t *testing.T) {
 			errContains: "--junitxml",
 		},
 		{
+			name:        "conflicting --junit-xml (hyphenated form) in testOptions is rejected",
+			testOptions: []string{"--junit-xml=my-results.xml"},
+			wantErr:     true,
+			errContains: "--junit-xml",
+		},
+		{
 			name:        "conflicting --cov-report=xml in testOptions is rejected",
 			testOptions: []string{"--cov-report=xml:other.xml"},
 			wantErr:     true,
@@ -109,6 +115,41 @@ func TestRunTests(t *testing.T) {
 				"--cov",
 				"--cov-report=xml:cobertura-coverage.xml",
 				"--cov-report=html:htmlcov",
+			},
+		},
+		{
+			name:        "conflicting --cov-report xml:path (space-separated) is rejected",
+			testOptions: []string{"--cov-report", "xml:other.xml"},
+			wantErr:     true,
+			errContains: "--cov-report",
+		},
+		{
+			name:        "conflicting --cov-report xml (bare, no path) is rejected",
+			testOptions: []string{"--cov-report", "xml"},
+			wantErr:     true,
+			errContains: "--cov-report",
+		},
+		{
+			name:        "benign --cov-report term (space-separated, non-xml) is allowed",
+			testOptions: []string{"--cov-report", "term"},
+			wantExec:    "pytest",
+			wantParams: []string{
+				"--junitxml=TEST-python.xml",
+				"--cov",
+				"--cov-report=xml:cobertura-coverage.xml",
+				"--cov-report",
+				"term",
+			},
+		},
+		{
+			name:        "trailing bare --cov-report (no following element) is allowed through",
+			testOptions: []string{"--cov-report"},
+			wantExec:    "pytest",
+			wantParams: []string{
+				"--junitxml=TEST-python.xml",
+				"--cov",
+				"--cov-report=xml:cobertura-coverage.xml",
+				"--cov-report",
 			},
 		},
 		{

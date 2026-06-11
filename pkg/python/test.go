@@ -28,12 +28,17 @@ func RunTests(
 	// JUnitReportFile and CoverageReportFile; overriding them via testOptions
 	// causes reports to land at a different path while the upload glob matches
 	// nothing — producing a silent green build with no artifacts in GCS.
-	for _, opt := range testOptions {
-		if strings.HasPrefix(opt, "--junitxml") {
-			return fmt.Errorf("testOptions must not override --junitxml; the report path is managed by the step (got %q)", opt)
+	for i, opt := range testOptions {
+		if strings.HasPrefix(opt, "--junitxml") || strings.HasPrefix(opt, "--junit-xml") {
+			return fmt.Errorf("testOptions must not override --junitxml/--junit-xml; the report path is managed by the step (got %q)", opt)
 		}
+		// Equals-separated form: --cov-report=xml[:path]
 		if strings.HasPrefix(opt, "--cov-report=xml") {
 			return fmt.Errorf("testOptions must not override --cov-report=xml; the report path is managed by the step (got %q)", opt)
+		}
+		// Space-separated form: --cov-report xml[:path]
+		if opt == "--cov-report" && i+1 < len(testOptions) && strings.HasPrefix(testOptions[i+1], "xml") {
+			return fmt.Errorf("testOptions must not override --cov-report xml; the report path is managed by the step (got %q %q)", opt, testOptions[i+1])
 		}
 	}
 	args := []string{
