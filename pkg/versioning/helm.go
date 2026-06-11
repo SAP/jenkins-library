@@ -73,7 +73,7 @@ func (h *HelmChart) SetVersion(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create chart content for '%v': %w", h.path, err)
 	}
-	err = h.utils.FileWrite(h.path, content, 666)
+	err = h.utils.FileWrite(h.path, content, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to write file '%v': %w", h.path, err)
 	}
