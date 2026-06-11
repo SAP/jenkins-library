@@ -14,6 +14,9 @@ const (
 	CoverageReportFile = "cobertura-coverage.xml"
 )
 
+// RunTests runs pytest inside virtualEnv with the given extra testOptions.
+// executeFn must propagate *exec.ExitError transparently (via %w) so that the
+// exit-code-5 "no tests collected" branch can unwrap it with errors.As.
 func RunTests(
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,

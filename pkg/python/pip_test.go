@@ -147,6 +147,7 @@ func TestInstallCycloneDXWithVersion(t *testing.T) {
 }
 
 func TestInstallTestDependencies(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		virtualEnv string
@@ -158,6 +159,7 @@ func TestInstallTestDependencies(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mockRunner := mock.ExecMockRunner{}
 
 			err := InstallTestDependencies(mockRunner.RunExecutable, tt.virtualEnv)
@@ -175,7 +177,7 @@ func TestInstallTestDependencies(t *testing.T) {
 func TestInstallTestDependenciesPytestFailure(t *testing.T) {
 	t.Parallel()
 	mockRunner := mock.ExecMockRunner{
-		ShouldFailOnCommand: map[string]error{"pytest$": fmt.Errorf("pip install failed")},
+		ShouldFailOnCommand: map[string]error{"pytest(==|$)": fmt.Errorf("pip install failed")},
 	}
 
 	err := InstallTestDependencies(mockRunner.RunExecutable, "")

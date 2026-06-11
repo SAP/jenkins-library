@@ -17,7 +17,7 @@ func install(
 	version string,
 	extraArgs []string,
 ) error {
-	flags := PipInstallFlags
+	flags := append([]string(nil), PipInstallFlags...)
 	if len(extraArgs) > 0 {
 		flags = append(flags, extraArgs...)
 	}
