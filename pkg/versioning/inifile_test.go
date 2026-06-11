@@ -60,13 +60,13 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			artifactIDField:   "name",
 			artifactIDSection: "general",
 			readFile: func(filename string) ([]byte, error) {
-				return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil
+				return []byte("[general]\nversion=\"1.2.3\"\nname=\"my-artifact\""), nil
 			},
 		}
 		coordinates, err := inifile.GetCoordinates()
 		assert.NoError(t, err)
-		assert.Equal(t, "infra-basement", coordinates.ArtifactID)
-		assert.Equal(t, "0.2.0", coordinates.Version)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
 	})
 
 	t.Run("success case - artifactID section falls back to version section", func(t *testing.T) {
@@ -76,12 +76,12 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			versionSection:  "general",
 			artifactIDField: "name",
 			readFile: func(filename string) ([]byte, error) {
-				return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil
+				return []byte("[general]\nversion=\"1.2.3\"\nname=\"my-artifact\""), nil
 			},
 		}
 		coordinates, err := inifile.GetCoordinates()
 		assert.NoError(t, err)
-		assert.Equal(t, "infra-basement", coordinates.ArtifactID)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
 	})
 
 	t.Run("no artifactID field configured returns empty coordinates", func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			versionField:   "version",
 			versionSection: "general",
 			readFile: func(filename string) ([]byte, error) {
-				return []byte("[general]\nversion=\"0.2.0\"\nname=\"infra-basement\""), nil
+				return []byte("[general]\nversion=\"1.2.3\"\nname=\"my-artifact\""), nil
 			},
 		}
 		coordinates, err := inifile.GetCoordinates()
@@ -103,7 +103,7 @@ func TestINIfileGetCoordinates(t *testing.T) {
 			path:              "lib_version.ini",
 			artifactIDField:   "name",
 			artifactIDSection: "general",
-			readFile:          func(filename string) ([]byte, error) { return []byte("[general]\nversion=\"0.2.0\""), nil },
+			readFile:          func(filename string) ([]byte, error) { return []byte("[general]\nversion=\"1.2.3\""), nil },
 		}
 		_, err := inifile.GetCoordinates()
 		assert.EqualError(t, err, "field 'name' not found in section 'general'")
