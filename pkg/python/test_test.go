@@ -40,23 +40,19 @@ func TestReportFileConstants(t *testing.T) {
 
 func TestRunTests(t *testing.T) {
 	tests := []struct {
-		name         string
-		virtualEnv   string
-		testOptions  []string
-		junitPath    string
-		coveragePath string
-		execErr      error
-		wantExec     string
-		wantParams   []string
-		wantErr      bool
-		errContains  string
+		name        string
+		virtualEnv  string
+		testOptions []string
+		execErr     error
+		wantExec    string
+		wantParams  []string
+		wantErr     bool
+		errContains string
 	}{
 		{
-			name:         "happy path - no extra options",
-			testOptions:  nil,
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantExec:     "pytest",
+			name:        "happy path - no extra options",
+			testOptions: nil,
+			wantExec:    "pytest",
 			wantParams: []string{
 				"--junitxml=TEST-python.xml",
 				"--cov",
@@ -64,12 +60,9 @@ func TestRunTests(t *testing.T) {
 			},
 		},
 		{
-			name:         "with virtualenv - uses venv pytest binary",
-			virtualEnv:   ".venv",
-			testOptions:  nil,
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantExec:     filepath.Join(".venv", "bin", "pytest"),
+			name:       "with virtualenv - uses venv pytest binary",
+			virtualEnv: ".venv",
+			wantExec:   filepath.Join(".venv", "bin", "pytest"),
 			wantParams: []string{
 				"--junitxml=TEST-python.xml",
 				"--cov",
@@ -77,11 +70,9 @@ func TestRunTests(t *testing.T) {
 			},
 		},
 		{
-			name:         "happy path - with test options appended",
-			testOptions:  []string{"-v", "--tb=short"},
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantExec:     "pytest",
+			name:        "happy path - with test options appended",
+			testOptions: []string{"-v", "--tb=short"},
+			wantExec:    "pytest",
 			wantParams: []string{
 				"--junitxml=TEST-python.xml",
 				"--cov",
@@ -91,47 +82,27 @@ func TestRunTests(t *testing.T) {
 			},
 		},
 		{
-			name:         "custom paths appear verbatim in flags",
-			testOptions:  nil,
-			junitPath:    "custom/junit.xml",
-			coveragePath: "reports/cov.xml",
-			wantExec:     "pytest",
-			wantParams: []string{
-				"--junitxml=custom/junit.xml",
-				"--cov",
-				"--cov-report=xml:reports/cov.xml",
-			},
+			name:        "conflicting --junitxml in testOptions is rejected",
+			testOptions: []string{"--junitxml=my-results.xml"},
+			wantErr:     true,
+			errContains: "--junitxml",
 		},
 		{
-			name:         "conflicting --junitxml in testOptions is rejected",
-			testOptions:  []string{"--junitxml=my-results.xml"},
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantErr:      true,
-			errContains:  "--junitxml",
+			name:        "conflicting --junitxml= (equals form) in testOptions is rejected",
+			testOptions: []string{"--junitxml="},
+			wantErr:     true,
+			errContains: "--junitxml",
 		},
 		{
-			name:         "conflicting --junitxml= (equals form) in testOptions is rejected",
-			testOptions:  []string{"--junitxml="},
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantErr:      true,
-			errContains:  "--junitxml",
+			name:        "conflicting --cov-report=xml in testOptions is rejected",
+			testOptions: []string{"--cov-report=xml:other.xml"},
+			wantErr:     true,
+			errContains: "--cov-report=xml",
 		},
 		{
-			name:         "conflicting --cov-report=xml in testOptions is rejected",
-			testOptions:  []string{"--cov-report=xml:other.xml"},
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantErr:      true,
-			errContains:  "--cov-report=xml",
-		},
-		{
-			name:         "benign --cov-report=html passthrough is allowed",
-			testOptions:  []string{"--cov-report=html:htmlcov"},
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantExec:     "pytest",
+			name:        "benign --cov-report=html passthrough is allowed",
+			testOptions: []string{"--cov-report=html:htmlcov"},
+			wantExec:    "pytest",
 			wantParams: []string{
 				"--junitxml=TEST-python.xml",
 				"--cov",
@@ -140,11 +111,9 @@ func TestRunTests(t *testing.T) {
 			},
 		},
 		{
-			name:         "benign -v and --tb=short passthrough is allowed",
-			testOptions:  []string{"-v", "--tb=short"},
-			junitPath:    "TEST-python.xml",
-			coveragePath: "cobertura-coverage.xml",
-			wantExec:     "pytest",
+			name:        "benign -v and --tb=short passthrough is allowed",
+			testOptions: []string{"-v", "--tb=short"},
+			wantExec:    "pytest",
 			wantParams: []string{
 				"--junitxml=TEST-python.xml",
 				"--cov",
@@ -163,7 +132,7 @@ func TestRunTests(t *testing.T) {
 				mockRunner.ShouldFailOnCommand = map[string]error{"pytest": tt.execErr}
 			}
 
-			err := RunTests(mockRunner.RunExecutable, tt.virtualEnv, tt.testOptions, tt.junitPath, tt.coveragePath)
+			err := RunTests(mockRunner.RunExecutable, tt.virtualEnv, tt.testOptions)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -183,7 +152,7 @@ func TestRunTestsNonZeroExit(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockRunner.ShouldFailOnCommand = map[string]error{"pytest": exitError(t, 1)}
 
-	err := RunTests(mockRunner.RunExecutable, "", nil, "TEST-python.xml", "cobertura-coverage.xml")
+	err := RunTests(mockRunner.RunExecutable, "", nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pytest")
@@ -194,7 +163,7 @@ func TestRunTestsExitCode5(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockRunner.ShouldFailOnCommand = map[string]error{"pytest": exitError(t, 5)}
 
-	err := RunTests(mockRunner.RunExecutable, "", nil, "TEST-python.xml", "cobertura-coverage.xml")
+	err := RunTests(mockRunner.RunExecutable, "", nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "pytest collected no tests")

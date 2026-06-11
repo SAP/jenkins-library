@@ -18,8 +18,6 @@ func RunTests(
 	executeFn func(executable string, params ...string) error,
 	virtualEnv string,
 	testOptions []string,
-	junitPath string,
-	coveragePath string,
 ) error {
 	log.Entry().Debug("running python tests")
 	// Reject testOptions that would silently relocate the report files managed
@@ -36,9 +34,9 @@ func RunTests(
 		}
 	}
 	args := []string{
-		fmt.Sprintf("--junitxml=%s", junitPath),
+		"--junitxml=" + JUnitReportFile,
 		"--cov",
-		fmt.Sprintf("--cov-report=xml:%s", coveragePath),
+		"--cov-report=xml:" + CoverageReportFile,
 	}
 	args = append(args, testOptions...)
 	if err := executeFn(getBinary(virtualEnv, "pytest"), args...); err != nil {

@@ -91,7 +91,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 			log.SetErrorCategory(log.ErrorBuild)
 			return fmt.Errorf("failed to install test dependencies: %w", err)
 		}
-		if err := python.RunTests(utils.RunExecutable, config.VirtualEnvironmentName, config.TestOptions, python.JUnitReportFile, python.CoverageReportFile); err != nil {
+		if err := python.RunTests(utils.RunExecutable, config.VirtualEnvironmentName, config.TestOptions); err != nil {
 			log.SetErrorCategory(log.ErrorTest)
 			return fmt.Errorf("failed to run python tests: %w", err)
 		}

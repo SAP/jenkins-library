@@ -175,7 +175,7 @@ func TestInstallTestDependencies(t *testing.T) {
 func TestInstallTestDependenciesPytestFailure(t *testing.T) {
 	t.Parallel()
 	mockRunner := mock.ExecMockRunner{
-		ShouldFailOnCommand: map[string]error{"pip install --upgrade --root-user-action=ignore pytest": fmt.Errorf("pip install failed")},
+		ShouldFailOnCommand: map[string]error{"pytest$": fmt.Errorf("pip install failed")},
 	}
 
 	err := InstallTestDependencies(mockRunner.RunExecutable, "")
