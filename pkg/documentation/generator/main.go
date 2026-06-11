@@ -119,7 +119,7 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	checkError(err)
 
 	// overwrite existing file
-	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 644)
+	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 0644)
 	checkError(err)
 
 	return nil

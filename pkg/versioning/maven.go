@@ -2,16 +2,9 @@ package versioning
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/SAP/jenkins-library/pkg/maven"
 )
-
-type mavenExecRunner interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(e string, p ...string) error
-}
 
 type mavenRunner interface {
 	Execute(*maven.ExecuteOptions, maven.Utils) (string, error)
