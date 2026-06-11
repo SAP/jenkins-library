@@ -375,6 +375,10 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// configure truststore
 	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
 
+	if config.GoProxy != "" {
+		os.Setenv("GOPROXY", config.GoProxy)
+	}
+
 	if config.PrivateModules == "" {
 		return nil
 	}
