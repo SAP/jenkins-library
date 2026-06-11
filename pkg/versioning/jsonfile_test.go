@@ -46,8 +46,10 @@ func TestJSONfileGetVersion(t *testing.T) {
 func TestJSONfileGetCoordinates(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		jsonfile := JSONfile{
-			path:     "my.json",
-			readFile: func(filename string) ([]byte, error) { return []byte(`{"name": "my-artifact", "version": "1.2.3"}`), nil },
+			path: "my.json",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte(`{"name": "my-artifact", "version": "1.2.3"}`), nil
+			},
 		}
 		coordinates, err := jsonfile.GetCoordinates()
 		assert.NoError(t, err)
