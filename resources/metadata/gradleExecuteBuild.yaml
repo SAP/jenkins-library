@@ -167,6 +167,23 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: useArtifactoryMirror
+        type: bool
+        description: If set to true, an init script is injected to redirect dependency resolution to the SAP Artifactory mirror, avoiding direct access to public repositories such as Maven Central.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: artifactoryMirrorUrl
+        type: string
+        description: URL of the SAP Artifactory virtual repository to use as a Maven mirror when useArtifactoryMirror is enabled.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: reports
