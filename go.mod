@@ -18,7 +18,7 @@ require (
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/bndr/gojenkins v1.1.1-0.20240109173050-c316119c46d5
 	github.com/buildpacks/lifecycle v0.18.5
-	github.com/cdevents/sdk-go v0.4.1
+	github.com/cdevents/sdk-go v0.5.0
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/docker/cli v29.3.0+incompatible
 	github.com/docker/docker v28.5.2+incompatible
