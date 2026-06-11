@@ -17,22 +17,28 @@ import (
 )
 
 type abapEnvironmentCloneGitRepoOptions struct {
-	Username          string   `json:"username,omitempty"`
-	Password          string   `json:"password,omitempty"`
-	ByogUsername      string   `json:"byogUsername,omitempty"`
-	ByogPassword      string   `json:"byogPassword,omitempty"`
-	ByogAuthMethod    string   `json:"byogAuthMethod,omitempty" validate:"possible-values=TOKEN BASIC"`
-	Repositories      string   `json:"repositories,omitempty"`
-	RepositoryName    string   `json:"repositoryName,omitempty"`
-	BranchName        string   `json:"branchName,omitempty"`
-	Host              string   `json:"host,omitempty"`
-	LogOutput         string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD ERROR_ONLY"`
-	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string   `json:"cfOrg,omitempty"`
-	CfSpace           string   `json:"cfSpace,omitempty"`
-	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
-	CertificateNames  []string `json:"certificateNames,omitempty"`
+	Username               string   `json:"username,omitempty"`
+	Password               string   `json:"password,omitempty"`
+	ByogUsername           string   `json:"byogUsername,omitempty"`
+	ByogPassword           string   `json:"byogPassword,omitempty"`
+	ByogAuthMethod         string   `json:"byogAuthMethod,omitempty" validate:"possible-values=TOKEN BASIC"`
+	Repositories           string   `json:"repositories,omitempty"`
+	RepositoryName         string   `json:"repositoryName,omitempty"`
+	BranchName             string   `json:"branchName,omitempty"`
+	Host                   string   `json:"host,omitempty"`
+	LogOutput              string   `json:"logOutput,omitempty" validate:"possible-values=ZIP STANDARD ERROR_ONLY"`
+	CfAPIEndpoint          string   `json:"cfApiEndpoint,omitempty"`
+	CfOrg                  string   `json:"cfOrg,omitempty"`
+	CfSpace                string   `json:"cfSpace,omitempty"`
+	CfServiceInstance      string   `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName       string   `json:"cfServiceKeyName,omitempty"`
+	BtpAPIEndpoint         string   `json:"btpApiEndpoint,omitempty"`
+	BtpSubdomain           string   `json:"btpSubdomain,omitempty"`
+	BtpSubaccount          string   `json:"btpSubaccount,omitempty"`
+	BtpIDp                 string   `json:"btpIdp,omitempty"`
+	BtpServiceInstanceName string   `json:"btpServiceInstanceName,omitempty"`
+	BtpServiceBindingName  string   `json:"btpServiceBindingName,omitempty"`
+	CertificateNames       []string `json:"certificateNames,omitempty"`
 }
 
 // AbapEnvironmentCloneGitRepoCommand Clones a git repository to a SAP BTP ABAP Environment system
@@ -193,6 +199,12 @@ func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP Subaccount name")
+	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP Identity Provider")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "BTP service instance name")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceBindingName, "btpServiceBindingName", os.Getenv("PIPER_btpServiceBindingName"), "BTP service binding name")
 	cmd.Flags().StringSliceVar(&stepConfig.CertificateNames, "certificateNames", []string{}, "file names of trusted (self-signed) server certificates - need to be stored in .pipeline/trustStore")
 
 	cmd.MarkFlagRequired("username")
@@ -374,6 +386,60 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
+					},
+					{
+						Name:        "btpApiEndpoint",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/url"}},
+						Default:     os.Getenv("PIPER_btpApiEndpoint"),
+					},
+					{
+						Name:        "btpSubdomain",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
+						Default:     os.Getenv("PIPER_btpSubdomain"),
+					},
+					{
+						Name:        "btpSubaccount",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
+						Default:     os.Getenv("PIPER_btpSubaccount"),
+					},
+					{
+						Name:        "btpIdp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/idp"}},
+						Default:     os.Getenv("PIPER_btpIdp"),
+					},
+					{
+						Name:        "btpServiceInstanceName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
+						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
+					},
+					{
+						Name:        "btpServiceBindingName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
+						Default:     os.Getenv("PIPER_btpServiceBindingName"),
 					},
 					{
 						Name:        "certificateNames",

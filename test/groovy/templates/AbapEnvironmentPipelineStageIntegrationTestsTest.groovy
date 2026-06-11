@@ -44,6 +44,8 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         helper.registerAllowedMethod('abapEnvironmentBuild', [Map.class], {m -> stepsCalled.add('abapEnvironmentBuild')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
         helper.registerAllowedMethod('abapLandscapePortalUpdateAddOnProduct', [Map.class], {m -> stepsCalled.add('abapLandscapePortalUpdateAddOnProduct')})
+        helper.registerAllowedMethod('btpCreateServiceBinding', [Map.class], {m -> stepsCalled.add('btpCreateServiceBinding')})
+        helper.registerAllowedMethod('btpDeleteServiceInstance', [Map.class], {m -> stepsCalled.add('btpDeleteServiceInstance')})
     }
 
     @Test
