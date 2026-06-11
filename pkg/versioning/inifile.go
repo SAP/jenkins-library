@@ -86,5 +86,19 @@ func (i *INIfile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (i *INIfile) GetCoordinates() (Coordinates, error) {
-	return Coordinates{}, nil
+	result := Coordinates{}
+	if i.content == nil {
+		if err := i.init(); err != nil {
+			return result, err
+		}
+	}
+	section := i.content.Section(i.versionSection)
+	if section.HasKey("name") {
+		result.ArtifactID = section.Key("name").String()
+	}
+	if version, err := i.GetVersion(); err == nil {
+		result.Version = version
+	}
+
+	return result, nil
 }
