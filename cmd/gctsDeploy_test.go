@@ -690,3 +690,355 @@ func TestGctsSplitConfigurationToMap(t *testing.T) {
 		}
 	})
 }
+
+func TestListAllRepositories(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:     "http://testHost.com:50000",
+		Client:   "000",
+		Username: "testUser",
+		Password: "testPassword",
+	}
+
+	t.Run("list repositories success", func(t *testing.T) {
+		httpClient := httpMockGcts{
+			StatusCode: 200,
+			ResponseBody: `{
+				"result": [
+					{
+						"rid": "repo1",
+						"name": "Repository 1",
+						"url": "https://github.com/org/repo1.git",
+						"branch": "main",
+						"status": "READY"
+					},
+					{
+						"rid": "repo2",
+						"name": "Repository 2",
+						"url": "https://github.com/org/repo2.git",
+						"branch": "master",
+						"status": "READY"
+					}
+				]
+			}`,
+		}
+
+		repos, err := listAllRepositories(&config, &httpClient)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, 2, len(repos))
+			assert.Equal(t, "repo1", repos[0].Result.Rid)
+			assert.Equal(t, "https://github.com/org/repo1.git", repos[0].Result.Url)
+			assert.Equal(t, "repo2", repos[1].Result.Rid)
+		}
+	})
+
+	t.Run("list repositories failure", func(t *testing.T) {
+		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `{"exception": "Server error"}`}
+
+		_, err := listAllRepositories(&config, &httpClient)
+
+		assert.Error(t, err)
+	})
+}
+
+func TestResolveRepositoryIDExplicit(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:                "http://testHost.com:50000",
+		Client:              "000",
+		Repository:          "explicitRepo",
+		RemoteRepositoryURL: "https://github.com/org/different.git",
+		Username:            "testUser",
+		Password:            "testPassword",
+	}
+
+	httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `{}`}
+	result, err := resolveRepositoryID(&config, &httpClient)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, "explicitRepo", result)
+	}
+}
+
+func TestResolveRepositoryIDByURLSingleMatch(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:                "http://testHost.com:50000",
+		Client:              "000",
+		RemoteRepositoryURL: "https://github.com/org/myRepo.git",
+		Username:            "testUser",
+		Password:            "testPassword",
+	}
+
+	httpClient := httpMockGcts{
+		StatusCode: 200,
+		ResponseBody: `{
+			"result": [
+				{
+					"rid": "otherRepo",
+					"url": "https://github.com/org/other.git"
+				},
+				{
+					"rid": "myRepo",
+					"url": "https://github.com/org/myRepo.git"
+				}
+			]
+		}`,
+	}
+
+	result, err := resolveRepositoryID(&config, &httpClient)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, "myRepo", result)
+	}
+}
+
+func TestResolveRepositoryIDByURLNoMatch(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:                "http://testHost.com:50000",
+		Client:              "000",
+		RemoteRepositoryURL: "https://github.com/org/nonexistent.git",
+		Username:            "testUser",
+		Password:            "testPassword",
+	}
+
+	httpClient := httpMockGcts{
+		StatusCode: 200,
+		ResponseBody: `{
+			"result": [
+				{
+					"rid": "repo1",
+					"url": "https://github.com/org/repo1.git"
+				}
+			]
+		}`,
+	}
+
+	_, err := resolveRepositoryID(&config, &httpClient)
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "no repository found")
+	}
+}
+
+func TestResolveRepositoryIDByURLMultipleMatches(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:                "http://testHost.com:50000",
+		Client:              "000",
+		RemoteRepositoryURL: "https://github.com/org/myRepo.git",
+		Username:            "testUser",
+		Password:            "testPassword",
+	}
+
+	httpClient := httpMockGcts{
+		StatusCode: 200,
+		ResponseBody: `{
+			"result": [
+				{
+					"rid": "myRepo_dev",
+					"url": "https://github.com/org/myRepo.git"
+				},
+				{
+					"rid": "myRepo_prod",
+					"url": "https://github.com/org/myRepo.git"
+				}
+			]
+		}`,
+	}
+
+	_, err := resolveRepositoryID(&config, &httpClient)
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "multiple repositories found")
+		assert.Contains(t, err.Error(), "myRepo_dev")
+		assert.Contains(t, err.Error(), "myRepo_prod")
+	}
+}
+
+func TestResolveRepositoryIDMissingBothParams(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:     "http://testHost.com:50000",
+		Client:   "000",
+		Username: "testUser",
+		Password: "testPassword",
+	}
+
+	httpClient := httpMockGcts{}
+
+	_, err := resolveRepositoryID(&config, &httpClient)
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "either 'repository' or 'remoteRepositoryURL' must be provided")
+	}
+}
+
+func TestResolveRepositoryIDListFailure(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:                "http://testHost.com:50000",
+		Client:              "000",
+		RemoteRepositoryURL: "https://github.com/org/myRepo.git",
+		Username:            "testUser",
+		Password:            "testPassword",
+	}
+
+	httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `{"exception": "Server error"}`}
+
+	_, err := resolveRepositoryID(&config, &httpClient)
+
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "failed to list repositories")
+	}
+}
+
+func TestNormalizeGitURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		url      string
+		expected string
+	}{
+		{
+			name:     "HTTPS with .git",
+			url:      "https://github.com/org/repo.git",
+			expected: "org/repo",
+		},
+		{
+			name:     "HTTPS without .git",
+			url:      "https://github.com/org/repo",
+			expected: "org/repo",
+		},
+		{
+			name:     "HTTP with .git",
+			url:      "http://github.com/org/repo.git",
+			expected: "org/repo",
+		},
+		{
+			name:     "SSH format",
+			url:      "git@github.com:org/repo.git",
+			expected: "org/repo",
+		},
+		{
+			name:     "SSH without .git",
+			url:      "git@github.com:org/repo",
+			expected: "org/repo",
+		},
+		{
+			name:     "Proxy URL with .git",
+			url:      "https://proxy.company.com/github.com/org/repo.git",
+			expected: "org/repo",
+		},
+		{
+			name:     "Proxy URL without .git",
+			url:      "http://proxy.company.com/github.com/org/repo",
+			expected: "org/repo",
+		},
+		{
+			name:     "Trailing slash",
+			url:      "https://github.com/org/repo/",
+			expected: "org/repo",
+		},
+		{
+			name:     "GitLab nested groups",
+			url:      "https://gitlab.com/group/subgroup/repo.git",
+			expected: "subgroup/repo",
+		},
+		{
+			name:     "Empty URL",
+			url:      "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizeGitURL(tt.url)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestResolveRepositoryIDWithURLNormalization(t *testing.T) {
+	t.Run("match with different .git suffix", func(t *testing.T) {
+		config := gctsDeployOptions{
+			Host:                "http://testHost.com:50000",
+			Client:              "000",
+			RemoteRepositoryURL: "https://github.com/org/myRepo.git",
+			Username:            "testUser",
+			Password:            "testPassword",
+		}
+
+		// Repository in ABAP system doesn't have .git suffix
+		httpClient := httpMockGcts{
+			StatusCode: 200,
+			ResponseBody: `{
+				"result": [
+					{
+						"rid": "myRepo",
+						"url": "https://github.com/org/myRepo"
+					}
+				]
+			}`,
+		}
+
+		result, err := resolveRepositoryID(&config, &httpClient)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "myRepo", result)
+		}
+	})
+
+	t.Run("match with proxy URL", func(t *testing.T) {
+		config := gctsDeployOptions{
+			Host:                "http://testHost.com:50000",
+			Client:              "000",
+			RemoteRepositoryURL: "https://github.com/org/myRepo.git",
+			Username:            "testUser",
+			Password:            "testPassword",
+		}
+
+		// Repository in ABAP system has proxy URL
+		httpClient := httpMockGcts{
+			StatusCode: 200,
+			ResponseBody: `{
+				"result": [
+					{
+						"rid": "myRepo",
+						"url": "http://proxy.company.com/github.com/org/myRepo.git"
+					}
+				]
+			}`,
+		}
+
+		result, err := resolveRepositoryID(&config, &httpClient)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "myRepo", result)
+		}
+	})
+
+	t.Run("match SSH vs HTTPS", func(t *testing.T) {
+		config := gctsDeployOptions{
+			Host:                "http://testHost.com:50000",
+			Client:              "000",
+			RemoteRepositoryURL: "git@github.com:org/myRepo.git",
+			Username:            "testUser",
+			Password:            "testPassword",
+		}
+
+		// Repository in ABAP system has HTTPS URL
+		httpClient := httpMockGcts{
+			StatusCode: 200,
+			ResponseBody: `{
+				"result": [
+					{
+						"rid": "myRepo",
+						"url": "https://github.com/org/myRepo.git"
+					}
+				]
+			}`,
+		}
+
+		result, err := resolveRepositoryID(&config, &httpClient)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "myRepo", result)
+		}
+	})
+}

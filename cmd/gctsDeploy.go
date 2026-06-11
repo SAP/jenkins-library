@@ -53,6 +53,16 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 
 	httpClient.SetOptions(clientOptions)
 	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)
+
+	// Resolve repository ID (explicit or auto-resolve from URL)
+	resolvedRepoID, resolveErr := resolveRepositoryID(config, httpClient)
+	if resolveErr != nil {
+		log.Entry().WithError(resolveErr).Error("failed to resolve repository ID")
+		return resolveErr
+	}
+	config.Repository = resolvedRepoID
+	log.Entry().Infof("Using repository ID: %v", config.Repository)
+
 	configurationMetadata, getConfigMetadataErr := getConfigurationMetadata(config, httpClient)
 
 	if getConfigMetadataErr != nil {
@@ -424,6 +434,194 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		return &response, parsingErr
 	}
 	return &response, nil
+}
+
+// listAllRepositories retrieves all repositories from the ABAP system
+func listAllRepositories(config *gctsDeployOptions, httpClient piperhttp.Sender) ([]getRepositoryResponseBody, error) {
+	var response struct {
+		Result []struct {
+			Rid    string `json:"rid"`
+			Name   string `json:"name"`
+			Role   string `json:"role"`
+			Vsid   string `json:"vsid"`
+			Status string `json:"status"`
+			Branch string `json:"branch"`
+			Url    string `json:"url"`
+			Config []struct {
+				Key      string `json:"key"`
+				Value    string `json:"value"`
+				Category string `json:"category"`
+			} `json:"config"`
+			Objects       any    `json:"objects"`
+			CurrentCommit string `json:"currentCommit"`
+			Connection    string `json:"connection"`
+		} `json:"result"`
+	}
+
+	requestURL := config.Host +
+		"/sap/bc/cts_abapvcs/repository" +
+		"?sap-client=" + config.Client
+
+	requestURL, urlErr := addQueryToURL(requestURL, config.QueryParameters)
+	if urlErr != nil {
+		return nil, urlErr
+	}
+
+	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	if httpErr != nil {
+		log.Entry().Errorf("Error while listing repositories: %v", httpErr)
+		return nil, httpErr
+	} else if resp == nil {
+		return nil, errors.New("did not retrieve a HTTP response")
+	}
+
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &response)
+	if parsingErr != nil {
+		return nil, parsingErr
+	}
+
+	// Convert to array of getRepositoryResponseBody for consistency
+	var repositories []getRepositoryResponseBody
+	for _, repo := range response.Result {
+		repositories = append(repositories, getRepositoryResponseBody{
+			Result: struct {
+				Rid    string `json:"rid"`
+				Name   string `json:"name"`
+				Role   string `json:"role"`
+				Vsid   string `json:"vsid"`
+				Status string `json:"status"`
+				Branch string `json:"branch"`
+				Url    string `json:"url"`
+				Config []struct {
+					Key      string `json:"key"`
+					Value    string `json:"value"`
+					Category string `json:"category"`
+				} `json:"config"`
+				Objects       any    `json:"objects"`
+				CurrentCommit string `json:"currentCommit"`
+				Connection    string `json:"connection"`
+			}{
+				Rid:           repo.Rid,
+				Name:          repo.Name,
+				Role:          repo.Role,
+				Vsid:          repo.Vsid,
+				Status:        repo.Status,
+				Branch:        repo.Branch,
+				Url:           repo.Url,
+				Config:        repo.Config,
+				Objects:       repo.Objects,
+				CurrentCommit: repo.CurrentCommit,
+				Connection:    repo.Connection,
+			},
+		})
+	}
+
+	return repositories, nil
+}
+
+// resolveRepositoryID determines the repository ID from configuration
+// Priority: 1) Explicit repository parameter, 2) Find by URL using list API
+func resolveRepositoryID(config *gctsDeployOptions, httpClient piperhttp.Sender) (string, error) {
+	// If repository is explicitly provided, use it
+	if config.Repository != "" {
+		log.Entry().Infof("Using explicitly provided repository ID: %v", config.Repository)
+		return config.Repository, nil
+	}
+
+	// Repository not provided - must find by URL
+	if config.RemoteRepositoryURL == "" {
+		return "", errors.New("either 'repository' or 'remoteRepositoryURL' must be provided")
+	}
+
+	log.Entry().Infof("Repository ID not provided, searching for repository with URL: %v", config.RemoteRepositoryURL)
+
+	// List all repositories
+	repositories, err := listAllRepositories(config, httpClient)
+	if err != nil {
+		return "", fmt.Errorf("failed to list repositories: %w", err)
+	}
+
+	log.Entry().Infof("Found %d repositories on ABAP system", len(repositories))
+
+	// Normalize the search URL for comparison (remove .git suffix, normalize path)
+	normalizedSearchURL := normalizeGitURL(config.RemoteRepositoryURL)
+
+	// Find repository matching the URL (comparing normalized repository paths)
+	var matchingRepos []string
+	for _, repo := range repositories {
+		if repo.Result.Url != "" {
+			normalizedRepoURL := normalizeGitURL(repo.Result.Url)
+			if normalizedRepoURL == normalizedSearchURL {
+				matchingRepos = append(matchingRepos, repo.Result.Rid)
+			}
+		}
+	}
+
+	if len(matchingRepos) == 0 {
+		return "", fmt.Errorf("no repository found with remote URL matching: %v. "+
+			"Please create the repository first or provide the 'repository' parameter explicitly",
+			config.RemoteRepositoryURL)
+	}
+
+	if len(matchingRepos) > 1 {
+		return "", fmt.Errorf("multiple repositories found with remote URL: %v (%v). "+
+			"Please provide the 'repository' parameter explicitly to disambiguate",
+			config.RemoteRepositoryURL, strings.Join(matchingRepos, ", "))
+	}
+
+	resolvedID := matchingRepos[0]
+	log.Entry().Infof("Successfully resolved repository ID: %v", resolvedID)
+	return resolvedID, nil
+}
+
+// normalizeGitURL normalizes a Git repository URL for comparison
+// Removes protocol (http/https), host, and .git suffix, keeping only org/repo path
+// This allows matching repos behind proxies or with different protocols
+// Examples:
+//
+//	https://github.com/org/repo.git -> org/repo
+//	http://proxy.com/github.com/org/repo -> org/repo
+//	git@github.com:org/repo.git -> org/repo
+func normalizeGitURL(url string) string {
+	if url == "" {
+		return ""
+	}
+
+	// Remove .git suffix if present
+	normalized := strings.TrimSuffix(url, ".git")
+
+	// Remove trailing slash
+	normalized = strings.TrimSuffix(normalized, "/")
+
+	// Handle SSH format (git@host:path)
+	if strings.Contains(normalized, "@") && strings.Contains(normalized, ":") {
+		// Extract path after last colon for SSH URLs
+		parts := strings.Split(normalized, ":")
+		if len(parts) >= 2 {
+			// Take everything after the first colon
+			normalized = strings.Join(parts[1:], ":")
+		}
+	}
+
+	// Remove protocol (http://, https://)
+	normalized = strings.TrimPrefix(normalized, "https://")
+	normalized = strings.TrimPrefix(normalized, "http://")
+
+	// Extract repository path (last 2 segments: org/repo)
+	// This handles proxy URLs like proxy.com/github.com/org/repo
+	parts := strings.Split(normalized, "/")
+	if len(parts) >= 2 {
+		// Take last 2 segments (org/repo)
+		normalized = parts[len(parts)-2] + "/" + parts[len(parts)-1]
+	}
+
+	return normalized
 }
 
 // Function to delete configuration key for repositories
