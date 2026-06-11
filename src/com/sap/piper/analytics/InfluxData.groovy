@@ -41,56 +41,58 @@ class InfluxData implements Serializable{
 
     public static void readFromDisk(script) {
         script.echo "Transfer Influx data"
-        def pathPrefix = '.pipeline/influx/'
-        List influxDataFiles = script.findFiles(glob: "${pathPrefix}**")?.toList()
+        def jsonStr = script.sh(script: '''python3 -c "
+import os, json, sys
+prefix = '.pipeline/influx/'
+if not os.path.isdir(prefix):
+    print('{}')
+    sys.exit(0)
+result = {}
+for root, dirs, files in os.walk(prefix):
+    for fname in sorted(files):
+        fpath = os.path.join(root, fname)
+        rel = os.path.relpath(fpath, prefix)
+        parts = rel.split(os.sep)
+        if len(parts) != 3:
+            continue
+        measurement, typ, name = parts
+        if typ not in ('fields', 'tags'):
+            continue
+        with open(fpath) as f:
+            content = f.read().strip()
+        if measurement not in result:
+            result[measurement] = {}
+        if typ not in result[measurement]:
+            result[measurement][typ] = {}
+        is_json = name.endswith('.json')
+        if is_json:
+            name = name[:-5]
+            try:
+                content = json.loads(content)
+            except (json.JSONDecodeError, ValueError):
+                try:
+                    content = json.loads('{\\\"content\\\": ' + content + '}')['content']
+                except:
+                    pass
+        else:
+            if content == 'true':
+                content = True
+            elif content == 'false':
+                content = False
+        result[measurement][typ][name] = content
+print(json.dumps(result))
+"''', returnStdout: true).trim()
 
-        influxDataFiles.each({f ->
-            script.echo "Reading file from disk: ${f}"
-            List parts = f.toString().replace(pathPrefix, '')?.split('/')?.toList()
-
-            if(parts?.size() == 3){
-                def type = parts?.get(1)
-
-                if(type in ['fields', 'tags']){
-                    def fileContent = script.readFile(f.getPath())
-                    def measurement = parts?.get(0)
-                    def name = parts?.get(2)
-                    def value
-                    if (name.endsWith(".json")){
-                        script.echo "reading JSON content: " + fileContent
-                        name = name.replace(".json","")
-                        // net.sf.json.JSONSerializer does only handle lists and maps
-                        // http://json-lib.sourceforge.net/apidocs/net/sf/json/package-summary.html
-                        try{
-                            value = script.readJSON(text: fileContent)
-                        }catch(net.sf.json.JSONException e){
-                            // try to wrap the value in an object and read again
-                            if (e.getMessage() == "Invalid JSON String"){
-                                value = script.readJSON(text: "{\"content\": ${fileContent}}").content
-                            }else{
-                                throw e
-                            }
-                        }
-                    }else{
-                        // handle boolean values
-                        if(fileContent == 'true'){
-                            value = true
-                        }else if(fileContent == 'false'){
-                            value = false
-                        }else{
-                            value = fileContent
-                        }
-                    }
-
-                    if(type == 'fields'){
-                        addField(measurement, name, value)
-                    }else{
-                        addTag(measurement, name, value)
-                    }
+        if (jsonStr && jsonStr != '{}') {
+            def data = script.readJSON(text: jsonStr)
+            data.each { String measurement, Map types ->
+                types.fields?.each { String name, value ->
+                    addField(measurement, name, value)
                 }
-            } else {
-                script.echo "skipped, illegal path"
+                types.tags?.each { String name, value ->
+                    addTag(measurement, name, value)
+                }
             }
-        })
+        }
     }
 }
