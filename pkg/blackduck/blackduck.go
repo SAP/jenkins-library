@@ -250,7 +250,7 @@ type Client struct {
 	httpClient                  piperhttp.Sender
 	serverURL                   string
 	projectVersion              *ProjectVersion
-	UserAgent                   string
+	UserAgent                   string `json:"-"`
 }
 
 // NewClient creates a new BlackDuck client
