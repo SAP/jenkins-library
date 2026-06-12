@@ -87,6 +87,33 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"build", "-p", "path/to"}}, utils.Calls[0])
 	})
 
+	t.Run("success case - build with Artifactory mirror", func(t *testing.T) {
+		var walkDir WalkDirFunc = func(root string, fn fs.WalkDirFunc) error {
+			return nil // No BOM files
+		}
+		utils := gradleExecuteBuildMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{},
+			FilesMock:      &mock.FilesMock{},
+			Filepath:       walkDir,
+		}
+		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
+		options := &gradleExecuteBuildOptions{
+			Path:                "path/to",
+			Task:                "build",
+			UseWrapper:          false,
+			UseArtifactoryMirror: true,
+			ArtifactoryMirrorURL: "https://int.repositories.cloud.sap/artifactory/build-releases/",
+		}
+
+		err := runGradleExecuteBuild(options, nil, utils, pipelineEnv)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.True(t, utils.HasWrittenFile("initScript.gradle.tmp"))
+		assert.True(t, utils.HasRemovedFile("initScript.gradle.tmp"))
+	})
+
 	t.Run("success case - build with flags", func(t *testing.T) {
 		var walkDir WalkDirFunc = func(root string, fn fs.WalkDirFunc) error {
 			return nil // No BOM files

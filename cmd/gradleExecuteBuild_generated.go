@@ -39,6 +39,8 @@ type gradleExecuteBuildOptions struct {
 	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
 	BuildFlags                    []string `json:"buildFlags,omitempty"`
 	BuildSettingsInfo             string   `json:"buildSettingsInfo,omitempty"`
+	UseArtifactoryMirror          bool     `json:"useArtifactoryMirror,omitempty"`
+	ArtifactoryMirrorURL          string   `json:"artifactoryMirrorUrl,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -261,6 +263,8 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the gradle build. This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.UseArtifactoryMirror, "useArtifactoryMirror", false, "If set to true, an init script is injected to redirect dependency resolution to the SAP Artifactory mirror, avoiding direct access to public repositories such as Maven Central.")
+	cmd.Flags().StringVar(&stepConfig.ArtifactoryMirrorURL, "artifactoryMirrorUrl", os.Getenv("PIPER_artifactoryMirrorUrl"), "URL of the SAP Artifactory virtual repository to use as a Maven mirror when useArtifactoryMirror is enabled.")
 
 }
 
@@ -453,6 +457,24 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "useArtifactoryMirror",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "artifactoryMirrorUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_artifactoryMirrorUrl"),
 					},
 				},
 			},

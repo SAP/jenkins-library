@@ -104,6 +104,16 @@ allprojects {
 }
 `
 
+const mirrorInitScriptContentTemplate = `
+allprojects {
+    repositories {
+        maven {
+            url "{{.ArtifactoryMirrorURL}}"
+        }
+    }
+}
+`
+
 // PublishedArtifacts contains information about published artifacts
 type PublishedArtifacts struct {
 	Info     Component `json:"component,omitempty"`
@@ -184,6 +194,17 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		Task:            config.Task,
 		BuildFlags:      config.BuildFlags,
 		UseWrapper:      config.UseWrapper,
+	}
+	// The mirror init script is injected only for the main build task — it redirects dependency
+	// resolution to SAP Artifactory. BOM creation and artifact publishing use their own dedicated
+	// init scripts (bomInitScriptContentTemplate / publishInitScriptContentTemplate) and do not
+	// need a dependency mirror.
+	if config.UseArtifactoryMirror && config.ArtifactoryMirrorURL != "" {
+		mirrorInitScriptContent, err := getInitScriptContent(config, mirrorInitScriptContentTemplate)
+		if err != nil {
+			return fmt.Errorf("failed to get Artifactory mirror init script content: %v", err)
+		}
+		gradleOptions.InitScriptContent = mirrorInitScriptContent
 	}
 	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
 		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
