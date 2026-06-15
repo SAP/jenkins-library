@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -69,21 +68,11 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
 
 	if options.InitScriptContent != "" {
-		parameters := []string{"tasks"}
-		if options.BuildGradlePath != "" {
-			parameters = append(parameters, "-p", options.BuildGradlePath)
+		if err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644); err != nil {
+			return "", fmt.Errorf("failed create init script: %v", err)
 		}
-		if err := utils.RunExecutable(exec, parameters...); err != nil {
-			return "", fmt.Errorf("failed list gradle tasks: %v", err)
-		}
-		if !strings.Contains(stdOutBuf.String(), options.Task) {
-			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
-			if err != nil {
-				return "", fmt.Errorf("failed create init script: %v", err)
-			}
-			defer utils.FileRemove(initScriptName)
-			options.setInitScript = true
-		}
+		defer utils.FileRemove(initScriptName)
+		options.setInitScript = true
 	}
 
 	parameters := getParametersFromOptions(options)
