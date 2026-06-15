@@ -91,6 +91,110 @@ func TestPythonIntegrationBuildLegacy(t *testing.T) {
 	assert.Equal(schemaVersion, cmd.CycloneDxSchemaVersion, "bom-pip.xml should reference CycloneDX schema version "+cmd.CycloneDxSchemaVersion)
 }
 
+func TestPythonIntegrationRunTests(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-with-tests",
+		WorkDir:  "/python-project-with-tests",
+	})
+
+	output := RunPiper(t, container, "/python-project-with-tests", "pythonBuild")
+
+	assert.Contains(output, "info  pythonBuild - SUCCESS")
+
+	assert.FileExists(container,
+		"/python-project-with-tests/TEST-python.xml",
+		"/python-project-with-tests/cobertura-coverage.xml",
+	)
+}
+
+func TestPythonIntegrationRunTestsFailure(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-with-failing-tests",
+		WorkDir:  "/python-project-with-failing-tests",
+	})
+
+	_, output := RunPiperExpectFailure(t, container, "/python-project-with-failing-tests", "pythonBuild")
+
+	assert.Contains(output, "failed to run python tests")
+}
+
+func TestPythonIntegrationRunTestsNoTests(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-no-tests",
+		WorkDir:  "/python-project-no-tests",
+	})
+
+	_, output := RunPiperExpectFailure(t, container, "/python-project-no-tests", "pythonBuild")
+
+	// "pytest collected no tests" is the prefix of the error returned by pkg/python/test.go RunTests — keep in sync.
+	assert.Contains(output, "pytest collected no tests")
+}
+
+func TestPythonIntegrationRunTestsWithVerboseTestOption(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-with-tests",
+		WorkDir:  "/python-project-with-tests",
+	})
+
+	output := RunPiper(t, container, "/python-project-with-tests", "pythonBuild")
+
+	assert.Contains(output, "info  pythonBuild - SUCCESS")
+
+	// testOptions: ['-v'] is wired to pytest argv (pkg/python/test.go:44-49).
+	// The injected report flags are prepended; user options are appended after them.
+	assert.Contains(output, "pytest --junitxml=TEST-python.xml --cov --cov-report=xml:cobertura-coverage.xml -v")
+
+	// With -v, pytest prints each test function name; without -v it prints dots.
+	// These are the two tests in tests/test_example.py.
+	assert.Contains(output, "test_add_one")
+	assert.Contains(output, "test_add_one_negative")
+
+	// The injected report paths must be unchanged even when testOptions are present.
+	assert.FileExists(container,
+		"/python-project-with-tests/TEST-python.xml",
+		"/python-project-with-tests/cobertura-coverage.xml",
+	)
+}
+
+func TestPythonIntegrationRunTestsRejectsJunitxmlOverride(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_PYTHON,
+		TestData: "TestPythonIntegration/python-project-test-options-invalid",
+		WorkDir:  "/python-project-test-options-invalid",
+	})
+
+	_, output := RunPiperExpectFailure(t, container, "/python-project-test-options-invalid", "pythonBuild")
+
+	// Validation message from pkg/python/test.go:33 — keep in sync if reworded.
+	assert.Contains(output, "testOptions must not override --junitxml/--junit-xml")
+	// The offending option is echoed via %q in the error.
+	assert.Contains(output, "--junitxml=hijack.xml")
+	// Outer wrap from cmd/pythonBuild.go:96.
+	assert.Contains(output, "failed to run python tests")
+
+	// Validation fires before pytest is invoked; the command must never appear.
+	assert.NotContains(output, "running command: piperBuild-env/bin/pytest")
+}
+
 func TestPythonIntegrationBuildMinimal(t *testing.T) {
 	t.Parallel()
 	assert := NewContainerAssert(t)
