@@ -98,11 +98,12 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		}
 		utils.FilesMock.AddFile("path/to/build.gradle", []byte{})
 		options := &gradleExecuteBuildOptions{
-			Path:                "path/to",
-			Task:                "build",
-			UseWrapper:          false,
-			UseArtifactoryMirror: true,
-			ArtifactoryMirrorURL: "https://int.repositories.cloud.sap/artifactory/build-releases/",
+			Path:                        "path/to",
+			Task:                        "build",
+			UseWrapper:                  false,
+			UseArtifactoryMirror:        true,
+			ArtifactoryMirrorURL:        "https://int.repositories.cloud.sap/artifactory/build-releases/",
+			ArtifactoryGradlePluginsURL: "https://int.repositories.cloud.sap/artifactory/proxy-3rd-party-releases-plugins-gradle/",
 		}
 
 		err := runGradleExecuteBuild(options, nil, utils, pipelineEnv)
