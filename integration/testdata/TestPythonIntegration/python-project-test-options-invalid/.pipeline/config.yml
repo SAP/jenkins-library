@@ -3,4 +3,4 @@ general:
 steps:
   pythonBuild:
     runTests: true
-    testOptions: ['-v']
+    testOptions: ['--junitxml=hijack.xml']
