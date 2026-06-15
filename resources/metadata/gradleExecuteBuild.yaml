@@ -184,6 +184,14 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: artifactoryGradlePluginsUrl
+        type: string
+        description: URL of the SAP Artifactory repository to use for resolving Gradle plugin dependencies (buildscript classpath) when useArtifactoryMirror is enabled.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: reports
