@@ -108,9 +108,8 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 
 		err := runGradleExecuteBuild(options, nil, utils, pipelineEnv)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Exec: "gradle", Params: []string{"tasks", "-p", "path/to"}}, utils.Calls[0])
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[1])
+		assert.Equal(t, 1, len(utils.Calls))
+		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[0])
 		assert.True(t, utils.HasWrittenFile("initScript.gradle.tmp"))
 		assert.True(t, utils.HasRemovedFile("initScript.gradle.tmp"))
 	})
