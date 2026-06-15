@@ -250,6 +250,7 @@ type Client struct {
 	httpClient                  piperhttp.Sender
 	serverURL                   string
 	projectVersion              *ProjectVersion
+	UserAgent                   string `json:"-"`
 }
 
 // NewClient creates a new BlackDuck client
@@ -597,6 +598,10 @@ func (b *Client) sendRequest(method, apiEndpoint string, params map[string]strin
 
 	if len(b.BearerToken) > 0 {
 		header.Add("Authorization", fmt.Sprintf("Bearer %v", b.BearerToken))
+	}
+
+	if b.UserAgent != "" {
+		header.Set("User-Agent", b.UserAgent)
 	}
 
 	response, err := b.httpClient.SendRequest(method, blackDuckAPIUrl.String(), nil, header, nil)
