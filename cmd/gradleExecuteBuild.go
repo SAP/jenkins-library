@@ -106,6 +106,13 @@ allprojects {
 
 const mirrorInitScriptContentTemplate = `
 allprojects {
+    buildscript {
+        repositories {
+            maven {
+                url "{{.ArtifactoryGradlePluginsURL}}"
+            }
+        }
+    }
     repositories {
         maven {
             url "{{.ArtifactoryMirrorURL}}"
@@ -199,7 +206,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	// resolution to SAP Artifactory. BOM creation and artifact publishing use their own dedicated
 	// init scripts (bomInitScriptContentTemplate / publishInitScriptContentTemplate) and do not
 	// need a dependency mirror.
-	if config.UseArtifactoryMirror && config.ArtifactoryMirrorURL != "" {
+	if config.UseArtifactoryMirror && config.ArtifactoryMirrorURL != "" && config.ArtifactoryGradlePluginsURL != "" {
 		mirrorInitScriptContent, err := getInitScriptContent(config, mirrorInitScriptContentTemplate)
 		if err != nil {
 			return fmt.Errorf("failed to get Artifactory mirror init script content: %v", err)
