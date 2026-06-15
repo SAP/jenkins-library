@@ -101,6 +101,12 @@ func TestRunTests(t *testing.T) {
 			errContains: "--junit-xml",
 		},
 		{
+			name:        "conflicting --junit-xml= (hyphenated equals-empty form) in testOptions is rejected",
+			testOptions: []string{"--junit-xml="},
+			wantErr:     true,
+			errContains: "--junit-xml",
+		},
+		{
 			name:        "conflicting --cov-report=xml in testOptions is rejected",
 			testOptions: []string{"--cov-report=xml:other.xml"},
 			wantErr:     true,
