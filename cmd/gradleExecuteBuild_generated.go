@@ -41,6 +41,7 @@ type gradleExecuteBuildOptions struct {
 	BuildSettingsInfo             string   `json:"buildSettingsInfo,omitempty"`
 	UseArtifactoryMirror          bool     `json:"useArtifactoryMirror,omitempty"`
 	ArtifactoryMirrorURL          string   `json:"artifactoryMirrorUrl,omitempty"`
+	ArtifactoryGradlePluginsURL   string   `json:"artifactoryGradlePluginsUrl,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -265,6 +266,7 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the gradle build. This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.UseArtifactoryMirror, "useArtifactoryMirror", false, "If set to true, an init script is injected to redirect dependency resolution to the SAP Artifactory mirror, avoiding direct access to public repositories such as Maven Central.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactoryMirrorURL, "artifactoryMirrorUrl", os.Getenv("PIPER_artifactoryMirrorUrl"), "URL of the SAP Artifactory virtual repository to use as a Maven mirror when useArtifactoryMirror is enabled.")
+	cmd.Flags().StringVar(&stepConfig.ArtifactoryGradlePluginsURL, "artifactoryGradlePluginsUrl", os.Getenv("PIPER_artifactoryGradlePluginsUrl"), "URL of the SAP Artifactory repository to use for resolving Gradle plugin dependencies (buildscript classpath) when useArtifactoryMirror is enabled.")
 
 }
 
@@ -475,6 +477,15 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_artifactoryMirrorUrl"),
+					},
+					{
+						Name:        "artifactoryGradlePluginsUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_artifactoryGradlePluginsUrl"),
 					},
 				},
 			},
