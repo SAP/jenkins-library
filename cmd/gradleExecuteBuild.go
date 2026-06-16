@@ -129,7 +129,7 @@ allprojects {
         apply plugin: 'java'
         afterEvaluate {
             if (tasks.findByName('cyclonedxBom') == null) {
-                apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+                apply plugin: 'org.cyclonedx.bom'
 
                 cyclonedxBom {
                     outputName = "` + gradleBomFilename + `"
