@@ -77,10 +77,16 @@ const publishInitScriptContentTemplate = `
 const bomInitScriptContentTemplate = `
 initscript {
   repositories {
+    {{- if .ArtifactoryGradlePluginsURL}}
+    maven {
+      url "{{.ArtifactoryGradlePluginsURL}}"
+    }
+    {{- else}}
     mavenCentral()
     maven {
       url "https://plugins.gradle.org/m2/"
     }
+    {{- end}}
   }
   dependencies {
     classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.4"
