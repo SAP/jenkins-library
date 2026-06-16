@@ -141,6 +141,11 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	sys := blackduckSystem{
 		Client: bd.NewClient(config.Token, config.ServerURL, &piperhttp.Client{}),
 	}
+	commitShortSHA := "unknown"
+	if len(GitCommit) >= 7 {
+		commitShortSHA = GitCommit[:7]
+	}
+	sys.Client.UserAgent = fmt.Sprintf("piper-detectExecuteScan-%s", commitShortSHA)
 	return &sys
 }
 

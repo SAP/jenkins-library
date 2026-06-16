@@ -128,7 +128,6 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		switch buildDescriptorFilePath {
 		case "go.mod":
 			artifact = &GoMod{path: buildDescriptorFilePath, fileExists: fileExists}
-			break
 		default:
 			artifact = &Versionfile{path: buildDescriptorFilePath}
 		}
