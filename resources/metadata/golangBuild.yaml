@@ -68,7 +68,7 @@ spec:
           - STEPS
       - name: goProxy
         type: string
-        description: "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Set to the SAP Artifactory proxy to avoid direct access to public registries."
+        description: "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Supports comma-separated values to define a list of proxies with fallback (e.g. \"https://proxy.example.com,direct\")."
         scope:
           - GENERAL
           - PARAMETERS
