@@ -86,7 +86,7 @@ func TestExecute(t *testing.T) {
 		assert.Equal(t, []string(nil), utils.removedFiles)
 	})
 
-	t.Run("use init script to apply plugin", func(t *testing.T) {
+	t.Run("use init script - always applied regardless of existing tasks", func(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock:      &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{},
@@ -108,11 +108,11 @@ func TestExecute(t *testing.T) {
 		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.removedFiles)
 	})
 
-	t.Run("failed - use init script to apply plugin", func(t *testing.T) {
+	t.Run("failed - use init script", func(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock: &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{
-				ShouldFailOnCommand: map[string]error{"gradle build -p path/to --init-script initScript.gradle.tmp": errors.New("failed to build with init script")},
+			ShouldFailOnCommand: map[string]error{"gradle build -p path/to --init-script initScript.gradle.tmp": errors.New("failed to build with init script")},
 			},
 			existingFiles: []string{"path/to/build.gradle.kts"},
 		}
