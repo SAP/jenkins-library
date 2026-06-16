@@ -136,7 +136,7 @@ allprojects {
                 includeConfigs = ["runtimeClasspath"]
                 skipConfigs = ["compileClasspath", "testCompileClasspath"]
             }
-        } catch (InvalidUserDataException ignored) {
+        } catch (Exception ignored) {
             // cyclonedxBom task already registered by the project's own plugin declaration
         }
     }
