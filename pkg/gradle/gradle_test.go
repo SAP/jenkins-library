@@ -112,7 +112,7 @@ func TestExecute(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock: &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{
-			ShouldFailOnCommand: map[string]error{"gradle build -p path/to --init-script initScript.gradle.tmp": errors.New("failed to build with init script")},
+				ShouldFailOnCommand: map[string]error{"gradle build -p path/to --init-script initScript.gradle.tmp": errors.New("failed to build with init script")},
 			},
 			existingFiles: []string{"path/to/build.gradle.kts"},
 		}
