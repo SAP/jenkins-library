@@ -127,21 +127,17 @@ allprojects {
     def gradleExecuteBuild_skipBOMProjects = [{{range .ExcludeCreateBOMForProjects}} "{{.}}",{{end}} ];
     if (!gradleExecuteBuild_skipBOMProjects.contains(project.name)) {
         apply plugin: 'java'
-        def gradleExecuteBuild_bomConfigured = false
-        plugins.withId('org.cyclonedx.bom') {
-            gradleExecuteBuild_bomConfigured = true
-        }
-        afterEvaluate {
-            if (!gradleExecuteBuild_bomConfigured) {
-                apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
-                cyclonedxBom {
-                    outputName = "` + gradleBomFilename + `"
-                    outputFormat = "xml"
-                    schemaVersion = "1.4"
-                    includeConfigs = ["runtimeClasspath"]
-                    skipConfigs = ["compileClasspath", "testCompileClasspath"]
-                }
+        try {
+            apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+            cyclonedxBom {
+                outputName = "` + gradleBomFilename + `"
+                outputFormat = "xml"
+                schemaVersion = "1.4"
+                includeConfigs = ["runtimeClasspath"]
+                skipConfigs = ["compileClasspath", "testCompileClasspath"]
             }
+        } catch (InvalidUserDataException ignored) {
+            // cyclonedxBom task already registered by the project's own plugin declaration
         }
     }
 }
