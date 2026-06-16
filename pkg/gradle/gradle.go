@@ -73,6 +73,7 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 		}
 		defer utils.FileRemove(initScriptName)
 		options.setInitScript = true
+		log.Entry().Debugf("Using gradle init script:\n%s", options.InitScriptContent)
 	}
 
 	parameters := getParametersFromOptions(options)
