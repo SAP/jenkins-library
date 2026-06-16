@@ -31,6 +31,22 @@ var (
 )
 
 const publishInitScriptContentTemplate = `
+{{- if .ArtifactoryMirrorURL}}
+allprojects {
+    buildscript {
+        repositories {
+            maven {
+                url "{{.ArtifactoryGradlePluginsURL}}"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "{{.ArtifactoryMirrorURL}}"
+        }
+    }
+}
+{{- end}}
 {{ if .ApplyPublishingForAllProjects}}allprojects{{else}}rootProject{{ end }} {
     def gradleExecuteBuild_skipPublishingProjects = [{{ if .ApplyPublishingForAllProjects}}{{range .ExcludePublishingForProjects}} "{{.}}",{{end}}{{end}} ];
     if (!gradleExecuteBuild_skipPublishingProjects.contains(project.name)) {
