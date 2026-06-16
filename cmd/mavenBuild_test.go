@@ -104,7 +104,7 @@ func TestMavenBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (main and deploy)") {
-			assert.Contains(t, mockedUtils.Calls[1].Params, "-DaltDeploymentRepository=ID::default::http://sampleRepo.com")
+			assert.Contains(t, mockedUtils.Calls[1].Params, "-DaltDeploymentRepository=ID::http://sampleRepo.com")
 		}
 	})
 
