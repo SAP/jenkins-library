@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -68,12 +69,24 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
 
 	if options.InitScriptContent != "" {
-		if err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644); err != nil {
-			return "", fmt.Errorf("failed create init script: %v", err)
+		// Run 'tasks' first to detect if the target task is already registered by the project.
+		// If it is, skip the init script — applying it would conflict with the project's own
+		// plugin declaration (e.g. org.cyclonedx.bom already applied in build.gradle).
+		parameters := []string{"tasks"}
+		if options.BuildGradlePath != "" {
+			parameters = append(parameters, "-p", options.BuildGradlePath)
 		}
-		defer utils.FileRemove(initScriptName)
-		options.setInitScript = true
-		log.Entry().Debugf("Using gradle init script:\n%s", options.InitScriptContent)
+		if err := utils.RunExecutable(exec, parameters...); err != nil {
+			return "", fmt.Errorf("failed list gradle tasks: %v", err)
+		}
+		if !strings.Contains(stdOutBuf.String(), options.Task) {
+			if err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644); err != nil {
+				return "", fmt.Errorf("failed create init script: %v", err)
+			}
+			defer utils.FileRemove(initScriptName)
+			options.setInitScript = true
+			log.Entry().Debugf("Using gradle init script:\n%s", options.InitScriptContent)
+		}
 	}
 
 	parameters := getParametersFromOptions(options)

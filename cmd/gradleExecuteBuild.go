@@ -127,17 +127,14 @@ allprojects {
     def gradleExecuteBuild_skipBOMProjects = [{{range .ExcludeCreateBOMForProjects}} "{{.}}",{{end}} ];
     if (!gradleExecuteBuild_skipBOMProjects.contains(project.name)) {
         apply plugin: 'java'
-        try {
-            apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
-            cyclonedxBom {
-                outputName = "` + gradleBomFilename + `"
-                outputFormat = "xml"
-                schemaVersion = "1.4"
-                includeConfigs = ["runtimeClasspath"]
-                skipConfigs = ["compileClasspath", "testCompileClasspath"]
-            }
-        } catch (Exception ignored) {
-            // cyclonedxBom task already registered by the project's own plugin declaration
+        apply plugin: org.cyclonedx.gradle.CycloneDxPlugin
+
+        cyclonedxBom {
+            outputName = "` + gradleBomFilename + `"
+            outputFormat = "xml"
+            schemaVersion = "1.4"
+            includeConfigs = ["runtimeClasspath"]
+            skipConfigs = ["compileClasspath", "testCompileClasspath"]
         }
     }
 }
