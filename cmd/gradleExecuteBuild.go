@@ -94,6 +94,20 @@ initscript {
 }
 
 allprojects {
+    {{- if .ArtifactoryMirrorURL}}
+    buildscript {
+        repositories {
+            maven {
+                url "{{.ArtifactoryGradlePluginsURL}}"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "{{.ArtifactoryMirrorURL}}"
+        }
+    }
+    {{- end}}
     def gradleExecuteBuild_skipBOMProjects = [{{range .ExcludeCreateBOMForProjects}} "{{.}}",{{end}} ];
     if (!gradleExecuteBuild_skipBOMProjects.contains(project.name)) {
         apply plugin: 'java'
