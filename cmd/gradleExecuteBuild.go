@@ -239,13 +239,13 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		UseWrapper:      config.UseWrapper,
 	}
 	// The mirror init script is injected only for the main build task — it redirects dependency
-	// resolution to SAP Artifactory. BOM creation and artifact publishing use their own dedicated
+	// resolution to the configured repository mirror. BOM creation and artifact publishing use their own dedicated
 	// init scripts (bomInitScriptContentTemplate / publishInitScriptContentTemplate) and do not
 	// need a dependency mirror.
 	if config.UseArtifactoryMirror && config.ArtifactoryMirrorURL != "" && config.ArtifactoryGradlePluginsURL != "" {
 		mirrorInitScriptContent, err := getInitScriptContent(config, mirrorInitScriptContentTemplate)
 		if err != nil {
-			return fmt.Errorf("failed to get Artifactory mirror init script content: %v", err)
+			return fmt.Errorf("failed to get mirror init script content: %v", err)
 		}
 		gradleOptions.InitScriptContent = mirrorInitScriptContent
 	}
