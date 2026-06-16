@@ -26,7 +26,6 @@ func TestGradleIntegrationExecuteBuildJavaProjectBOMCreationUsingWrapper(t *test
 
 	output := RunPiper(t, container, "/java-project", "gradleExecuteBuild")
 
-	assert.Contains(output, "info  gradleExecuteBuild - running command: ./gradlew tasks")
 	assert.Contains(output, "info  gradleExecuteBuild - running command: ./gradlew cyclonedxBom --init-script initScript.gradle.tmp")
 	assert.Contains(output, "info  gradleExecuteBuild - running command: ./gradlew build")
 	assert.Contains(output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
@@ -47,8 +46,7 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 
 	output := RunPiper(t, container, "/java-project-with-bom-plugin", "gradleExecuteBuild")
 
-	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle tasks")
-	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle cyclonedxBom")
+	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle cyclonedxBom --init-script initScript.gradle.tmp")
 	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle build")
 	assert.Contains(output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(output, "info  gradleExecuteBuild - SUCCESS")
