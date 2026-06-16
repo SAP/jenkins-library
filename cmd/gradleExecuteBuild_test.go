@@ -203,6 +203,33 @@ func TestRunGradleExecuteBuild(t *testing.T) {
 		assert.True(t, utils.HasRemovedFile("initScript.gradle.tmp"))
 	})
 
+	t.Run("success case - bom creation with Artifactory mirror redirects project dependencies", func(t *testing.T) {
+		options := &gradleExecuteBuildOptions{
+			UseArtifactoryMirror:        true,
+			ArtifactoryMirrorURL:        "https://int.repositories.cloud.sap/artifactory/build-releases/",
+			ArtifactoryGradlePluginsURL: "https://int.repositories.cloud.sap/artifactory/proxy-3rd-party-releases-plugins-gradle/",
+		}
+		content, err := getInitScriptContent(options, bomInitScriptContentTemplate)
+		assert.NoError(t, err)
+		// BOM init script should redirect both the CycloneDX plugin classpath and project dependency resolution
+		assert.Contains(t, content, "https://int.repositories.cloud.sap/artifactory/proxy-3rd-party-releases-plugins-gradle/")
+		assert.Contains(t, content, "https://int.repositories.cloud.sap/artifactory/build-releases/")
+	})
+
+	t.Run("success case - publish with Artifactory mirror redirects project dependencies", func(t *testing.T) {
+		options := &gradleExecuteBuildOptions{
+			UseArtifactoryMirror:        true,
+			ArtifactoryMirrorURL:        "https://int.repositories.cloud.sap/artifactory/build-releases/",
+			ArtifactoryGradlePluginsURL: "https://int.repositories.cloud.sap/artifactory/proxy-3rd-party-releases-plugins-gradle/",
+		}
+		content, err := getInitScriptContent(options, publishInitScriptContentTemplate)
+		assert.NoError(t, err)
+		// Publish init script should redirect project dependency resolution to avoid Maven Central
+		// hits during compileJava/compileClasspath resolution inside the publish task
+		assert.Contains(t, content, "https://int.repositories.cloud.sap/artifactory/build-releases/")
+		assert.Contains(t, content, "https://int.repositories.cloud.sap/artifactory/proxy-3rd-party-releases-plugins-gradle/")
+	})
+
 	t.Run("success case - build using wrapper", func(t *testing.T) {
 		var walkDir WalkDirFunc = func(root string, fn fs.WalkDirFunc) error {
 			return nil // No BOM files

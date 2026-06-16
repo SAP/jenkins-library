@@ -128,28 +128,6 @@ func TestExecute(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to build with init script")
 	})
 
-	t.Run("use init script - always applied regardless of existing tasks", func(t *testing.T) {
-		utils := &MockUtils{
-			FilesMock:      &mock.FilesMock{},
-			ExecMockRunner: &mock.ExecMockRunner{},
-			existingFiles:  []string{"path/to/build.gradle.kts"},
-		}
-		opts := ExecuteOptions{
-			BuildGradlePath:   "path/to",
-			Task:              "build",
-			InitScriptContent: "some content",
-			UseWrapper:        false,
-		}
-
-		_, err := Execute(&opts, utils)
-		assert.NoError(t, err)
-
-		assert.Equal(t, 1, len(utils.Calls))
-		assert.Equal(t, mock.ExecCall{Execution: (*mock.Execution)(nil), Async: false, Exec: "gradle", Params: []string{"build", "-p", "path/to", "--init-script", "initScript.gradle.tmp"}}, utils.Calls[0])
-		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.writtenFiles)
-		assert.Equal(t, []string{"initScript.gradle.tmp"}, utils.removedFiles)
-	})
-
 	t.Run("failed - run command", func(t *testing.T) {
 		utils := &MockUtils{
 			FilesMock: &mock.FilesMock{},

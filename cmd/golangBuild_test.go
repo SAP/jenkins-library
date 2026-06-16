@@ -1301,6 +1301,7 @@ go 1.17`
 	}
 
 	t.Run("success - goProxy is set when parameter is provided", func(t *testing.T) {
+		t.Cleanup(func() { os.Unsetenv("GOPROXY") })
 		utils := newGolangBuildTestsUtils()
 		goModFile, _ := modfile.Parse("go.mod", []byte(modTestFile), nil)
 		config := golangBuildOptions{GoProxy: "https://proxy.example.com,direct"}
