@@ -483,6 +483,7 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "python tests")
+		assert.NotContains(t, err.Error(), "password")
 		for _, call := range utils.ExecMockRunner.Calls {
 			assert.NotEqual(t, filepath.Join("dummy", "bin", "twine"), call.Exec,
 				"twine must not be called when tests fail")
