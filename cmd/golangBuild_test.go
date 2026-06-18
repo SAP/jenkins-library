@@ -1300,6 +1300,30 @@ go 1.17`
 		},
 	}
 
+	t.Run("success - goProxy is set when parameter is provided", func(t *testing.T) {
+		t.Cleanup(func() { os.Unsetenv("GOPROXY") })
+		utils := newGolangBuildTestsUtils()
+		goModFile, _ := modfile.Parse("go.mod", []byte(modTestFile), nil)
+		config := golangBuildOptions{GoProxy: "https://proxy.example.com,direct"}
+
+		err := prepareGolangEnvironment(&config, goModFile, utils)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "https://proxy.example.com,direct", os.Getenv("GOPROXY"))
+	})
+
+	t.Run("success - GOPROXY is not set when goProxy parameter is empty", func(t *testing.T) {
+		os.Unsetenv("GOPROXY")
+		utils := newGolangBuildTestsUtils()
+		goModFile, _ := modfile.Parse("go.mod", []byte(modTestFile), nil)
+		config := golangBuildOptions{}
+
+		err := prepareGolangEnvironment(&config, goModFile, utils)
+
+		assert.NoError(t, err)
+		assert.Empty(t, os.Getenv("GOPROXY"))
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utils := newGolangBuildTestsUtils()

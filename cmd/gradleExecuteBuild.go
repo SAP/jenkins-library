@@ -31,6 +31,22 @@ var (
 )
 
 const publishInitScriptContentTemplate = `
+{{- if .ArtifactoryMirrorURL}}
+allprojects {
+    buildscript {
+        repositories {
+            maven {
+                url "{{.ArtifactoryGradlePluginsURL}}"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "{{.ArtifactoryMirrorURL}}"
+        }
+    }
+}
+{{- end}}
 {{ if .ApplyPublishingForAllProjects}}allprojects{{else}}rootProject{{ end }} {
     def gradleExecuteBuild_skipPublishingProjects = [{{ if .ApplyPublishingForAllProjects}}{{range .ExcludePublishingForProjects}} "{{.}}",{{end}}{{end}} ];
     if (!gradleExecuteBuild_skipPublishingProjects.contains(project.name)) {
@@ -77,10 +93,16 @@ const publishInitScriptContentTemplate = `
 const bomInitScriptContentTemplate = `
 initscript {
   repositories {
+    {{- if .ArtifactoryGradlePluginsURL}}
+    maven {
+      url "{{.ArtifactoryGradlePluginsURL}}"
+    }
+    {{- else}}
     mavenCentral()
     maven {
       url "https://plugins.gradle.org/m2/"
     }
+    {{- end}}
   }
   dependencies {
     classpath "org.cyclonedx:cyclonedx-gradle-plugin:1.7.4"
@@ -88,6 +110,20 @@ initscript {
 }
 
 allprojects {
+    {{- if .ArtifactoryMirrorURL}}
+    buildscript {
+        repositories {
+            maven {
+                url "{{.ArtifactoryGradlePluginsURL}}"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "{{.ArtifactoryMirrorURL}}"
+        }
+    }
+    {{- end}}
     def gradleExecuteBuild_skipBOMProjects = [{{range .ExcludeCreateBOMForProjects}} "{{.}}",{{end}} ];
     if (!gradleExecuteBuild_skipBOMProjects.contains(project.name)) {
         apply plugin: 'java'
@@ -99,6 +135,23 @@ allprojects {
             schemaVersion = "1.4"
             includeConfigs = ["runtimeClasspath"]
             skipConfigs = ["compileClasspath", "testCompileClasspath"]
+        }
+    }
+}
+`
+
+const mirrorInitScriptContentTemplate = `
+allprojects {
+    buildscript {
+        repositories {
+            maven {
+                url "{{.ArtifactoryGradlePluginsURL}}"
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "{{.ArtifactoryMirrorURL}}"
         }
     }
 }
@@ -184,6 +237,17 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 		Task:            config.Task,
 		BuildFlags:      config.BuildFlags,
 		UseWrapper:      config.UseWrapper,
+	}
+	// The mirror init script is injected only for the main build task — it redirects dependency
+	// resolution to the configured repository mirror. BOM creation and artifact publishing use their own dedicated
+	// init scripts (bomInitScriptContentTemplate / publishInitScriptContentTemplate) and do not
+	// need a dependency mirror.
+	if config.UseArtifactoryMirror && config.ArtifactoryMirrorURL != "" && config.ArtifactoryGradlePluginsURL != "" {
+		mirrorInitScriptContent, err := getInitScriptContent(config, mirrorInitScriptContentTemplate)
+		if err != nil {
+			return fmt.Errorf("failed to get mirror init script content: %v", err)
+		}
+		gradleOptions.InitScriptContent = mirrorInitScriptContent
 	}
 	if _, err := gradle.Execute(gradleOptions, utils); err != nil {
 		log.Entry().WithError(err).Errorf("gradle build execution was failed: %v", err)
