@@ -41,14 +41,14 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 
 		// init
 		config := btpDeleteServiceInstanceOptions{
-			Url:                 "https://api.endpoint.com",
-			Subdomain:           "testSubdomain",
-			Subaccount:          "testSubaccount",
-			ServiceInstanceName: InstanceName,
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			BtpAPIEndpoint:         "https://api.endpoint.com",
+			BtpSubdomain:           "testSubdomain",
+			BtpSubaccount:          "testSubaccount",
+			BtpServiceInstanceName: InstanceName,
+			Timeout:                60,
+			PollInterval:           5,
+			User:                   "testUser",
+			Password:               "testPassword",
 		}
 
 		// test
@@ -57,10 +57,10 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--id", InstanceId, "--subaccount", config.Subaccount, "--confirm"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--id", InstanceId, "--subaccount", config.BtpSubaccount, "--confirm"}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},
@@ -91,15 +91,15 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 
 		// init
 		config := btpDeleteServiceInstanceOptions{
-			Url:                 "https://api.endpoint.com",
-			Subdomain:           "testSubdomain",
-			Idp:                 "testIdentityProvider",
-			Subaccount:          "testSubaccount",
-			ServiceInstanceName: InstanceName,
-			Timeout:             60,
-			PollInterval:        5,
-			User:                "testUser",
-			Password:            "testPassword",
+			BtpAPIEndpoint:         "https://api.endpoint.com",
+			BtpSubdomain:           "testSubdomain",
+			BtpIDp:                 "testIdentityProvider",
+			BtpSubaccount:          "testSubaccount",
+			BtpServiceInstanceName: InstanceName,
+			Timeout:                60,
+			PollInterval:           5,
+			User:                   "testUser",
+			Password:               "testPassword",
 		}
 
 		// test
@@ -108,10 +108,10 @@ func TestRunBtpDeleteServiceInstance(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.Url, "--subdomain", config.Subdomain, "--user", config.User, "--password", config.Password, "--idp", config.Idp}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "login", "--url", config.BtpAPIEndpoint, "--subdomain", config.BtpSubdomain, "--user", config.User, "--password", config.Password, "--idp", config.BtpIDp}},
 				m.Calls[0])
 			assert.Equal(t,
-				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--id", InstanceId, "--subaccount", config.Subaccount, "--confirm"}},
+				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "delete", "services/instance", "--id", InstanceId, "--subaccount", config.BtpSubaccount, "--confirm"}},
 				m.Calls[2])
 			assert.Equal(t,
 				btp.BtpExecCall{Exec: "btp", Params: []string{"--format", "json", "logout"}},

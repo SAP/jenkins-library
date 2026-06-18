@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestProcessCDE_NilTokenProvider(t *testing.T) {
+func TestPublishTaskRunFinishedCDEvent_NilTokenProvider(t *testing.T) {
 	generalConfig := config.GeneralConfigOptions{}
-	err := ProcessCDE(nil, &generalConfig, EventContext{
+	err := PublishTaskRunFinishedCDEvent(nil, &generalConfig, EventContext{
 		StepName:  "step1",
 		StageName: "stage1",
 		ErrorCode: "0",
@@ -19,9 +19,9 @@ func TestProcessCDE_NilTokenProvider(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestProcess_NilTokenProvider(t *testing.T) {
+func TestPublishTaskRunFinishedEvent_NilTokenProvider(t *testing.T) {
 	generalConfig := config.GeneralConfigOptions{}
-	err := Process(nil, &generalConfig, EventContext{
+	err := PublishTaskRunFinishedEvent(nil, &generalConfig, EventContext{
 		StepName:  "step1",
 		StageName: "stage1",
 		ErrorCode: "0",

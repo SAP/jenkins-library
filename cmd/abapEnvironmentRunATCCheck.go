@@ -376,8 +376,14 @@ func pollATCRun(details abaputils.ConnectionDetailsHTTP, body []byte, client pip
 		if x.Status == "Completed" {
 			return x.Link[0].Key, err
 		}
+		if x.Status == "Aborted" {
+			return "", fmt.Errorf("ATC run was aborted")
+		}
 		if x.Status == "" {
 			return "", fmt.Errorf("Could not get any response from ATC poll: %v", errors.New("Status from ATC run is empty. Either it's not an ABAP system or ATC run hasn't started"))
+		}
+		if x.Status != "Running" && x.Status != "Not Yet Started" {
+			return "", fmt.Errorf("ATC run ended with unexpected status: %s", x.Status)
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -419,6 +425,14 @@ func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.Aba
 	subOptions.Host = options.Host
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
+
+	// BTP configuration
+	subOptions.URL = options.BtpAPIEndpoint
+	subOptions.Subdomain = options.BtpSubdomain
+	subOptions.Subaccount = options.BtpSubaccount
+	subOptions.Idp = options.BtpIDp
+	subOptions.ServiceInstanceName = options.BtpServiceInstanceName
+	subOptions.ServiceBindingName = options.BtpServiceBindingName
 
 	return subOptions
 }

@@ -7,9 +7,11 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -154,4 +156,103 @@ func TestNPMIntegrationPublishStable(t *testing.T) {
 
 	// Command should fail because the registry doesn't exist
 	assert.NotEqual(t, 0, exitCode, "Expected command to fail with fake registry")
+}
+
+// TestNPMIntegrationCreateBOMNpm verifies that running npmExecuteScripts with --createBOM
+// on an npm project calls createNpmBOM via cyclonedx-npm and produces a bom-npm.xml file
+// using CycloneDX schema version npm.CycloneDxSchemaVersion.
+func TestNPMIntegrationCreateBOMNpm(t *testing.T) {
+	t.Parallel()
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    "node:24-bookworm",
+		TestData: "TestNpmIntegration/createBOM",
+		WorkDir:  "/createBOM",
+	})
+
+	output := RunPiper(t, container, "/createBOM",
+		"npmExecuteScripts",
+		"--createBOM",
+		"--install",
+		"--runScripts=ci-build")
+
+	// Verify cyclonedx-npm is called with expected arguments for npm
+	assert.Contains(t, output,
+		"running command: ./tmp/node_modules/.bin/cyclonedx-npm --output-format XML --spec-version "+npm.CycloneDxSchemaVersion+" --omit dev --output-file bom-npm.xml package.json",
+		"BOM generation should invoke cyclonedx-npm with the expected arguments for npm")
+
+	// Verify the generated BOM file exists and references the correct CycloneDX schema version
+	bomContent := ReadFile(t, container, "/createBOM/bom-npm.xml")
+
+	assert.NotEmpty(t, bomContent, "bom-npm.xml should not be empty")
+	assert.Contains(t, string(bomContent), "http://cyclonedx.org/schema/bom/"+npm.CycloneDxSchemaVersion,
+		"bom-npm.xml should reference CycloneDX schema version "+npm.CycloneDxSchemaVersion)
+}
+
+// TestNPMIntegrationCreateBOMYarn verifies that running npmExecuteScripts with --createBOM
+// on a yarn project (identified by yarn.lock) calls createNpmBOM via cyclonedx-npm and
+// produces a bom-npm.xml file using CycloneDX schema version npm.CycloneDxSchemaVersion.
+func TestNPMIntegrationCreateBOMYarn(t *testing.T) {
+	t.Parallel()
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    "node:24-bookworm",
+		TestData: "TestNpmIntegration/createBOMYarn",
+		WorkDir:  "/createBOMYarn",
+	})
+
+	output := RunPiper(t, container, "/createBOMYarn",
+		"npmExecuteScripts",
+		"--createBOM",
+		"--install",
+		"--runScripts=ci-build")
+
+	// Verify cyclonedx-npm is called with expected arguments for yarn
+	assert.Contains(t, output,
+		"running command: ./tmp/node_modules/.bin/cyclonedx-npm --output-format XML --spec-version "+npm.CycloneDxSchemaVersion+" --omit dev --output-file bom-npm.xml package.json",
+		"BOM generation should invoke cyclonedx-npm with the expected arguments for yarn")
+
+	// Verify the generated BOM file exists and references the correct CycloneDX schema version
+	bomContent := ReadFile(t, container, "/createBOMYarn/bom-npm.xml")
+
+	assert.NotEmpty(t, bomContent, "bom-npm.xml should not be empty")
+	assert.Contains(t, string(bomContent), "http://cyclonedx.org/schema/bom/"+npm.CycloneDxSchemaVersion,
+		"bom-npm.xml should reference CycloneDX schema version "+npm.CycloneDxSchemaVersion)
+}
+
+// TestNPMIntegrationCreateBOMPnpm verifies that running npmExecuteScripts with --createBOM
+// on a pnpm project (identified by pnpm-lock.yaml) calls createPnpmBOM via cdxgen and
+// cyclonedx-cli, and produces a bom-npm.xml file using CycloneDX schema version npm.CycloneDxSchemaVersion.
+func TestNPMIntegrationCreateBOMPnpm(t *testing.T) {
+	t.Parallel()
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    "node:24-bookworm",
+		TestData: "TestNpmIntegration/createBOMPnpm",
+		WorkDir:  "/createBOMPnpm",
+	})
+
+	output := RunPiper(t, container, "/createBOMPnpm",
+		"npmExecuteScripts",
+		"--createBOM",
+		"--install",
+		"--runScripts=ci-build")
+
+	// Verify cdxgen is called with expected arguments for pnpm
+	assert.Contains(t, output,
+		"running command: ./tmp/node_modules/.bin/cdxgen -r -o bom-npm.json --spec-version "+npm.CycloneDxSchemaVersion,
+		"BOM generation should invoke cdxgen with the expected arguments for pnpm")
+
+	// Verify cyclonedx-cli is called to convert JSON to XML with expected arguments for pnpm
+	// The output version for cyclonedx-cli is expected to be in the format "vX_Y_Z". Ex: 1.4 => v1_4
+	outputVersion := fmt.Sprintf("v%s", strings.ReplaceAll(npm.CycloneDxSchemaVersion, ".", "_"))
+	assert.Contains(t, output,
+		"running command: .pipeline/cyclonedx-linux-x64 convert --input-file bom-npm.json --output-format xml --output-file bom-npm.xml --output-version "+outputVersion,
+		"BOM generation should invoke cyclonedx-cli to convert JSON to XML for pnpm")
+
+	bomContent := ReadFile(t, container, "/createBOMPnpm/bom-npm.xml")
+
+	assert.NotEmpty(t, bomContent, "bom-npm.xml should not be empty")
+	assert.Contains(t, string(bomContent), "http://cyclonedx.org/schema/bom/"+npm.CycloneDxSchemaVersion,
+		"bom-npm.xml should reference CycloneDX schema version "+npm.CycloneDxSchemaVersion)
 }

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -134,6 +133,14 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	subOptions.Host = options.Host
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
+
+	// BTP configuration
+	subOptions.URL = options.BtpAPIEndpoint
+	subOptions.Subdomain = options.BtpSubdomain
+	subOptions.Subaccount = options.BtpSubaccount
+	subOptions.Idp = options.BtpIDp
+	subOptions.ServiceInstanceName = options.BtpServiceInstanceName
+	subOptions.ServiceBindingName = options.BtpServiceBindingName
 
 	return subOptions
 }
@@ -363,7 +370,7 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 	}
 
 	//Write Results
-	err = os.WriteFile(aunitResultFileName, body, 0644)
+	err = utils.FileWrite(aunitResultFileName, body, 0644)
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)
 	}
@@ -390,7 +397,7 @@ func persistAUnitResult(utils piperutils.FileUtils, body []byte, aunitResultFile
 			htmlString := generateHTMLDocumentAUnit(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			aUnitResultHTMLFileName := strings.Trim(aunitResultFileName, ".xml") + ".html"
-			err = os.WriteFile(aUnitResultHTMLFileName, htmlStringByte, 0644)
+			err = utils.FileWrite(aUnitResultHTMLFileName, htmlStringByte, 0644)
 			if err != nil {
 				return fmt.Errorf("Writing HTML document failed: %w", err)
 			}

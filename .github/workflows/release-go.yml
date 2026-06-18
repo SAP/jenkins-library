@@ -17,20 +17,20 @@ jobs:
     uses: ./.github/workflows/integration-tests.yml
     permissions:
       contents: read
-      actions: read
+      actions: write
+      statuses: write  # update commit status via GITHUB_TOKEN in the called workflow
     secrets:
-      INTEGRATION_TEST_VOTING_TOKEN: ${{ secrets.INTEGRATION_TEST_VOTING_TOKEN }}
       PIPER_INTEGRATION_GITHUB_TOKEN: ${{ secrets.PIPER_INTEGRATION_GITHUB_TOKEN }}
       PIPER_INTEGRATION_GITHUB_HOST: ${{secrets.PIPER_INTEGRATION_GITHUB_HOST}}
-      PIPER_INTEGRATION_SONAR_TOKEN: ${{ secrets.PIPER_INTEGRATION_SONAR_TOKEN }}
-      PIPER_TMSSERVICEKEY: ${{ secrets.PIPER_TMSSERVICEKEY }}
 
   publish:
     needs: run_integration_tests
     if: |
       needs.run_integration_tests.outputs.test_status == 'success' &&
       github.event.inputs.dry_run != 'true'
-    permissions: write-all
+    permissions:
+      contents: write  # githubPublishRelease creates the release + uploads assets; PATCH converts prerelease to release
+      actions: write   # styfle/cancel-workflow-action cancels previous runs
     name: Publish Release
     runs-on: ubuntu-latest
     steps:
@@ -116,6 +116,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [publish]
     if: always() && github.event.inputs.dry_run != 'true'
+    permissions:
+      contents: read  # baseline
+      actions: read   # martialonline/workflow-status reads the run conclusion
     steps:
       # Check status of the workflow
       - uses: martialonline/workflow-status@v4

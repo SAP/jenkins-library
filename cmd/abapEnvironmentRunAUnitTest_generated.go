@@ -17,19 +17,25 @@ import (
 )
 
 type abapEnvironmentRunAUnitTestOptions struct {
-	AUnitConfig          string `json:"aUnitConfig,omitempty"`
-	Repositories         string `json:"repositories,omitempty"`
-	CfAPIEndpoint        string `json:"cfApiEndpoint,omitempty"`
-	CfOrg                string `json:"cfOrg,omitempty"`
-	CfServiceInstance    string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName     string `json:"cfServiceKeyName,omitempty"`
-	CfSpace              string `json:"cfSpace,omitempty"`
-	Username             string `json:"username,omitempty"`
-	Password             string `json:"password,omitempty"`
-	Host                 string `json:"host,omitempty"`
-	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
-	GenerateHTML         bool   `json:"generateHTML,omitempty"`
-	EvaluateResults      bool   `json:"evaluateResults,omitempty"`
+	AUnitConfig            string `json:"aUnitConfig,omitempty"`
+	Repositories           string `json:"repositories,omitempty"`
+	CfAPIEndpoint          string `json:"cfApiEndpoint,omitempty"`
+	CfOrg                  string `json:"cfOrg,omitempty"`
+	CfServiceInstance      string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName       string `json:"cfServiceKeyName,omitempty"`
+	CfSpace                string `json:"cfSpace,omitempty"`
+	Username               string `json:"username,omitempty"`
+	Password               string `json:"password,omitempty"`
+	Host                   string `json:"host,omitempty"`
+	AUnitResultsFileName   string `json:"aUnitResultsFileName,omitempty"`
+	GenerateHTML           bool   `json:"generateHTML,omitempty"`
+	EvaluateResults        bool   `json:"evaluateResults,omitempty"`
+	BtpAPIEndpoint         string `json:"btpApiEndpoint,omitempty"`
+	BtpSubdomain           string `json:"btpSubdomain,omitempty"`
+	BtpSubaccount          string `json:"btpSubaccount,omitempty"`
+	BtpIDp                 string `json:"btpIdp,omitempty"`
+	BtpServiceInstanceName string `json:"btpServiceInstanceName,omitempty"`
+	BtpServiceBindingName  string `json:"btpServiceBindingName,omitempty"`
 }
 
 // AbapEnvironmentRunAUnitTestCommand Runs an AUnit Test
@@ -146,8 +152,8 @@ Regardless of the option you chose, please make sure to provide the object set c
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+				if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) > 0 {
+					if err := eventing.PublishTaskRunFinishedEvent(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
@@ -188,6 +194,12 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the AUnit results should also be generated as an HTML document")
 	cmd.Flags().BoolVar(&stepConfig.EvaluateResults, "evaluateResults", false, "Evaluation will parse the result file and fail the step execution in case of unsuccessful (error/failure) ABAP Unit test cases")
+	cmd.Flags().StringVar(&stepConfig.BtpAPIEndpoint, "btpApiEndpoint", os.Getenv("PIPER_btpApiEndpoint"), "BTP CLI API endpoint")
+	cmd.Flags().StringVar(&stepConfig.BtpSubdomain, "btpSubdomain", os.Getenv("PIPER_btpSubdomain"), "BTP Global Account subdomain")
+	cmd.Flags().StringVar(&stepConfig.BtpSubaccount, "btpSubaccount", os.Getenv("PIPER_btpSubaccount"), "BTP Subaccount name")
+	cmd.Flags().StringVar(&stepConfig.BtpIDp, "btpIdp", os.Getenv("PIPER_btpIdp"), "BTP Identity Provider")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceInstanceName, "btpServiceInstanceName", os.Getenv("PIPER_btpServiceInstanceName"), "BTP service instance name")
+	cmd.Flags().StringVar(&stepConfig.BtpServiceBindingName, "btpServiceBindingName", os.Getenv("PIPER_btpServiceBindingName"), "BTP service binding name")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -335,6 +347,60 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "btpApiEndpoint",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/url"}},
+						Default:     os.Getenv("PIPER_btpApiEndpoint"),
+					},
+					{
+						Name:        "btpSubdomain",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subdomain"}},
+						Default:     os.Getenv("PIPER_btpSubdomain"),
+					},
+					{
+						Name:        "btpSubaccount",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/subaccount"}},
+						Default:     os.Getenv("PIPER_btpSubaccount"),
+					},
+					{
+						Name:        "btpIdp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/idp"}},
+						Default:     os.Getenv("PIPER_btpIdp"),
+					},
+					{
+						Name:        "btpServiceInstanceName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/instanceName"}},
+						Default:     os.Getenv("PIPER_btpServiceInstanceName"),
+					},
+					{
+						Name:        "btpServiceBindingName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "btp/bindingName"}},
+						Default:     os.Getenv("PIPER_btpServiceBindingName"),
 					},
 				},
 			},

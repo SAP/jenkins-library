@@ -41,6 +41,7 @@ class AbapEnvironmentPipelineStageBuildTest extends BasePiperTest {
         helper.registerAllowedMethod('abapAddonAssemblyKitCreateTargetVector', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitCreateTargetVector')})
         helper.registerAllowedMethod('abapAddonAssemblyKitPublishTargetVector', [Map.class], {m -> stepsCalled.add('abapAddonAssemblyKitPublishTargetVector')})
         helper.registerAllowedMethod('abapEnvironmentCreateTag', [Map.class], {m -> stepsCalled.add('abapEnvironmentCreateTag')})
+        helper.registerAllowedMethod('btpCreateServiceBinding', [Map.class], {m -> stepsCalled.add('btpCreateServiceBinding')})
     }
 
     @Test

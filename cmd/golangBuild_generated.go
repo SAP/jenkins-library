@@ -29,6 +29,7 @@ type golangBuildOptions struct {
 	CoverageFormat               string   `json:"coverageFormat,omitempty" validate:"possible-values=cobertura html"`
 	CreateBOM                    bool     `json:"createBOM,omitempty"`
 	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
+	GoProxy                      string   `json:"goProxy,omitempty"`
 	ExcludeGeneratedFromCoverage bool     `json:"excludeGeneratedFromCoverage,omitempty"`
 	FailOnLintingError           bool     `json:"failOnLintingError,omitempty"`
 	LdflagsTemplate              string   `json:"ldflagsTemplate,omitempty"`
@@ -237,8 +238,8 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+				if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) > 0 {
+					if err := eventing.PublishTaskRunFinishedEvent(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
@@ -272,10 +273,11 @@ func addGolangBuildFlags(cmd *cobra.Command, stepConfig *golangBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.CoverageFormat, "coverageFormat", `html`, "Defines the format of the coverage repository.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin. It requires Go 1.17 or newer.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
+	cmd.Flags().StringVar(&stepConfig.GoProxy, "goProxy", os.Getenv("PIPER_goProxy"), "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Supports comma-separated values to define a list of proxies with fallback (e.g. \"https://proxy.example.com,direct\").")
 	cmd.Flags().BoolVar(&stepConfig.ExcludeGeneratedFromCoverage, "excludeGeneratedFromCoverage", true, "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode).")
 	cmd.Flags().BoolVar(&stepConfig.FailOnLintingError, "failOnLintingError", true, "Defines if step will return an error in case linting runs into a problem")
 	cmd.Flags().StringVar(&stepConfig.LdflagsTemplate, "ldflagsTemplate", os.Getenv("PIPER_ldflagsTemplate"), "Defines the content of -ldflags option in a golang template format.")
-	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the resulting executable or object name as per `go build` documentation. For multiple architectures, output serves as prefix, and the resulting name will be in format `<output>-<os>.<arch>`.")
+	cmd.Flags().StringVar(&stepConfig.Output, "output", os.Getenv("PIPER_output"), "Defines the output path/name for the compiled binary or binaries.\n\n**Single package** (zero or one entry in `packages`): produces a single binary named `<output>-<os>.<arch>` (e.g. `myapp-linux.amd64`).\n\n**Multiple packages** (two or more entries in `packages`): produces a **directory** named `<output>-<os>-<arch>/` (e.g. `myapp-linux-amd64/`) containing one binary per `main` package, where each binary is named after the last path element of the package (e.g. `myapp-linux-amd64/datasync-consumer`).\n\nNote: only packages whose entry point is `package main` are included in the output directory; library packages are silently skipped.\n")
 	cmd.Flags().StringSliceVar(&stepConfig.Packages, "packages", []string{}, "List of packages to be build as per `go build` documentation.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
@@ -369,6 +371,15 @@ func golangBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "goProxy",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_goProxy"),
 					},
 					{
 						Name:        "excludeGeneratedFromCoverage",

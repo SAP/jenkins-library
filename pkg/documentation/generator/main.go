@@ -13,7 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
-	"github.com/ghodss/yaml"
+	"go.yaml.in/yaml/v3"
 )
 
 // DocuHelperData is used to transport the needed parameters and functions from the step generator to the docu generation.
@@ -119,7 +119,7 @@ func generateStepDocumentation(stepData config.StepData, docuHelperData DocuHelp
 	checkError(err)
 
 	// overwrite existing file
-	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 644)
+	err = docuHelperData.DocFileWriter(docTemplateFilePath, docContent.Bytes(), 0644)
 	checkError(err)
 
 	return nil

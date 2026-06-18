@@ -66,6 +66,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: goProxy
+        type: string
+        description: "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Supports comma-separated values to define a list of proxies with fallback (e.g. \"https://proxy.example.com,direct\")."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: excludeGeneratedFromCoverage
         type: bool
         description: "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode)."
@@ -98,7 +106,14 @@ spec:
           - STEPS
       - name: output
         type: string
-        description: Defines the resulting executable or object name as per `go build` documentation. For multiple architectures, output serves as prefix, and the resulting name will be in format `<output>-<os>.<arch>`.
+        description: |
+          Defines the output path/name for the compiled binary or binaries.
+
+          **Single package** (zero or one entry in `packages`): produces a single binary named `<output>-<os>.<arch>` (e.g. `myapp-linux.amd64`).
+
+          **Multiple packages** (two or more entries in `packages`): produces a **directory** named `<output>-<os>-<arch>/` (e.g. `myapp-linux-amd64/`) containing one binary per `main` package, where each binary is named after the last path element of the package (e.g. `myapp-linux-amd64/datasync-consumer`).
+
+          Note: only packages whose entry point is `package main` are included in the output directory; library packages are silently skipped.
         scope:
           - PARAMETERS
           - STAGES

@@ -155,6 +155,7 @@ func getCheckoutOptions(config *abapEnvironmentCloneGitRepoOptions, repo abaputi
 		CfServiceInstance: config.CfServiceInstance,
 		CfServiceKeyName:  config.CfServiceKeyName,
 		CfSpace:           config.CfSpace,
+		LogOutput:         config.LogOutput,
 	}
 	return &checkoutOptions
 }
@@ -210,5 +211,14 @@ func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.Ab
 	subOptions.ByogUsername = config.ByogUsername
 	subOptions.ByogPassword = config.ByogPassword
 	subOptions.ByogAuthMethod = config.ByogAuthMethod
+
+	// BTP configuration
+	subOptions.URL = config.BtpAPIEndpoint
+	subOptions.Subdomain = config.BtpSubdomain
+	subOptions.Subaccount = config.BtpSubaccount
+	subOptions.Idp = config.BtpIDp
+	subOptions.ServiceInstanceName = config.BtpServiceInstanceName
+	subOptions.ServiceBindingName = config.BtpServiceBindingName
+
 	return subOptions
 }

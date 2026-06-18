@@ -149,8 +149,8 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					if err := eventing.Process(
+				if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) > 0 {
+					if err := eventing.PublishTaskRunFinishedEvent(
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
