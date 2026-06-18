@@ -39,6 +39,9 @@ type gradleExecuteBuildOptions struct {
 	ExcludePublishingForProjects  []string `json:"excludePublishingForProjects,omitempty"`
 	BuildFlags                    []string `json:"buildFlags,omitempty"`
 	BuildSettingsInfo             string   `json:"buildSettingsInfo,omitempty"`
+	UseArtifactoryMirror          bool     `json:"useArtifactoryMirror,omitempty"`
+	ArtifactoryMirrorURL          string   `json:"artifactoryMirrorUrl,omitempty"`
+	ArtifactoryGradlePluginsURL   string   `json:"artifactoryGradlePluginsUrl,omitempty"`
 }
 
 type gradleExecuteBuildReports struct {
@@ -261,6 +264,9 @@ func addGradleExecuteBuildFlags(cmd *cobra.Command, stepConfig *gradleExecuteBui
 	cmd.Flags().StringSliceVar(&stepConfig.ExcludePublishingForProjects, "excludePublishingForProjects", []string{}, "Defines which projects/subprojects will be ignored during publishing. Only if applyCreateBOMForAllProjects is set to true")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines a list of tasks and/or arguments to be provided for gradle in the respective order to be executed. This list takes precedence if specified over 'task' parameter")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the gradle build. This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.UseArtifactoryMirror, "useArtifactoryMirror", false, "If set to true, an init script is injected that adds the defined repository mirror to all projects' dependency and plugin classpaths. This prepends the mirror to the resolution order, so dependencies available there are fetched from it. Any artifact not found in the mirror will still fall back to the repositories declared in the project's own build scripts (e.g. Maven Central).")
+	cmd.Flags().StringVar(&stepConfig.ArtifactoryMirrorURL, "artifactoryMirrorUrl", os.Getenv("PIPER_artifactoryMirrorUrl"), "URL of the Maven mirror repository to use for dependency resolution when useArtifactoryMirror is enabled.")
+	cmd.Flags().StringVar(&stepConfig.ArtifactoryGradlePluginsURL, "artifactoryGradlePluginsUrl", os.Getenv("PIPER_artifactoryGradlePluginsUrl"), "URL of the repository to use for resolving Gradle plugin dependencies (buildscript classpath) when useArtifactoryMirror is enabled.")
 
 }
 
@@ -453,6 +459,33 @@ func gradleExecuteBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "useArtifactoryMirror",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "artifactoryMirrorUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_artifactoryMirrorUrl"),
+					},
+					{
+						Name:        "artifactoryGradlePluginsUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_artifactoryGradlePluginsUrl"),
 					},
 				},
 			},
