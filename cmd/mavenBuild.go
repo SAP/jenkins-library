@@ -192,7 +192,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
-			deployFlags := []string{}
+			var deployFlags []string
 			if len(config.DeployFlags) > 0 {
 				deployFlags = append(deployFlags, config.DeployFlags...)
 			}
