@@ -51,6 +51,91 @@ func TestINIfileGetVersion(t *testing.T) {
 	})
 }
 
+func TestINIfileGetCoordinates(t *testing.T) {
+	t.Run("success case - quoted values", func(t *testing.T) {
+		inifile := INIfile{
+			path:           "my.cfg",
+			versionField:   "version",
+			versionSection: "general",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nversion=\"1.2.3\"\nname=\"my-artifact\""), nil
+			},
+		}
+		coordinates, err := inifile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+
+	t.Run("success case - unquoted values", func(t *testing.T) {
+		inifile := INIfile{
+			path:           "my.cfg",
+			versionField:   "version",
+			versionSection: "general",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nversion=1.2.3\nname=my-artifact"), nil
+			},
+		}
+		coordinates, err := inifile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+
+	t.Run("success case - flat file without section", func(t *testing.T) {
+		inifile := INIfile{
+			path:         "my.cfg",
+			versionField: "version",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("version = 1.2.3\nname = my-artifact"), nil
+			},
+		}
+		coordinates, err := inifile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+
+	t.Run("no name field returns empty artifactID without error", func(t *testing.T) {
+		inifile := INIfile{
+			path:           "my.cfg",
+			versionField:   "version",
+			versionSection: "general",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nversion=1.2.3"), nil
+			},
+		}
+		coordinates, err := inifile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Empty(t, coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+
+	t.Run("missing version keeps artifactID", func(t *testing.T) {
+		inifile := INIfile{
+			path:           "my.cfg",
+			versionField:   "version",
+			versionSection: "general",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte("[general]\nname=my-artifact"), nil
+			},
+		}
+		coordinates, err := inifile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
+		assert.Empty(t, coordinates.Version)
+	})
+
+	t.Run("error case - read error", func(t *testing.T) {
+		inifile := INIfile{
+			path:     "my.cfg",
+			readFile: func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
+		}
+		_, err := inifile.GetCoordinates()
+		assert.EqualError(t, err, "failed to read file 'my.cfg': read error")
+	})
+}
+
 func TestINIfileSetVersion(t *testing.T) {
 	t.Run("success case - flat", func(t *testing.T) {
 		var content []byte

@@ -61,7 +61,11 @@ func (y *YAMLfile) readField(key string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get key %s: %w", key, err)
 	}
-	return strings.TrimSpace(fmt.Sprint(y.content[key])), nil
+	value, exists := y.content[key]
+	if !exists || value == nil {
+		return "", nil
+	}
+	return strings.TrimSpace(fmt.Sprint(value)), nil
 }
 
 // VersioningScheme returns the relevant versioning scheme
