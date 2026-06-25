@@ -4,6 +4,7 @@
 package python
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -143,4 +144,44 @@ func TestInstallCycloneDXWithVersion(t *testing.T) {
 		"--upgrade",
 		"--root-user-action=ignore",
 		"cyclonedx-bom==1.0.0"}, mockRunner.Calls[0].Params)
+}
+
+func TestInstallTestDependencies(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		virtualEnv string
+		wantExec   string
+	}{
+		{name: "no virtualenv", virtualEnv: "", wantExec: "pip"},
+		{name: "with virtualenv", virtualEnv: ".venv", wantExec: ".venv/bin/pip"},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			mockRunner := mock.ExecMockRunner{}
+
+			err := InstallTestDependencies(mockRunner.RunExecutable, tt.virtualEnv)
+
+			assert.NoError(t, err)
+			assert.Len(t, mockRunner.Calls, 2)
+			assert.Equal(t, tt.wantExec, mockRunner.Calls[0].Exec)
+			assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pytest"}, mockRunner.Calls[0].Params)
+			assert.Equal(t, tt.wantExec, mockRunner.Calls[1].Exec)
+			assert.Equal(t, []string{"install", "--upgrade", "--root-user-action=ignore", "pytest-cov"}, mockRunner.Calls[1].Params)
+		})
+	}
+}
+
+func TestInstallTestDependenciesPytestFailure(t *testing.T) {
+	t.Parallel()
+	mockRunner := mock.ExecMockRunner{
+		ShouldFailOnCommand: map[string]error{"pytest(==|$)": fmt.Errorf("pip install failed")},
+	}
+
+	err := InstallTestDependencies(mockRunner.RunExecutable, "")
+
+	assert.Error(t, err)
+	assert.Len(t, mockRunner.Calls, 1, "pytest-cov install must not be attempted after pytest install fails")
 }

@@ -209,8 +209,10 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		}
 
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			AssetPath: filepath.Join("testdata", t.Name()+"_test.txt"),
-			Version:   "latest",
+			Owner:      "TEST",
+			Repository: "test",
+			AssetPath:  filepath.Join("testdata", t.Name()+"_test.txt"),
+			Version:    "latest",
 		}
 
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
@@ -286,12 +288,12 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			latestErr: fmt.Errorf("Latest release error, no response"),
 		}
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			Owner:      "",
+			Owner:      "TEST",
 			Repository: "test",
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.Equal(t, "Error occurred when retrieving latest GitHub release (/test): Latest release error, no response", fmt.Sprint(err))
+		assert.Equal(t, "Error occurred when retrieving latest GitHub release (TEST/test): Latest release error, no response", fmt.Sprint(err))
 	})
 
 	t.Run("Error - create release", func(t *testing.T) {
@@ -300,11 +302,39 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			createErr: fmt.Errorf("Create release error"),
 		}
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
-			Version: "1.0",
+			Owner:      "TEST",
+			Repository: "test",
+			Version:    "1.0",
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
 		assert.Equal(t, "Creation of release '1.0' failed: Create release error", fmt.Sprint(err))
+	})
+
+	t.Run("Error - empty owner", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "",
+			Repository: "test",
+			Version:    "1.0",
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+
+		assert.ErrorIs(t, err, errOwnerOrRepositoryEmpty)
+	})
+
+	t.Run("Error - empty repository", func(t *testing.T) {
+		ghIssueClient := ghICMock{}
+		ghRepoClient := ghRCMock{}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "",
+			Version:    "1.0",
+		}
+		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
+
+		assert.ErrorIs(t, err, errOwnerOrRepositoryEmpty)
 	})
 }
 

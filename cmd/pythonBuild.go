@@ -86,6 +86,17 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
+	if config.RunTests {
+		if err := python.InstallTestDependencies(utils.RunExecutable, config.VirtualEnvironmentName); err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return fmt.Errorf("failed to install test dependencies: %w", err)
+		}
+		if err := python.RunTests(utils.RunExecutable, config.VirtualEnvironmentName, config.TestOptions); err != nil {
+			log.SetErrorCategory(log.ErrorTest)
+			return fmt.Errorf("failed to run python tests: %w", err)
+		}
+	}
+
 	if config.CreateBOM {
 		if err := python.CreateBOM(utils.RunExecutable, utils.FileExists, utils.ReadFile, config.VirtualEnvironmentName, config.RequirementsFilePath, cycloneDxVersion, CycloneDxSchemaVersion); err != nil {
 			return fmt.Errorf("failed to create BOM: %w", err)

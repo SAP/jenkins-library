@@ -50,7 +50,10 @@ func (j *JSONfile) GetVersion() (string, error) {
 		return "", fmt.Errorf("failed to read json content of file '%v': %w", j.content, err)
 	}
 
-	version, _ := j.content.Get(j.versionField)
+	version, exists := j.content.Get(j.versionField)
+	if !exists || version == nil {
+		return "", nil
+	}
 
 	return fmt.Sprint(version), nil
 }
@@ -89,9 +92,9 @@ func (j *JSONfile) GetCoordinates() (Coordinates, error) {
 	if err != nil {
 		return result, err
 	}
-	projectName, _ := j.content.Get("name")
-
-	result.ArtifactID = fmt.Sprint(projectName)
+	if projectName, exists := j.content.Get("name"); exists && projectName != nil {
+		result.ArtifactID = fmt.Sprint(projectName)
+	}
 	result.Version = projectVersion
 
 	return result, nil
