@@ -43,7 +43,7 @@ func RunTests(
 	}
 	args := []string{
 		"--junitxml=" + JUnitReportFile,
-		"--cov",
+		"--cov", // bare --cov covers all discovered code; pass --cov=<pkg> via testOptions to scope it
 		"--cov-report=xml:" + CoverageReportFile,
 	}
 	args = append(args, testOptions...)
