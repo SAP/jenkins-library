@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"mime"
 	"os"
@@ -15,6 +16,8 @@ import (
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
+
+var errOwnerOrRepositoryEmpty = errors.New("'owner' or 'repository' is empty")
 
 type GithubRepoClient interface {
 	CreateRelease(ctx context.Context, owner string, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, *github.Response, error)
@@ -45,6 +48,11 @@ func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *tel
 }
 
 func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOptions, ghRepoClient GithubRepoClient, ghIssueClient githubIssueClient) error {
+	if len(config.Owner) == 0 || len(config.Repository) == 0 {
+		log.Entry().Errorf("Cannot publish GitHub release: 'owner'=%q, 'repository'=%q. Set the 'owner' (alias 'githubOrg') and 'repository' (alias 'githubRepo') parameters in your step configuration, or ensure 'github/owner' and 'github/repository' are provided via commonPipelineEnvironment.", config.Owner, config.Repository)
+		return errOwnerOrRepositoryEmpty
+	}
+
 	var publishedAt github.Timestamp
 
 	lastRelease, resp, err := ghRepoClient.GetLatestRelease(ctx, config.Owner, config.Repository)
