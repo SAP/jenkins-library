@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -386,7 +387,7 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils.AddFile(descriptor.file, []byte(minimalSetupPyFileContent))
 			utils.AddDir("dummy")
 			utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{
-				filepath.Join("dummy", "bin", "pip") + " install --upgrade --root-user-action=ignore pytest": fmt.Errorf("pip install failed"),
+				filepath.Join("dummy", "bin", "pip") + " " + strings.Join(append(python.PipInstallFlags, "pytest"), " "): fmt.Errorf("pip install failed"),
 			}
 			telemetryData := telemetry.CustomData{}
 
