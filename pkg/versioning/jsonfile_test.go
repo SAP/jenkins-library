@@ -22,6 +22,16 @@ func TestJSONfileGetVersion(t *testing.T) {
 		assert.Equal(t, "1.2.3", version)
 	})
 
+	t.Run("version field not found returns empty string instead of '<nil>'", func(t *testing.T) {
+		jsonfile := JSONfile{
+			path:     "my.json",
+			readFile: func(filename string) ([]byte, error) { return []byte(`{"name": "my-artifact"}`), nil },
+		}
+		version, err := jsonfile.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "", version)
+	})
+
 	t.Run("error case", func(t *testing.T) {
 		jsonfile := JSONfile{
 			path:         "my.json",
@@ -30,6 +40,32 @@ func TestJSONfileGetVersion(t *testing.T) {
 		}
 		_, err := jsonfile.GetVersion()
 		assert.EqualError(t, err, "failed to read file 'my.json': read error")
+	})
+}
+
+func TestJSONfileGetCoordinates(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		jsonfile := JSONfile{
+			path: "my.json",
+			readFile: func(filename string) ([]byte, error) {
+				return []byte(`{"name": "my-artifact", "version": "1.2.3"}`), nil
+			},
+		}
+		coordinates, err := jsonfile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Equal(t, "my-artifact", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
+	})
+
+	t.Run("missing name returns empty artifactID instead of '<nil>'", func(t *testing.T) {
+		jsonfile := JSONfile{
+			path:     "my.json",
+			readFile: func(filename string) ([]byte, error) { return []byte(`{"version": "1.2.3"}`), nil },
+		}
+		coordinates, err := jsonfile.GetCoordinates()
+		assert.NoError(t, err)
+		assert.Empty(t, coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
 	})
 }
 

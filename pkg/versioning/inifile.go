@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"gopkg.in/ini.v1"
 )
 
@@ -86,5 +87,21 @@ func (i *INIfile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (i *INIfile) GetCoordinates() (Coordinates, error) {
-	return Coordinates{}, nil
+	result := Coordinates{}
+	if i.content == nil {
+		if err := i.init(); err != nil {
+			return result, err
+		}
+	}
+	section := i.content.Section(i.versionSection)
+	if section.HasKey("name") {
+		result.ArtifactID = section.Key("name").String()
+	} else {
+		log.Entry().Debugf("no 'name' field found in section '%v' of file '%v': artifactId remains empty", i.versionSection, i.path)
+	}
+	if version, err := i.GetVersion(); err == nil {
+		result.Version = version
+	}
+
+	return result, nil
 }
