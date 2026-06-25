@@ -124,6 +124,7 @@ func TestPythonIntegrationRunTestsFailure(t *testing.T) {
 	_, output := RunPiperExpectFailure(t, container, "/python-project-with-failing-tests", "pythonBuild")
 
 	assert.Contains(output, "failed to run python tests")
+	assert.Contains(output, "fatal ")
 }
 
 func TestPythonIntegrationRunTestsNoTests(t *testing.T) {
@@ -140,6 +141,7 @@ func TestPythonIntegrationRunTestsNoTests(t *testing.T) {
 
 	// "pytest collected no tests" is the prefix of the error returned by pkg/python/test.go RunTests — keep in sync.
 	assert.Contains(output, "pytest collected no tests")
+	assert.Contains(output, "fatal ")
 }
 
 func TestPythonIntegrationRunTestsWithVerboseTestOption(t *testing.T) {
@@ -190,6 +192,9 @@ func TestPythonIntegrationRunTestsRejectsJunitxmlOverride(t *testing.T) {
 	assert.Contains(output, "--junitxml=hijack.xml")
 	// Outer wrap from cmd/pythonBuild.go:96.
 	assert.Contains(output, "failed to run python tests")
+	// Piper always logs at fatal level before exiting; use this as the authoritative
+	// failure signal since Docker exec exit-code propagation can race.
+	assert.Contains(output, "fatal ")
 
 	// Validation fires before pytest is invoked; the command must never appear.
 	assert.NotContains(output, "running command: piperBuild-env/bin/pytest")
