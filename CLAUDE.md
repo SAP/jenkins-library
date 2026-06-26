@@ -45,6 +45,7 @@ integration/          Docker-based integration tests (30+ test files)
 **Never edit `*_generated.go` files.** They are overwritten on every `go generate` run.
 
 Workflow for any parameter change:
+
 1. Edit `resources/metadata/stepName.yaml`
 2. Run `go generate ./...`
 3. Edit `cmd/stepName.go` and `cmd/stepName_test.go` as needed
@@ -96,6 +97,7 @@ go test -tags=integration ./integration/...
 ## Frequent task patterns
 
 **Adding a generic step (rarely needed — project is frozen):**
+
 1. `resources/metadata/newStep.yaml` — define parameters
 2. `go generate ./...`
 3. `cmd/newStep.go` — business logic
