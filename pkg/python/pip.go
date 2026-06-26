@@ -17,7 +17,7 @@ func install(
 	version string,
 	extraArgs []string,
 ) error {
-	flags := PipInstallFlags
+	flags := append([]string(nil), PipInstallFlags...)
 	if len(extraArgs) > 0 {
 		flags = append(flags, extraArgs...)
 	}
@@ -87,4 +87,15 @@ func InstallCycloneDX(
 ) error {
 	log.Entry().Debug("installing cyclonedx-bom")
 	return install(executeFn, virtualEnv, "cyclonedx-bom", cycloneDXVersion, nil)
+}
+
+func InstallTestDependencies(
+	executeFn func(executable string, params ...string) error,
+	virtualEnv string,
+) error {
+	log.Entry().Debug("installing test dependencies (pytest, pytest-cov)")
+	if err := install(executeFn, virtualEnv, "pytest", "", nil); err != nil {
+		return err
+	}
+	return install(executeFn, virtualEnv, "pytest-cov", "", nil)
 }
