@@ -12,7 +12,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/antchfx/htmlquery v1.2.4
+	github.com/antchfx/htmlquery v1.3.6
 	github.com/aws/aws-sdk-go-v2/config v1.27.31
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.100.0
 	github.com/bmatcuk/doublestar v1.3.4
