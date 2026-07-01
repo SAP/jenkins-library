@@ -794,3 +794,49 @@ func TestResolveMetadata(t *testing.T) {
 		assert.EqualError(t, err, "either one of stepMetadata or stepName parameter has to be passed")
 	})
 }
+
+func TestGetFilterForResourceReferences(t *testing.T) {
+	t.Run("collects all vault secret reference names", func(t *testing.T) {
+		params := []StepParameters{
+			{Name: "param1", ResourceRef: []ResourceReference{{Name: "vaultRef1", Type: "vaultSecret"}}},
+			{Name: "param2", ResourceRef: []ResourceReference{{Name: "vaultRef2", Type: "vaultSecret"}}},
+		}
+		filter := getFilterForResourceReferences(params)
+		assert.Equal(t, []string{"vaultRef1", "vaultRef2"}, filter)
+	})
+
+	t.Run("skips params without vault references without stopping iteration", func(t *testing.T) {
+		params := []StepParameters{
+			{Name: "noRef"},
+			{Name: "param1", ResourceRef: []ResourceReference{{Name: "vaultRef1", Type: "vaultSecret"}}},
+			{Name: "alsoNoRef"},
+			{Name: "param2", ResourceRef: []ResourceReference{{Name: "vaultRef2", Type: "vaultSecret"}}},
+		}
+		filter := getFilterForResourceReferences(params)
+		assert.Equal(t, []string{"vaultRef1", "vaultRef2"}, filter)
+	})
+
+	t.Run("includes vaultSecretFile references", func(t *testing.T) {
+		params := []StepParameters{
+			{Name: "param1", ResourceRef: []ResourceReference{{Name: "fileRef", Type: "vaultSecretFile"}}},
+			{Name: "noRef"},
+			{Name: "param2", ResourceRef: []ResourceReference{{Name: "secretRef", Type: "vaultSecret"}}},
+		}
+		filter := getFilterForResourceReferences(params)
+		assert.Equal(t, []string{"fileRef", "secretRef"}, filter)
+	})
+
+	t.Run("returns nil when no params have vault references", func(t *testing.T) {
+		params := []StepParameters{
+			{Name: "param1"},
+			{Name: "param2", ResourceRef: []ResourceReference{{Name: "jenkinsRef", Type: "secret"}}},
+		}
+		filter := getFilterForResourceReferences(params)
+		assert.Nil(t, filter)
+	})
+
+	t.Run("returns nil for empty params", func(t *testing.T) {
+		filter := getFilterForResourceReferences([]StepParameters{})
+		assert.Nil(t, filter)
+	})
+}
