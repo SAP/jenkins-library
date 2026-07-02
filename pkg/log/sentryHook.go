@@ -63,6 +63,7 @@ func (sentryHook *SentryHook) Fire(entry *logrus.Entry) error {
 	errValue := ""
 	sentryHook.tags["correlationId"] = sentryHook.correlationID
 	sentryHook.tags["category"] = GetErrorCategory().String()
+	extra := make(map[string]interface{}, len(entry.Data))
 	for k, v := range entry.Data {
 		if k == "stepName" || k == "category" {
 			sentryHook.tags[k] = fmt.Sprint(v)
@@ -70,8 +71,9 @@ func (sentryHook *SentryHook) Fire(entry *logrus.Entry) error {
 		if k == "error" {
 			errValue = fmt.Sprint(v)
 		}
-		sentryHook.Event.Extra[k] = v
+		extra[k] = v
 	}
+	sentryHook.Event.Contexts["extra"] = extra
 	sentryHook.Hub.Scope().SetTags(sentryHook.tags)
 
 	exception := sentry.Exception{
