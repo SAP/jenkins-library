@@ -108,6 +108,45 @@ func TestMavenBuild(t *testing.T) {
 		}
 	})
 
+	t.Run("mavenBuild with deploy must not set altDeploymentRepository when URL is missing", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		options := mavenBuildOptions{Publish: true, Verify: false, AltDeploymentRepositoryID: "ID"}
+
+		err := runMavenBuild(&options, nil, &mockedUtils, &cpe)
+
+		assert.Nil(t, err)
+		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (main and deploy)") {
+			assert.NotContains(t, mockedUtils.Calls[1].Params, "-DaltDeploymentRepository=ID::")
+		}
+	})
+
+	t.Run("mavenBuild with deploy must not set altDeploymentRepository when ID is missing", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		options := mavenBuildOptions{Publish: true, Verify: false, AltDeploymentRepositoryURL: "http://sampleRepo.com"}
+
+		err := runMavenBuild(&options, nil, &mockedUtils, &cpe)
+
+		assert.Nil(t, err)
+		if assert.Equal(t, 2, len(mockedUtils.Calls), "Expected two Maven invocations (main and deploy)") {
+			assert.NotContains(t, mockedUtils.Calls[1].Params, "-DaltDeploymentRepository=::http://sampleRepo.com")
+		}
+	})
+
+	t.Run("mavenBuild must not set altDeploymentRepository when Publish is false", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		options := mavenBuildOptions{Publish: false, AltDeploymentRepositoryID: "ID", AltDeploymentRepositoryURL: "http://sampleRepo.com"}
+
+		err := runMavenBuild(&options, nil, &mockedUtils, &cpe)
+
+		assert.Nil(t, err)
+		if assert.Equal(t, 1, len(mockedUtils.Calls), "Expected one Maven invocation (no deploy when Publish is false)") {
+			assert.NotContains(t, mockedUtils.Calls[0].Params, "-DaltDeploymentRepository=ID::http://sampleRepo.com")
+		}
+	})
+
 	t.Run("mavenBuild should not create build artifacts metadata when CreateBuildArtifactsMetadata is false and Publish is true", func(t *testing.T) {
 		mockedUtils := newMavenMockUtils()
 		mockedUtils.AddFile("pom.xml", []byte{})
