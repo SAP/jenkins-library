@@ -484,7 +484,7 @@ func transformAlertsToVulnerabilities(scan *Scan, alerts *[]Alert) []cdx.Vulnera
 			BOMRef: purl.ToString(),
 			ID:     alert.Vulnerability.Name,
 			Source: &cdx.Source{URL: alert.Vulnerability.URL},
-			Tools: &[]cdx.Tool{
+			Tools: &cdx.ToolsChoice{Tools: &[]cdx.Tool{
 				{
 					Name:    scan.AgentName,
 					Version: scan.AgentVersion,
@@ -496,7 +496,7 @@ func transformAlertsToVulnerabilities(scan *Scan, alerts *[]Alert) []cdx.Vulnera
 						},
 					},
 				},
-			},
+			}},
 			Recommendation: alert.Vulnerability.FixResolutionText,
 			Detail:         alert.Vulnerability.URL,
 			Ratings: &[]cdx.VulnerabilityRating{
@@ -585,13 +585,10 @@ func transformToUniqueFlatList(libraries *[]Library, flatMapRef *map[string]Libr
 }
 
 func declareDependency(parentPurl *packageurl.PackageURL, dependents *[]Library, collection *[]cdx.Dependency) {
-	localDependencies := []cdx.Dependency{}
+	localDependencies := []string{}
 	for _, lib := range *dependents {
 		purl := lib.ToPackageUrl()
-		// Define the dependency graph
-		// https://cyclonedx.org/use-cases/#dependency-graph
-		localDependency := cdx.Dependency{Ref: purl.ToString()}
-		localDependencies = append(localDependencies, localDependency)
+		localDependencies = append(localDependencies, purl.ToString())
 
 		if len(lib.Dependencies) > 0 {
 			declareDependency(purl, &lib.Dependencies, collection)
