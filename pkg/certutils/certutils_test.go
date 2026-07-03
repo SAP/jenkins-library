@@ -66,7 +66,7 @@ func TestCertificateUpdate(t *testing.T) {
 		fileUtils.AddFile(caCertsFile, []byte("initial cert\n"))
 
 		err := CertificateUpdate([]string{"http://non-existing-url"}, client, fileUtils, caCertsFile)
-		assert.Contains(t, err.Error(), "failed to load certificate from url: request to http://non-existing-url returned with response 404")
+		assert.Contains(t, err.Error(), "failed to load certificate from url: request to http://non-existing-url returned with response 404 Not Found")
 	})
 
 }
@@ -101,7 +101,7 @@ func TestDownloadCACertbunde(t *testing.T) {
 		{
 			name:        "bad link",
 			certsLinks:  []string{badCaseLink},
-			expectedErr: fmt.Sprintf("failed to load certificate from url: request to %s returned with response 404", badCaseLink),
+			expectedErr: fmt.Sprintf("failed to load certificate from url: request to %s returned with response 404 Not Found", badCaseLink),
 		},
 	}
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"slices"
 	"strconv"
@@ -118,15 +119,15 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 	for i := range jobs {
 		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
-			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 1)
+			logsURL, _, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 1)
 			if err != nil {
-				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
-				// Therefore, ignore this error.
-				// GitHub API returns redirect URL instead of plain text logs. See:
-				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
-				if err.Error() != "unexpected status code: 200 OK" {
-					return fmt.Errorf("fetching job logs failed: %w", err)
-				}
+				return fmt.Errorf("fetching job logs URL failed: %w", err)
+			}
+
+			//nolint:noctx
+			resp, err := http.Get(logsURL.String())
+			if err != nil {
+				return fmt.Errorf("downloading job logs failed: %w", err)
 			}
 			defer resp.Body.Close()
 
