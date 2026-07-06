@@ -152,9 +152,10 @@ func TestStepCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTestStepCmd = &cobra.Command{
-		Use:   STEP_NAME,
-		Short: "Test description",
-		Long:  `Long Test description`,
+		Use:     STEP_NAME,
+		Aliases: []string{"testStepOldName"},
+		Short:   "Test description",
+		Long:    `Long Test description`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

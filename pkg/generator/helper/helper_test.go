@@ -21,6 +21,8 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
   aliases:
     - name: testStepAlias
       deprecated: true
+  cliAliases:
+    - testStepOldName
   description: Test description
   longDescription: |
     Long Test description
