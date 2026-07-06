@@ -27,6 +27,7 @@ type stepInfo struct {
 	Long              string
 	StepParameters    []config.StepParameters
 	StepAliases       []config.Alias
+	StepCLIAliases    []string
 	OutputResources   []OutputResource
 	Short             string
 	StepFunc          string
@@ -396,6 +397,7 @@ func getStepInfo(stepData *config.StepData, exportPrefix string) (stepInfo, erro
 			Long:              stepData.Metadata.LongDescription,
 			StepParameters:    stepData.Spec.Inputs.Parameters,
 			StepAliases:       stepData.Metadata.Aliases,
+			StepCLIAliases:    stepData.Metadata.CLIAliases,
 			FlagsFunc:         fmt.Sprintf("add%vFlags", piperutils.Title(stepData.Metadata.Name)),
 			OutputResources:   oRes,
 			HasReportsOutput:  hasReports,
