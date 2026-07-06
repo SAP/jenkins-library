@@ -37,8 +37,9 @@ func NpmExecuteLintCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createNpmExecuteLintCmd = &cobra.Command{
-		Use:   STEP_NAME,
-		Short: "Execute ci-lint script on all npm packages in a project or execute default linting",
+		Use:     STEP_NAME,
+		Aliases: []string{"executeNpm"},
+		Short:   "Execute ci-lint script on all npm packages in a project or execute default linting",
 		Long: `Execute ci-lint script for all package json files, if they implement the script. If no ci-lint script is defined,
 either use ESLint configurations present in the project or use the provided general purpose configuration to run ESLint.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {

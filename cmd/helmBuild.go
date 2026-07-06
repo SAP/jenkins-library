@@ -13,7 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) {
+func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
 	helmConfig := kubernetes.HelmExecuteOptions{
 		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
@@ -74,12 +74,12 @@ func helmExecute(config helmExecuteOptions, telemetryData *telemetry.CustomData,
 	helmExecutor := kubernetes.NewHelmExecutor(helmConfig, utils, GeneralConfig.Verbose, log.Writer())
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmExecute(config, helmExecutor, utils, commonPipelineEnvironment); err != nil {
+	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
+func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) error {
 	if config.RenderValuesTemplate {
 		err := parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
 		if err != nil {
@@ -118,7 +118,7 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
 	default:
-		if err := runHelmExecuteDefault(config, helmExecutor, commonPipelineEnvironment); err != nil {
+		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment); err != nil {
 			return err
 		}
 	}
@@ -126,7 +126,7 @@ func runHelmExecute(config helmExecuteOptions, helmExecutor kubernetes.HelmExecu
 	return nil
 }
 
-func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmExecuteCommonPipelineEnvironment) error {
+func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) error {
 	if len(config.Dependency) > 0 {
 		if err := helmExecutor.RunHelmDependency(); err != nil {
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
@@ -149,7 +149,7 @@ func runHelmExecuteDefault(config helmExecuteOptions, helmExecutor kubernetes.He
 }
 
 // parseAndRenderCPETemplate allows to parse and render a template which contains references to the CPE
-func parseAndRenderCPETemplate(config helmExecuteOptions, rootPath string, utils fileHandler) error {
+func parseAndRenderCPETemplate(config helmBuildOptions, rootPath string, utils fileHandler) error {
 	cpe := piperenv.CPEMap{}
 	err := cpe.LoadFromDisk(path.Join(rootPath, "commonPipelineEnvironment"))
 	if err != nil {

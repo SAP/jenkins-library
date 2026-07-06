@@ -62,6 +62,9 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
+		{{- if .StepAliases }}
+		Aliases: []string{ {{- range .StepAliases }}{{ .Name | quote }},{{ end -}} },
+		{{- end }}
 		Short: {{.Short | quote }},
 		Long: {{ $tick := "`" }}{{ $tick }}{{.Long | longName }}{{ $tick }},
 		PreRunE: func(cmd *cobra.Command, _ []string) error {

@@ -38,20 +38,20 @@ func newHelmMockUtilsBundle() helmMockUtilsBundle {
 func TestRunHelmUpgrade(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "upgrade",
 			},
 			methodError: nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "upgrade",
 			},
 			methodError:    errors.New("some error"),
@@ -64,7 +64,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUpgrade").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -76,21 +76,21 @@ func TestRunHelmUpgrade(t *testing.T) {
 func TestRunHelmLint(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		expectedConfig []string
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "lint",
 			},
 			methodError: nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "lint",
 			},
 			methodError:    errors.New("some error"),
@@ -103,7 +103,7 @@ func TestRunHelmLint(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmLint").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -115,21 +115,21 @@ func TestRunHelmLint(t *testing.T) {
 func TestRunHelmInstall(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		expectedConfig []string
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "install",
 			},
 			methodError: nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "install",
 			},
 			methodError:    errors.New("some error"),
@@ -142,7 +142,7 @@ func TestRunHelmInstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmInstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -154,20 +154,20 @@ func TestRunHelmInstall(t *testing.T) {
 func TestRunHelmTest(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "test",
 			},
 			methodError: nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "test",
 			},
 			methodError:    errors.New("some error"),
@@ -180,7 +180,7 @@ func TestRunHelmTest(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmTest").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -192,20 +192,20 @@ func TestRunHelmTest(t *testing.T) {
 func TestRunHelmUninstall(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "uninstall",
 			},
 			methodError: nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "uninstall",
 			},
 			methodError:    errors.New("some error"),
@@ -218,7 +218,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmUninstall").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -230,20 +230,20 @@ func TestRunHelmUninstall(t *testing.T) {
 func TestRunHelmDependency(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "dependency",
 			},
 			methodError: nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "dependency",
 			},
 			methodError:    errors.New("some error"),
@@ -256,7 +256,7 @@ func TestRunHelmDependency(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmDependency").Return(testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -268,22 +268,22 @@ func TestRunHelmDependency(t *testing.T) {
 func TestRunHelmPush(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config         helmExecuteOptions
+		config         helmBuildOptions
 		methodString   string
 		methodError    error
 		expectedErrStr string
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "publish",
 			},
 			methodString: "https://my.target.repository",
 			methodError:  nil,
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "publish",
 			},
 			methodError:    errors.New("some error"),
@@ -296,7 +296,7 @@ func TestRunHelmPush(t *testing.T) {
 			helmExecute := &mocks.HelmExecutor{}
 			helmExecute.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -308,9 +308,9 @@ func TestRunHelmPush(t *testing.T) {
 func TestRunHelmDefaultCommand(t *testing.T) {
 	t.Parallel()
 
-	cpe := helmExecuteCommonPipelineEnvironment{}
+	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
-		config             helmExecuteOptions
+		config             helmBuildOptions
 		methodLintError    error
 		methodPackageError error
 		methodPublishError error
@@ -319,7 +319,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		assertFunc         func(fileHandlerMock) error
 	}{
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "",
 			},
 			methodLintError:    nil,
@@ -330,7 +330,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		{
 			// this test checks if parseAndRenderCPETemplate is called properly
 			// when config.RenderValuesTemplate is true
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand:          "",
 				RenderValuesTemplate: true,
 			},
@@ -349,7 +349,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		{
 			// this test checks if parseAndRenderCPETemplate is NOT called
 			// when config.RenderValuesTemplate is false
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand:          "",
 				RenderValuesTemplate: false,
 			},
@@ -366,7 +366,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			},
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "",
 			},
 			methodLintError: errors.New("some error"),
@@ -374,7 +374,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			fileUtils:       fileHandlerMock{},
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "",
 			},
 			methodPackageError: errors.New("some error"),
@@ -382,7 +382,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			fileUtils:          fileHandlerMock{},
 		},
 		{
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				HelmCommand: "",
 			},
 			methodPublishError: errors.New("some error"),
@@ -398,7 +398,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			helmExecute.On("RunHelmLint").Return(testCase.methodLintError)
 			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
 
-			err := runHelmExecute(testCase.config, helmExecute, &testCase.fileUtils, &cpe)
+			err := runHelmBuild(testCase.config, helmExecute, &testCase.fileUtils, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -442,14 +442,14 @@ tag: {{ imageTag "test-image" }}
 	require.NoError(t, err)
 
 	defaultValueFile := "values.yaml"
-	config := helmExecuteOptions{
+	config := helmBuildOptions{
 		ChartPath: ".",
 	}
 
 	tt := []struct {
 		name             string
 		defaultValueFile string
-		config           helmExecuteOptions
+		config           helmBuildOptions
 		expectedErr      error
 		valueFile        []byte
 	}{
@@ -484,7 +484,7 @@ tag: {{ imageTag "test-image" }}
 		{
 			name:             "Multiple value files",
 			defaultValueFile: defaultValueFile,
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				ChartPath:  ".",
 				HelmValues: []string{"./values_1.yaml", "./values_2.yaml"},
 			},
@@ -494,7 +494,7 @@ tag: {{ imageTag "test-image" }}
 		{
 			name:             "No value file is provided",
 			defaultValueFile: "",
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				ChartPath:  ".",
 				HelmValues: []string{},
 			},
@@ -504,7 +504,7 @@ tag: {{ imageTag "test-image" }}
 		{
 			name:             "Wrong path to value file",
 			defaultValueFile: defaultValueFile,
-			config: helmExecuteOptions{
+			config: helmBuildOptions{
 				ChartPath:  ".",
 				HelmValues: []string{"wrong/path/to/values_1.yaml"},
 			},

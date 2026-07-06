@@ -82,8 +82,9 @@ func MavenExecuteIntegrationCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createMavenExecuteIntegrationCmd = &cobra.Command{
-		Use:   STEP_NAME,
-		Short: "This step will execute backend integration tests via the Jacoco Maven-plugin.",
+		Use:     STEP_NAME,
+		Aliases: []string{"mavenExecute"},
+		Short:   "This step will execute backend integration tests via the Jacoco Maven-plugin.",
 		Long: `If the project contains a Maven module named "integration-tests", this step will execute
 the integration tests via the Jacoco Maven-plugin.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {

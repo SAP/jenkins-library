@@ -75,9 +75,10 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadRFCCmd = &cobra.Command{
-		Use:   STEP_NAME,
-		Short: "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
-		Long:  `This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.`,
+		Use:     STEP_NAME,
+		Aliases: []string{"transportRequestUploadFile"},
+		Short:   "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
+		Long:    `This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

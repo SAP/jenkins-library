@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHelmExecuteCommand(t *testing.T) {
+func TestHelmBuildCommand(t *testing.T) {
 	t.Parallel()
 
-	testCmd := HelmExecuteCommand()
+	testCmd := HelmBuildCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "helmExecute", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "helmBuild", testCmd.Use, "command name incorrect")
 
 }
