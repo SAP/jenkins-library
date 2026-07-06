@@ -44,9 +44,8 @@ func MavenExecuteStaticCodeChecksCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createMavenExecuteStaticCodeChecksCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"mavenExecute"},
-		Short:   "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
+		Use:   STEP_NAME,
+		Short: "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
 		Long: `Executes Spotbugs Maven plugin as well as Pmd Maven plugin for static code checks.
 SpotBugs is a program to find bugs in Java programs. It looks for instances of “bug patterns” — code instances that are likely to be errors.
 For more information please visit https://spotbugs.readthedocs.io/en/latest/maven.html

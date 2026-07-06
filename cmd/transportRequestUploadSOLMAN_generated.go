@@ -72,9 +72,8 @@ func TransportRequestUploadSOLMANCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadSOLMANCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"transportRequestUploadFile"},
-		Short:   "Uploads a specified file into a given transport via Solution Manager",
+		Use:   STEP_NAME,
+		Short: "Uploads a specified file into a given transport via Solution Manager",
 		Long: `Uploads the specified file into the given transport request via Solution Manager.
 The mandatory change document ID points to the associate change document item.
 The application ID specifies how the file needs to be handled on server side.`,

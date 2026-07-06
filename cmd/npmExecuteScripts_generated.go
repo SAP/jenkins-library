@@ -124,9 +124,8 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createNpmExecuteScriptsCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"executeNpm"},
-		Short:   "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
+		Use:   STEP_NAME,
+		Short: "Handles JavaScript dependency installation via npm, yarn or pnpm and basic npm commands.",
 		Long: `### Lock file detection:
 
   - If ` + "`" + `package-lock.json` + "`" + ` is found → runs ` + "`" + `npm ci` + "`" + `

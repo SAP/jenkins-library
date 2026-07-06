@@ -74,9 +74,8 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createTransportRequestUploadCTSCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"transportRequestUploadFile"},
-		Short:   "This step uploads an UI5 application to the SAPUI5 ABAP repository.",
+		Use:   STEP_NAME,
+		Short: "This step uploads an UI5 application to the SAPUI5 ABAP repository.",
 		Long: `This step uploads an UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
 It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the SAPUI5 toolset.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {

@@ -42,9 +42,8 @@ func NexusUploadCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createNexusUploadCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"mavenExecute"},
-		Short:   "Upload artifacts to Nexus Repository Manager",
+		Use:   STEP_NAME,
+		Short: "Upload artifacts to Nexus Repository Manager",
 		Long: `Upload build artifacts to a Nexus Repository Manager.
 
 Supports MTA, npm and (multi-module) Maven projects.

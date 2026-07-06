@@ -73,9 +73,8 @@ func KubernetesDeployCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createKubernetesDeployCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"deployToKubernetes"},
-		Short:   "Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.",
+		Use:   STEP_NAME,
+		Short: "Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.",
 		Long: `Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
 
 !!! note "Deployment supports multiple deployment tools"

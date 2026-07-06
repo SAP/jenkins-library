@@ -101,9 +101,8 @@ func ArtifactPrepareVersionCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createArtifactPrepareVersionCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"artifactSetVersion", "setVersion"},
-		Short:   "Prepares and potentially updates the artifact's version before building the artifact.",
+		Use:   STEP_NAME,
+		Short: "Prepares and potentially updates the artifact's version before building the artifact.",
 		Long: `Prepares and potentially updates the artifact's version before building the artifact.
 
 The continuous delivery process requires that each build is done with a unique version number.

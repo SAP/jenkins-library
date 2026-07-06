@@ -124,9 +124,8 @@ func MavenBuildCommand() *cobra.Command {
 	telemetryClient := &telemetry.Telemetry{}
 
 	var createMavenBuildCmd = &cobra.Command{
-		Use:     STEP_NAME,
-		Aliases: []string{"mavenExecute"},
-		Short:   "This step will install the maven project into the local maven repository.",
+		Use:   STEP_NAME,
+		Short: "This step will install the maven project into the local maven repository.",
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.
