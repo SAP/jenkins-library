@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/cmd/mocks"
@@ -156,6 +157,34 @@ func TestRunHadolintExecute(t *testing.T) {
 		// assert
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "no Dockerfiles found")
+		assert.Empty(t, runnerMock.Calls)
+		fileMock.AssertExpectations(t)
+		clientMock.AssertExpectations(t)
+	})
+
+	t.Run("glob error", func(t *testing.T) {
+		// init
+		fileMock := &mocks.HadolintPiperFileUtils{}
+		clientMock := &mocks.HadolintClient{}
+		runnerMock := &piperMocks.ExecMockRunner{}
+		config := hadolintExecuteOptions{
+			DockerFile:        "images/**/Dockerfile",
+			ConfigurationFile: ".hadolint.yaml",
+		}
+
+		fileMock.
+			On("FileExists", config.ConfigurationFile).Return(false, nil).
+			On("Glob", config.DockerFile).Return([]string(nil), fmt.Errorf("permission denied"))
+
+		// test
+		err := runHadolint(config, hadolintUtils{
+			HadolintPiperFileUtils: fileMock,
+			HadolintClient:         clientMock,
+			hadolintRunner:         runnerMock,
+		})
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to expand glob pattern")
 		assert.Empty(t, runnerMock.Calls)
 		fileMock.AssertExpectations(t)
 		clientMock.AssertExpectations(t)
