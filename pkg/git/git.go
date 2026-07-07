@@ -113,10 +113,18 @@ func PlainOpen(path string) (*git.Repository, error) {
 }
 
 func plainOpen(path string, abstractionGit utilsGit) (*git.Repository, error) {
-	log.Entry().Infof("Opening git repo at '%s'", path)
-	r, err := abstractionGit.plainOpen(path)
+	// Workaround: resolve symlinks before passing to git.PlainOpen so the path
+	// is consistent with what go-billy v5.9.0 resolves internally. Without this,
+	// go-git rejects the open with "chroot boundary crossed" when .git (or an
+	// ancestor of path) is a symlink pointing outside the resolved root.
+	resolved, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to open git repository at '%s': %w", path, err)
+		return nil, fmt.Errorf("Unable to open git repository at '%s': resolving symlinks: %w", path, err)
+	}
+	log.Entry().Infof("Opening git repo at '%s'", resolved)
+	r, err := abstractionGit.plainOpen(resolved)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to open git repository at '%s': %w", resolved, err)
 	}
 	return r, nil
 }
@@ -210,7 +218,15 @@ func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
 // Equivalent to running 'git config --unset extensions.worktreeConfig'
 // This workaround is from this issue: https://github.com/go-git/go-git/pull/1982
 func unsetWorktreeConfig(repoPath string) error {
-	configPath := filepath.Join(repoPath, ".git", "config")
+	// Workaround: resolve symlinks before joining .git/config so the path is
+	// consistent with what go-billy v5.9.0 resolves internally. Without this,
+	// go-git rejects the open with "chroot boundary crossed" when .git is a
+	// symlink pointing outside repoPath.
+	resolved, err := filepath.EvalSymlinks(repoPath)
+	if err != nil {
+		return fmt.Errorf("resolving symlinks for '%s': %w", repoPath, err)
+	}
+	configPath := filepath.Join(resolved, ".git", "config")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
