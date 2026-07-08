@@ -49,6 +49,7 @@ func TestGradleIntegrationExecuteBuildJavaProjectWithBomPlugin(t *testing.T) {
 
 	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle tasks")
 	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle cyclonedxBom")
+	assert.NotContains(output, "--init-script")
 	assert.Contains(output, "info  gradleExecuteBuild - running command: gradle build")
 	assert.Contains(output, "info  gradleExecuteBuild - BUILD SUCCESSFUL")
 	assert.Contains(output, "info  gradleExecuteBuild - SUCCESS")

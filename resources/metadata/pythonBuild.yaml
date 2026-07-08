@@ -109,12 +109,39 @@ spec:
           - STAGES
           - PARAMETERS
         default: requirements.txt
+      - name: runTests
+        type: bool
+        description: |
+          When set to true, pytest and pytest-cov are installed into the virtual environment via pip and the test suite
+          is executed. JUnit and Cobertura XML reports are written to TEST-python.xml and cobertura-coverage.xml
+          respectively. Any non-zero pytest exit code — including exit code 5 (no tests collected) — causes the step
+          to fail. Poetry-managed projects should omit this flag and use a preBuild extension to run tests instead,
+          as pytest is installed directly with pip outside of poetry's dependency management.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: testOptions
+        type: "[]string"
+        description: List of additional options passed verbatim to pytest after the injected report flags (--junitxml, --cov, --cov-report).
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+      - name: reports
+        type: reports
+        params:
+          - filePattern: "**/TEST-python.xml"
+            type: junit
+          - filePattern: "**/cobertura-coverage.xml"
+            type: cobertura-coverage
   containers:
     - name: python
       image: python:3.11

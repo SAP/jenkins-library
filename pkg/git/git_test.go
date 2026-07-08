@@ -6,6 +6,8 @@ package git
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/go-git/go-billy/v5"
@@ -15,6 +17,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCommit(t *testing.T) {
@@ -455,4 +458,55 @@ func (UtilsGitMockError) plainClone(string, bool, *git.CloneOptions) (*git.Repos
 
 func (UtilsGitMockError) plainOpen(path string) (*git.Repository, error) {
 	return nil, errors.New("error during git plain open")
+}
+
+func TestUnsetWorktreeConfig(t *testing.T) {
+	writeConfig := func(t *testing.T, dir string) string {
+		t.Helper()
+		gitDir := filepath.Join(dir, ".git")
+		require.NoError(t, os.MkdirAll(gitDir, 0o755))
+		cfg := "[core]\n\trepositoryformatversion = 1\n[extensions]\n\tworktreeConfig = true\n"
+		require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte(cfg), 0o644))
+		return filepath.Join(gitDir, "config")
+	}
+
+	t.Run("removes worktreeConfig from a real .git directory", func(t *testing.T) {
+		dir := t.TempDir()
+		configPath := writeConfig(t, dir)
+
+		require.NoError(t, unsetWorktreeConfig(dir))
+
+		data, err := os.ReadFile(configPath)
+		require.NoError(t, err)
+		assert.NotContains(t, string(data), "worktreeConfig")
+	})
+
+	t.Run("removes worktreeConfig via a .git gitdir link (monorepo subdirectory)", func(t *testing.T) {
+		root := t.TempDir()
+		configPath := writeConfig(t, root)
+		subdir := filepath.Join(root, "apps", "app")
+		require.NoError(t, os.MkdirAll(subdir, 0o755))
+		// relative gitdir link, exactly what piper-action writes
+		require.NoError(t, os.WriteFile(filepath.Join(subdir, ".git"), []byte("gitdir: ../../.git\n"), 0o644))
+
+		require.NoError(t, unsetWorktreeConfig(subdir))
+
+		// the extension must be removed from the *real* config at the repo root
+		data, err := os.ReadFile(configPath)
+		require.NoError(t, err)
+		assert.NotContains(t, string(data), "worktreeConfig")
+	})
+
+	t.Run("no error when there is no .git", func(t *testing.T) {
+		assert.NoError(t, unsetWorktreeConfig(t.TempDir()))
+	})
+
+	t.Run("no error and no change when worktreeConfig is absent", func(t *testing.T) {
+		dir := t.TempDir()
+		gitDir := filepath.Join(dir, ".git")
+		require.NoError(t, os.MkdirAll(gitDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(gitDir, "config"), []byte("[core]\n\tbare = false\n"), 0o644))
+
+		assert.NoError(t, unsetWorktreeConfig(dir))
+	})
 }

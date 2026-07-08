@@ -194,7 +194,7 @@ spec:
             param: custom/repositoryUrl
       - name: altDeploymentRepositoryID
         type: string
-        description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag
+        description: "Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag. Note: Piper emits the flag in Maven 3.x format (-DaltDeploymentRepository=id::url); maven-deploy-plugin 3.0.0 or newer is required. The legacy three-token id::layout::url form is no longer used."
         scope:
           - GENERAL
           - PARAMETERS

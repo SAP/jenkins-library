@@ -6,15 +6,19 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/eventing"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+	"github.com/bmatcuk/doublestar"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +33,8 @@ type pythonBuildOptions struct {
 	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
 	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
 	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
+	RunTests                 bool     `json:"runTests,omitempty"`
+	TestOptions              []string `json:"testOptions,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
@@ -59,6 +65,41 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 	}
 }
 
+type pythonBuildReports struct {
+}
+
+func (p *pythonBuildReports) persist(stepConfig pythonBuildOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/TEST-python.xml", ParamRef: "", StepResultType: "junit"},
+		{FilePattern: "**/cobertura-coverage.xml", ParamRef: "", StepResultType: "cobertura-coverage"},
+	}
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // PythonBuildCommand Step builds a python project
 func PythonBuildCommand() *cobra.Command {
 	const STEP_NAME = "pythonBuild"
@@ -67,6 +108,7 @@ func PythonBuildCommand() *cobra.Command {
 	var stepConfig pythonBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment pythonBuildCommonPipelineEnvironment
+	var reports pythonBuildReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -157,6 +199,7 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 			stepTelemetryData.ErrorCode = "1"
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -218,6 +261,8 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.")
 	cmd.Flags().StringVar(&stepConfig.VirtualEnvironmentName, "virtualEnvironmentName", `piperBuild-env`, "name of the virtual environment that will be used for the build")
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
+	cmd.Flags().BoolVar(&stepConfig.RunTests, "runTests", false, "When set to true, pytest and pytest-cov are installed into the virtual environment via pip and the test suite\nis executed. JUnit and Cobertura XML reports are written to TEST-python.xml and cobertura-coverage.xml\nrespectively. Any non-zero pytest exit code — including exit code 5 (no tests collected) — causes the step\nto fail. Poetry-managed projects should omit this flag and use a preBuild extension to run tests instead,\nas pytest is installed directly with pip outside of poetry's dependency management.\n")
+	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{}, "List of additional options passed verbatim to pytest after the injected report flags (--junitxml, --cov, --cov-report).")
 
 }
 
@@ -342,6 +387,24 @@ func pythonBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     `requirements.txt`,
 					},
+					{
+						Name:        "runTests",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "testOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -354,6 +417,14 @@ func pythonBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]interface{}{
+							{"filePattern": "**/TEST-python.xml", "type": "junit"},
+							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 						},
 					},
 				},

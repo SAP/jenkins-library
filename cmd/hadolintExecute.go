@@ -22,6 +22,7 @@ type HadolintPiperFileUtils interface {
 	FileExists(filename string) (bool, error)
 	FileWrite(filename string, data []byte, perm os.FileMode) error
 	WriteFile(filename string, data []byte, perm os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
 }
 
 // HadolintClient abstracts http.Client
@@ -97,7 +98,14 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		log.Entry().Debug("No configuration file found.")
 	}
 	// execute scan command
-	err := utils.RunExecutable(hadolintCommand, append([]string{config.DockerFile}, options...)...)
+	filesToLint, err := utils.Glob(config.DockerFile)
+	if err != nil {
+		return fmt.Errorf("failed to expand glob pattern '%s': %w", config.DockerFile, err)
+	}
+	if len(filesToLint) == 0 {
+		return fmt.Errorf("no Dockerfiles found for pattern '%s'", config.DockerFile)
+	}
+	err = utils.RunExecutable(hadolintCommand, append(filesToLint, options...)...)
 
 	//TODO: related to https://github.com/hadolint/hadolint/issues/391
 	// hadolint exists with 1 if there are processing issues but also if there are findings

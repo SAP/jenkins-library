@@ -134,6 +134,14 @@ func convertAUnitOptions(options *abapEnvironmentRunAUnitTestOptions) abaputils.
 	subOptions.Password = options.Password
 	subOptions.Username = options.Username
 
+	// BTP configuration
+	subOptions.URL = options.BtpAPIEndpoint
+	subOptions.Subdomain = options.BtpSubdomain
+	subOptions.Subaccount = options.BtpSubaccount
+	subOptions.Idp = options.BtpIDp
+	subOptions.ServiceInstanceName = options.BtpServiceInstanceName
+	subOptions.ServiceBindingName = options.BtpServiceBindingName
+
 	return subOptions
 }
 
