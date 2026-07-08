@@ -152,10 +152,28 @@ func getClosedIssuesText(ctx context.Context, publishedAt github.Timestamp, conf
 	issueTexts := []string{"**List of closed issues since last release**"}
 
 	for _, issue := range ghIssues {
-		if issue.IsPullRequest() && !isExcluded(issue, config.ExcludeLabels) {
+		if isExcluded(issue, config.ExcludeLabels) {
+			continue
+		}
+		// the API's 'since' parameter filters by updated_at, so the result may
+		// contain items closed before the last release which were merely updated since
+		if !publishedAt.Time.IsZero() && !issue.GetClosedAt().After(publishedAt.Time) {
+			continue
+		}
+		if issue.IsPullRequest() {
+			// closed pull requests include those closed without being merged
+			if issue.GetPullRequestLinks().MergedAt == nil {
+				log.Entry().Debugf("Skipping unmerged PR #%v", issue.GetNumber())
+				continue
+			}
 			prTexts = append(prTexts, fmt.Sprintf("[#%v](%v): %v", issue.GetNumber(), issue.GetHTMLURL(), issue.GetTitle()))
 			log.Entry().Debugf("Added PR #%v to release", issue.GetNumber())
-		} else if !issue.IsPullRequest() && !isExcluded(issue, config.ExcludeLabels) {
+		} else {
+			// issues auto-closed as stale or closed as won't-fix are not resolved by this release
+			if issue.GetStateReason() == "not_planned" {
+				log.Entry().Debugf("Skipping issue #%v closed as not planned", issue.GetNumber())
+				continue
+			}
 			issueTexts = append(issueTexts, fmt.Sprintf("[#%v](%v): %v", issue.GetNumber(), issue.GetHTMLURL(), issue.GetTitle()))
 			log.Entry().Debugf("Added Issue #%v to release", issue.GetNumber())
 		}
