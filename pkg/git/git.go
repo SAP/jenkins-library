@@ -203,7 +203,7 @@ func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
 	if err := unsetWorktreeConfig(path); err != nil {
 		return nil, fmt.Errorf("unsetting extensions.worktreeConfig: %w", err)
 	}
-	return git.PlainOpen(path)
+	return git.PlainOpenWithOptions(path, &git.PlainOpenOptions{DetectDotGit: true})
 }
 
 // Workaround for go-git v1.17.0+ rejecting the 'worktreeconfig' extension
