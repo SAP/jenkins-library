@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"slices"
 	"strings"
 
@@ -11,6 +10,30 @@ import (
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
+
+// npmScriptsPackageJSONExcludesKey is the StepConfig key used to extend the default
+// list of glob patterns that are excluded from package.json discovery when the
+// `npmScripts` step-activation condition is evaluated.
+//
+// The value may be supplied at any scope that resolves into StepConfig (general,
+// stages, steps, or the step itself). A typical use case is excluding test
+// fixtures that intentionally contain invalid JSON, e.g.:
+//
+//	general:
+//	  npmScriptsPackageJSONExcludes:
+//	    - "test_fixtures/**"
+//	    - "tests/**"
+const npmScriptsPackageJSONExcludesKey = "npmScriptsPackageJSONExcludes"
+
+// defaultNpmScriptsPackageJSONExcludes mirrors the default exclusion patterns
+// used by pkg/npm.Execute.FindPackageJSONFilesWithExcludes so that step
+// activation evaluation discovers the same set of package.json files as the
+// npm steps that will eventually run.
+var defaultNpmScriptsPackageJSONExcludes = []string{
+	"**/node_modules/**",
+	"**/gen/**",
+	"**/tmp/**",
+}
 
 const (
 	configCondition                = "config"
@@ -127,7 +150,6 @@ func (s *StepCondition) evaluateV1(
 	envRootPath string,
 	runSteps map[string]bool,
 ) (bool, error) {
-
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
 	if s.Config != nil {
@@ -236,7 +258,8 @@ func getCPEEntry(param string, value interface{}, metadata *StepData, stepName s
 		dataType = "string"
 	}
 	metadata.Spec.Inputs.Parameters = []StepParameters{
-		{Name: stepName,
+		{
+			Name:        stepName,
 			Type:        dataType,
 			ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
 		},
@@ -261,24 +284,21 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 	if err != nil {
 		return false, fmt.Errorf("failed to check if file-exists: %w", err)
 	}
-	for _, pack := range packages {
-		packDirs := strings.Split(path.Dir(pack), "/")
-		isNodeModules := false
-		for _, dir := range packDirs {
-			if dir == "node_modules" {
-				isNodeModules = true
-				break
-			}
-		}
-		if isNodeModules {
-			continue
-		}
 
+	excludes := append([]string{}, defaultNpmScriptsPackageJSONExcludes...)
+	excludes = append(excludes, npmScriptsPackageJSONExcludesFromConfig(config)...)
+
+	packages, err = piperutils.ExcludeFiles(packages, excludes)
+	if err != nil {
+		return false, fmt.Errorf("failed to apply package.json excludes: %w", err)
+	}
+
+	for _, pack := range packages {
 		jsonFile, err := utils.FileRead(pack)
 		if err != nil {
 			return false, fmt.Errorf("failed to open file %s: %v", pack, err)
 		}
-		packageJSON := map[string]interface{}{}
+		packageJSON := map[string]any{}
 		if err := json.Unmarshal(jsonFile, &packageJSON); err != nil {
 			return false, fmt.Errorf("failed to unmarshal json file %s: %v", pack, err)
 		}
@@ -286,7 +306,7 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 		if !ok {
 			continue
 		}
-		scriptsMap, ok := npmScripts.(map[string]interface{})
+		scriptsMap, ok := npmScripts.(map[string]any)
 		if !ok {
 			return false, fmt.Errorf("failed to read scripts from package.json: %T", npmScripts)
 		}
@@ -295,6 +315,29 @@ func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils p
 		}
 	}
 	return false, nil
+}
+
+func npmScriptsPackageJSONExcludesFromConfig(config StepConfig) []string {
+	raw, ok := config.Config[npmScriptsPackageJSONExcludesKey]
+	if !ok || raw == nil {
+		return nil
+	}
+
+	switch v := raw.(type) {
+	case []string:
+		return v
+	case []any:
+		excludes := make([]string, 0, len(v))
+		for _, entry := range v {
+			if pattern, ok := entry.(string); ok && pattern != "" {
+				excludes = append(excludes, pattern)
+			}
+		}
+		return excludes
+	default:
+		log.Entry().Warnf("ignoring %s: expected []string, got %T", npmScriptsPackageJSONExcludesKey, raw)
+		return nil
+	}
 }
 
 // anyOtherStepIsActive loops through previous steps active states and returns true
