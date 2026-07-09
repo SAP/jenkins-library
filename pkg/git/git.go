@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -204,17 +203,19 @@ func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
 	if err := unsetWorktreeConfig(path); err != nil {
 		return nil, fmt.Errorf("unsetting extensions.worktreeConfig: %w", err)
 	}
-	return git.PlainOpen(path)
+	return git.PlainOpenWithOptions(path, &git.PlainOpenOptions{DetectDotGit: true})
 }
 
 // Workaround for go-git v1.17.0+ rejecting the 'worktreeconfig' extension
 // Equivalent to running 'git config --unset extensions.worktreeConfig'
 // This workaround is from this issue: https://github.com/go-git/go-git/pull/1982
+// Jira reference: https://sap.atlassian.net/browse/HSPIPER-1191
 func unsetWorktreeConfig(repoPath string) error {
-	configPath, err := resolveGitConfigPath(repoPath)
-	if err != nil {
-		return fmt.Errorf("resolving git dir: %w", err)
+	dotGitDir, found := findDotGitDir(repoPath)
+	if !found {
+		return fmt.Errorf("not a git repository")
 	}
+	configPath := filepath.Join(dotGitDir, "config")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -241,38 +242,19 @@ func unsetWorktreeConfig(repoPath string) error {
 	return os.WriteFile(configPath, buf.Bytes(), 0644)
 }
 
-// resolveGitConfigPath returns the path to the git config for the repo at repoPath.
-// It handles the case where '.git' is not a directory but a gitdir link file
-// (e.g. 'gitdir: ../../.git'), as used for monorepo subdirectories and linked
-// worktrees, so the real config is located instead of a non-existent
-// '<repoPath>/.git/config'.
-func resolveGitConfigPath(repoPath string) (string, error) {
-	gitPath := filepath.Join(repoPath, ".git")
-	info, err := os.Stat(gitPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			// No .git here; let the caller treat it as "nothing to unset".
-			return gitPath + string(filepath.Separator) + "config", nil
+// mirrors DetectDotGit behavior; used only by unsetWorktreeConfig workaround
+func findDotGitDir(startPath string) (string, bool) {
+	p := startPath
+	for {
+		candidate := filepath.Join(p, ".git")
+		info, err := os.Stat(candidate)
+		if err == nil && info.IsDir() {
+			return candidate, true
 		}
-		return "", err
+		parent := filepath.Dir(p)
+		if parent == p {
+			return "", false
+		}
+		p = parent
 	}
-
-	if info.IsDir() {
-		return filepath.Join(gitPath, "config"), nil
-	}
-
-	// '.git' is a file with a 'gitdir: <path>' line pointing at the real git dir.
-	data, err := os.ReadFile(gitPath)
-	if err != nil {
-		return "", fmt.Errorf("reading gitdir link: %w", err)
-	}
-	line := strings.TrimSpace(string(data))
-	target := strings.TrimSpace(strings.TrimPrefix(line, "gitdir:"))
-	if target == "" || target == line {
-		return "", fmt.Errorf("unexpected .git file content: %q", line)
-	}
-	if !filepath.IsAbs(target) {
-		target = filepath.Join(repoPath, target)
-	}
-	return filepath.Join(target, "config"), nil
 }
