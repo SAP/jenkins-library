@@ -18,7 +18,7 @@ func resolveAllSystemTrustReferences(config *StepConfig, params []StepParameters
 				log.Entry().Infof("Getting '%s' from System Trust", param.Name)
 				token, err := systemtrust.GetToken(ref.Default, client, systemTrustConfiguration)
 				if err != nil {
-					log.Entry().Warnf("System Trust: failed to retrieve '%s' - %v", param.Name, err)
+					log.Entry().WithError(err).Warnf("System Trust: failed to retrieve '%s' (key: '%s')", param.Name, ref.Default)
 					continue
 				}
 				log.RegisterSecret(token)
