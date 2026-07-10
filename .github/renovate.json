@@ -137,6 +137,34 @@
             "customType": "regex",
             "matchStringsStrategy": "any",
             "managerFilePatterns": [
+                "resources/metadata/helmBuild.yaml"
+            ],
+            "matchStrings": [
+                "image: (?<depName>alpine/k8s):(?<currentValue>.*)"
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "docker",
+            "extractVersionTemplate": "(?<version>.*)",
+            "autoReplaceStringTemplate": "image: {{depName}}:{{newValue}}"
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
+                "cmd/helmBuild_generated.go"
+            ],
+            "matchStrings": [
+                "Image: \"(?<depName>alpine/k8s):(?<currentValue>.*)\""
+            ],
+            "depTypeTemplate": "dependencies",
+            "datasourceTemplate": "docker",
+            "extractVersionTemplate": "(?<version>.*)",
+            "autoReplaceStringTemplate": "Image: \"{{depName}}:{{newValue}}\""
+        },
+        {
+            "customType": "regex",
+            "matchStringsStrategy": "any",
+            "managerFilePatterns": [
                 "resources/metadata/golangBuild.yaml"
             ],
             "matchStrings": [

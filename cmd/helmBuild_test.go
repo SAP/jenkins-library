@@ -61,10 +61,10 @@ func TestRunHelmUpgrade(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmUpgrade").Return(testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmUpgrade").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -100,10 +100,10 @@ func TestRunHelmLint(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmLint").Return(testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmLint").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -139,10 +139,10 @@ func TestRunHelmInstall(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmInstall").Return(testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmInstall").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -177,10 +177,10 @@ func TestRunHelmTest(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmTest").Return(testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmTest").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -215,10 +215,10 @@ func TestRunHelmUninstall(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmUninstall").Return(testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmUninstall").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -253,10 +253,10 @@ func TestRunHelmDependency(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmDependency").Return(testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmDependency").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -293,10 +293,10 @@ func TestRunHelmPush(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &fileHandlerMock{}, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -393,12 +393,12 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
-			helmExecute := &mocks.HelmExecutor{}
-			helmExecute.On("RunHelmDependency").Return(testCase.methodPackageError)
-			helmExecute.On("RunHelmLint").Return(testCase.methodLintError)
-			helmExecute.On("RunHelmPublish").Return(testCase.methodPublishError)
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmDependency").Return(testCase.methodPackageError)
+			helmExecutor.On("RunHelmLint").Return(testCase.methodLintError)
+			helmExecutor.On("RunHelmPublish").Return(testCase.methodPublishError)
 
-			err := runHelmBuild(testCase.config, helmExecute, &testCase.fileUtils, &cpe)
+			err := runHelmBuild(testCase.config, helmExecutor, &testCase.fileUtils, &cpe)
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}

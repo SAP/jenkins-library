@@ -2,7 +2,7 @@ metadata:
   name: helmBuild
   aliases:
     - name: helmExecute
-      deprecated: false
+      deprecated: true
   cliAliases:
     - helmExecute
   description: Executes helm3 functionality as the package manager for Kubernetes.
@@ -376,7 +376,7 @@ spec:
           - STEPS
           - PARAMETERS
   containers:
-    - image: crimson-prod.common.repositories.cloud.sap/alpine/k8s:1.33.*
+    - image: alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u

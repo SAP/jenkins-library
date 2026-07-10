@@ -176,6 +176,38 @@ func TestProcessMetaFiles(t *testing.T) {
 	})
 }
 
+func TestProcessMetaFilesNoCLIAliases(t *testing.T) {
+	noCLIAliasesMock := func(name string) (io.ReadCloser, error) {
+		meta := `metadata:
+  name: noAliasStep
+  aliases:
+    - name: noAliasStepOldName
+      deprecated: true
+  description: Step without cliAliases
+spec:
+  inputs:
+    params: []
+`
+		if name == "noAliasStep.yaml" {
+			return io.NopCloser(strings.NewReader(meta)), nil
+		}
+		return io.NopCloser(strings.NewReader("")), nil
+	}
+
+	localFiles := make(map[string][]byte)
+	localWrite := func(filename string, data []byte, perm os.FileMode) error {
+		localFiles[filename] = data
+		return nil
+	}
+
+	stepHelperData := StepHelperData{noCLIAliasesMock, localWrite, ""}
+	ProcessMetaFiles([]string{"noAliasStep.yaml"}, "./cmd", stepHelperData)
+
+	generated := string(localFiles[filepath.Join("cmd", "noAliasStep_generated.go")])
+	assert.NotEmpty(t, generated, "generated file should not be empty")
+	assert.NotContains(t, generated, "Aliases: []string{", "cobra Aliases must not be emitted when cliAliases is absent")
+}
+
 func TestSetDefaultParameters(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
 		sliceVals := []string{"val4_1", "val4_2"}

@@ -284,7 +284,7 @@ func helmBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "helmBuild",
-			Aliases:     []config.Alias{{Name: "helmExecute", Deprecated: false}},
+			Aliases:     []config.Alias{{Name: "helmExecute", Deprecated: true}},
 			Description: "Executes helm3 functionality as the package manager for Kubernetes.",
 		},
 		Spec: config.StepSpec{
@@ -686,7 +686,7 @@ func helmBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "crimson-prod.common.repositories.cloud.sap/alpine/k8s:1.33.*", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Image: "alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
