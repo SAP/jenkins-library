@@ -43,7 +43,7 @@ func runGcpPublishEvent(publisher gcp.PubsubClient, cfg *gcpPublishEventOptions)
 	}
 
 	prettyJSON, _ := json.MarshalIndent(json.RawMessage(eventData), "", "  ")
-	
+
 	log.Entry().Debugf("CloudEvent event created: %s", prettyJSON)
 
 	if err = publisher.Publish(cfg.Topic, eventData); err != nil {
