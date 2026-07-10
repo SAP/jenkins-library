@@ -80,7 +80,6 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gradleExecuteBuild":                        gradleExecuteBuildMetadata(),
 		"hadolintExecute":                           hadolintExecuteMetadata(),
 		"helmBuild":                                 helmBuildMetadata(),
-		"helmExecute":                               helmBuildMetadata(),
 		"imagePushToRegistry":                       imagePushToRegistryMetadata(),
 		"influxWriteData":                           influxWriteDataMetadata(),
 		"integrationArtifactDeploy":                 integrationArtifactDeployMetadata(),
@@ -126,5 +125,6 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"vaultRotateSecretId":                       vaultRotateSecretIdMetadata(),
 		"whitesourceExecuteScan":                    whitesourceExecuteScanMetadata(),
 		"xsDeploy":                                  xsDeployMetadata(),
+		"helmExecute":                               helmBuildMetadata(),
 	}
 }
