@@ -180,7 +180,7 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/localHelmChartPath
       - name: containerRegistryPassword
-        description: Password for container registry access - typically provided by the CI/CD environment.
+        description: Password for container registry access - typically provided by the CI/CD environment. If set, overwrites the auth credentials set in 'dockerConfigJSON' for the registry set in 'containerRegistryUrl'
         type: string
         scope:
           - PARAMETERS
@@ -236,7 +236,7 @@ spec:
           - STEPS
         mandatory: true
       - name: containerRegistryUser
-        description: Username for container registry access - typically provided by the CI/CD environment.
+        description: Username for container registry access - typically provided by the CI/CD environment. If set, overwrites the auth credentials set in 'dockerConfigJSON' for the registry set in 'containerRegistryUrl'
         type: string
         scope:
           - PARAMETERS
