@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 func checkStepActiveOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
@@ -74,7 +76,7 @@ func TestCheckStepActiveCommand(t *testing.T) {
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"stage", "stageConfig", "stageOutputFile", "stepOutputFile", "useV1"}
+		exp := []string{"stage", "stageConfig", "stageOutputFile", "stagesWithExtensions", "stepOutputFile", "useV1"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
@@ -112,6 +114,67 @@ func TestCheckStepActiveCommand(t *testing.T) {
 		})
 	})
 }
+func TestCheckIfStepActiveWithStagesWithExtensions(t *testing.T) {
+	housekeepingOpenFileMock := func(name string, tokens map[string]string) (io.ReadCloser, error) {
+		var fileContent string
+		switch name {
+		case ".pipeline/defaults.yaml":
+			fileContent = `
+general:
+stages:
+steps:`
+		case "stage-config.yml":
+			fileContent = `
+spec:
+  stages:
+    - name: testStage
+      displayName: testStage
+      steps:
+        - name: housekeepingStep
+          housekeeping: true`
+		default:
+			fileContent = ""
+		}
+		return io.NopCloser(strings.NewReader(fileContent)), nil
+	}
+
+	setup := func(t *testing.T, stagesWithExtensions string) *mock.FilesMock {
+		optionsBackup := checkStepActiveOptions
+		t.Cleanup(func() { checkStepActiveOptions = optionsBackup })
+		checkStepActiveOptions.openFile = housekeepingOpenFileMock
+		checkStepActiveOptions.fileExists = func(string) (bool, error) { return false, nil }
+		checkStepActiveOptions.stageName = "testStage"
+		checkStepActiveOptions.stepName = "housekeepingStep"
+		checkStepActiveOptions.stageConfigFile = "stage-config.yml"
+		checkStepActiveOptions.stageOutputFile = "stage_out.json"
+		checkStepActiveOptions.stagesWithExtensions = stagesWithExtensions
+		GeneralConfig.DefaultConfig = []string{".pipeline/defaults.yaml"}
+		return &mock.FilesMock{}
+	}
+
+	t.Run("housekeeping-only stage is inactive without extensions", func(t *testing.T) {
+		utils := setup(t, "")
+		assert.NoError(t, checkIfStepActive(utils))
+		content, err := utils.FileRead("stage_out.json")
+		assert.NoError(t, err)
+		assert.JSONEq(t, `{"testStage": false}`, string(content))
+	})
+
+	t.Run("housekeeping-only stage is active when announced via stagesWithExtensions", func(t *testing.T) {
+		utils := setup(t, "otherStage, testStage")
+		assert.NoError(t, checkIfStepActive(utils))
+		content, err := utils.FileRead("stage_out.json")
+		assert.NoError(t, err)
+		assert.JSONEq(t, `{"testStage": true}`, string(content))
+	})
+}
+
+func TestSplitAndTrim(t *testing.T) {
+	assert.Equal(t, []string{"A", "B", "C"}, splitAndTrim("A, B,,C"))
+	assert.Nil(t, splitAndTrim(""))
+	assert.Nil(t, splitAndTrim(" , "))
+}
+
 func TestFailIfNoConfigFound(t *testing.T) {
 	if os.Getenv("TEST_FAIL_IF_NO_CONFIG_FOUND") == "1" {
 		cmd := CheckStepActiveCommand()

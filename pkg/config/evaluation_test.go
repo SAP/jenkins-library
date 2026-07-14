@@ -255,6 +255,343 @@ func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 	}
 }
 
+func TestRunConfigV1EvaluateConditionsV1Housekeeping(t *testing.T) {
+	config := Config{Stages: map[string]map[string]interface{}{
+		"Test Stage 1": {
+			"housekeeping1": true,      // explicit activation of a housekeeping step
+			"testKey":       "testVal", // condition for primary steps
+		},
+	}}
+	envRootPath := ".pipeline"
+
+	tests := []struct {
+		name                 string
+		pipelineConfig       PipelineDefinitionV1
+		stagesWithExtensions []string
+		files                []string
+		githubActions        bool
+		wantRunSteps         map[string]map[string]bool
+		wantRunStages        map[string]bool
+	}{
+		{
+			name: "two housekeeping steps active by default do not activate stage",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}, {
+						Name:         "housekeeping3",
+						Housekeeping: true,
+					}, {
+						Name:       "primary1",
+						Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": false,
+					"housekeeping3": false,
+					"primary1":      false,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "housekeeping steps follow own conditions when a primary step is active",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}, {
+						Name:         "housekeeping3",
+						Housekeeping: true,
+						Conditions:   []StepCondition{{ConfigKey: "notExistentKey"}},
+					}, {
+						Name:       "primary1",
+						Conditions: []StepCondition{{ConfigKey: "testKey"}},
+					}},
+				},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": true,
+					"housekeeping3": false,
+					"primary1":      true,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "explicit activation of housekeeping step does not activate stage",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping1",
+						Housekeeping: true,
+					}, {
+						Name:       "primary1",
+						Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping1": false,
+					"primary1":      false,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "stage with announced extension activates housekeeping-only stage",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}, {
+						Name:         "housekeeping3",
+						Housekeeping: true,
+					}},
+				},
+			}}},
+			stagesWithExtensions: []string{"Test Stage 1"},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": true,
+					"housekeeping3": true,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "extension-only stage with zero active steps is active",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:       "primary1",
+						Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
+			}}},
+			stagesWithExtensions: []string{"Test Stage 1"},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"primary1": false,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "local post extension activates stage on GitHub Actions",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}},
+				},
+			}}},
+			files:         []string{".pipeline/extensions/postTest Stage 1/action.yml"},
+			githubActions: true,
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": true,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "local pre extension with yaml suffix activates stage on GitHub Actions",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}},
+				},
+			}}},
+			files:         []string{".pipeline/extensions/preTest Stage 1/action.yaml"},
+			githubActions: true,
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": true,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+		{
+			name: "local extension is ignored outside GitHub Actions",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}},
+				},
+			}}},
+			files:         []string{".pipeline/extensions/postTest Stage 1/action.yml"},
+			githubActions: false,
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": false,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "local extension of another stage does not activate stage",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:         "housekeeping2",
+						Housekeeping: true,
+					}},
+				},
+			}}},
+			files:         []string{".pipeline/extensions/postOther Stage/action.yml"},
+			githubActions: true,
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": false,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "mixed legacy onlyActiveStepInStage and housekeeping without active primary",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "housekeeping2",
+						Housekeeping:        true,
+						NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+					}, {
+						Name:                "housekeeping3",
+						Housekeeping:        true,
+						NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+					}, {
+						Name:       "primary1",
+						Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": false,
+					"housekeeping3": false,
+					"primary1":      false,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": false},
+		},
+		{
+			name: "mixed legacy onlyActiveStepInStage and housekeeping with active primary",
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "housekeeping2",
+						Housekeeping:        true,
+						NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+					}, {
+						Name:                "housekeeping3",
+						Housekeeping:        true,
+						NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+					}, {
+						Name:       "primary1",
+						Conditions: []StepCondition{{ConfigKey: "testKey"}},
+					}},
+				},
+			}}},
+			wantRunSteps: map[string]map[string]bool{
+				"Test Stage 1": {
+					"housekeeping2": true,
+					"housekeeping3": true,
+					"primary1":      true,
+				},
+			},
+			wantRunStages: map[string]bool{"Test Stage 1": true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.githubActions {
+				t.Setenv("GITHUB_ACTIONS", "true")
+			} else {
+				// Make the test deterministic when running inside GitHub Actions CI.
+				t.Setenv("GITHUB_ACTION", "false")
+				t.Setenv("GITHUB_ACTIONS", "false")
+			}
+			filesMock := mock.FilesMock{}
+			for _, file := range tt.files {
+				filesMock.AddFile(file, []byte("content"))
+			}
+			r := &RunConfigV1{PipelineConfig: tt.pipelineConfig, StagesWithExtensions: tt.stagesWithExtensions}
+			assert.NoError(t, r.evaluateConditionsV1(&config, &filesMock, envRootPath))
+
+			assert.Equal(t, tt.wantRunSteps, r.RunSteps, "RunSteps mismatch")
+			assert.Equal(t, tt.wantRunStages, r.RunStages, "RunStages mismatch")
+		})
+	}
+}
+
+type globErrorFilesMock struct {
+	mock.FilesMock
+}
+
+func (g *globErrorFilesMock) Glob(pattern string) ([]string, error) {
+	return nil, fmt.Errorf("glob failure")
+}
+
+func TestStageHasExtension(t *testing.T) {
+	const gitHubActions = "GitHubActions"
+
+	t.Run("announced via StagesWithExtensions, independent of orchestrator", func(t *testing.T) {
+		r := &RunConfigV1{StagesWithExtensions: []string{"Acceptance", "Performance"}}
+		assert.True(t, r.stageHasExtension("Acceptance", "Jenkins", &mock.FilesMock{}))
+	})
+	t.Run("local extension yml on GitHub Actions", func(t *testing.T) {
+		filesMock := mock.FilesMock{}
+		filesMock.AddFile(".pipeline/extensions/postAcceptance/action.yml", []byte("content"))
+		r := &RunConfigV1{}
+		assert.True(t, r.stageHasExtension("Acceptance", gitHubActions, &filesMock))
+	})
+	t.Run("local extension yaml on GitHub Actions", func(t *testing.T) {
+		filesMock := mock.FilesMock{}
+		filesMock.AddFile(".pipeline/extensions/preAcceptance/action.yaml", []byte("content"))
+		r := &RunConfigV1{}
+		assert.True(t, r.stageHasExtension("Acceptance", gitHubActions, &filesMock))
+	})
+	t.Run("no extension present", func(t *testing.T) {
+		r := &RunConfigV1{}
+		assert.False(t, r.stageHasExtension("Acceptance", gitHubActions, &mock.FilesMock{}))
+	})
+	t.Run("local extension ignored on other orchestrators", func(t *testing.T) {
+		filesMock := mock.FilesMock{}
+		filesMock.AddFile(".pipeline/extensions/postAcceptance/action.yml", []byte("content"))
+		r := &RunConfigV1{}
+		assert.False(t, r.stageHasExtension("Acceptance", "Jenkins", &filesMock))
+	})
+	t.Run("glob error is treated as no extension", func(t *testing.T) {
+		r := &RunConfigV1{}
+		assert.False(t, r.stageHasExtension("Acceptance", gitHubActions, &globErrorFilesMock{}))
+	})
+}
+
 func TestEvaluateV1(t *testing.T) {
 	tt := []struct {
 		name          string

@@ -21,6 +21,10 @@ type RunConfig struct {
 type RunConfigV1 struct {
 	RunConfig
 	PipelineConfig PipelineDefinitionV1
+	// StagesWithExtensions lists stage display names that are known to have pipeline
+	// extensions (e.g. globally maintained extensions resolved by the orchestrator).
+	// These stages are considered active even if only housekeeping steps are active.
+	StagesWithExtensions []string
 }
 
 type StageConfig struct {
@@ -63,6 +67,11 @@ type Step struct {
 	Conditions          []StepCondition `json:"conditions,omitempty" yaml:"conditions,omitempty"`
 	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty" yaml:"notActiveConditions,omitempty"`
 	Orchestrators       []string        `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`
+	// Housekeeping marks a step as auxiliary (e.g. artifact upload/download). Housekeeping
+	// steps never cause a stage to be activated on their own: they run only if the stage is
+	// active due to a non-housekeeping step or an extension. Explicit user activation of a
+	// housekeeping step does not activate the stage either.
+	Housekeeping bool `json:"housekeeping,omitempty" yaml:"housekeeping,omitempty"`
 }
 
 type StepCondition struct {

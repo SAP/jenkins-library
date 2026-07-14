@@ -37,10 +37,7 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetes.DeployUtils, stdout io.Writer) error {
 	telemetryData.DeployTool = config.DeployTool
 
-	log.Entry().Debugf("deployTool=%v deployCommand=%v namespace=%v", config.DeployTool, config.DeployCommand, config.Namespace)
-
-	switch config.DeployTool {
-	case "helm", "helm3":
+	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		err := runHelmDeploy(config, utils, stdout)
 		// download and execute teardown script
 		if len(config.TeardownScript) > 0 {
@@ -55,7 +52,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetr
 			log.Entry().Debugf("finished running teardownScript script %v", config.TeardownScript)
 		}
 		return err
-	case "kubectl":
+	} else if config.DeployTool == "kubectl" {
 		if config.DeployCommand == "setImage" {
 			return runKubectlSetImage(config, utils, stdout)
 		}
@@ -399,6 +396,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, utils kubernetes.DeployUti
 		kubeParams = append(kubeParams, config.AdditionalParameters...)
 	}
 	if err := utils.RunExecutable("kubectl", kubeParams...); err != nil {
+		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
 	return nil
@@ -617,9 +615,8 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 				log.Entry().Warningf("failed to update Docker config.json: %v", err)
 				return err, []string{}
 			}
-		} else {
-			log.Entry().Debugf("incomplete credentials (registry=%v username.isSet=%v password.isSet=%v)", containerRegistry, config.ContainerRegistryUser != "", config.ContainerRegistryPassword != "")
 		}
+
 	} else {
 		return fmt.Errorf("no docker config json file found to update credentials '%v'", config.DockerConfigJSON), []string{}
 	}
