@@ -191,6 +191,9 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            default: k8s-docker-registry
+            name: k8sDockerRegistrySecretName
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
           - name: commonPipelineEnvironment
@@ -244,6 +247,9 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            default: k8s-docker-registry
+            name: k8sDockerRegistrySecretName
           - name: commonPipelineEnvironment
             param: container/repositoryUsername
           - name: commonPipelineEnvironment

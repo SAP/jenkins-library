@@ -375,6 +375,12 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
+								Name:    "k8sDockerRegistrySecretName",
+								Type:    "vaultSecret",
+								Default: "k8s-docker-registry",
+							},
+
+							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryPassword",
 							},
@@ -434,6 +440,12 @@ func kubernetesDeployMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "k8sDockerRegistrySecretName",
+								Type:    "vaultSecret",
+								Default: "k8s-docker-registry",
 							},
 
 							{
