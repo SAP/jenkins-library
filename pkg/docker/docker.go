@@ -87,11 +87,10 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 
 // CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials
 func CreateDockerConfigJSON(registryURL, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
-
 	if len(targetPath) == 0 {
 		targetPath = configPath
 	}
-	log.Entry().Debugf("creating docker config.json. registry=%v configPath=%v targetPath=%v", registryURL, configPath, targetPath)
+	log.Entry().Debugf("creating docker config.json. registry=%v", registryURL)
 
 	dockerConfigContent := []byte{}
 	dockerConfig := map[string]interface{}{}
@@ -105,13 +104,13 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		if err != nil {
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
-		log.Entry().Debugf("loaded existing docker config from %v", configPath)
+		log.Entry().Debugf("loaded existing docker config.json")
 	} else {
-		log.Entry().Debugf("no existing docker config at %v, starting fresh", configPath)
+		log.Entry().Debugf("no existing docker config.json, starting fresh")
 	}
 
 	if registryURL == "" || password == "" || username == "" {
-		log.Entry().Debugf("incomplete credentials (registry=%v username.isSet=%v password.isSet=%v), writing config unchanged", registryURL, username != "", password != "")
+		log.Entry().Debugf("incomplete credentials (registry=%v username.isSet=%v password.isSet=%v), writing config.json unchanged", registryURL, username != "", password != "")
 		if err := fileWrite(targetPath, dockerConfigContent, utils); err != nil {
 			return "", err
 		}
