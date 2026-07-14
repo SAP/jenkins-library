@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"errors"
 
@@ -16,14 +17,15 @@ import (
 )
 
 type checkStepActiveCommandOptions struct {
-	openFile        func(s string, t map[string]string) (io.ReadCloser, error)
-	fileExists      func(filename string) (bool, error)
-	stageConfigFile string
-	stepName        string
-	stageName       string
-	v1Active        bool
-	stageOutputFile string
-	stepOutputFile  string
+	openFile             func(s string, t map[string]string) (io.ReadCloser, error)
+	fileExists           func(filename string) (bool, error)
+	stageConfigFile      string
+	stepName             string
+	stageName            string
+	v1Active             bool
+	stageOutputFile      string
+	stepOutputFile       string
+	stagesWithExtensions string
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
@@ -84,7 +86,10 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 
 	// load and evaluate step conditions
 	runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
-	runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
+	runConfigV1 := &config.RunConfigV1{
+		RunConfig:            runConfig,
+		StagesWithExtensions: splitAndTrim(checkStepActiveOptions.stagesWithExtensions),
+	}
 	err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
 	if err != nil {
 		return err
@@ -140,7 +145,20 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration (deprecated)")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
+	cmd.Flags().StringVar(&checkStepActiveOptions.stagesWithExtensions, "stagesWithExtensions", "",
+		"Comma-separated list of stage names that have pipeline extensions. These stages are considered active even if only housekeeping steps are active")
 	_ = cmd.MarkFlagRequired("step")
+}
+
+// splitAndTrim splits a comma-separated list, trims whitespace and drops empty entries.
+func splitAndTrim(list string) []string {
+	var result []string
+	for _, entry := range strings.Split(list, ",") {
+		if trimmed := strings.TrimSpace(entry); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 func initializeConfig(pConfig *config.Config) (*config.Config, error) {

@@ -131,16 +131,50 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 
 		r.RunSteps[stageName] = runStep
 
-		stageActive := false
-		for _, anyStepIsActive := range r.RunSteps[stageName] {
-			if anyStepIsActive {
-				stageActive = true
+		// Check #3: A stage is active if any non-housekeeping step is active or the stage
+		// has an extension. Housekeeping steps never justify a stage on their own; if the
+		// stage is inactive, all its steps are reported as inactive.
+		stageActive := stageHasActivePrimaryStep(stage.Steps, runStep) ||
+			r.stageHasExtension(stageName, currentOrchestrator, utils)
+		if !stageActive {
+			for stepName := range runStep {
+				runStep[stepName] = false
 			}
 		}
 		r.RunStages[stageName] = stageActive
 	}
 
 	return nil
+}
+
+// stageHasActivePrimaryStep returns true if any non-housekeeping step of the stage is active.
+func stageHasActivePrimaryStep(steps []Step, runStep map[string]bool) bool {
+	for _, step := range steps {
+		if !step.Housekeeping && runStep[step.Name] {
+			return true
+		}
+	}
+	return false
+}
+
+// stageHasExtension returns true if the stage was announced via StagesWithExtensions, or
+// (on GitHub Actions only) a local extension exists under
+// .pipeline/extensions/{pre,post}<stageName>/action.{yml,yaml}.
+func (r *RunConfigV1) stageHasExtension(stageName, currentOrchestrator string, utils piperutils.FileUtils) bool {
+	if slices.Contains(r.StagesWithExtensions, stageName) {
+		return true
+	}
+
+	if currentOrchestrator != orchestrator.GitHubActions.String() {
+		return false
+	}
+	pattern := fmt.Sprintf(".pipeline/extensions/{pre%s,post%s}/action.{yml,yaml}", stageName, stageName)
+	matches, err := utils.Glob(pattern)
+	if err != nil {
+		log.Entry().Warningf("failed to check for extensions of stage %s: %v", stageName, err)
+		return false
+	}
+	return len(matches) > 0
 }
 
 func (s *StepCondition) evaluateV1(
@@ -239,6 +273,7 @@ func (s *StepCondition) evaluateV1(
 		// Returns true if all other steps are inactive, so step will be deactivated
 		// if it's the only active step in stage.
 		// For example, sapCumulusUpload step must be deactivated in a stage where others steps are inactive.
+		log.Entry().Warningf("condition onlyActiveStepInStage is deprecated, use the step-level field 'housekeeping: true' instead (step %s)", stepName)
 		return !anyOtherStepIsActive(stepName, runSteps), nil
 	}
 
