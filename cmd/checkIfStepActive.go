@@ -146,7 +146,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stagesWithExtensions, "stagesWithExtensions", "",
-		"Comma-separated list of stage names that have pipeline extensions. These stages are considered active even if only housekeeping steps are active")
+		"Comma-separated list of stage names that have a local or global pipeline extension. These stages are considered active even if only housekeeping steps are active")
 	_ = cmd.MarkFlagRequired("step")
 }
 

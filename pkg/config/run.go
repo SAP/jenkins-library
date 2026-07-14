@@ -21,8 +21,8 @@ type RunConfig struct {
 type RunConfigV1 struct {
 	RunConfig
 	PipelineConfig PipelineDefinitionV1
-	// StagesWithExtensions lists stage display names that are known to have pipeline
-	// extensions (e.g. globally maintained extensions resolved by the orchestrator).
+	// StagesWithExtensions lists stage display names that are known to have a pipeline
+	// extension (local or global, resolved and announced by the orchestrator).
 	// These stages are considered active even if only housekeeping steps are active.
 	StagesWithExtensions []string
 }

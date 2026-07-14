@@ -268,8 +268,6 @@ func TestRunConfigV1EvaluateConditionsV1Housekeeping(t *testing.T) {
 		name                 string
 		pipelineConfig       PipelineDefinitionV1
 		stagesWithExtensions []string
-		files                []string
-		githubActions        bool
 		wantRunSteps         map[string]map[string]bool
 		wantRunStages        map[string]bool
 	}{
@@ -391,86 +389,6 @@ func TestRunConfigV1EvaluateConditionsV1Housekeeping(t *testing.T) {
 			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 		{
-			name: "local post extension activates stage on GitHub Actions",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
-				{
-					DisplayName: "Test Stage 1",
-					Steps: []Step{{
-						Name:         "housekeeping2",
-						Housekeeping: true,
-					}},
-				},
-			}}},
-			files:         []string{".pipeline/extensions/postTest Stage 1/action.yml"},
-			githubActions: true,
-			wantRunSteps: map[string]map[string]bool{
-				"Test Stage 1": {
-					"housekeeping2": true,
-				},
-			},
-			wantRunStages: map[string]bool{"Test Stage 1": true},
-		},
-		{
-			name: "local pre extension with yaml suffix activates stage on GitHub Actions",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
-				{
-					DisplayName: "Test Stage 1",
-					Steps: []Step{{
-						Name:         "housekeeping2",
-						Housekeeping: true,
-					}},
-				},
-			}}},
-			files:         []string{".pipeline/extensions/preTest Stage 1/action.yaml"},
-			githubActions: true,
-			wantRunSteps: map[string]map[string]bool{
-				"Test Stage 1": {
-					"housekeeping2": true,
-				},
-			},
-			wantRunStages: map[string]bool{"Test Stage 1": true},
-		},
-		{
-			name: "local extension is ignored outside GitHub Actions",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
-				{
-					DisplayName: "Test Stage 1",
-					Steps: []Step{{
-						Name:         "housekeeping2",
-						Housekeeping: true,
-					}},
-				},
-			}}},
-			files:         []string{".pipeline/extensions/postTest Stage 1/action.yml"},
-			githubActions: false,
-			wantRunSteps: map[string]map[string]bool{
-				"Test Stage 1": {
-					"housekeeping2": false,
-				},
-			},
-			wantRunStages: map[string]bool{"Test Stage 1": false},
-		},
-		{
-			name: "local extension of another stage does not activate stage",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
-				{
-					DisplayName: "Test Stage 1",
-					Steps: []Step{{
-						Name:         "housekeeping2",
-						Housekeeping: true,
-					}},
-				},
-			}}},
-			files:         []string{".pipeline/extensions/postOther Stage/action.yml"},
-			githubActions: true,
-			wantRunSteps: map[string]map[string]bool{
-				"Test Stage 1": {
-					"housekeeping2": false,
-				},
-			},
-			wantRunStages: map[string]bool{"Test Stage 1": false},
-		},
-		{
 			name: "mixed legacy onlyActiveStepInStage and housekeeping without active primary",
 			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
 				{
@@ -529,67 +447,13 @@ func TestRunConfigV1EvaluateConditionsV1Housekeeping(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.githubActions {
-				t.Setenv("GITHUB_ACTIONS", "true")
-			} else {
-				// Make the test deterministic when running inside GitHub Actions CI.
-				t.Setenv("GITHUB_ACTION", "false")
-				t.Setenv("GITHUB_ACTIONS", "false")
-			}
-			filesMock := mock.FilesMock{}
-			for _, file := range tt.files {
-				filesMock.AddFile(file, []byte("content"))
-			}
 			r := &RunConfigV1{PipelineConfig: tt.pipelineConfig, StagesWithExtensions: tt.stagesWithExtensions}
-			assert.NoError(t, r.evaluateConditionsV1(&config, &filesMock, envRootPath))
+			assert.NoError(t, r.evaluateConditionsV1(&config, &mock.FilesMock{}, envRootPath))
 
 			assert.Equal(t, tt.wantRunSteps, r.RunSteps, "RunSteps mismatch")
 			assert.Equal(t, tt.wantRunStages, r.RunStages, "RunStages mismatch")
 		})
 	}
-}
-
-type globErrorFilesMock struct {
-	mock.FilesMock
-}
-
-func (g *globErrorFilesMock) Glob(pattern string) ([]string, error) {
-	return nil, fmt.Errorf("glob failure")
-}
-
-func TestStageHasExtension(t *testing.T) {
-	const gitHubActions = "GitHubActions"
-
-	t.Run("announced via StagesWithExtensions, independent of orchestrator", func(t *testing.T) {
-		r := &RunConfigV1{StagesWithExtensions: []string{"Acceptance", "Performance"}}
-		assert.True(t, r.stageHasExtension("Acceptance", "Jenkins", &mock.FilesMock{}))
-	})
-	t.Run("local extension yml on GitHub Actions", func(t *testing.T) {
-		filesMock := mock.FilesMock{}
-		filesMock.AddFile(".pipeline/extensions/postAcceptance/action.yml", []byte("content"))
-		r := &RunConfigV1{}
-		assert.True(t, r.stageHasExtension("Acceptance", gitHubActions, &filesMock))
-	})
-	t.Run("local extension yaml on GitHub Actions", func(t *testing.T) {
-		filesMock := mock.FilesMock{}
-		filesMock.AddFile(".pipeline/extensions/preAcceptance/action.yaml", []byte("content"))
-		r := &RunConfigV1{}
-		assert.True(t, r.stageHasExtension("Acceptance", gitHubActions, &filesMock))
-	})
-	t.Run("no extension present", func(t *testing.T) {
-		r := &RunConfigV1{}
-		assert.False(t, r.stageHasExtension("Acceptance", gitHubActions, &mock.FilesMock{}))
-	})
-	t.Run("local extension ignored on other orchestrators", func(t *testing.T) {
-		filesMock := mock.FilesMock{}
-		filesMock.AddFile(".pipeline/extensions/postAcceptance/action.yml", []byte("content"))
-		r := &RunConfigV1{}
-		assert.False(t, r.stageHasExtension("Acceptance", "Jenkins", &filesMock))
-	})
-	t.Run("glob error is treated as no extension", func(t *testing.T) {
-		r := &RunConfigV1{}
-		assert.False(t, r.stageHasExtension("Acceptance", gitHubActions, &globErrorFilesMock{}))
-	})
 }
 
 func TestEvaluateV1(t *testing.T) {
