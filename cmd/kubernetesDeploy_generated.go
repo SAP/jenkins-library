@@ -258,11 +258,11 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.APIServer, "apiServer", os.Getenv("PIPER_apiServer"), "Defines the Url of the API Server of the Kubernetes cluster.")
 	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml).")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
-	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment. If set, overwrites the auth credentials set in 'dockerConfigJSON' for the registry set in 'containerRegistryUrl'")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
-	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment. If set, overwrites the auth credentials set in 'dockerConfigJSON' for the registry set in 'containerRegistryUrl'")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`. Also required when `deployCommand:setImage`, where it specifies the Kubernetes deployment resource to update (used as `deployment/<deploymentName>`).")
@@ -375,6 +375,12 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
+								Name:    "k8sDockerRegistrySecretName",
+								Type:    "vaultSecret",
+								Default: "k8s-docker-registry",
+							},
+
+							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryPassword",
 							},
@@ -434,6 +440,12 @@ func kubernetesDeployMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "k8sDockerRegistrySecretName",
+								Type:    "vaultSecret",
+								Default: "k8s-docker-registry",
 							},
 
 							{
