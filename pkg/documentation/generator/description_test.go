@@ -23,6 +23,13 @@ func TestCreateStepName(t *testing.T) {
 			},
 			want: "# teststep\n\nTestDescription\n",
 		},
+		{
+			name: "step name with orchestrator badge",
+			input: &config.StepData{
+				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"jenkins"}},
+			},
+			want: "# teststep [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)\n\nTestDescription\n",
+		},
 	}
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
