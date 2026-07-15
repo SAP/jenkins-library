@@ -28,6 +28,7 @@ type StepMetadata struct {
 	Aliases         []Alias     `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	Description     string      `json:"description" yaml:"description"`
 	LongDescription string      `json:"longDescription,omitempty" yaml:"longDescription,omitempty"`
+	Orchestrators   []string    `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`
 	Errors          []StepError `json:"errors,omitempty" yaml:"errors,omitempty"`
 }
 
