@@ -24,11 +24,25 @@ func TestCreateStepName(t *testing.T) {
 			want: "# teststep\n\nTestDescription\n",
 		},
 		{
-			name: "step name with orchestrator badge",
+			name: "step name with single orchestrator badge",
 			input: &config.StepData{
 				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"jenkins"}},
 			},
 			want: "# teststep [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)\n\nTestDescription\n",
+		},
+		{
+			name: "step name with multiple orchestrators renders no badge",
+			input: &config.StepData{
+				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"jenkins", "gha"}},
+			},
+			want: "# teststep\n\nTestDescription\n",
+		},
+		{
+			name: "step name with gha orchestrator uses correct label",
+			input: &config.StepData{
+				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"gha"}},
+			},
+			want: "# teststep [![GitHub Actions only](https://img.shields.io/badge/-GitHub+Actions+only-yellowgreen)](#)\n\nTestDescription\n",
 		},
 	}
 	for _, testcase := range tests {
