@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcp"
 	"github.com/SAP/jenkins-library/pkg/log"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 )
 
 const (
@@ -51,7 +52,7 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		outcome = "success"
 	}
 
-	var fatalError = map[string]any{}
+	fatalError := map[string]any{}
 	rawErrorDetail := log.GetFatalErrorDetail()
 	if ctx.ErrorCode != "0" && rawErrorDetail != nil {
 		// retrieve the error information from the logCollector
@@ -71,14 +72,17 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		return fmt.Errorf("failed to create event: %w", err)
 	}
 
-	prettyJSON, _ := json.MarshalIndent(json.RawMessage(eventData), "", "  ")
-	log.Entry().Debugf("CloudEvent event payload:\n%s", string(prettyJSON))
+	if prettyJSON, err := json.MarshalIndent(eventData, "", "  "); err != nil {
+		log.Entry().WithError(err).Debug("failed to marshal CloudEvent payload for debug output")
+	} else {
+		log.Entry().Debugf("CloudEvent event payload:\n%s", string(prettyJSON))
+	}
 	log.Entry().Debugf("publishing TaskRunFinished event to GCP Pub/Sub...")
 
 	return publish(tokenProvider, generalConfig, topicPipelineTaskRunFinished, eventData)
 }
 
-func publish(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, topic string, eventData []byte) error {
+func publish(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralConfigOptions, topic string, event cloudevents.Event) error {
 	cfg := generalConfig.HookConfig.GCPPubSubConfig
 	publisher := gcp.NewGcpPubsubClient(
 		tokenProvider,
@@ -88,7 +92,7 @@ func publish(tokenProvider gcp.OIDCTokenProvider, generalConfig *config.GeneralC
 		generalConfig.CorrelationID,
 		generalConfig.HookConfig.OIDCConfig.RoleID,
 	)
-	if err := publisher.Publish(topic, eventData); err != nil {
+	if err := publisher.Publish(topic, event); err != nil {
 		return fmt.Errorf("event publish failed: %w", err)
 	}
 	return nil

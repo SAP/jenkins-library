@@ -9,9 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// newEvent creates a CloudEvent v1.0 with the given type, source, and data payload,
-// and returns its JSON-serialized bytes.
-func newEvent(eventType, source string, data any) ([]byte, error) {
+// newEvent creates a CloudEvent v1.0 with the given type, source, and data payload.
+func newEvent(eventType, source string, data any) (cloudevents.Event, error) {
 	event := cloudevents.NewEvent("1.0")
 	event.SetID(uuid.New().String())
 	event.SetType(eventType)
@@ -19,30 +18,26 @@ func newEvent(eventType, source string, data any) ([]byte, error) {
 	event.SetTime(time.Now())
 
 	if err := event.SetData(cloudevents.ApplicationJSON, data); err != nil {
-		return nil, fmt.Errorf("failed to set event data: %w", err)
+		return event, fmt.Errorf("failed to set event data: %w", err)
 	}
 
-	bytes, err := json.Marshal(event)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal event: %w", err)
-	}
-	return bytes, nil
+	return event, nil
 }
 
 // NewEventFromJSON creates a CloudEvent v1.0 from JSON string data, optionally merging
-// additional JSON data into the event payload. Returns the serialized CloudEvent bytes.
-func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
+// additional JSON data into the event payload.
+func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) (cloudevents.Event, error) {
 	var dataMap map[string]any
 	if jsonData != "" {
 		if err := json.Unmarshal([]byte(jsonData), &dataMap); err != nil {
-			return nil, fmt.Errorf("eventData is invalid JSON: %w", err)
+			return cloudevents.Event{}, fmt.Errorf("eventData is invalid JSON: %w", err)
 		}
 	}
 
 	if additionalJSON != "" {
 		var additional map[string]any
 		if err := json.Unmarshal([]byte(additionalJSON), &additional); err != nil {
-			return nil, fmt.Errorf("additionalEventData is invalid JSON: %w", err)
+			return cloudevents.Event{}, fmt.Errorf("additionalEventData is invalid JSON: %w", err)
 		}
 		if dataMap == nil {
 			dataMap = make(map[string]any)
