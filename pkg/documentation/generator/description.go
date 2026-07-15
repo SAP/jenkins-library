@@ -2,8 +2,11 @@ package generator
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const configRecommendation = "We recommend to define values of [step parameters](#parameters) via [.pipeline/config.yml file](../configuration.md).<br />In this case, calling the step is essentially reduced to defining the step name.<br />Calling the step can be done either in an orchestrator specific way (e.g. via a Jenkins library step) or on the command line."
@@ -35,13 +38,33 @@ type CustomLibrary struct {
 	Steps       []string `yaml:"steps,omitempty" yaml:"steps,omitempty"`
 }
 
-// Replaces the StepName placeholder with the content from the yaml
-func createStepName(stepData *config.StepData) string {
-	badges := ""
-	for _, orchestrator := range stepData.Metadata.Orchestrators {
-		badges += " " + getBadge(orchestrator)
+// orchestratorLabels maps known orchestrator keys to their display labels.
+var orchestratorLabels = map[string]string{
+	"jenkins": "Jenkins",
+	"gha":     "GitHub Actions",
+	"azure":   "Azure DevOps",
+}
+
+// orchestratorLabel returns the display label for a given orchestrator key,
+// falling back to title-casing the raw value if unknown.
+func orchestratorLabel(orchestrator string) string {
+	if label, ok := orchestratorLabels[strings.ToLower(orchestrator)]; ok {
+		return label
 	}
-	return "# " + stepData.Metadata.Name + badges + "\n\n" + stepData.Metadata.Description + "\n"
+	return piperutils.Title(strings.ToLower(orchestrator))
+}
+
+// Replaces the StepName placeholder with the content from the yaml.
+// A badge is only rendered when exactly one orchestrator is listed, indicating
+// the step is restricted to that platform. Multiple entries mean no restriction.
+func createStepName(stepData *config.StepData) string {
+	badge := ""
+	if len(stepData.Metadata.Orchestrators) == 1 {
+		label := orchestratorLabel(stepData.Metadata.Orchestrators[0])
+		urlPath := &url.URL{Path: label + " only"}
+		badge = fmt.Sprintf(" [![%v only](https://img.shields.io/badge/-%v-yellowgreen)](#)", label, urlPath.String())
+	}
+	return "# " + stepData.Metadata.Name + badge + "\n\n" + stepData.Metadata.Description + "\n"
 }
 
 // Replaces the Description placeholder with content from the yaml
