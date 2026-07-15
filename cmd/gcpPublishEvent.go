@@ -36,13 +36,13 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 }
 
 func runGcpPublishEvent(publisher gcp.PubsubClient, cfg *gcpPublishEventOptions) error {
-	data, err := eventing.NewEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
+	event, err := eventing.NewEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
-	log.Entry().Debugf("CloudEvent created: %s", string(data))
+	log.Entry().Debugf("CloudEvent created: %s", event.String())
 
-	if err = publisher.Publish(cfg.Topic, data); err != nil {
+	if err = publisher.Publish(cfg.Topic, event); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 

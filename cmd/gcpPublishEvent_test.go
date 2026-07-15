@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +14,7 @@ type mockPubsubClient struct {
 	publishErr error
 }
 
-func (p *mockPubsubClient) Publish(_ string, _ []byte) error {
+func (p *mockPubsubClient) Publish(_ string, _ cloudevents.Event) error {
 	return p.publishErr
 }
 

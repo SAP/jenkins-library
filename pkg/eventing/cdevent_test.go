@@ -3,7 +3,6 @@
 package eventing
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,75 +10,59 @@ import (
 
 func TestNewTaskRunFinishedCDEvent(t *testing.T) {
 	t.Run("creates valid CDEvent as CloudEvent", func(t *testing.T) {
-		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "https://example.com/run/1", "success", "Build")
+		event, err := newTaskRunFinishedCDEvent("test/source", "myTask", "https://example.com/run/1", "success", "Build")
 		assert.NoError(t, err)
 
-		var result map[string]any
-		err = json.Unmarshal(bytes, &result)
-		assert.NoError(t, err)
-
-		assert.Equal(t, "1.0", result["specversion"])
-		assert.Contains(t, result["type"], "taskrun")
-		assert.Contains(t, result["type"], "finished")
-		assert.Equal(t, "test/source", result["source"])
-		assert.NotEmpty(t, result["id"])
+		assert.Equal(t, "1.0", event.SpecVersion())
+		assert.Contains(t, event.Type(), "taskrun")
+		assert.Contains(t, event.Type(), "finished")
+		assert.Equal(t, "test/source", event.Source())
+		assert.NotEmpty(t, event.ID())
 	})
 
 	t.Run("includes stageName in customData", func(t *testing.T) {
-		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "success", "Build")
+		event, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "success", "Build")
 		assert.NoError(t, err)
 
-		var result map[string]any
-		err = json.Unmarshal(bytes, &result)
-		assert.NoError(t, err)
-
-		data, ok := result["data"].(map[string]any)
-		assert.True(t, ok)
+		var data map[string]any
+		assert.NoError(t, event.DataAs(&data))
 		customData, ok := data["customData"].(map[string]any)
 		assert.True(t, ok)
 		assert.Equal(t, "Build", customData["stageName"])
 	})
 
 	t.Run("no customData when stageName is empty", func(t *testing.T) {
-		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "success", "")
+		event, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "success", "")
 		assert.NoError(t, err)
 
-		var result map[string]any
-		err = json.Unmarshal(bytes, &result)
-		assert.NoError(t, err)
-
-		data, ok := result["data"].(map[string]any)
-		assert.True(t, ok)
+		var data map[string]any
+		assert.NoError(t, event.DataAs(&data))
 		_, hasCustomData := data["customData"]
 		assert.False(t, hasCustomData)
 	})
 
 	t.Run("outcome failure", func(t *testing.T) {
-		bytes, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "failure", "")
+		event, err := newTaskRunFinishedCDEvent("test/source", "myTask", "", "failure", "")
 		assert.NoError(t, err)
-		assert.NotEmpty(t, bytes)
+		assert.NotEmpty(t, event.ID())
 	})
 }
 
 func TestNewPipelineRunStartedCDEvent(t *testing.T) {
 	t.Run("creates valid CDEvent as CloudEvent", func(t *testing.T) {
-		bytes, err := newPipelineRunStartedCDEvent("test/source", "myPipeline", "https://example.com/run/1")
+		event, err := newPipelineRunStartedCDEvent("test/source", "myPipeline", "https://example.com/run/1")
 		assert.NoError(t, err)
 
-		var result map[string]any
-		err = json.Unmarshal(bytes, &result)
-		assert.NoError(t, err)
-
-		assert.Equal(t, "1.0", result["specversion"])
-		assert.Contains(t, result["type"], "pipelinerun")
-		assert.Contains(t, result["type"], "started")
-		assert.Equal(t, "test/source", result["source"])
-		assert.NotEmpty(t, result["id"])
+		assert.Equal(t, "1.0", event.SpecVersion())
+		assert.Contains(t, event.Type(), "pipelinerun")
+		assert.Contains(t, event.Type(), "started")
+		assert.Equal(t, "test/source", event.Source())
+		assert.NotEmpty(t, event.ID())
 	})
 
 	t.Run("empty pipeline URL", func(t *testing.T) {
-		bytes, err := newPipelineRunStartedCDEvent("test/source", "myPipeline", "")
+		event, err := newPipelineRunStartedCDEvent("test/source", "myPipeline", "")
 		assert.NoError(t, err)
-		assert.NotEmpty(t, bytes)
+		assert.NotEmpty(t, event.ID())
 	})
 }

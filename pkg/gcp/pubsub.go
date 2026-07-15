@@ -6,6 +6,9 @@ import (
 
 	"cloud.google.com/go/pubsub/v2"
 	"github.com/SAP/jenkins-library/pkg/log"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )
@@ -13,7 +16,10 @@ import (
 type OIDCTokenProvider func(roleID string) (string, error)
 
 type PubsubClient interface {
-	Publish(topic string, data []byte) error
+	// Publish encodes the CloudEvent into a Pub/Sub message via the CloudEvents
+	// SDK and sends it to the topic. Callers pass the event directly; no manual
+	// JSON marshaling is required.
+	Publish(topic string, event cloudevents.Event) error
 }
 
 type pubsubClient struct {
@@ -27,23 +33,23 @@ type pubsubClient struct {
 
 func NewGcpPubsubClient(tokenProvider OIDCTokenProvider, projectNumber, pool, provider, orderingKey, oidcRoleId string) PubsubClient {
 	return &pubsubClient{
-		tokenProvider,
-		projectNumber,
-		pool,
-		provider,
-		orderingKey,
-		oidcRoleId,
+		tokenProvider: tokenProvider,
+		projectNumber: projectNumber,
+		pool:          pool,
+		provider:      provider,
+		orderingKey:   orderingKey,
+		oidcRoleId:    oidcRoleId,
 	}
 }
 
-func (cl *pubsubClient) Publish(topic string, data []byte) error {
+func (cl *pubsubClient) Publish(topic string, event cloudevents.Event) error {
 	ctx := context.Background()
 	psClient, err := cl.getAuthorizedGCPClient(ctx)
 	if err != nil {
 		return fmt.Errorf("could not get authorized pubsub client token: %w", err)
 	}
 
-	return cl.publish(ctx, psClient, topic, cl.orderingKey, data)
+	return cl.publish(ctx, psClient, topic, cl.orderingKey, event)
 }
 
 func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Client, error) {
@@ -61,14 +67,22 @@ func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Cli
 	return pubsub.NewClient(ctx, cl.projectNumber, option.WithTokenSource(staticTokenSource))
 }
 
-func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, topic, orderingKey string, data []byte) error {
+func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, topic, orderingKey string, event cloudevents.Event) error {
+	msg := &pubsub.Message{
+		Attributes:  map[string]string{},
+		OrderingKey: orderingKey,
+	}
+	if err := cepubsub.WritePubSubMessage(ctx, binding.ToMessage(&event), msg); err != nil {
+		return fmt.Errorf("could not encode CloudEvent into pubsub message: %w", err)
+	}
+
 	t := psClient.Publisher(topic)
 	t.EnableMessageOrdering = true
-	publishResult := t.Publish(ctx, &pubsub.Message{Data: data, OrderingKey: orderingKey})
+	publishResult := t.Publish(ctx, msg)
 
 	// publishResult.Get() will make API call synchronous by awaiting messageId or error.
 	// By removing .Get() method call we can make publishing asynchronous, but without ability to catch errors
-	msgID, err := publishResult.Get(context.Background())
+	msgID, err := publishResult.Get(ctx)
 	if err != nil {
 		return fmt.Errorf("event publish failed: %w", err)
 	}
