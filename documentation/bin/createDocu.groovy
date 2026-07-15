@@ -520,7 +520,8 @@ class Helper {
     static isGroovyOnlyStep(File stepsDir, String stepName) {
         def stepFile = new File(stepsDir, "${stepName}.groovy")
         if (!stepFile.exists()) return false
-        return !stepFile.text.contains('piperExecuteBin')
+        def text = stepFile.text
+        return !text.contains('piperExecuteBin') && !text.contains('PiperGoUtils')
     }
 
     static resolveDocuRelevantSteps(GroovyScriptEngine gse, File stepsDir) {
