@@ -562,6 +562,13 @@ class Helper {
         }
         docuRelevantStages
     }
+
+    static isGroovyOnlyStep(File stepsDir, String stepName) {
+        def stepFile = new File(stepsDir, "${stepName}.groovy")
+        if (!stepFile.exists()) return false
+        def text = stepFile.text
+        return !text.contains('piperExecuteBin') && !text.contains('PiperGoUtils')
+    }
 }
 
 roots = [
@@ -779,7 +786,7 @@ void renderStep(stepName, stepProperties) {
     }
 
     def jenkinsBadge = Helper.isGroovyOnlyStep(stepsDir, stepName) ?
-        ' ![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)' : ''
+        ' [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)' : ''
 
     def binding = [
         docGenStepName      : stepName + jenkinsBadge,

@@ -42,7 +42,7 @@ func TestCreateStepName(t *testing.T) {
 			input: &config.StepData{
 				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"gha"}},
 			},
-			want: "# teststep [![GitHub Actions only](https://img.shields.io/badge/-GitHub+Actions+only-yellowgreen)](#)\n\nTestDescription\n",
+			want: "# teststep [![GitHub Actions only](https://img.shields.io/badge/-GitHub%20Actions%20only-yellowgreen)](#)\n\nTestDescription\n",
 		},
 	}
 	for _, testcase := range tests {

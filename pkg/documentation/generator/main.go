@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -361,10 +360,8 @@ func createPipelineStageDocumentation(stageRunConfig *config.RunConfigV1, stageT
 
 func getBadge(orchestrator string) string {
 	orchestratorOnly := piperutils.Title(strings.ToLower(orchestrator)) + " only"
-	urlPath := &url.URL{Path: orchestratorOnly}
-	orchestratorOnlyString := urlPath.String()
-
-	return fmt.Sprintf("[![%v](https://img.shields.io/badge/-%v-yellowgreen)](#)", orchestratorOnly, orchestratorOnlyString)
+	orchestratorOnlyURL := strings.ReplaceAll(orchestratorOnly, " ", "%20")
+	return fmt.Sprintf("[![%v](https://img.shields.io/badge/-%v-yellowgreen)](#)", orchestratorOnly, orchestratorOnlyURL)
 }
 
 func getStepConditionDetails(step config.Step) string {

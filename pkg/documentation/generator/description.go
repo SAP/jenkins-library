@@ -2,7 +2,6 @@ package generator
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -38,15 +37,12 @@ type CustomLibrary struct {
 	Steps       []string `yaml:"steps,omitempty" yaml:"steps,omitempty"`
 }
 
-// orchestratorLabels maps known orchestrator keys to their display labels.
 var orchestratorLabels = map[string]string{
 	"jenkins": "Jenkins",
 	"gha":     "GitHub Actions",
 	"azure":   "Azure DevOps",
 }
 
-// orchestratorLabel returns the display label for a given orchestrator key,
-// falling back to title-casing the raw value if unknown.
 func orchestratorLabel(orchestrator string) string {
 	if label, ok := orchestratorLabels[strings.ToLower(orchestrator)]; ok {
 		return label
@@ -54,15 +50,14 @@ func orchestratorLabel(orchestrator string) string {
 	return piperutils.Title(strings.ToLower(orchestrator))
 }
 
-// Replaces the StepName placeholder with the content from the yaml.
-// A badge is only rendered when exactly one orchestrator is listed, indicating
-// the step is restricted to that platform. Multiple entries mean no restriction.
+// Replaces the StepName placeholder with the content from the yaml
 func createStepName(stepData *config.StepData) string {
 	badge := ""
 	if len(stepData.Metadata.Orchestrators) == 1 {
 		label := orchestratorLabel(stepData.Metadata.Orchestrators[0])
-		urlPath := &url.URL{Path: label + " only"}
-		badge = fmt.Sprintf(" [![%v only](https://img.shields.io/badge/-%v-yellowgreen)](#)", label, urlPath.String())
+		badgeText := label + " only"
+		badgeURL := strings.ReplaceAll(badgeText, " ", "%20")
+		badge = fmt.Sprintf(" [![%s](https://img.shields.io/badge/-%s-yellowgreen)](#)", badgeText, badgeURL)
 	}
 	return "# " + stepData.Metadata.Name + badge + "\n\n" + stepData.Metadata.Description + "\n"
 }
