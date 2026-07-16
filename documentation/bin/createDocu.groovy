@@ -562,13 +562,6 @@ class Helper {
         }
         docuRelevantStages
     }
-
-    static isGroovyOnlyStep(File stepsDir, String stepName) {
-        def stepFile = new File(stepsDir, "${stepName}.groovy")
-        if (!stepFile.exists()) return false
-        def text = stepFile.text
-        return !text.contains('piperExecuteBin') && !text.contains('PiperGoUtils')
-    }
 }
 
 roots = [
