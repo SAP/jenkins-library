@@ -5,13 +5,49 @@ package docker
 
 import (
 	"fmt"
-	"path/filepath"
+	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
+
+	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/google/go-containerregistry/pkg/v1/random"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/stretchr/testify/assert"
 )
+
+// TestDownloadImageLegacyManyLayers guards against the pull deadlock introduced with
+// go-containerregistry v0.21.6: remote blob readers hold one of the pull-limiter
+// tokens (default 4) until closed, while the legacy tarball writer keeps all layer
+// readers open until the whole image is written. Saving an image with more than 4
+// layers in legacy format then blocks forever.
+func TestDownloadImageLegacyManyLayers(t *testing.T) {
+	t.Parallel()
+
+	regSrv := httptest.NewServer(registry.New())
+	defer regSrv.Close()
+	imageRef := strings.TrimPrefix(regSrv.URL, "http://") + "/path/to/image:latest"
+
+	img, err := random.Image(64, 6)
+	assert.NoError(t, err)
+	assert.NoError(t, crane.Push(img, imageRef))
+
+	client := Client{}
+	client.SetOptions(ClientOptions{ImageFormat: "legacy"})
+
+	targetFile := "test-legacy-download.tar"
+	defer os.Remove(targetFile)
+
+	_, err = client.DownloadImage(imageRef, targetFile)
+
+	assert.NoError(t, err)
+	assert.FileExists(t, targetFile)
+}
 
 func TestCreateDockerConfigJSON(t *testing.T) {
 	t.Parallel()
