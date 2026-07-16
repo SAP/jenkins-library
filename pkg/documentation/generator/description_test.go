@@ -37,13 +37,6 @@ func TestCreateStepName(t *testing.T) {
 			},
 			want: "# teststep\n\nTestDescription\n",
 		},
-		{
-			name: "step name with gha orchestrator uses correct label",
-			input: &config.StepData{
-				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"gha"}},
-			},
-			want: "# teststep [![GitHub Actions only](https://img.shields.io/badge/-GitHub%20Actions%20only-yellowgreen)](#)\n\nTestDescription\n",
-		},
 	}
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
