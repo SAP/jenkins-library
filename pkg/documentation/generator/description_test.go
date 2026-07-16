@@ -24,11 +24,25 @@ func TestCreateStepName(t *testing.T) {
 			want: "# teststep\n\nTestDescription\n",
 		},
 		{
-			name: "step name with single orchestrator badge",
+			name: "step name with jenkins orchestrator uses yellowgreen badge",
 			input: &config.StepData{
 				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"jenkins"}},
 			},
 			want: "# teststep [![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)\n\nTestDescription\n",
+		},
+		{
+			name: "step name with gha orchestrator uses blue badge",
+			input: &config.StepData{
+				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"gha"}},
+			},
+			want: "# teststep [![GitHub Actions only](https://img.shields.io/badge/-GitHub%20Actions%20only-blue)](#)\n\nTestDescription\n",
+		},
+		{
+			name: "step name with azure orchestrator uses light blue badge",
+			input: &config.StepData{
+				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription", Orchestrators: []string{"azure"}},
+			},
+			want: "# teststep [![Azure DevOps only](https://img.shields.io/badge/-Azure%20DevOps%20only-9cf)](#)\n\nTestDescription\n",
 		},
 		{
 			name: "step name with multiple orchestrators renders no badge",

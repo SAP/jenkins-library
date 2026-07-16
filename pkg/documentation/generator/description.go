@@ -37,27 +37,33 @@ type CustomLibrary struct {
 	Steps       []string `yaml:"steps,omitempty" yaml:"steps,omitempty"`
 }
 
-var orchestratorLabels = map[string]string{
-	"jenkins": "Jenkins",
-	"gha":     "GitHub Actions",
-	"azure":   "Azure DevOps",
+type orchestratorInfo struct {
+	label string
+	color string
 }
 
-func orchestratorLabel(orchestrator string) string {
-	if label, ok := orchestratorLabels[strings.ToLower(orchestrator)]; ok {
-		return label
+var orchestrators = map[string]orchestratorInfo{
+	"jenkins": {label: "Jenkins", color: "yellowgreen"},
+	"gha":     {label: "GitHub Actions", color: "blue"},
+	"azure":   {label: "Azure DevOps", color: "9cf"},
+}
+
+func orchestratorBadge(orchestrator string) string {
+	info, ok := orchestrators[strings.ToLower(orchestrator)]
+	if !ok {
+		label := piperutils.Title(strings.ToLower(orchestrator))
+		info = orchestratorInfo{label: label, color: "lightgrey"}
 	}
-	return piperutils.Title(strings.ToLower(orchestrator))
+	badgeText := info.label + " only"
+	badgeURL := strings.ReplaceAll(badgeText, " ", "%20")
+	return fmt.Sprintf("[![%s](https://img.shields.io/badge/-%s-%s)](#)", badgeText, badgeURL, info.color)
 }
 
 // Replaces the StepName placeholder with the content from the yaml
 func createStepName(stepData *config.StepData) string {
 	badge := ""
 	if len(stepData.Metadata.Orchestrators) == 1 {
-		label := orchestratorLabel(stepData.Metadata.Orchestrators[0])
-		badgeText := label + " only"
-		badgeURL := strings.ReplaceAll(badgeText, " ", "%20")
-		badge = fmt.Sprintf(" [![%s](https://img.shields.io/badge/-%s-yellowgreen)](#)", badgeText, badgeURL)
+		badge = " " + orchestratorBadge(stepData.Metadata.Orchestrators[0])
 	}
 	return "# " + stepData.Metadata.Name + badge + "\n\n" + stepData.Metadata.Description + "\n"
 }
