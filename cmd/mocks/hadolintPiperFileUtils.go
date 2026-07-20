@@ -173,6 +173,64 @@ func (_c *HadolintPiperFileUtils_WriteFile_Call) RunAndReturn(run func(string, [
 	return _c
 }
 
+// Glob provides a mock function with given fields: pattern
+func (_m *HadolintPiperFileUtils) Glob(pattern string) ([]string, error) {
+	ret := _m.Called(pattern)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Glob")
+	}
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]string, error)); ok {
+		return rf(pattern)
+	}
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(pattern)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(pattern)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// HadolintPiperFileUtils_Glob_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Glob'
+type HadolintPiperFileUtils_Glob_Call struct {
+	*mock.Call
+}
+
+// Glob is a helper method to define mock.On call
+//   - pattern string
+func (_e *HadolintPiperFileUtils_Expecter) Glob(pattern interface{}) *HadolintPiperFileUtils_Glob_Call {
+	return &HadolintPiperFileUtils_Glob_Call{Call: _e.mock.On("Glob", pattern)}
+}
+
+func (_c *HadolintPiperFileUtils_Glob_Call) Run(run func(pattern string)) *HadolintPiperFileUtils_Glob_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(string))
+	})
+	return _c
+}
+
+func (_c *HadolintPiperFileUtils_Glob_Call) Return(_a0 []string, _a1 error) *HadolintPiperFileUtils_Glob_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *HadolintPiperFileUtils_Glob_Call) RunAndReturn(run func(string) ([]string, error)) *HadolintPiperFileUtils_Glob_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewHadolintPiperFileUtils creates a new instance of HadolintPiperFileUtils. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewHadolintPiperFileUtils(t interface {

@@ -417,6 +417,12 @@ func cloudFoundryDeployMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:    "dockerVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "docker-$(org)-$(space)",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -431,6 +437,12 @@ func cloudFoundryDeployMetadata() config.StepData {
 								Name:  "dockerCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:    "dockerVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "docker-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

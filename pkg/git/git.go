@@ -203,14 +203,19 @@ func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
 	if err := unsetWorktreeConfig(path); err != nil {
 		return nil, fmt.Errorf("unsetting extensions.worktreeConfig: %w", err)
 	}
-	return git.PlainOpen(path)
+	return git.PlainOpenWithOptions(path, &git.PlainOpenOptions{DetectDotGit: true})
 }
 
 // Workaround for go-git v1.17.0+ rejecting the 'worktreeconfig' extension
 // Equivalent to running 'git config --unset extensions.worktreeConfig'
 // This workaround is from this issue: https://github.com/go-git/go-git/pull/1982
+// Jira reference: https://sap.atlassian.net/browse/HSPIPER-1191
 func unsetWorktreeConfig(repoPath string) error {
-	configPath := filepath.Join(repoPath, ".git", "config")
+	dotGitDir, found := findDotGitDir(repoPath)
+	if !found {
+		return fmt.Errorf("not a git repository")
+	}
+	configPath := filepath.Join(dotGitDir, "config")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -235,4 +240,21 @@ func unsetWorktreeConfig(repoPath string) error {
 		return fmt.Errorf("writing git config: %w", err)
 	}
 	return os.WriteFile(configPath, buf.Bytes(), 0644)
+}
+
+// mirrors DetectDotGit behavior; used only by unsetWorktreeConfig workaround
+func findDotGitDir(startPath string) (string, bool) {
+	p := startPath
+	for {
+		candidate := filepath.Join(p, ".git")
+		info, err := os.Stat(candidate)
+		if err == nil && info.IsDir() {
+			return candidate, true
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			return "", false
+		}
+		p = parent
+	}
 }

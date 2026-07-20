@@ -58,14 +58,14 @@ spec:
         aliases:
           - name: dockerfile
         type: string
-        description: Dockerfile to be used for the assessment.
+        description: "Path or glob pattern of Dockerfile(s) to be used for the assessment. Supports double-star glob patterns (e.g. `**/Dockerfile`, `images/**/Dockerfile`). When a pattern is provided, all matching files are linted in a single hadolint invocation."
         mandatory: false
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ./Dockerfile
+        default: "**/Dockerfile"
       - name: configurationFile
         type: string
         description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.

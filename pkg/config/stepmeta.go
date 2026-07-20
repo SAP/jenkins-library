@@ -19,7 +19,7 @@ const SupportedVolumeName = "volume"
 // StepData defines the metadata for a step, like step descriptions, parameters, ...
 type StepData struct {
 	Metadata StepMetadata `json:"metadata" yaml:"metadata"`
-	Spec     StepSpec     `json:"spec"`
+	Spec     StepSpec     `json:"spec" yaml:"spec"`
 }
 
 // StepMetadata defines the metadata for a step, like step descriptions, parameters, ...
@@ -28,6 +28,7 @@ type StepMetadata struct {
 	Aliases         []Alias     `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	Description     string      `json:"description" yaml:"description"`
 	LongDescription string      `json:"longDescription,omitempty" yaml:"longDescription,omitempty"`
+	Orchestrators   []string    `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`
 	Errors          []StepError `json:"errors,omitempty" yaml:"errors,omitempty"`
 }
 
