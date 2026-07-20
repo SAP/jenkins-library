@@ -13,9 +13,6 @@ SAP-specific extensions live in the InnerSource `piper-library`, which imports t
 | Project | Relationship |
 |---|---|
 | `piper-library` | Consumer/extender — imports jenkins-library as base; adds SAP-specific steps on top. |
-| `piper-pipeline-github` | Consumer — GitHub Actions GPP downloads and runs the `piper` binary produced here. |
-| `piper-pipeline-azure` / `piper-pipeline-jenkins` | Consumers — legacy GPP templates for Azure Pipelines and Jenkins. |
-| `engine` | Future replacement — binary-based step runner; jenkins-library is the catalog-driven baseline. |
 
 ## Tech stack
 
@@ -63,7 +60,6 @@ Workflow for any parameter change:
 - Binary version embedded at build time via ldflags (`GitCommit`, `GitTag`)
 - SemVer tags: `v1.510.0` format
 - Published as `piper` binary on GitHub releases
-- Mirrored to `github.tools.sap` and `github.wdf.sap.corp`
 - Renovate auto-updates Go deps and Docker images
 
 ## Active constraints
