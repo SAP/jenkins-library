@@ -107,24 +107,61 @@ class InfluxDataTest extends BasePiperTest {
 
     @Test
     void testReadFromDisk() {
-        // init
-        helper.registerAllowedMethod("findFiles", [Map.class], { map ->
-            if(map.glob == '.pipeline/influx/**')
-                return [
-                    new File(".pipeline/influx/step_data/fields/sonar"),
-                    new File(".pipeline/influx/step_data/fields/protecode"),
-                    new File("cst/test2.yml"),
-                ].toArray()
-            return [].toArray()
+        // init - mock the sh call that reads all influx files via python
+        helper.registerAllowedMethod("sh", [Map.class], { map ->
+            if (map.returnStdout && map.script?.contains('python3')) {
+                return '{"step_data": {"fields": {"sonar": true, "protecode": false}}}'
+            }
+            return ''
         })
-        readFileRule.files.putAll([
-            '.pipeline/influx/step_data/fields/sonar': 'true',
-            '.pipeline/influx/step_data/fields/protecode': 'false',
-        ])
+        helper.registerAllowedMethod("readJSON", [Map.class], { map ->
+            if (map.text) {
+                return new groovy.json.JsonSlurper().parseText(map.text)
+            }
+            return [:]
+        })
 
         // tests
         InfluxData.readFromDisk(nullScript)
         // asserts
         assertThat(InfluxData.instance.fields.step_data, is([sonar: true, protecode: false]))
+    }
+
+    @Test
+    void testReadFromDiskEmpty() {
+        // init - mock empty influx directory
+        helper.registerAllowedMethod("sh", [Map.class], { map ->
+            if (map.returnStdout && map.script?.contains('python3')) {
+                return '{}'
+            }
+            return ''
+        })
+
+        // tests
+        InfluxData.readFromDisk(nullScript)
+        // asserts
+        assertThat(InfluxData.instance.fields.step_data, is([:]))
+    }
+
+    @Test
+    void testReadFromDiskWithJsonFields() {
+        // init - mock influx data with JSON-typed fields
+        helper.registerAllowedMethod("sh", [Map.class], { map ->
+            if (map.returnStdout && map.script?.contains('python3')) {
+                return '{"checkmarxOne_data": {"fields": {"critical_issues": 5, "scan_id": "abc-123"}}}'
+            }
+            return ''
+        })
+        helper.registerAllowedMethod("readJSON", [Map.class], { map ->
+            if (map.text) {
+                return new groovy.json.JsonSlurper().parseText(map.text)
+            }
+            return [:]
+        })
+
+        // tests
+        InfluxData.readFromDisk(nullScript)
+        // asserts
+        assertThat(InfluxData.instance.fields.checkmarxOne_data, is([critical_issues: 5, scan_id: 'abc-123']))
     }
 }
