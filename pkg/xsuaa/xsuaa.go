@@ -43,7 +43,7 @@ func (x *XSUAA) SetAuthHeaderIfNotPresent(header *http.Header) error {
 
 	secondsOfValidityLeft := x.CachedAuthToken.ExpiresAt.Sub(time.Now()).Seconds()
 	if len(x.CachedAuthToken.AccessToken) == 0 ||
-		(secondsOfValidityLeft > 0 && secondsOfValidityLeft < oneHourInSeconds) {
+		secondsOfValidityLeft < oneHourInSeconds {
 		token, err := x.GetBearerToken()
 		if err != nil {
 			return err
@@ -95,7 +95,7 @@ func (x *XSUAA) GetBearerToken() (authToken AuthToken, err error) {
 	}
 
 	parsingErr := json.Unmarshal(bodyText, &authToken)
-	if err != nil {
+	if parsingErr != nil {
 		err = fmt.Errorf("HTTP response body could not be parsed as JSON: %s: %w", bodyText, parsingErr)
 		return
 	}
