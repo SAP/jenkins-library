@@ -65,7 +65,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ./Dockerfile
+        default: "**/Dockerfile"
       - name: configurationFile
         type: string
         description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.

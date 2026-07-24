@@ -2,8 +2,10 @@ package generator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 const configRecommendation = "We recommend to define values of [step parameters](#parameters) via [.pipeline/config.yml file](../configuration.md).<br />In this case, calling the step is essentially reduced to defining the step name.<br />Calling the step can be done either in an orchestrator specific way (e.g. via a Jenkins library step) or on the command line."
@@ -35,9 +37,35 @@ type CustomLibrary struct {
 	Steps       []string `yaml:"steps,omitempty" yaml:"steps,omitempty"`
 }
 
+type orchestratorInfo struct {
+	label string
+	color string
+}
+
+var orchestrators = map[string]orchestratorInfo{
+	"jenkins": {label: "Jenkins", color: "yellowgreen"},
+	"gha":     {label: "GitHub Actions", color: "blue"},
+	"azure":   {label: "Azure DevOps", color: "9cf"},
+}
+
+func orchestratorBadge(orchestrator string) string {
+	info, ok := orchestrators[strings.ToLower(orchestrator)]
+	if !ok {
+		label := piperutils.Title(strings.ToLower(orchestrator))
+		info = orchestratorInfo{label: label, color: "lightgrey"}
+	}
+	badgeText := info.label + " only"
+	badgeURL := strings.ReplaceAll(badgeText, " ", "%20")
+	return fmt.Sprintf("[![%s](https://img.shields.io/badge/-%s-%s)](#)", badgeText, badgeURL, info.color)
+}
+
 // Replaces the StepName placeholder with the content from the yaml
 func createStepName(stepData *config.StepData) string {
-	return "# " + stepData.Metadata.Name + "\n\n" + stepData.Metadata.Description + "\n"
+	badge := ""
+	if len(stepData.Metadata.Orchestrators) == 1 {
+		badge = " " + orchestratorBadge(stepData.Metadata.Orchestrators[0])
+	}
+	return "# " + stepData.Metadata.Name + badge + "\n\n" + stepData.Metadata.Description + "\n"
 }
 
 // Replaces the Description placeholder with content from the yaml
