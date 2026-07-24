@@ -38,7 +38,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/vault/api v1.20.0
 	github.com/hashicorp/vault/api/auth/approle v0.8.0
-	github.com/iancoleman/orderedmap v0.2.0
+	github.com/iancoleman/orderedmap v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.10
@@ -47,7 +47,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/buildkit v0.13.1
 	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31
-	github.com/package-url/packageurl-go v0.1.1
+	github.com/package-url/packageurl-go v0.1.6
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
@@ -64,7 +64,7 @@ require (
 	google.golang.org/api v0.274.0
 	gopkg.in/ini.v1 v1.67.3
 	helm.sh/helm/v3 v3.20.2
-	mvdan.cc/xurls/v2 v2.4.0
+	mvdan.cc/xurls/v2 v2.6.0
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730
 )
 
