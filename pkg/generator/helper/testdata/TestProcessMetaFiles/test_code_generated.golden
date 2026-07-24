@@ -15,5 +15,6 @@ func TestTestStepCommand(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "testStep", testCmd.Use, "command name incorrect")
+	assert.Contains(t, testCmd.Aliases, "testStepOldName", "cobra alias for backward compatibility missing")
 
 }

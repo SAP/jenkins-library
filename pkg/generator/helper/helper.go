@@ -27,6 +27,7 @@ type stepInfo struct {
 	Long              string
 	StepParameters    []config.StepParameters
 	StepAliases       []config.Alias
+	StepCLIAliases    []string
 	OutputResources   []OutputResource
 	Short             string
 	StepFunc          string
@@ -69,6 +70,11 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, {{ .StepName | quote }}, testCmd.Use, "command name incorrect")
+	{{- if .StepCLIAliases }}
+	{{- range .StepCLIAliases }}
+	assert.Contains(t, testCmd.Aliases, {{ . | quote }}, "cobra alias for backward compatibility missing")
+	{{- end }}
+	{{- end }}
 
 }
 `
@@ -218,6 +224,7 @@ import "github.com/SAP/jenkins-library/pkg/config"
 func GetAllStepMetadata() map[string]config.StepData {
 	return map[string]config.StepData{
 		{{range $stepName := .Steps }} {{ $stepName | quote }}: {{$stepName}}Metadata(),
+		{{end}}{{range $alias := .Aliases }} {{ $alias.Alias | quote }}: {{$alias.Step}}Metadata(),
 		{{end}}
 	}
 }
@@ -225,7 +232,14 @@ func GetAllStepMetadata() map[string]config.StepData {
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
-	allSteps := struct{ Steps []string }{}
+	type stepAlias struct {
+		Alias string
+		Step  string
+	}
+	allSteps := struct {
+		Steps   []string
+		Aliases []stepAlias
+	}{}
 	for key := range metadataFiles {
 		var stepData config.StepData
 
@@ -249,6 +263,9 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 			log.Fatalf("Expected file %s to have name %s.yaml (<stepName>.yaml)\n", configFilePath, filepath.Join(filepath.Dir(configFilePath), stepName))
 		}
 		allSteps.Steps = append(allSteps.Steps, stepName)
+		for _, alias := range stepData.Metadata.CLIAliases {
+			allSteps.Aliases = append(allSteps.Aliases, stepAlias{Alias: alias, Step: stepName})
+		}
 
 		for _, parameter := range stepData.Spec.Inputs.Parameters {
 			for _, mandatoryIfCase := range parameter.MandatoryIf {
@@ -396,6 +413,7 @@ func getStepInfo(stepData *config.StepData, exportPrefix string) (stepInfo, erro
 			Long:              stepData.Metadata.LongDescription,
 			StepParameters:    stepData.Spec.Inputs.Parameters,
 			StepAliases:       stepData.Metadata.Aliases,
+			StepCLIAliases:    stepData.Metadata.CLIAliases,
 			FlagsFunc:         fmt.Sprintf("add%vFlags", piperutils.Title(stepData.Metadata.Name)),
 			OutputResources:   oRes,
 			HasReportsOutput:  hasReports,
