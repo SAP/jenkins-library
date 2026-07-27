@@ -28,6 +28,7 @@ type testStepOptions struct {
 	Param1 string `json:"param1,omitempty" validate:"possible-values=value1 value2 value3"`
 	Param2 string `json:"param2,omitempty" validate:"required_if=Param1 value1"`
 	Param3 string `json:"param3,omitempty" validate:"possible-values=value1 value2 value3,required_if=Param1 value1 Param2 value2"`
+	Param4 string `json:"param4,omitempty" validate:"required_with=Param1"`
 }
 
 type testStepReports struct {
@@ -282,6 +283,7 @@ func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 	cmd.Flags().StringVar(&stepConfig.Param1, "param1", os.Getenv("PIPER_param1"), "param1 description")
 	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param2 description")
 	cmd.Flags().StringVar(&stepConfig.Param3, "param3", os.Getenv("PIPER_param3"), "param3 description")
+	cmd.Flags().StringVar(&stepConfig.Param4, "param4", os.Getenv("PIPER_param4"), "param4 description")
 
 	cmd.MarkFlagRequired("param0")
 	cmd.Flags().MarkDeprecated("param1", "use param3 instead")
@@ -337,6 +339,15 @@ func testStepMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_param3"),
+					},
+					{
+						Name:        "param4",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_param4"),
 					},
 				},
 			},
