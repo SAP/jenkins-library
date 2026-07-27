@@ -563,11 +563,34 @@ func structTag(param config.StepParameters) string {
 		validators = append(validators, "possible-values="+strings.Join(values, " "))
 	}
 	if len(param.MandatoryIf) > 0 {
-		var conditions []string
+		// Fields appearing more than once in mandatoryIf would produce duplicate params in a
+		// single required_if tag, which panics in go-playground/validator v10.30+.
+		// Use required_with for such fields (semantically equivalent when possible-values already
+		// constrains the field to a finite set of non-empty values).
+		fieldCount := make(map[string]int)
 		for _, m := range param.MandatoryIf {
-			conditions = append(conditions, piperutils.Title(m.Name)+" "+m.Value)
+			fieldCount[piperutils.Title(m.Name)]++
 		}
-		validators = append(validators, "required_if="+strings.Join(conditions, " "))
+		var requiredIfConditions []string
+		seenRequiredWith := make(map[string]bool)
+		var requiredWithFields []string
+		for _, m := range param.MandatoryIf {
+			titleName := piperutils.Title(m.Name)
+			if fieldCount[titleName] > 1 {
+				if !seenRequiredWith[titleName] {
+					requiredWithFields = append(requiredWithFields, titleName)
+					seenRequiredWith[titleName] = true
+				}
+			} else {
+				requiredIfConditions = append(requiredIfConditions, titleName+" "+m.Value)
+			}
+		}
+		if len(requiredIfConditions) > 0 {
+			validators = append(validators, "required_if="+strings.Join(requiredIfConditions, " "))
+		}
+		if len(requiredWithFields) > 0 {
+			validators = append(validators, "required_with="+strings.Join(requiredWithFields, " "))
+		}
 	}
 	if len(validators) > 0 {
 		tag += fmt.Sprintf(` validate:"%s"`, strings.Join(validators, ","))
