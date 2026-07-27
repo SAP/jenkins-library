@@ -131,3 +131,49 @@ func TestValidateStruct(t *testing.T) {
 		assert.Contains(t, err.Error(), "Custom error message for Field5")
 	})
 }
+
+type requiredIfOneOfStruct struct {
+	ScanContainerDistro string `json:"scanContainerDistro,omitempty" validate:"possible-values=ubuntu centos alpine"`
+	RegistryURL         string `json:"registryUrl,omitempty" validate:"required_if_oneof=ScanContainerDistro ubuntu centos alpine"`
+}
+
+func TestRequiredIfOneOf(t *testing.T) {
+	t.Run("success case - condition field empty", func(t *testing.T) {
+		validation, err := New()
+		assert.NoError(t, err)
+		err = validation.ValidateStruct(requiredIfOneOfStruct{})
+		assert.NoError(t, err)
+	})
+
+	t.Run("success case - condition field matches and value provided", func(t *testing.T) {
+		validation, err := New()
+		assert.NoError(t, err)
+		for _, distro := range []string{"ubuntu", "centos", "alpine"} {
+			err = validation.ValidateStruct(requiredIfOneOfStruct{ScanContainerDistro: distro, RegistryURL: "https://my.registry.com"})
+			assert.NoError(t, err, "distro: %s", distro)
+		}
+	})
+
+	t.Run("error case - condition field matches but value missing", func(t *testing.T) {
+		validation, err := New()
+		assert.NoError(t, err)
+		for _, distro := range []string{"ubuntu", "centos", "alpine"} {
+			err = validation.ValidateStruct(requiredIfOneOfStruct{ScanContainerDistro: distro})
+			assert.Error(t, err, "distro: %s", distro)
+			assert.Contains(t, err.Error(), "'required_if_oneof' tag")
+		}
+	})
+
+	t.Run("success case - condition field does not match any listed value", func(t *testing.T) {
+		validation, err := New()
+		assert.NoError(t, err)
+		// simulate an unrelated value for the condition field, bypassing the
+		// possible-values check by validating a struct without it
+		type noPossibleValuesStruct struct {
+			ScanContainerDistro string
+			RegistryURL         string `validate:"required_if_oneof=ScanContainerDistro ubuntu centos alpine"`
+		}
+		err = validation.ValidateStruct(noPossibleValuesStruct{ScanContainerDistro: "windows"})
+		assert.NoError(t, err)
+	})
+}

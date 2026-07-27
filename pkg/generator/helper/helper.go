@@ -563,11 +563,38 @@ func structTag(param config.StepParameters) string {
 		validators = append(validators, "possible-values="+strings.Join(values, " "))
 	}
 	if len(param.MandatoryIf) > 0 {
-		var conditions []string
+		// Group conditions by the referenced field name. If a field is referenced only
+		// once it is combined into a single AND-based "required_if" condition (the
+		// parameter is mandatory only if all referenced fields have the given value).
+		// If a field is referenced more than once (i.e. the parameter is mandatory if
+		// the referenced field has any one of several values) a "required_if_oneof"
+		// condition is generated instead. This custom validator is needed because the
+		// built-in "required_if" validator of go-playground/validator does not support
+		// referencing the same field more than once - since v10.15.0 it panics with
+		// "Duplicate param <field> for required_if <field>" instead of silently
+		// (and incorrectly) ANDing the conditions together.
+		var fieldOrder []string
+		valuesByField := make(map[string][]string)
 		for _, m := range param.MandatoryIf {
-			conditions = append(conditions, piperutils.Title(m.Name)+" "+m.Value)
+			name := GolangNameTitle(m.Name)
+			if _, ok := valuesByField[name]; !ok {
+				fieldOrder = append(fieldOrder, name)
+			}
+			valuesByField[name] = append(valuesByField[name], m.Value)
 		}
-		validators = append(validators, "required_if="+strings.Join(conditions, " "))
+
+		var andConditions []string
+		for _, name := range fieldOrder {
+			values := valuesByField[name]
+			if len(values) == 1 {
+				andConditions = append(andConditions, name+" "+values[0])
+				continue
+			}
+			validators = append(validators, "required_if_oneof="+name+" "+strings.Join(values, " "))
+		}
+		if len(andConditions) > 0 {
+			validators = append(validators, "required_if="+strings.Join(andConditions, " "))
+		}
 	}
 	if len(validators) > 0 {
 		tag += fmt.Sprintf(` validate:"%s"`, strings.Join(validators, ","))

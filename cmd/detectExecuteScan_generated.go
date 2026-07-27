@@ -72,10 +72,10 @@ type detectExecuteScanOptions struct {
 	PrivateModules                  string   `json:"privateModules,omitempty"`
 	PrivateModulesGitToken          string   `json:"privateModulesGitToken,omitempty"`
 	ScanContainerDistro             string   `json:"scanContainerDistro,omitempty" validate:"possible-values=ubuntu centos alpine"`
-	ImageNameTags                   []string `json:"imageNameTags,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
-	RegistryURL                     string   `json:"registryUrl,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
-	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
-	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if=ScanContainerDistro ubuntu ScanContainerDistro centos ScanContainerDistro alpine"`
+	ImageNameTags                   []string `json:"imageNameTags,omitempty" validate:"required_if_oneof=ScanContainerDistro ubuntu centos alpine"`
+	RegistryURL                     string   `json:"registryUrl,omitempty" validate:"required_if_oneof=ScanContainerDistro ubuntu centos alpine"`
+	RepositoryUsername              string   `json:"repositoryUsername,omitempty" validate:"required_if_oneof=ScanContainerDistro ubuntu centos alpine"`
+	RepositoryPassword              string   `json:"repositoryPassword,omitempty" validate:"required_if_oneof=ScanContainerDistro ubuntu centos alpine"`
 	UseDetect9                      bool     `json:"useDetect9,omitempty"`
 	UseDetect10                     bool     `json:"useDetect10,omitempty"`
 	ContainerScan                   bool     `json:"containerScan,omitempty"`

@@ -29,6 +29,7 @@ type validationOption func(*validation) error
 func New(opts ...validationOption) (*validation, error) {
 	validator := valid.New()
 	validator.RegisterValidation("possible-values", isPossibleValues)
+	validator.RegisterValidation("required_if_oneof", isRequiredIfOneOf)
 	enTranslator := en.New()
 	universalTranslator := ut.New(enTranslator, enTranslator)
 	translator, found := universalTranslator.GetTranslator("en")
@@ -81,6 +82,23 @@ func WithPredefinedErrorMessages() validationOption {
 				params := []string{fe.Field()}
 				params = append(params, strings.Split(fe.Param(), " ")...)
 				t, _ := ut.T("required_if", params...)
+				return t
+			},
+		}, {
+			Tag: "required_if_oneof",
+			RegisterFn: func(ut ut.Translator) error {
+				return ut.Add("required_if_oneof", "The {0} is required since the {1} is one of {2}", true)
+			},
+			TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
+				params := strings.Fields(fe.Param())
+				var conditionField, conditionValues string
+				if len(params) > 0 {
+					conditionField = params[0]
+				}
+				if len(params) > 1 {
+					conditionValues = strings.Join(params[1:], ", ")
+				}
+				t, _ := ut.T("required_if_oneof", fe.Field(), conditionField, conditionValues)
 				return t
 			},
 		},
@@ -156,6 +174,51 @@ func isPossibleValues(fl valid.FieldLevel) bool {
 		return true
 	default:
 		panic(fmt.Sprintf("Bad field type %T", field.Interface()))
+	}
+}
+
+// isRequiredIfOneOf implements a "required_if_oneof=FieldName val1 val2 ..." validator.
+// The annotated field is required if the referenced field (identified by its Go struct
+// field name) has one of the given values.
+//
+// This is needed in addition to the built-in "required_if" validator because that one
+// only supports combining multiple field/value pairs with AND semantics and, since
+// go-playground/validator v10.15.0, panics with "Duplicate param ... for required_if"
+// if the same field is referenced more than once (which would be needed to express an
+// OR condition, e.g. "mandatory if field is A or B or C").
+func isRequiredIfOneOf(fl valid.FieldLevel) bool {
+	params := strings.Fields(fl.Param())
+	if len(params) < 2 {
+		return true
+	}
+
+	conditionFieldName := params[0]
+	allowedValues := params[1:]
+
+	conditionField, kind, _, found := fl.GetStructFieldOKAdvanced2(fl.Parent(), conditionFieldName)
+	if !found {
+		return true
+	}
+
+	if kind != reflect.String {
+		// only string typed condition fields are supported
+		return true
+	}
+
+	if !contains(allowedValues, conditionField.String()) {
+		return true
+	}
+
+	return hasFieldValue(fl.Field())
+}
+
+// hasFieldValue reports whether field holds a non-zero/non-nil value.
+func hasFieldValue(field reflect.Value) bool {
+	switch field.Kind() {
+	case reflect.Slice, reflect.Map, reflect.Ptr, reflect.Interface, reflect.Chan, reflect.Func:
+		return !field.IsNil()
+	default:
+		return field.IsValid() && !field.IsZero()
 	}
 }
 
