@@ -252,8 +252,8 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		for _, parameter := range stepData.Spec.Inputs.Parameters {
 			for _, mandatoryIfCase := range parameter.MandatoryIf {
-				if mandatoryIfCase.Name == "" || mandatoryIfCase.Value == "" {
-					return errors.New("invalid mandatoryIf option")
+				if mandatoryIfCase.Name == "" || (mandatoryIfCase.Value == "" && !mandatoryIfCase.NotEmpty) {
+					return errors.New("invalid mandatoryIf option: 'name' is required; 'value' is required unless 'notEmpty: true' is set")
 				}
 			}
 		}
@@ -563,24 +563,12 @@ func structTag(param config.StepParameters) string {
 		validators = append(validators, "possible-values="+strings.Join(values, " "))
 	}
 	if len(param.MandatoryIf) > 0 {
-		// Fields appearing more than once in mandatoryIf would produce duplicate params in a
-		// single required_if tag, which panics in go-playground/validator v10.30+.
-		// Use required_with for such fields (semantically equivalent when possible-values already
-		// constrains the field to a finite set of non-empty values).
-		fieldCount := make(map[string]int)
-		for _, m := range param.MandatoryIf {
-			fieldCount[piperutils.Title(m.Name)]++
-		}
 		var requiredIfConditions []string
-		seenRequiredWith := make(map[string]bool)
 		var requiredWithFields []string
 		for _, m := range param.MandatoryIf {
 			titleName := piperutils.Title(m.Name)
-			if fieldCount[titleName] > 1 {
-				if !seenRequiredWith[titleName] {
-					requiredWithFields = append(requiredWithFields, titleName)
-					seenRequiredWith[titleName] = true
-				}
+			if m.NotEmpty {
+				requiredWithFields = append(requiredWithFields, titleName)
 			} else {
 				requiredIfConditions = append(requiredIfConditions, titleName+" "+m.Value)
 			}
