@@ -568,16 +568,6 @@ func structTag(param config.StepParameters) string {
 		for _, m := range param.MandatoryIf {
 			titleName := piperutils.Title(m.Name)
 			if m.NotEmpty {
-				// required_with fires when the referenced field is non-empty (any value).
-				// Use notEmpty: true when the field's possible-values already restrict it
-				// to a known set, making an exact-value check redundant.
-				//
-				// NOTE: Do NOT use plain required_if with the same field name repeated for
-				// multiple values (e.g. required_if=Field v1 Field v2). Validator v10.30+
-				// panics on duplicate field names within a single required_if tag.
-				// If you need OR semantics across specific values without notEmpty, emit
-				// one required_if tag per value (they are comma-separated in the struct tag
-				// and validator evaluates each independently).
 				requiredWithFields = append(requiredWithFields, titleName)
 			} else {
 				requiredIfConditions = append(requiredIfConditions, titleName+" "+m.Value)
