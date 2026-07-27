@@ -68,121 +68,138 @@ func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 	}{
 		{
 			name: "all steps in stage are inactive",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:                "step1",
-					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
-				}, {
-					Name: "step2",
-				}, {
-					Name:                "step3",
-					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "step1",
+						NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+					}, {
+						Name: "step2",
+					}, {
+						Name:                "step3",
+						NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
 					"step1": false,
 					"step2": false,
 					"step3": false,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": false},
 		},
 		{
 			name: "simple stepActive conditions",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:       "step3",
-					Conditions: []StepCondition{{ConfigKey: "testKey"}},
-				}, {
-					Name:       "step4",
-					Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:       "step3",
+						Conditions: []StepCondition{{ConfigKey: "testKey"}},
+					}, {
+						Name:       "step4",
+						Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
 					"step3": true,
 					"step4": false,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 		{
 			name: "explicit active/deactivate over stepActiveCondition",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:       "step1",
-					Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
-				}, {
-					Name:       "step2",
-					Conditions: []StepCondition{{ConfigKey: "testKey"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:       "step1",
+						Conditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}, {
+						Name:       "step2",
+						Conditions: []StepCondition{{ConfigKey: "testKey"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
 					"step1": true,
 					"step2": false,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 		{
 			name: "stepNotActiveCondition over stepActiveCondition",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:                "step3",
-					Conditions:          []StepCondition{{ConfigKey: "testKey"}},
-					NotActiveConditions: []StepCondition{{ConfigKey: "testKey2"}},
-				}, {
-					// false notActive condition
-					Name:                "step4",
-					Conditions:          []StepCondition{{ConfigKey: "testKey"}},
-					NotActiveConditions: []StepCondition{{ConfigKey: "notExistentKey"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "step3",
+						Conditions:          []StepCondition{{ConfigKey: "testKey"}},
+						NotActiveConditions: []StepCondition{{ConfigKey: "testKey2"}},
+					}, {
+						// false notActive condition
+						Name:                "step4",
+						Conditions:          []StepCondition{{ConfigKey: "testKey"}},
+						NotActiveConditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
 					"step3": false,
 					"step4": true,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 		{
 			name: "stepNotActiveCondition over explicitly activated step",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:                "step1",
-					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
-				}, {
-					Name:                "step5",
-					NotActiveConditions: []StepCondition{{ConfigKey: "notExistentKey"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "step1",
+						NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+					}, {
+						Name:                "step5",
+						NotActiveConditions: []StepCondition{{ConfigKey: "notExistentKey"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
 					"step1": false,
 					"step5": true,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 		{
 			name: "deactivate if only active step in stage",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:                "step1",
-					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
-				}, {
-					Name: "step2",
-				}, {
-					Name:                "step3",
-					NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
-				}, {
-					Name:       "step4",
-					Conditions: []StepCondition{{ConfigKey: "keyNotExist"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "step1",
+						NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+					}, {
+						Name: "step2",
+					}, {
+						Name:                "step3",
+						NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+					}, {
+						Name:       "step4",
+						Conditions: []StepCondition{{ConfigKey: "keyNotExist"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
@@ -190,26 +207,29 @@ func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 					"step2": false,
 					"step3": false,
 					"step4": false,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": false},
 		},
 		{
 			name: "OnlyActiveStepInStage: one of the next steps is active",
-			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{DisplayName: "Test Stage 1",
-				Steps: []Step{{
-					Name:                "step1",
-					NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
-				}, {
-					Name: "step2",
-				}, {
-					Name:                "step3",
-					Conditions:          []StepCondition{{ConfigKey: "testKey"}},
-					NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
-				}, {
-					Name:       "step4",
-					Conditions: []StepCondition{{ConfigKey: "testKey2"}},
-				}},
-			},
+			pipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{
+				{
+					DisplayName: "Test Stage 1",
+					Steps: []Step{{
+						Name:                "step1",
+						NotActiveConditions: []StepCondition{{ConfigKey: "testKey"}},
+					}, {
+						Name: "step2",
+					}, {
+						Name:                "step3",
+						Conditions:          []StepCondition{{ConfigKey: "testKey"}},
+						NotActiveConditions: []StepCondition{{OnlyActiveStepInStage: true}},
+					}, {
+						Name:       "step4",
+						Conditions: []StepCondition{{ConfigKey: "testKey2"}},
+					}},
+				},
 			}}},
 			wantRunSteps: map[string]map[string]bool{
 				"Test Stage 1": {
@@ -217,7 +237,8 @@ func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 					"step2": false,
 					"step3": true,
 					"step4": true,
-				}},
+				},
+			},
 			wantRunStages: map[string]bool{"Test Stage 1": true},
 		},
 	}
@@ -424,12 +445,12 @@ func TestEvaluateV1(t *testing.T) {
 	dir := t.TempDir()
 
 	cpeDir := filepath.Join(dir, "commonPipelineEnvironment")
-	err := os.MkdirAll(filepath.Join(cpeDir, "custom"), 0700)
+	err := os.MkdirAll(filepath.Join(cpeDir, "custom"), 0o700)
 	if err != nil {
 		t.Fatal("Failed to create sub directories")
 	}
-	os.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0700)
-	os.WriteFile(filepath.Join(cpeDir, "custom", "myCpeTrueFile"), []byte("myTrueValue"), 0700)
+	os.WriteFile(filepath.Join(cpeDir, "myCpeTrueFile"), []byte("myTrueValue"), 0o700)
+	os.WriteFile(filepath.Join(cpeDir, "custom", "myCpeTrueFile"), []byte("myTrueValue"), 0o700)
 
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
@@ -496,6 +517,157 @@ func TestAnyOtherStepIsActive(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equalf(t, tt.want, anyOtherStepIsActive(targetStep, tt.runSteps), "anyOtherStepIsActive(%v, %v)", targetStep, tt.runSteps)
+		})
+	}
+}
+
+func TestCheckForNpmScriptsInPackagesV1(t *testing.T) {
+	const validPkg = `{"scripts": {"build": "echo build"}}`
+	const invalidPkg = `not a json`
+
+	tests := []struct {
+		name        string
+		files       map[string]string
+		npmScript   string
+		config      StepConfig
+		expected    bool
+		expectError bool
+	}{
+		{
+			name:      "node_modules excluded by default",
+			files:     map[string]string{"node_modules/foo/package.json": validPkg},
+			npmScript: "build",
+			expected:  false,
+		},
+		{
+			name:      "gen excluded by default",
+			files:     map[string]string{"gen/foo/package.json": validPkg},
+			npmScript: "build",
+			expected:  false,
+		},
+		{
+			name:      "tmp excluded by default",
+			files:     map[string]string{"tmp/foo/package.json": validPkg},
+			npmScript: "build",
+			expected:  false,
+		},
+		{
+			name:        "invalid package.json without exclude returns error",
+			files:       map[string]string{"test_fixtures/package.json": invalidPkg},
+			npmScript:   "build",
+			expectError: true,
+		},
+		{
+			name: "invalid package.json under custom exclude is skipped",
+			files: map[string]string{
+				"package.json":               validPkg,
+				"test_fixtures/package.json": invalidPkg,
+			},
+			npmScript: "build",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": []any{"test_fixtures/**"},
+			}},
+			expected: true,
+		},
+		{
+			name: "custom exclude accepts []string",
+			files: map[string]string{
+				"package.json":               validPkg,
+				"test_fixtures/package.json": invalidPkg,
+			},
+			npmScript: "build",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": []string{"test_fixtures/**"},
+			}},
+			expected: true,
+		},
+		{
+			name:      "missing script returns false",
+			files:     map[string]string{"package.json": validPkg},
+			npmScript: "nonexistent",
+			expected:  false,
+		},
+		{
+			name: "non-string entries in exclude list are ignored",
+			files: map[string]string{
+				"package.json":               validPkg,
+				"test_fixtures/package.json": invalidPkg,
+			},
+			npmScript: "build",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": []any{42, "test_fixtures/**", nil},
+			}},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files := mock.FilesMock{}
+			for path, content := range tt.files {
+				files.AddFile(path, []byte(content))
+			}
+
+			result, err := checkForNpmScriptsInPackagesV1(tt.npmScript, tt.config, &files)
+			if tt.expectError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestNpmScriptsPackageJSONExcludesFromConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   StepConfig
+		expected []string
+	}{
+		{
+			name:     "missing key returns nil",
+			config:   StepConfig{Config: map[string]any{}},
+			expected: nil,
+		},
+		{
+			name:     "nil value returns nil",
+			config:   StepConfig{Config: map[string]any{"npmScriptsPackageJSONExcludes": nil}},
+			expected: nil,
+		},
+		{
+			name: "[]string passthrough",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": []string{"a/**", "b/**"},
+			}},
+			expected: []string{"a/**", "b/**"},
+		},
+		{
+			name: "[]any of strings is converted",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": []any{"a/**", "b/**"},
+			}},
+			expected: []string{"a/**", "b/**"},
+		},
+		{
+			name: "empty strings dropped, non-strings ignored",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": []any{"", "a/**", 7, nil, "b/**"},
+			}},
+			expected: []string{"a/**", "b/**"},
+		},
+		{
+			name: "unsupported type returns nil",
+			config: StepConfig{Config: map[string]any{
+				"npmScriptsPackageJSONExcludes": "a/**",
+			}},
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, npmScriptsPackageJSONExcludesFromConfig(tt.config))
 		})
 	}
 }

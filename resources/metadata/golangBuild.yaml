@@ -68,7 +68,7 @@ spec:
           - STEPS
       - name: goProxy
         type: string
-        description: "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Supports comma-separated values to define a list of proxies with fallback (e.g. \"https://proxy.example.com,direct\")."
+        description: "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Supports a list of proxies separated by commas (`,`) or pipes (`|`). A comma causes Go to fall through to the next proxy only on `404`/`410` responses; a pipe causes fallthrough on any error. Use `|direct` if your proxy may return non-404/410 errors for modules it cannot serve (e.g. `\"https://proxy.example.com|direct\"`)."
         scope:
           - GENERAL
           - PARAMETERS

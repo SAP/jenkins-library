@@ -171,10 +171,13 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		issTitle := "Issue"
 		issNo := 2
 
+		closedAt := github.Timestamp{Time: time.Date(2019, 6, 1, 0, 0, 0, 0, time.UTC)}
+		mergedAt := closedAt
+
 		ghIssueClient := ghICMock{
 			issues: []*github.Issue{
-				{Number: &prNo, Title: &prTitle, HTMLURL: &prHTMLURL, PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL}},
-				{Number: &issNo, Title: &issTitle, HTMLURL: &issHTMLURL},
+				{Number: &prNo, Title: &prTitle, HTMLURL: &prHTMLURL, ClosedAt: &closedAt, PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL, MergedAt: &mergedAt}},
+				{Number: &issNo, Title: &issTitle, HTMLURL: &issHTMLURL, ClosedAt: &closedAt},
 			},
 		}
 		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
@@ -365,12 +368,15 @@ func TestGetClosedIssuesText(t *testing.T) {
 		issTitle := []string{"Issue3", "Issue4"}
 		issNo := []int{3, 4}
 
+		closedAt := github.Timestamp{Time: time.Date(2019, 6, 1, 0, 0, 0, 0, time.UTC)}
+		mergedAt := closedAt
+
 		ghIssueClient := ghICMock{
 			issues: []*github.Issue{
-				{Number: &prNo[0], Title: &prTitle[0], HTMLURL: &prHTMLURL[0], PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL[0]}},
-				{Number: &prNo[1], Title: &prTitle[1], HTMLURL: &prHTMLURL[1], PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL[1]}},
-				{Number: &issNo[0], Title: &issTitle[0], HTMLURL: &issHTMLURL[0]},
-				{Number: &issNo[1], Title: &issTitle[1], HTMLURL: &issHTMLURL[1]},
+				{Number: &prNo[0], Title: &prTitle[0], HTMLURL: &prHTMLURL[0], ClosedAt: &closedAt, PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL[0], MergedAt: &mergedAt}},
+				{Number: &prNo[1], Title: &prTitle[1], HTMLURL: &prHTMLURL[1], ClosedAt: &closedAt, PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL[1], MergedAt: &mergedAt}},
+				{Number: &issNo[0], Title: &issTitle[0], HTMLURL: &issHTMLURL[0], ClosedAt: &closedAt},
+				{Number: &issNo[1], Title: &issTitle[1], HTMLURL: &issHTMLURL[1], ClosedAt: &closedAt},
 			},
 		}
 
@@ -387,6 +393,80 @@ func TestGetClosedIssuesText(t *testing.T) {
 		assert.Equal(t, "closed", ghIssueClient.options.State, "Issue state not properly passed")
 		assert.Equal(t, "asc", ghIssueClient.options.Direction, "Sort direction not properly passed")
 		assert.Equal(t, publishedAt.Time, ghIssueClient.options.Since, "PublishedAt not properly passed")
+	})
+
+	t.Run("Skips pull requests closed without merge", func(t *testing.T) {
+		prHTMLURL := []string{"https://github.com/TEST/test/pull/1", "https://github.com/TEST/test/pull/2"}
+		prTitle := []string{"Merged", "ClosedUnmerged"}
+		prNo := []int{1, 2}
+		closedAt := github.Timestamp{Time: time.Date(2019, 6, 1, 0, 0, 0, 0, time.UTC)}
+		mergedAt := closedAt
+
+		ghIssueClient := ghICMock{
+			issues: []*github.Issue{
+				{Number: &prNo[0], Title: &prTitle[0], HTMLURL: &prHTMLURL[0], ClosedAt: &closedAt, PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL[0], MergedAt: &mergedAt}},
+				{Number: &prNo[1], Title: &prTitle[1], HTMLURL: &prHTMLURL[1], ClosedAt: &closedAt, PullRequestLinks: &github.PullRequestLinks{URL: &prHTMLURL[1]}},
+			},
+		}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+		}
+
+		res := getClosedIssuesText(ctx, publishedAt, &myGithubPublishReleaseOptions, &ghIssueClient)
+
+		assert.Contains(t, res, "[#1](https://github.com/TEST/test/pull/1): Merged")
+		assert.NotContains(t, res, "#2")
+	})
+
+	t.Run("Skips items closed before last release", func(t *testing.T) {
+		issHTMLURL := []string{"https://github.com/TEST/test/issues/3", "https://github.com/TEST/test/issues/4"}
+		issTitle := []string{"InWindow", "ClosedBeforeLastRelease"}
+		issNo := []int{3, 4}
+		closedInWindow := github.Timestamp{Time: time.Date(2019, 6, 1, 0, 0, 0, 0, time.UTC)}
+		closedBefore := github.Timestamp{Time: time.Date(2018, 6, 1, 0, 0, 0, 0, time.UTC)}
+
+		ghIssueClient := ghICMock{
+			issues: []*github.Issue{
+				{Number: &issNo[0], Title: &issTitle[0], HTMLURL: &issHTMLURL[0], ClosedAt: &closedInWindow},
+				// closed before the last release but updated afterwards, so returned by the API ('since' filters on updated_at)
+				{Number: &issNo[1], Title: &issTitle[1], HTMLURL: &issHTMLURL[1], ClosedAt: &closedBefore},
+			},
+		}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+		}
+
+		res := getClosedIssuesText(ctx, publishedAt, &myGithubPublishReleaseOptions, &ghIssueClient)
+
+		assert.Contains(t, res, "[#3](https://github.com/TEST/test/issues/3): InWindow")
+		assert.NotContains(t, res, "#4")
+	})
+
+	t.Run("Skips issues closed as not planned", func(t *testing.T) {
+		issHTMLURL := []string{"https://github.com/TEST/test/issues/5", "https://github.com/TEST/test/issues/6"}
+		issTitle := []string{"Completed", "NotPlanned"}
+		issNo := []int{5, 6}
+		closedAt := github.Timestamp{Time: time.Date(2019, 6, 1, 0, 0, 0, 0, time.UTC)}
+		completed := "completed"
+		notPlanned := "not_planned"
+
+		ghIssueClient := ghICMock{
+			issues: []*github.Issue{
+				{Number: &issNo[0], Title: &issTitle[0], HTMLURL: &issHTMLURL[0], ClosedAt: &closedAt, StateReason: &completed},
+				{Number: &issNo[1], Title: &issTitle[1], HTMLURL: &issHTMLURL[1], ClosedAt: &closedAt, StateReason: &notPlanned},
+			},
+		}
+		myGithubPublishReleaseOptions := githubPublishReleaseOptions{
+			Owner:      "TEST",
+			Repository: "test",
+		}
+
+		res := getClosedIssuesText(ctx, publishedAt, &myGithubPublishReleaseOptions, &ghIssueClient)
+
+		assert.Contains(t, res, "[#5](https://github.com/TEST/test/issues/5): Completed")
+		assert.NotContains(t, res, "#6")
 	})
 }
 

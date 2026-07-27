@@ -87,10 +87,10 @@ func MergeDockerConfigJSON(sourcePath, targetPath string, utils piperutils.FileU
 
 // CreateDockerConfigJSON creates / updates a Docker config.json with registry credentials
 func CreateDockerConfigJSON(registryURL, username, password, targetPath, configPath string, utils piperutils.FileUtils) (string, error) {
-
 	if len(targetPath) == 0 {
 		targetPath = configPath
 	}
+	log.Entry().Debugf("creating docker config.json. registry=%v", registryURL)
 
 	dockerConfigContent := []byte{}
 	dockerConfig := map[string]interface{}{}
@@ -104,9 +104,13 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		if err != nil {
 			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
 		}
+		log.Entry().Debugf("loaded existing docker config.json")
+	} else {
+		log.Entry().Debugf("no existing docker config.json, starting fresh")
 	}
 
 	if registryURL == "" || password == "" || username == "" {
+		log.Entry().Debugf("incomplete credentials (registry=%v username.isSet=%v password.isSet=%v), writing config.json unchanged", registryURL, username != "", password != "")
 		if err := fileWrite(targetPath, dockerConfigContent, utils); err != nil {
 			return "", err
 		}
@@ -118,6 +122,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 
 	if dockerConfig["auths"] == nil {
 		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
+		log.Entry().Debugf("created new auths entry for %v", registryURL)
 	} else {
 		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
 		if !ok {
@@ -125,6 +130,7 @@ func CreateDockerConfigJSON(registryURL, username, password, targetPath, configP
 		}
 		authEntries[registryURL] = dockerAuth
 		dockerConfig["auths"] = authEntries
+		log.Entry().Debugf("added/updated auths entry for %v", registryURL)
 	}
 
 	jsonResult, err := json.Marshal(dockerConfig)
@@ -176,6 +182,13 @@ type Download interface {
 	GetRemoteImageInfo(string) (v1.Image, error)
 }
 
+// maxConcurrentBlobReads sizes the pull limiter of go-containerregistry (>= v0.21.6),
+// which allows only this many open remote blob readers before blocking further reads.
+// The legacy tarball writer keeps all layer readers of an image open until the whole
+// image is written, so the limit must exceed the maximum layer count of an image (127)
+// to not deadlock saving images with more layers than the default limit of 4.
+const maxConcurrentBlobReads = 128
+
 // SetOptions sets options used for the docker client
 func (c *Client) SetOptions(options ClientOptions) {
 	c.imageName = options.ImageName
@@ -192,14 +205,14 @@ func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, 
 		return nil, fmt.Errorf("specified target is not a directory: %s", targetDir)
 	}
 
-	noOpts := []crane.Option{}
+	craneOpts := []crane.Option{crane.WithJobs(maxConcurrentBlobReads)}
 
 	imageRef, err := c.getImageRef(imageSource)
 	if err != nil {
 		return nil, err
 	}
 
-	img, err := crane.Pull(imageRef.Name(), noOpts...)
+	img, err := crane.Pull(imageRef.Name(), craneOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +225,7 @@ func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, 
 
 	args := []string{imageRef.Name(), tmpFile.Name()}
 
-	exportCmd := cranecmd.NewCmdExport(&noOpts)
+	exportCmd := cranecmd.NewCmdExport(&craneOpts)
 	exportCmd.SetArgs(args)
 
 	if err = exportCmd.Execute(); err != nil {
@@ -224,14 +237,14 @@ func (c *Client) DownloadImageContent(imageSource, targetDir string) (v1.Image, 
 
 // DownloadImage downloads the image and saves it as tar at the given path
 func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error) {
-	noOpts := []crane.Option{}
+	craneOpts := []crane.Option{crane.WithJobs(maxConcurrentBlobReads)}
 
 	imageRef, err := c.getImageRef(imageSource)
 	if err != nil {
 		return nil, err
 	}
 
-	img, err := crane.Pull(imageRef.Name(), noOpts...)
+	img, err := crane.Pull(imageRef.Name(), craneOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +254,7 @@ func (c *Client) DownloadImage(imageSource, targetFile string) (v1.Image, error)
 		return nil, err
 	}
 
-	craneCmd := cranecmd.NewCmdPull(&noOpts)
+	craneCmd := cranecmd.NewCmdPull(&craneOpts)
 	craneCmd.SetOut(log.Writer())
 	craneCmd.SetErr(log.Writer())
 	args := []string{imageRef.Name(), tmpFile.Name(), "--format=" + c.imageFormat}
@@ -267,7 +280,7 @@ func (c *Client) GetRemoteImageInfo(imageSource string) (v1.Image, error) {
 		return nil, fmt.Errorf("parsing image reference: %w", err)
 	}
 
-	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithJobs(maxConcurrentBlobReads))
 }
 
 func (c *Client) getImageRef(image string) (name.Reference, error) {
