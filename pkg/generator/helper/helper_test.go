@@ -101,6 +101,14 @@ spec:
           value: value1
         - name: param2
           value: value2
+      - name: param4
+        type: string
+        description: param4 description
+        scope:
+        - PARAMETERS
+        mandatoryIf:
+        - name: param1
+          notEmpty: true
 `
 	var r string
 	switch name {
@@ -339,5 +347,68 @@ func TestGetStringSliceFromInterface(t *testing.T) {
 
 	for _, v := range tt {
 		assert.Equal(t, v.expected, getStringSliceFromInterface(v.input), "interface conversion failed")
+	}
+}
+
+func TestStructTag(t *testing.T) {
+	t.Parallel()
+	tt := []struct {
+		name     string
+		param    config.StepParameters
+		expected string
+	}{
+		{
+			name:     "no validators",
+			param:    config.StepParameters{Name: "foo", Type: "string"},
+			expected: "`json:\"foo,omitempty\"`",
+		},
+		{
+			name: "required_if single condition",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "bar", Value: "baz"},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_if=Bar baz\"`",
+		},
+		{
+			name: "required_if two different fields (AND semantics – one tag)",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "field1", Value: "val1"},
+					{Name: "field2", Value: "val2"},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_if=Field1 val1 Field2 val2\"`",
+		},
+		{
+			name: "notEmpty emits required_with",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "scanContainerDistro", NotEmpty: true},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_with=ScanContainerDistro\"`",
+		},
+		{
+			name: "notEmpty combined with required_if",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "bar", Value: "baz"},
+					{Name: "distro", NotEmpty: true},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_if=Bar baz,required_with=Distro\"`",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, structTag(tc.param))
+		})
 	}
 }

@@ -252,8 +252,8 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		for _, parameter := range stepData.Spec.Inputs.Parameters {
 			for _, mandatoryIfCase := range parameter.MandatoryIf {
-				if mandatoryIfCase.Name == "" || mandatoryIfCase.Value == "" {
-					return errors.New("invalid mandatoryIf option")
+				if mandatoryIfCase.Name == "" || (mandatoryIfCase.Value == "" && !mandatoryIfCase.NotEmpty) {
+					return errors.New("invalid mandatoryIf option: 'name' is required; 'value' is required unless 'notEmpty: true' is set")
 				}
 			}
 		}
@@ -563,11 +563,22 @@ func structTag(param config.StepParameters) string {
 		validators = append(validators, "possible-values="+strings.Join(values, " "))
 	}
 	if len(param.MandatoryIf) > 0 {
-		var conditions []string
+		var requiredIfConditions []string
+		var requiredWithFields []string
 		for _, m := range param.MandatoryIf {
-			conditions = append(conditions, piperutils.Title(m.Name)+" "+m.Value)
+			titleName := piperutils.Title(m.Name)
+			if m.NotEmpty {
+				requiredWithFields = append(requiredWithFields, titleName)
+			} else {
+				requiredIfConditions = append(requiredIfConditions, titleName+" "+m.Value)
+			}
 		}
-		validators = append(validators, "required_if="+strings.Join(conditions, " "))
+		if len(requiredIfConditions) > 0 {
+			validators = append(validators, "required_if="+strings.Join(requiredIfConditions, " "))
+		}
+		if len(requiredWithFields) > 0 {
+			validators = append(validators, "required_with="+strings.Join(requiredWithFields, " "))
+		}
 	}
 	if len(validators) > 0 {
 		tag += fmt.Sprintf(` validate:"%s"`, strings.Join(validators, ","))

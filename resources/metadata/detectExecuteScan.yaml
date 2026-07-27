@@ -586,11 +586,7 @@ spec:
         type: "[]string"
         mandatoryIf:
           - name: scanContainerDistro
-            value: ubuntu
-          - name: scanContainerDistro
-            value: centos
-          - name: scanContainerDistro
-            value: alpine
+            notEmpty: true
         description: Images to be scanned (typically filled by CPE)
         scope:
           - STEPS
@@ -603,11 +599,7 @@ spec:
         type: string
         mandatoryIf:
           - name: scanContainerDistro
-            value: ubuntu
-          - name: scanContainerDistro
-            value: centos
-          - name: scanContainerDistro
-            value: alpine
+            notEmpty: true
         description: Used accessing for the images to be scanned (typically filled by CPE)
         scope:
           - STEPS
@@ -620,11 +612,7 @@ spec:
         type: string
         mandatoryIf:
           - name: scanContainerDistro
-            value: ubuntu
-          - name: scanContainerDistro
-            value: centos
-          - name: scanContainerDistro
-            value: alpine
+            notEmpty: true
         description: Used accessing for the images to be scanned (typically filled by CPE)
         scope:
           - STEPS
@@ -637,11 +625,7 @@ spec:
         type: string
         mandatoryIf:
           - name: scanContainerDistro
-            value: ubuntu
-          - name: scanContainerDistro
-            value: centos
-          - name: scanContainerDistro
-            value: alpine
+            notEmpty: true
         description: Used accessing for the images to be scanned (typically filled by CPE)
         scope:
           - STEPS

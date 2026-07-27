@@ -66,8 +66,9 @@ type StepParameters struct {
 }
 
 type ParameterDependence struct {
-	Name  string `json:"name" yaml:"name"`
-	Value string `json:"value" yaml:"value"`
+	Name     string `json:"name" yaml:"name"`
+	Value    string `json:"value" yaml:"value"`
+	NotEmpty bool   `json:"notEmpty,omitempty" yaml:"notEmpty,omitempty"`
 }
 
 // ResourceReference defines the parameters of a resource reference
