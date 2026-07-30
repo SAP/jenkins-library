@@ -99,7 +99,12 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                            readPipelineEnv(script: script, piperGoPath: piperGoPath)
                         }
                     } finally {
-                        InfluxData.readFromDisk(script)
+                        def rawConfig = script.commonPipelineEnvironment.configuration
+                        def collectInfluxTelemetry = rawConfig?.get('general')?.collectInfluxTelemetry
+                            ?: rawConfig?.get('steps')?.get('influxWriteData')?.collectInfluxTelemetry
+                        if (collectInfluxTelemetry != false) {
+                            InfluxData.readFromDisk(script)
+                        }
                         utils.stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                     }
                 }
