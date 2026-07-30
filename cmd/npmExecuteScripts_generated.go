@@ -41,6 +41,7 @@ type npmExecuteScriptsOptions struct {
 	Production                   bool     `json:"production,omitempty"`
 	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
 	PnpmVersion                  string   `json:"pnpmVersion,omitempty"`
+	IgnoreNPMErrors              bool     `json:"ignoreNPMErrors,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
@@ -285,6 +286,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().BoolVar(&stepConfig.Production, "production", false, "used for omitting installation of dev. dependencies if true")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 	cmd.Flags().StringVar(&stepConfig.PnpmVersion, "pnpmVersion", os.Getenv("PIPER_pnpmVersion"), "Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.")
+	cmd.Flags().BoolVar(&stepConfig.IgnoreNPMErrors, "ignoreNPMErrors", false, "If true, npm invalid/missing dependency errors during cyclone dx sbom generation will be ignored and the sbom will be generated. This flag is only considered when ``Yarn`` is used as a package manager and due to the mismatch when yarn.lock resolves the dependencies to a particular version that satisfies yarn but npm fails to resolve the same dependency to a valid version. This is a known issue with yarn and npm and can be ignored if the user is aware of this issue.")
 
 }
 
@@ -545,6 +547,15 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pnpmVersion"),
+					},
+					{
+						Name:        "ignoreNPMErrors",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

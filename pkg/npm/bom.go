@@ -36,21 +36,25 @@ var cycloneDxCliUrl = map[struct{ os, arch string }]string{
 
 // CreateBOM generates a CycloneDX Bill of Materials (BOM) file for the given package.json files.
 // It supports both pnpm and other package managers (npm/yarn) with different BOM generation strategies.
-func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
+func (exec *Execute) CreateBOM(packageJSONFiles []string, ignoreNPMErrors bool) error {
 	log.Entry().Debug("Detecting package manager...")
+	isYarn := false
 	pm, err := exec.detectPackageManager()
 	if err != nil {
 		return fmt.Errorf("failed to detect package manager (looking for package.json, package-lock.json, pnpm-lock.yaml): %w", err)
 	}
 	if pm != nil {
 		log.Entry().Debugf("Detected package manager: %s", pm.Name)
+		if pm.Name == "yarn" {
+			isYarn = true
+		}
 	}
 
 	if pm != nil && pm.Name == "pnpm" {
 		return exec.createPnpmBOM(packageJSONFiles)
 	}
 
-	return exec.createNpmBOM(packageJSONFiles)
+	return exec.createNpmBOM(packageJSONFiles, isYarn, ignoreNPMErrors)
 }
 
 // createPnpmBOM generates a BOM for pnpm projects using cdxgen and cyclonedx-cli
@@ -141,10 +145,16 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 }
 
 // createNpmBOM generates a BOM for npm/yarn projects using cyclonedx-npm
-func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
+func (exec *Execute) createNpmBOM(packageJSONFiles []string, isYarn bool, ignoreNPMErrors bool) error {
 	// Primary attempt with cyclonedx-npm
 	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", tmpInstallFolder}
 	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", CycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
+
+	if isYarn && ignoreNPMErrors {
+		log.Entry().Warn("Yarn detected as package manager and ignoreNPMErrors is set to true. " +
+			"Proceeding with BOM generation despite potential npm dependency resolution errors.")
+		cycloneDxNpmRunParams = append(cycloneDxNpmRunParams, "--ignore-npm-errors")
+	}
 
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles)
 	if err != nil {

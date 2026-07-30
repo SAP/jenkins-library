@@ -1,6 +1,3 @@
-//go:build unit
-// +build unit
-
 package npm
 
 import (
@@ -29,7 +26,7 @@ func TestBom(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")}, false)
 		cycloneDxNpmInstallParams := []string{"install", "--no-save", "@cyclonedx/cyclonedx-npm@2.1.0", "--prefix", "./tmp"}
 		cycloneDxNpmRunParams := []string{
 			"--output-format",
@@ -65,7 +62,7 @@ func TestBom(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")}, false)
 
 		assert.Contains(t, err.Error(), "failed to install CycloneDX BOM")
 		// Only the failing npm install should have been called; no @cyclonedx/bom or npx invocation
@@ -98,7 +95,7 @@ func TestBom(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.CreateBOM([]string{"package.json"})
+		err := exec.CreateBOM([]string{"package.json"}, false)
 
 		assert.Contains(t, err.Error(), "cyclonedx-npm execution failed")
 	})
@@ -118,7 +115,7 @@ func TestBom(t *testing.T) {
 		}
 
 		// Execute CreateBOM
-		err := exec.CreateBOM([]string{"package.json"})
+		err := exec.CreateBOM([]string{"package.json"}, false)
 
 		if assert.NoError(t, err) {
 			url := cycloneDxCliUrl[struct{ os, arch string }{runtime.GOOS, runtime.GOARCH}]
@@ -174,7 +171,7 @@ func TestBom(t *testing.T) {
 			Utils:   &utils,
 			Options: ExecutorOptions{},
 		}
-		err := exec.CreateBOM([]string{"package.json"})
+		err := exec.CreateBOM([]string{"package.json"}, false)
 
 		assert.Contains(t, err.Error(), "failed to install cdxgen")
 	})
@@ -199,7 +196,7 @@ func TestBom(t *testing.T) {
 			Utils:   &utils,
 			Options: ExecutorOptions{},
 		}
-		err := exec.CreateBOM([]string{"package.json"})
+		err := exec.CreateBOM([]string{"package.json"}, false)
 
 		assert.Contains(t, err.Error(), "cdxgen execution failed")
 	})
@@ -259,7 +256,7 @@ func TestBom(t *testing.T) {
 			Utils:   &utils,
 			Options: ExecutorOptions{},
 		}
-		err := exec.CreateBOM([]string{"package.json"})
+		err := exec.CreateBOM([]string{"package.json"}, false)
 
 		assert.Contains(t, err.Error(), "network error: connection refused")
 	})
