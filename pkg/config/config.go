@@ -539,6 +539,10 @@ func merge(base, overlay map[string]interface{}, metadata StepData) map[string]i
 					if tVal == "[]interface {}" && v.Type == "[]string" {
 						// json Unmarshal genertes arrays of interface{} for string arrays
 						for _, interfaceValue := range value.([]interface{}) {
+							if interfaceValue == nil {
+								log.Entry().Warnf("config id %s contains a nil element, skipping", v.Name)
+								continue
+							}
 							arrayValueType := reflect.TypeOf(interfaceValue).String()
 							if arrayValueType != "string" {
 								log.Entry().Warnf("config id %s should only contain strings but contains a %s", v.Name, arrayValueType)
