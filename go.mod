@@ -46,6 +46,7 @@ require (
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/buildkit v0.13.1
+	github.com/moby/moby/api v1.54.2
 	github.com/motemen/go-nuts v0.0.0-20251105153347-936c09797748
 	github.com/package-url/packageurl-go v0.1.6
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
@@ -120,7 +121,6 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.54.2 // indirect
 	github.com/moby/moby/client v0.4.1 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.6.0 // indirect
