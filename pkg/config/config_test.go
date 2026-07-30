@@ -806,6 +806,28 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+func TestMerge_NilElementInStringArray(t *testing.T) {
+	// Regression test: nil element in a []interface{} parameter (e.g. groups: [null] passed from
+	// Groovy when scanObj.group is undefined) must not cause a nil pointer dereference panic.
+	stepData := StepData{
+		Spec: StepSpec{
+			Inputs: StepInputs{
+				Parameters: []StepParameters{
+					{Name: "groups", Type: "[]string"},
+				},
+			},
+		},
+	}
+	mergeData := map[string]interface{}{
+		"groups": []interface{}{nil, "valid-group"},
+	}
+	stepConfig := StepConfig{Config: map[string]interface{}{}}
+	assert.NotPanics(t, func() {
+		stepConfig.mixIn(mergeData, []string{}, stepData)
+	}, "mixIn must not panic on nil element in string array parameter")
+	assert.Equal(t, []interface{}{nil, "valid-group"}, stepConfig.Config["groups"])
+}
+
 func TestStepConfig_mixInHookConfig(t *testing.T) {
 	type fields struct {
 		Config     map[string]interface{}
