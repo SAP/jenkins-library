@@ -52,16 +52,24 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: engines
+        type: "[]string"
+        description: "The scan engines to trigger for this scan. Can be: sast, iac"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: [ sast ]
       - name: filterPattern
         type: string
-        description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
+        description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory. For multiple-engine scans, this filter should include all files applicable to all engines - per-engine filters should be set separately through sastFileFilter and iacFileFilter.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default:
           "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
-          **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts"
+          **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts"  
       - name: fullScanCycle
         type: string
         description: Indicates how often a full scan should happen between the incremental scans when activated
@@ -113,6 +121,31 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+      - name: iacHelpLinks
+        type: string
+        description: A path to a json file (remote if http/https, local otherwise) containing a map of IAC_query_id:help_url
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default:
+          ""
+      - name: iacFilterPattern
+        type: string
+        description: The pattern to filter the files relevant for scanning in IAC, patterns can be negated by setting an exclamation mark in front i.e. `!**/*.yaml` would avoid adding any yaml files located in the test directory
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default:
+          ""
+      - name: iacPreset
+        type: string
+        description: The preset to use for IAC scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS    
       - name: scanSummaryInPullRequest
         description: Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.
         type: bool
@@ -185,13 +218,6 @@ spec:
           - type: vaultSecret
             name: checkmarxOneVaultSecretName
             default: checkmarxOne
-      - name: preset
-        type: string
-        description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: languageMode
         type: string
         description: Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'
@@ -225,6 +251,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: sastFilterPattern
+        type: string
+        description: The pattern to filter the files relevant for scanning in SAST, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default:
+          ""   
+      - name: sastPreset
+        aliases:
+          - name: preset
+        type: string
+        description: The preset to use for SAST scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS     
       - name: scanTags
         type: string
         description: Used to tag a scan with a JSON string, e.g., {"key":"value", "keywithoutvalue":""}
@@ -550,6 +594,7 @@ spec:
               - name: tool_version
               - name: scan_type
               - name: preset
+              - name: iac_preset
               - name: deep_link
               - name: report_creation_time
       - name: reports
