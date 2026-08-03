@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func newBtpDeleteServiceBindingUtils() btp.BTPUtils {
@@ -40,7 +41,7 @@ func runBtpDeleteServiceBinding(config *btpDeleteServiceBindingOptions, telemetr
 
 	err := utils.DeleteServiceBinding(btpConfig)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete BTP service binding")
+		return fmt.Errorf("failed to delete BTP service binding: %w", err)
 	}
 
 	log.Entry().Info("Service binding deletion completed successfully")

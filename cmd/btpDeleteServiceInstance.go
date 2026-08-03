@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func newBtpDeleteServiceInstanceUtils() btp.BTPUtils {
@@ -48,7 +49,7 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 			ServiceInstance:  config.BtpServiceInstanceName,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list service bindings of the service instance")
+			return fmt.Errorf("failed to list service bindings of the service instance: %w", err)
 		}
 
 		if len(serviceBindings) > 0 {
@@ -56,14 +57,14 @@ func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, teleme
 
 			err := btpDeleteServiceBindings(*config, serviceBindings, telemetryData, utils)
 			if err != nil {
-				return errors.Wrap(err, "failed to delete service bindings")
+				return fmt.Errorf("failed to delete service bindings: %w", err)
 			}
 		}
 	}
 
 	err := utils.DeleteServiceInstance(btpConfig)
 	if err != nil {
-		return errors.Wrap(err, "failed to delete BTP service instance")
+		return fmt.Errorf("failed to delete BTP service instance: %w", err)
 	}
 
 	log.Entry().Info("Service deletion completed successfully")
