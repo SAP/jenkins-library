@@ -23,6 +23,7 @@ import (
 // ReportsDirectory defines the subfolder for the Checkmarx reports which are generated
 const ReportsDirectory = "checkmarxOne"
 const cxOrigin = ""
+const IACDefaultBlankPreset = "all checks"
 
 // AuthToken - Structure to store OAuth2 token
 // Updated for Cx1
@@ -147,10 +148,22 @@ type ScanConfiguration struct {
 	Values   map[string]string `json:"value"`
 }
 
-/*
-{"scanId":"bef5d38b-7eb9-4138-b74b-2639fcf49e2e","projectId":"ad34ade3-9bf3-4b5a-91d7-3ad67eca7852","loc":137,"fileCount":12,"isIncremental":false,"isIncrementalCanceled":false,"queryPreset":"ASA Premium"}
-*/
 type ScanMetadata struct {
+	IAC  *ScanIACMetadata
+	SAST *ScanSASTMetadata
+}
+
+type ScanIACMetadata struct {
+	ScanID     string
+	ProjectID  string
+	LOC        int
+	FileCount  int
+	IACLOC     int `json:"kicsLoc"`
+	PresetName string
+	PresetID   string
+}
+
+type ScanSASTMetadata struct {
 	ScanID                string
 	ProjectID             string
 	LOC                   int
@@ -160,19 +173,23 @@ type ScanMetadata struct {
 	PresetName            string `json:"queryPreset"`
 }
 
-type ScanMetadataList struct {
-	TotalCount int
-	Scans      []ScanMetadata
-	Missing    []string
+type scanresultQueryID struct {
+	Value any // uint64 for sast, string for iac
 }
 
 type ScanResultData struct {
-	QueryID      uint64
-	QueryName    string
-	Group        string
-	ResultHash   string
-	LanguageName string
-	Nodes        []ScanResultNodes
+	QueryID      scanresultQueryID
+	QueryName    string            // SAST and IaC
+	Group        string            // SAST and IaC
+	ResultHash   string            // only SAST
+	LanguageName string            // only SAST
+	Nodes        []ScanResultNodes // only SAST
+
+	Platform      string // only IAC
+	Line          int    // only IAC
+	Filename      string // only IAC
+	Value         string // only IAC
+	ExpectedValue string // only IAC
 }
 
 type ScanResultNodes struct {
@@ -194,7 +211,8 @@ type ScanResultNodes struct {
 type ScanResult struct {
 	Type                 string
 	ResultID             string `json:"id"`
-	SimilarityID         int64  `json:"similarityId,string"`
+	AlternateID          string
+	SimilarityID         string
 	Status               string
 	State                string
 	Severity             string
@@ -208,8 +226,13 @@ type ScanResult struct {
 }
 
 type ScanResultDetails struct {
-	CweId       int
+	CweId       int // empty for kics results, pending case 283343
 	Compliances []string
+}
+
+type IACFindingInfo struct {
+	Cwe int
+	URL string
 }
 
 // Cx1: StatusDetails - details of each engine type's scan status for a multi-engine scan
@@ -223,38 +246,41 @@ type ScanStatusDetails struct {
 type ScanSummary struct {
 	TenantID     string
 	ScanID       string
-	SASTCounters struct {
-		//QueriesCounters           []?
-		//SinkFileCounters          []?
-		LanguageCounters []struct {
-			Language string
-			Counter  uint64
-		}
-		ComplianceCounters []struct {
-			Compliance string
-			Counter    uint64
-		}
-		SeverityCounters []struct {
-			Severity string
-			Counter  uint64
-		}
-		StatusCounters []struct {
-			Status  string
-			Counter uint64
-		}
-		StateCounters []struct {
-			State   string
-			Counter uint64
-		}
-		TotalCounter        uint64
-		FilesScannedCounter uint64
-	}
+	SASTCounters ScanSummaryCounters
+	IACCounters  ScanSummaryCounters `json:"kicsCounters"`
 	// ignoring the other counters
 	// KICSCounters
 	// SCACounters
 	// SCAPackagesCounters
 	// SCAContainerCounters
 	// APISecCounters
+}
+
+type ScanSummaryCounters struct {
+	//QueriesCounters           []?
+	//SinkFileCounters          []?
+	LanguageCounters []struct {
+		Language string
+		Counter  uint64
+	}
+	ComplianceCounters []struct {
+		Compliance string
+		Counter    uint64
+	}
+	SeverityCounters []struct {
+		Severity string
+		Counter  uint64
+	}
+	StatusCounters []struct {
+		Status  string
+		Counter uint64
+	}
+	StateCounters []struct {
+		State   string
+		Counter uint64
+	}
+	TotalCounter        uint64
+	FilesScannedCounter uint64
 }
 
 // Status - Status Structure
@@ -282,6 +308,37 @@ type Group struct {
 	Name    string `json:"name"`
 }
 
+// this is a convenience object to facilitate accessing SAST configuration settings from the code
+type sastConfigKeys struct {
+	PresetName   string
+	Incremental  string
+	LanguageMode string
+	FileFilter   string
+}
+
+// this is a convenience object to facilitate accessing IAC configuration settings from the code
+type iacConfigKeys struct {
+	PresetID   string
+	FileFilter string
+}
+
+// this is a convenience object to facilitate accessing configuration settings from the code
+var ConfigurationKeys = struct {
+	SAST sastConfigKeys
+	IAC  iacConfigKeys
+}{
+	SAST: sastConfigKeys{
+		PresetName:   "scan.config.sast.presetName",
+		Incremental:  "scan.config.sast.incremental",
+		LanguageMode: "scan.config.sast.languageMode",
+		FileFilter:   "scan.config.sast.filter",
+	},
+	IAC: iacConfigKeys{
+		PresetID:   "scan.config.kics.presetId",
+		FileFilter: "scan.config.kics.filter",
+	},
+}
+
 // SystemInstance is the client communicating with the Checkmarx backend
 type SystemInstance struct {
 	serverURL           string
@@ -292,13 +349,15 @@ type SystemInstance struct {
 	oauth_client_secret string //separate from APIKey
 	client              piperHttp.Uploader
 	logger              *logrus.Entry
+	version             *VersionInfo              // stored after first fetch
+	iacQueryCache       map[string]IACFindingInfo // map of query-id to finding info, retrieved from the preset-manager api
 }
 
 // System is the interface abstraction of a specific SystemIns
 type System interface {
 	DownloadReport(reportID string) ([]byte, error)
 	GetReportStatus(reportID string) (ReportStatus, error)
-	RequestNewReport(scanID, projectID, branch, reportType string) (string, error)
+	RequestNewReport(scanID, projectID, branch, reportType string, engines []string) (string, error)
 
 	CreateApplication(appname string) (Application, error)
 	GetApplicationByName(appname string) (Application, error)
@@ -306,8 +365,11 @@ type System interface {
 	UpdateApplication(app *Application) error
 
 	GetScan(scanID string) (Scan, error)
-	GetScanMetadata(scanID string) (ScanMetadata, error)
-	GetScanMetadatas(scanIDs []string) ([]ScanMetadata, error)
+	GetScanConfiguration(projectID, scanID string) (map[string]string, error)
+	GetScanMetadata(scan *Scan) (ScanMetadata, error)
+	GetScanSASTMetadata(scanID string) (ScanSASTMetadata, error)
+	GetScanSASTMetadatas(scanIDs []string) ([]ScanSASTMetadata, error)
+	GetScanIACMetadata(scanID string) (ScanIACMetadata, error)
 	GetScanResults(scanID string, limit uint64) ([]ScanResult, error)
 	GetScanSummary(scanID string) (ScanSummary, error)
 	GetResultsPredicates(SimilarityID int64, ProjectID string) ([]ResultsPredicates, error)
@@ -323,7 +385,7 @@ type System interface {
 	UploadProjectSourceCode(projectID string, zipFile string) (string, error)
 	CreateProject(projectName string, groupIDs []string) (Project, error)
 	CreateProjectInApplication(projectName, applicationID string, groupIDs []string) (Project, error)
-	GetPresets() ([]Preset, error)
+	//GetPresets() ([]Preset, error)
 	GetProjectByID(projectID string) (Project, error)
 	GetProjectsByName(projectName string) ([]Project, error)
 	GetProjectsByNameAndGroup(projectName, groupID string) ([]Project, error)
@@ -333,11 +395,18 @@ type System interface {
 	GetGroups() ([]Group, error)
 	GetGroupByName(groupName string) (Group, error)
 	GetGroupByID(groupID string) (Group, error)
-	SetProjectBranch(projectID, branch string, allowOverride bool) error
-	SetProjectPreset(projectID, presetName string, allowOverride bool) error
-	SetProjectLanguageMode(projectID, languageMode string, allowOverride bool) error
-	SetProjectFileFilter(projectID, filter string, allowOverride bool) error
 
+	SetProjectBranch(projectID, branch string, allowOverride bool) error
+	SetProjectLanguageMode(projectID, languageMode string, allowOverride bool) error
+	SetProjectSASTPreset(projectID, presetName string, allowOverride bool) error
+	SetProjectSASTFileFilter(projectID, filter string, allowOverride bool) error
+	SetProjectIACPreset(projectID, presetName string, allowOverride bool) error
+	SetProjectIACFileFilter(projectID, filter string, allowOverride bool) error
+
+	GetIACPresetNameByID(presetID string) (string, error)
+	GetIACPresetIDByName(presetName string) (string, error)
+	GetIACFindingInfo(r ScanResult) (IACFindingInfo, error)
+	LoadIACHelpLinks(url string) error
 	GetProjectConfiguration(projectID string) ([]ProjectConfigurationSetting, error)
 	UpdateProjectConfiguration(projectID string, settings []ProjectConfigurationSetting) error
 
@@ -357,6 +426,7 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, iamURL, tenant, API
 		oauth_client_secret: client_secret,
 		client:              client,
 		logger:              loggerInstance,
+		iacQueryCache:       make(map[string]IACFindingInfo),
 	}
 
 	var token string
@@ -1017,6 +1087,7 @@ func (sys *SystemInstance) ScanProject(projectID, sourceUrl, branch, scanType st
 	return Scan{}, errors.New("Invalid scanType provided, must be 'upload' or 'git'")
 }
 
+/*
 func (sys *SystemInstance) GetPresets() ([]Preset, error) {
 	sys.logger.Debug("Getting Presets...")
 	var presets []Preset
@@ -1029,6 +1100,160 @@ func (sys *SystemInstance) GetPresets() ([]Preset, error) {
 
 	err = json.Unmarshal(data, &presets)
 	return presets, err
+}
+*/
+
+func (sys *SystemInstance) GetIACPresetIDByName(name string) (string, error) {
+	if name == IACDefaultBlankPreset {
+		return "", nil
+	}
+	type IACPreset struct {
+		PresetID string `json:"id"`
+		Name     string
+	}
+	var preset_response struct {
+		TotalCount uint64      `json:"totalCount"`
+		Presets    []IACPreset `json:"presets"`
+	}
+
+	params := url.Values{
+		"offset":          {"0"},
+		"limit":           {"1"},
+		"exact-match":     {"true"},
+		"include-details": {"true"},
+		"search-term":     {name},
+	}
+
+	response, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/preset-manager/iac/presets?%v", params.Encode()), nil, http.Header{}, nil)
+	if err != nil {
+		return "", err
+	}
+
+	err = json.Unmarshal(response, &preset_response)
+
+	if err != nil {
+		return "", err
+	}
+	if len(preset_response.Presets) == 0 {
+		return "", fmt.Errorf("no such preset %v found", name)
+	}
+	if len(preset_response.Presets) > 1 {
+		return "", fmt.Errorf("%d presets found matching %v", len(preset_response.Presets), name)
+	}
+	return preset_response.Presets[0].PresetID, nil
+}
+
+func (sys *SystemInstance) GetIACPresetNameByID(id string) (string, error) {
+	if id == "" {
+		return IACDefaultBlankPreset, nil
+	}
+	var preset struct {
+		PresetID string `json:"id"`
+		Name     string
+	}
+
+	response, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/preset-manager/iac/presets/%v", id), nil, http.Header{}, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to get preset %v: %s", id, err)
+	}
+
+	err = json.Unmarshal(response, &preset)
+	return preset.Name, err
+}
+
+func (sys *SystemInstance) GetIACFindingInfo(r ScanResult) (IACFindingInfo, error) {
+	if queryId, ok := r.Data.QueryID.Value.(string); ok {
+		if info, ok := sys.iacQueryCache[queryId]; ok {
+			return info, nil
+		} else {
+			family, err := sys.GetIACQueryFamily(strings.ToLower(r.Data.Platform))
+			if err != nil {
+				return IACFindingInfo{}, err
+			}
+			for id, info := range family {
+				sys.iacQueryCache[id] = info
+			}
+
+			if info, ok := sys.iacQueryCache[queryId]; ok {
+				return info, nil
+			} else {
+				return IACFindingInfo{}, fmt.Errorf("query with id %s not found", queryId)
+			}
+		}
+	} else {
+		return IACFindingInfo{}, fmt.Errorf("failed to get IAC query ID from: %+v", r.Data.QueryID)
+	}
+}
+
+func (sys *SystemInstance) LoadIACHelpLinks(path string) error {
+	var data []byte
+	var err error
+
+	if strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "http://") {
+		response, err := sys.client.SendRequest(http.MethodGet, path, nil, nil, nil)
+		if err != nil {
+			return fmt.Errorf("failed to load IAC help links from %s: %s", path, err)
+		}
+		if response != nil && response.Body != nil {
+			data, _ = io.ReadAll(response.Body)
+			response.Body.Close()
+		} else {
+			return fmt.Errorf("no content returned from %s", path)
+		}
+	} else {
+		data, err = os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+	}
+	err = json.Unmarshal(data, &sys.iacQueryCache)
+	return err
+}
+
+func (sys *SystemInstance) GetIACQueryFamily(family string) (map[string]IACFindingInfo, error) {
+	response, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/preset-manager/iac/query-families/%v/queries", family), nil, http.Header{}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	type iacQueryFamilyLeaf struct {
+		Key  string
+		Data struct {
+			Cwe int
+			URL string
+		}
+	}
+	type iacQueryFamily struct {
+		// Title string
+		// Key string
+		Children []struct {
+			// Title string // group
+			// Key string
+			Children []iacQueryFamilyLeaf
+		}
+	}
+
+	var iacQueryFamilies []iacQueryFamily
+	if err = json.Unmarshal(response, &iacQueryFamilies); err != nil {
+		return nil, err
+	}
+
+	iacFindings := make(map[string]IACFindingInfo)
+
+	for i := range iacQueryFamilies {
+		iacQueries := &iacQueryFamilies[i]
+		for i := range iacQueries.Children {
+			group := &iacQueries.Children[i]
+			for i := range group.Children {
+				query := &group.Children[i]
+				iacFindings[query.Key] = IACFindingInfo{
+					Cwe: query.Data.Cwe,
+					URL: query.Data.URL,
+				}
+			}
+		}
+	}
+	return iacFindings, nil
 }
 
 func (sys *SystemInstance) GetProjectConfiguration(projectID string) ([]ProjectConfigurationSetting, error) {
@@ -1082,10 +1307,22 @@ func (sys *SystemInstance) SetProjectBranch(projectID, branch string, allowOverr
 	return sys.UpdateProjectConfiguration(projectID, []ProjectConfigurationSetting{setting})
 }
 
-func (sys *SystemInstance) SetProjectPreset(projectID, presetName string, allowOverride bool) error {
+func (sys *SystemInstance) SetProjectSASTPreset(projectID, presetName string, allowOverride bool) error {
 	var setting ProjectConfigurationSetting
-	setting.Key = "scan.config.sast.presetName"
+	setting.Key = ConfigurationKeys.SAST.PresetName
 	setting.Value = presetName
+	setting.AllowOverride = allowOverride
+
+	return sys.UpdateProjectConfiguration(projectID, []ProjectConfigurationSetting{setting})
+}
+func (sys *SystemInstance) SetProjectIACPreset(projectID, presetName string, allowOverride bool) error {
+	var setting ProjectConfigurationSetting
+	setting.Key = ConfigurationKeys.IAC.PresetID
+	presetId, err := sys.GetIACPresetIDByName(presetName)
+	if err != nil {
+		return err
+	}
+	setting.Value = presetId
 	setting.AllowOverride = allowOverride
 
 	return sys.UpdateProjectConfiguration(projectID, []ProjectConfigurationSetting{setting})
@@ -1093,21 +1330,29 @@ func (sys *SystemInstance) SetProjectPreset(projectID, presetName string, allowO
 
 func (sys *SystemInstance) SetProjectLanguageMode(projectID, languageMode string, allowOverride bool) error {
 	var setting ProjectConfigurationSetting
-	setting.Key = "scan.config.sast.languageMode"
+	setting.Key = ConfigurationKeys.SAST.LanguageMode
 	setting.Value = languageMode
 	setting.AllowOverride = allowOverride
 
 	return sys.UpdateProjectConfiguration(projectID, []ProjectConfigurationSetting{setting})
 }
 
-func (sys *SystemInstance) SetProjectFileFilter(projectID, filter string, allowOverride bool) error {
+func (sys *SystemInstance) SetProjectSASTFileFilter(projectID, filter string, allowOverride bool) error {
 	var setting ProjectConfigurationSetting
-	setting.Key = "scan.config.sast.filter"
+	setting.Key = ConfigurationKeys.SAST.FileFilter
 	setting.Value = filter
 	setting.AllowOverride = allowOverride
 
-	// TODO - apply the filter across all languages? set up separate calls per engine? engine as param?
+	// TODO - apply the filter across all languages?
 
+	return sys.UpdateProjectConfiguration(projectID, []ProjectConfigurationSetting{setting})
+}
+
+func (sys *SystemInstance) SetProjectIACFileFilter(projectID, filter string, allowOverride bool) error {
+	var setting ProjectConfigurationSetting
+	setting.Key = ConfigurationKeys.IAC.FileFilter
+	setting.Value = filter
+	setting.AllowOverride = allowOverride
 	return sys.UpdateProjectConfiguration(projectID, []ProjectConfigurationSetting{setting})
 }
 
@@ -1125,35 +1370,135 @@ func (sys *SystemInstance) GetScan(scanID string) (Scan, error) {
 	return scan, nil
 }
 
-func (sys *SystemInstance) GetScanMetadatas(scanIDs []string) ([]ScanMetadata, error) {
+func (sys *SystemInstance) GetScanConfiguration(projectID, scanID string) (map[string]string, error) {
+	config := map[string]string{}
+
+	params := url.Values{
+		"scan-id":    {scanID},
+		"project-id": {projectID},
+	}
+
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/configuration/scan?%v", params.Encode()), nil, http.Header{}, []int{})
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch configuration for project %s scan %s, error was: %s", projectID, scanID, err)
+		return config, fmt.Errorf("failed to fetch metadata for scans: %w", err)
+	}
+
+	var configurations []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	}
+
+	err = json.Unmarshal(data, &configurations)
+	if err != nil {
+		return config, fmt.Errorf("failed to parse scan configurations: %s", err)
+	}
+
+	for _, conf := range configurations {
+		config[conf.Key] = conf.Value
+	}
+	return config, nil
+}
+
+func (sys *SystemInstance) GetScanMetadata(scan *Scan) (ScanMetadata, error) {
+	var scanmeta ScanMetadata
+	if slices.Contains(scan.Engines, "kics") {
+		meta, err := sys.GetScanIACMetadata(scan.ScanID)
+		if err != nil {
+			return scanmeta, err
+		}
+		scanmeta.IAC = &meta
+
+		if scanmeta.IAC.IACLOC == 0 {
+			sys.logger.Warnf("IAC scan %s shows 0 lines of code scanned.", scan.ScanID)
+		}
+	}
+	if slices.Contains(scan.Engines, "sast") {
+		meta, err := sys.GetScanSASTMetadata(scan.ScanID)
+		if err != nil {
+			details := scan.GetStatusDetails("sast")
+			if details != nil && (details.Status == "Completed" || details.Status == "Failed") {
+				meta = ScanSASTMetadata{
+					ScanID:                scan.ScanID,
+					ProjectID:             scan.ProjectID,
+					LOC:                   0,
+					FileCount:             0,
+					IsIncremental:         false,
+					IsIncrementalCanceled: false,
+					PresetName:            "",
+				}
+			} else {
+				return scanmeta, err
+			}
+		}
+		scanmeta.SAST = &meta
+		if scanmeta.SAST.LOC == 0 {
+			sys.logger.Warnf("SAST scan %s shows 0 lines of code scanned.", scan.ScanID)
+		}
+	}
+
+	return scanmeta, nil
+}
+
+func (sys *SystemInstance) GetScanSASTMetadatas(scanIDs []string) ([]ScanSASTMetadata, error) {
 	params := url.Values{
 		"scan-ids": scanIDs,
 	}
-	var scanmetadatalistresp ScanMetadataList
-	var scans []ScanMetadata
+	var scanmetadatalistresp struct {
+		TotalCount int
+		Scans      []ScanSASTMetadata
+		Missing    []string
+	}
+	var scanmetas []ScanSASTMetadata
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata?%v", params.Encode()), nil, http.Header{}, []int{})
 	if err != nil {
-		sys.logger.Errorf("Failed to fetch metadata for scans %s, error was: %s", fmt.Sprintf("%v", strings.Join(scanIDs, ",")), err)
-		return scans, fmt.Errorf("failed to fetch metadata for scans: %w", err)
+		sys.logger.Errorf("Failed to fetch SAST metadata for scans %s, error was: %s", fmt.Sprintf("%v", strings.Join(scanIDs, ",")), err)
+		return scanmetas, fmt.Errorf("failed to fetch SAST metadata for scans: %w", err)
 	}
 
 	json.Unmarshal(data, &scanmetadatalistresp)
-	scans = scanmetadatalistresp.Scans
-	return scans, nil
-
+	scanmetas = scanmetadatalistresp.Scans
+	return scanmetas, nil
 }
 
-func (sys *SystemInstance) GetScanMetadata(scanID string) (ScanMetadata, error) {
-	var scanmeta ScanMetadata
-
+func (sys *SystemInstance) GetScanSASTMetadata(scanID string) (ScanSASTMetadata, error) {
+	var scanmeta ScanSASTMetadata
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/sast-metadata/%v", scanID), nil, http.Header{}, []int{})
 	if err != nil {
-		sys.logger.Errorf("Failed to fetch metadata for scan with ID %v: %s", scanID, err)
-		return scanmeta, fmt.Errorf("failed to fetch metadata for scan with ID %v: %w", scanID, err)
+		sys.logger.Errorf("Failed to fetch SAST metadata for scan with ID %v: %s", scanID, err)
+		return scanmeta, fmt.Errorf("failed to fetch SAST metadata for scan with ID %v: %w", scanID, err)
 	}
 
-	json.Unmarshal(data, &scanmeta)
+	err = json.Unmarshal(data, &scanmeta)
+	if err != nil {
+		return scanmeta, err
+	}
+
+	return scanmeta, nil
+}
+
+func (sys *SystemInstance) GetScanIACMetadata(scanID string) (ScanIACMetadata, error) {
+	var scanmeta ScanIACMetadata
+	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("/kics-metadata/%v", scanID), nil, http.Header{}, []int{})
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch IAC metadata for scan with ID %v: %s", scanID, err)
+		return scanmeta, fmt.Errorf("failed to fetch IAC metadata for scan with ID %v: %w", scanID, err)
+	}
+
+	err = json.Unmarshal(data, &scanmeta)
+	if err != nil {
+		return scanmeta, err
+	}
+
+	presetName, err := sys.GetIACPresetNameByID(scanmeta.PresetID)
+	if err != nil {
+		sys.logger.Errorf("Failed to fetch IAC preset name for preset ID %s", scanmeta.PresetID)
+		scanmeta.PresetName = "unknown preset with id " + scanmeta.PresetID
+	} else {
+		scanmeta.PresetName = presetName
+	}
+
 	return scanmeta, nil
 }
 
@@ -1253,6 +1598,15 @@ func (s *Scan) IsIncremental() (bool, error) {
 	return false, fmt.Errorf("Scan %v did not have a sast-engine incremental flag set", s.ScanID)
 }
 
+func (s *Scan) GetStatusDetails(engine string) *ScanStatusDetails {
+	for _, detail := range s.StatusDetails {
+		if detail.Name == engine {
+			return &detail
+		}
+	}
+	return nil
+}
+
 func (sys *SystemInstance) GetScanResults(scanID string, limit uint64) ([]ScanResult, error) {
 	sys.logger.Debug("Get Cx1 Scan Results")
 	var resultResponse struct {
@@ -1295,6 +1649,10 @@ func (s *ScanSummary) TotalCount() uint64 {
 	count = 0
 
 	for _, c := range s.SASTCounters.StateCounters {
+		count += c.Counter
+	}
+
+	for _, c := range s.IACCounters.StateCounters {
 		count += c.Counter
 	}
 
@@ -1368,12 +1726,18 @@ func (sys *SystemInstance) GetResultsPredicates(SimilarityID int64, ProjectID st
 }
 
 // RequestNewReport triggers the generation of a  report for a specific scan addressed by scanID
-func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string) (string, error) {
-	return sys.RequestNewReportV2(scanID, reportType) // Report generation v1 API is removed in CxONE 3.36, use RequestNewReportV2 instead
-}
+func (sys *SystemInstance) RequestNewReport(scanID, projectID, branch, reportType string, engines []string) (string, error) {
+	return sys.RequestNewReportV2(scanID, reportType, engines) // Report generation v1 API is removed in CxONE 3.36, use RequestNewReportV2 instead
+} // TODO: remove this wrapper?
 
 // Use the new V2 Report API to generate a PDF report
-func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string, error) {
+func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string, engines []string) (string, error) {
+	if len(engines) == 0 {
+		return "", fmt.Errorf("no engines specified for report")
+	}
+
+	engineAndType := strings.ToUpper(fmt.Sprintf("%s %s", engines[0], reportType))
+
 	jsonData := map[string]interface{}{
 		"reportName": "improved-scan-report",
 		"entities": []map[string]interface{}{
@@ -1384,7 +1748,7 @@ func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string
 			},
 		},
 		"filters": map[string][]string{
-			"scanners": {"sast"},
+			"scanners": engines,
 			"severities": {
 				"critical",
 				"high",
@@ -1409,9 +1773,9 @@ func (sys *SystemInstance) RequestNewReportV2(scanID, reportType string) (string
 	header.Set("Content-Type", "application/json")
 	data, err := sendRequest(sys, http.MethodPost, "/reports/v2", bytes.NewBuffer(jsonValue), header, []int{})
 	if err != nil {
-		return "", fmt.Errorf("Failed to trigger report generation for scan %v: %w", scanID, err)
+		return "", fmt.Errorf("Failed to trigger %s report generation for scan %v: %w", engineAndType, scanID, err)
 	} else {
-		sys.logger.Infof("Generating report %v", string(data))
+		sys.logger.Infof("Generating %s report %v", engineAndType, string(data))
 	}
 
 	var reportResponse struct {
@@ -1471,6 +1835,10 @@ func (sys *SystemInstance) DownloadReport(reportUrl string) ([]byte, error) {
 }
 
 func (sys *SystemInstance) GetVersion() (VersionInfo, error) {
+	if sys.version != nil {
+		return *sys.version, nil
+	}
+
 	sys.logger.Debug("Getting Version information...")
 	var version VersionInfo
 
@@ -1481,7 +1849,34 @@ func (sys *SystemInstance) GetVersion() (VersionInfo, error) {
 	}
 
 	err = json.Unmarshal(data, &version)
-	return version, err
+	if err != nil {
+		return version, err
+	}
+
+	sys.version = &version
+	return version, nil
+}
+
+func (s ScanMetadata) TotalLOC() int {
+	total := 0
+	if s.SAST != nil {
+		total += s.SAST.LOC
+	}
+	if s.IAC != nil {
+		total += s.IAC.IACLOC
+	}
+	return total
+}
+
+func (s ScanMetadata) TotalFiles() int {
+	total := 0
+	if s.SAST != nil {
+		total += s.SAST.FileCount
+	}
+	if s.IAC != nil {
+		total += s.IAC.FileCount
+	}
+	return total
 }
 
 func (v VersionInfo) CheckCxOne(version string) int {
@@ -1519,4 +1914,26 @@ func versionStringToInts(version string) []int64 {
 		ints[id], _ = strconv.ParseInt(val, 10, 64)
 	}
 	return ints
+}
+
+func (q *scanresultQueryID) UnmarshalJSON(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+
+	if data[0] == '"' {
+		var s string
+		if err := json.Unmarshal(data, &s); err != nil {
+			return err
+		}
+		q.Value = strings.TrimSuffix(s, " [Taken from query_id]")
+		return nil
+	}
+
+	var u uint64
+	if err := json.Unmarshal(data, &u); err != nil {
+		return err
+	}
+	q.Value = u
+	return nil
 }

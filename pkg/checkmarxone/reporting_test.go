@@ -15,7 +15,7 @@ func TestCreateJSONReport(t *testing.T) {
 	resultMap["Application"] = `test-app`
 	resultMap["ApplicationFullPathOnReportDate"] = `test-app-path`
 	resultMap["DeepLink"] = `https://cx1.sap/projects/f5702f86-b396-417f-82e2-4949a55d5382/scans?branch=master&page=1&id=21e40b36-0dd7-48e5-9768-da1a8f36c907`
-	resultMap["Preset"] = `Checkmarx Default`
+	resultMap["SastPreset"] = `Checkmarx Default`
 	resultMap["ToolVersion"] = `v1`
 	resultMap["ScanType"] = `Incremental`
 	resultMap["ProjectId"] = `f5702f86-b396-417f-82e2-4949a55d5382`
