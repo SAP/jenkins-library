@@ -43,15 +43,17 @@ type checkmarxOneExecuteScanUtils interface {
 }
 
 type checkmarxOneExecuteScanHelper struct {
-	ctx     context.Context
-	config  checkmarxOneExecuteScanOptions
-	sys     checkmarxOne.System
-	influx  *checkmarxOneExecuteScanInflux
-	utils   checkmarxOneExecuteScanUtils
-	Project *checkmarxOne.Project
-	Group   *checkmarxOne.Group
-	App     *checkmarxOne.Application
-	reports []piperutils.Path
+	ctx      context.Context
+	config   checkmarxOneExecuteScanOptions
+	sys      checkmarxOne.System
+	influx   *checkmarxOneExecuteScanInflux
+	utils    checkmarxOneExecuteScanUtils
+	Project  *checkmarxOne.Project
+	Group    *checkmarxOne.Group
+	App      *checkmarxOne.Application
+	ScanSAST bool
+	ScanIAC  bool
+	reports  []piperutils.Path
 }
 
 type checkmarxOneExecuteScanUtilsBundle struct {
@@ -76,6 +78,18 @@ func checkmarxOneExecuteScan(config checkmarxOneExecuteScanOptions, _ *telemetry
 
 func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux, cx1sh *checkmarxOneExecuteScanHelper) error {
 	err := error(nil)
+
+	// if this is an IaC scan, load the help links from json
+	if cx1sh.ScanIAC {
+		if config.IacHelpLinks == "" {
+			log.Entry().Infof("No iacHelpLinks parameter provided - will use the backend API. Please consider providing this parameter to reduce server load.")
+		} else {
+			if err = cx1sh.sys.LoadIACHelpLinks(config.IacHelpLinks); err != nil {
+				log.Entry().WithError(err).Errorf("failed to load IAC help links from %s, will use the backend API.", config.IacHelpLinks)
+			}
+		}
+	}
+
 	if len(cx1sh.config.ProjectID) == 0 {
 		cx1sh.Project, err = cx1sh.GetProjectByName()
 		if err != nil && err.Error() != "project not found" {
@@ -126,9 +140,9 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		}
 	}
 
-	err = cx1sh.SetProjectPreset()
+	err = cx1sh.SetProjectPresetsAndFilters()
 	if err != nil {
-		return fmt.Errorf("failed to set preset: %s", err)
+		return fmt.Errorf("failed to set configuration: %s", err)
 	}
 
 	// update project's tags
@@ -174,7 +188,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 		return fmt.Errorf("failed to determine incremental or full scan configuration: %s", err)
 	}
 
-	if config.Incremental {
+	if config.Incremental && cx1sh.ScanSAST {
 		log.Entry().Info("If you change your file filter pattern it is recommended to run a Full scan instead of an incremental, to ensure full code coverage.")
 	}
 
@@ -227,7 +241,7 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 	// TODO: how to provide other scan parameters like engineConfiguration?
 	// TODO: potential to persist file exclusions for git?
-	err = cx1sh.PollScanStatus(scan)
+	scan, err = cx1sh.PollScanStatus(scan)
 	if err != nil {
 		return fmt.Errorf("failed while polling scan status: %s", err)
 	}
@@ -248,7 +262,6 @@ func runStep(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteS
 
 func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExecuteScanInflux) (checkmarxOneExecuteScanHelper, error) {
 	client := &piperHttp.Client{}
-
 	ctx, ghClient, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Failed to get GitHub client")
@@ -260,8 +273,22 @@ func Authenticate(config checkmarxOneExecuteScanOptions, influx *checkmarxOneExe
 	influx.step_data.fields.checkmarxOne = false
 
 	utils := newcheckmarxOneExecuteScanUtilsBundle("./", ghClient)
+	sastScan := false
+	iacScan := false
+	for _, engine := range config.Engines {
+		if strings.EqualFold(engine, "sast") {
+			sastScan = true
+		}
+		if strings.EqualFold(engine, "iac") {
+			iacScan = true
+		}
+	}
 
-	return checkmarxOneExecuteScanHelper{ctx, config, sys, influx, utils, nil, nil, nil, []piperutils.Path{}}, nil
+	if !sastScan && !iacScan {
+		return checkmarxOneExecuteScanHelper{}, fmt.Errorf("at least one scan engine must be set in the engines configuration (sast iac)")
+	}
+
+	return checkmarxOneExecuteScanHelper{ctx, config, sys, influx, utils, nil, nil, nil, sastScan, iacScan, []piperutils.Path{}}, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) GetProjectByName() (*checkmarxOne.Project, error) {
@@ -321,7 +348,7 @@ func (c *checkmarxOneExecuteScanHelper) GetApplicationByID(applicationId string)
 }
 
 func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, error) {
-	if len(c.config.Preset) == 0 {
+	if c.ScanSAST && len(c.config.SastPreset) == 0 {
 		return nil, fmt.Errorf("Preset is required to create a project")
 	}
 
@@ -346,19 +373,33 @@ func (c *checkmarxOneExecuteScanHelper) CreateProject() (*checkmarxOne.Project, 
 	log.Entry().Infof("Project %v created", project.ProjectID)
 
 	// new project, set the defaults per pipeline config
-	err = c.sys.SetProjectPreset(project.ProjectID, c.config.Preset, true)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to set preset for project %v to %v: %s", project.ProjectID, c.config.Preset, err)
-	}
-	log.Entry().Infof("Project preset updated to %v", c.config.Preset)
-
-	if len(c.config.LanguageMode) != 0 {
-		err = c.sys.SetProjectLanguageMode(project.ProjectID, c.config.LanguageMode, true)
+	if c.ScanSAST {
+		err = c.sys.SetProjectSASTPreset(project.ProjectID, c.config.SastPreset, true)
 		if err != nil {
-
-			return nil, fmt.Errorf("Unable to set languageMode for project %v to %v: %s", project.ProjectID, c.config.LanguageMode, err)
+			return nil, fmt.Errorf("Unable to set SAST preset for project %v to %v: %s", project.ProjectID, c.config.SastPreset, err)
 		}
-		log.Entry().Infof("Project languageMode updated to %v", c.config.LanguageMode)
+		log.Entry().Infof("Project SAST preset updated to %v", c.config.SastPreset)
+
+		// TODO: set sast defaults even for non-sast scan?
+		if len(c.config.LanguageMode) != 0 {
+			err = c.sys.SetProjectLanguageMode(project.ProjectID, c.config.LanguageMode, true)
+			if err != nil {
+
+				return nil, fmt.Errorf("Unable to set SAST languageMode for project %v to %v: %s", project.ProjectID, c.config.LanguageMode, err)
+			}
+			log.Entry().Infof("Project languageMode updated to %v", c.config.LanguageMode)
+		}
+	}
+
+	if c.ScanIAC {
+		if c.config.IacPreset != "" {
+			err = c.sys.SetProjectIACPreset(project.ProjectID, c.config.IacPreset, true)
+
+			if err != nil {
+				return nil, fmt.Errorf("Unable to set IAC preset for project %v to %v: %s", project.ProjectID, c.config.IacPreset, err)
+			}
+			log.Entry().Infof("Project IAC preset updated to %v", c.config.IacPreset)
+		}
 	}
 
 	return &project, nil
@@ -381,59 +422,122 @@ func (c *checkmarxOneExecuteScanHelper) UpdateProjectTags() error {
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) SetProjectPreset() error {
+func (c *checkmarxOneExecuteScanHelper) SetProjectPresetsAndFilters() error {
 	projectConf, err := c.sys.GetProjectConfiguration(c.Project.ProjectID)
 
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve current project configuration: %s", err)
+		return fmt.Errorf("failed to retrieve current project configuration: %s", err)
 	}
 
-	currentPreset := ""
+	currentSASTPreset := ""
+	currentSASTFilter := ""
+	currentIACPreset := ""
+	currentIACFilter := ""
 	currentLanguageMode := "multi" // piper default
 	for _, conf := range projectConf {
-		if conf.Key == "scan.config.sast.presetName" {
-			currentPreset = conf.Value
-		}
-		if conf.Key == "scan.config.sast.languageMode" {
+		switch conf.Key {
+		case checkmarxOne.ConfigurationKeys.SAST.PresetName:
+			currentSASTPreset = conf.Value
+		case checkmarxOne.ConfigurationKeys.SAST.LanguageMode:
 			currentLanguageMode = conf.Value
+		case checkmarxOne.ConfigurationKeys.SAST.FileFilter:
+			currentSASTFilter = conf.Value
+		case checkmarxOne.ConfigurationKeys.IAC.FileFilter:
+			currentIACFilter = conf.Value
+		case checkmarxOne.ConfigurationKeys.IAC.PresetID:
+			iacPresetName, err := c.sys.GetIACPresetNameByID(conf.Value)
+			if err != nil {
+				return err
+			}
+			currentIACPreset = iacPresetName
 		}
+
 	}
 
-	if c.config.LanguageMode == "" || strings.EqualFold(c.config.LanguageMode, "multi") { // default multi if blank
-		if currentLanguageMode != "multi" {
-			log.Entry().Info("Pipeline yaml requests multi-language scan - updating project configuration")
-			c.sys.SetProjectLanguageMode(c.Project.ProjectID, "multi", true)
+	if c.ScanSAST {
+		if c.config.LanguageMode == "" || strings.EqualFold(c.config.LanguageMode, "multi") { // default multi if blank
+			if currentLanguageMode != "multi" {
+				log.Entry().Info("Pipeline yaml requests multi-language scan - updating project configuration")
+				c.sys.SetProjectLanguageMode(c.Project.ProjectID, "multi", true)
+
+				if c.config.Incremental {
+					log.Entry().Warn("Pipeline yaml requests incremental scan, but switching from 'primary' to 'multi' language mode requires a full scan - switching from incremental to full")
+					c.config.Incremental = false
+				}
+			}
+		} else { // primary language mode
+			if currentLanguageMode != "primary" {
+				log.Entry().Info("Pipeline yaml requests primary-language scan - updating project configuration")
+				c.sys.SetProjectLanguageMode(c.Project.ProjectID, "primary", true)
+				// no need to switch incremental to full here (multi-language scan includes single-language scan coverage)
+			}
+		}
+
+		if c.config.SastPreset == "" {
+			if currentSASTPreset == "" {
+				return fmt.Errorf("must specify the SAST preset in either the pipeline yaml or in the CheckmarxOne project configuration")
+			} else {
+				log.Entry().Infof("Pipeline yaml does not specify a SAST preset, will use project configuration (%v).", currentSASTPreset)
+			}
+			c.config.SastPreset = currentSASTPreset
+		} else if currentSASTPreset != c.config.SastPreset {
+			log.Entry().Infof("Project configured SAST preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentSASTPreset, c.config.SastPreset)
+			c.sys.SetProjectSASTPreset(c.Project.ProjectID, c.config.SastPreset, true)
 
 			if c.config.Incremental {
-				log.Entry().Warn("Pipeline yaml requests incremental scan, but switching from 'primary' to 'multi' language mode requires a full scan - switching from incremental to full")
+				log.Entry().Warn("Changing project settings requires a full scan to take effect - switching from incremental to full")
 				c.config.Incremental = false
 			}
 		}
-	} else { // primary language mode
-		if currentLanguageMode != "primary" {
-			log.Entry().Info("Pipeline yaml requests primary-language scan - updating project configuration")
-			c.sys.SetProjectLanguageMode(c.Project.ProjectID, "primary", true)
-			// no need to switch incremental to full here (multi-language scan includes single-language scan coverage)
+
+		filterStr := currentSASTFilter
+		if filterStr == "" {
+			filterStr = "no filter"
+		}
+
+		if c.config.SastFilterPattern == "" {
+			log.Entry().Infof("Pipeline yaml does not specify a SAST file filter, will use project configuration (%v).", filterStr)
+			c.config.SastFilterPattern = currentSASTFilter
+		} else if currentSASTFilter != c.config.SastFilterPattern {
+			log.Entry().Infof("Project configured SAST file filter (%v) does not match pipeline yaml (%v) - updating project configuration.", currentSASTFilter, c.config.SastFilterPattern)
+			c.sys.SetProjectSASTFileFilter(c.Project.ProjectID, c.config.SastFilterPattern, true)
+
+			if c.config.Incremental {
+				log.Entry().Warn("Changing project settings requires a full scan to take effect - switching from incremental to full")
+				c.config.Incremental = false
+			}
 		}
 	}
 
-	if c.config.Preset == "" {
-		if currentPreset == "" {
-			return fmt.Errorf("must specify the preset in either the pipeline yaml or in the CheckmarxOne project configuration")
-		} else {
-			log.Entry().Infof("Pipeline yaml does not specify a preset, will use project configuration (%v).", currentPreset)
+	if c.ScanIAC {
+		presetStr := currentIACPreset
+		if presetStr == "" {
+			presetStr = "all checks"
 		}
-		c.config.Preset = currentPreset
-	} else if currentPreset != c.config.Preset {
-		log.Entry().Infof("Project configured preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentPreset, c.config.Preset)
-		c.sys.SetProjectPreset(c.Project.ProjectID, c.config.Preset, true)
+		if c.config.IacPreset == "" {
+			if currentIACPreset == "" {
+				//return fmt.Errorf("must specify the IAC preset in either the pipeline yaml or in the CheckmarxOne project configuration")
+				log.Entry().Infof("No IAC preset is set - using default (%s)", checkmarxOne.IACDefaultBlankPreset)
+			} else {
+				log.Entry().Infof("Pipeline yaml does not specify a IAC preset, will use project configuration (%v).", presetStr)
+			}
+			c.config.IacPreset = currentIACPreset
+		} else if currentIACPreset != c.config.IacPreset {
+			log.Entry().Infof("Project configured IAC preset (%v) does not match pipeline yaml (%v) - updating project configuration.", currentIACPreset, c.config.IacPreset)
+			c.sys.SetProjectIACPreset(c.Project.ProjectID, c.config.IacPreset, true)
+		}
 
-		if c.config.Incremental {
-			log.Entry().Warn("Changing project settings requires a full scan to take effect - switching from incremental to full")
-			c.config.Incremental = false
+		filterStr := currentIACFilter
+		if filterStr == "" {
+			filterStr = "no filter"
 		}
-	} else {
-		log.Entry().Infof("Project is already configured to use pipeline preset %v", currentPreset)
+		if c.config.IacFilterPattern == "" {
+			log.Entry().Infof("Pipeline yaml does not specify a IAC file filter, will use project configuration (%v).", filterStr)
+			c.config.IacFilterPattern = currentIACFilter
+		} else if currentIACFilter != c.config.IacFilterPattern {
+			log.Entry().Infof("Project configured IAC file filter (%v) does not match pipeline yaml (%v) - updating project configuration.", currentIACFilter, c.config.IacFilterPattern)
+			c.sys.SetProjectIACFileFilter(c.Project.ProjectID, c.config.IacFilterPattern, true)
+		}
 	}
 	return nil
 }
@@ -464,7 +568,7 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 		scanIds = append(scanIds, scan.ScanID)
 	}
 
-	scanMetadatas, err := c.sys.GetScanMetadatas(scanIds)
+	scanMetadatas, err := c.sys.GetScanSASTMetadatas(scanIds)
 	if err != nil {
 		return false, false, 0, fmt.Errorf("failed to fetch metadata for scans: %w", err)
 	}
@@ -488,7 +592,12 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 	return incremental, fullScanExists, contiguousIncrementalScans, nil
 }
 
+const defaultZipFilterPattern = `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`
+
 func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
+	if c.ScanIAC && c.config.FilterPattern == defaultZipFilterPattern {
+		log.Entry().Warn("Zip file filter pattern is SAST-specific, but IaC scan is enabled. Verify that the IaC files are included in the filterPattern, otherwise no files will be scanned.")
+	}
 	zipFile, err := c.zipWorkspaceFiles(c.config.FilterPattern, c.utils)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to zip workspace files")
@@ -541,31 +650,67 @@ func (c *checkmarxOneExecuteScanHelper) GetScanBranch() (string, bool, string) {
 }
 
 func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uploadLink string, baseBranch string) (*checkmarxOne.Scan, error) {
-	sastConfigString := ""
-	sastConfig := checkmarxOne.ScanConfiguration{}
-	sastConfig.ScanType = "sast"
-
-	sastConfig.Values = make(map[string]string, 0)
-	sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
-	sastConfig.Values["presetName"] = c.config.Preset // always set, either coming from config or coming from Cx1 configuration
-	if incremental && len(baseBranch) > 0 {           // base the incremental scan on the specified base branch
-		sastConfig.Values["baseBranch"] = baseBranch
-		sastConfigString = fmt.Sprintf("baseBranch: %v, ", baseBranch)
-	}
-	sastConfigString = fmt.Sprintf("%vincremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.Preset)
-
-	if len(c.config.LanguageMode) > 0 {
-		sastConfig.Values["languageMode"] = c.config.LanguageMode
-		sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
-	}
+	configs := []checkmarxOne.ScanConfiguration{}
 
 	branch, _, _ := c.GetScanBranch()
+	generalConfigString := fmt.Sprintf("Cx1 Branch name %v", branch)
+	configStrings := []string{generalConfigString}
 
-	sastConfigString = fmt.Sprintf("Cx1 Branch name %v, ", branch) + sastConfigString
+	if c.ScanSAST {
+		sastConfigString := "SAST: "
+		sastConfig := checkmarxOne.ScanConfiguration{}
+		sastConfig.ScanType = "sast"
 
-	log.Entry().Infof("Will run a scan with the following configuration: %v", sastConfigString)
+		sastConfig.Values = make(map[string]string, 0)
+		sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
+		sastConfig.Values["presetName"] = c.config.SastPreset // always set, either coming from config or coming from Cx1 configuration
+		if incremental && len(baseBranch) > 0 {               // base the incremental scan on the specified base branch
+			sastConfig.Values["baseBranch"] = baseBranch
+			sastConfigString = fmt.Sprintf("baseBranch: %v, ", baseBranch)
+		}
+		sastConfigString = fmt.Sprintf("%vincremental %v, preset %v", sastConfigString, strconv.FormatBool(incremental), c.config.SastPreset)
 
-	configs := []checkmarxOne.ScanConfiguration{sastConfig}
+		if len(c.config.LanguageMode) > 0 {
+			sastConfig.Values["languageMode"] = c.config.LanguageMode
+			sastConfigString = sastConfigString + fmt.Sprintf(", languageMode %v", c.config.LanguageMode)
+		}
+
+		if c.config.SastFilterPattern != "" {
+			sastConfigString += fmt.Sprintf(", file filter <%s>", c.config.SastFilterPattern)
+		} else {
+			sastConfigString += ", no files filtered"
+		}
+
+		configs = append(configs, sastConfig)
+		configStrings = append(configStrings, sastConfigString)
+	}
+
+	if c.ScanIAC {
+		iacConfigString := "IAC: "
+		iacConfig := checkmarxOne.ScanConfiguration{}
+		iacConfig.ScanType = "kics"
+
+		iacConfig.Values = make(map[string]string, 0)
+		presetId, err := c.sys.GetIACPresetIDByName(c.config.IacPreset)
+		if err != nil {
+			return nil, err
+		}
+		if presetId != "" {
+			iacConfig.Values["presetId"] = presetId
+		}
+		iacConfigString += fmt.Sprintf("preset %s", c.config.IacPreset)
+
+		if c.config.IacFilterPattern != "" {
+			iacConfigString += fmt.Sprintf(", file filter <%s>", c.config.IacFilterPattern)
+		} else {
+			iacConfigString += ", no files filtered"
+		}
+
+		configs = append(configs, iacConfig)
+		configStrings = append(configStrings, iacConfigString)
+	}
+
+	log.Entry().Infof("Will run a scan with the following configuration: %s", strings.Join(configStrings, "; "))
 
 	// add scan's tags
 	tags := make(map[string]string, 0)
@@ -588,22 +733,24 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 	return &scan, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) error {
+func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) (*checkmarxOne.Scan, error) {
 	statusDetails := "Scan phase: New"
 	pastStatusDetails := statusDetails
 	log.Entry().Info(statusDetails)
 	status := "New"
+	var scan_refresh checkmarxOne.Scan
+	var err error
 	for {
-		scan_refresh, err := c.sys.GetScan(scan.ScanID)
+		scan_refresh, err = c.sys.GetScan(scan.ScanID)
 
 		if err != nil {
-			return fmt.Errorf("Error while polling scan %v: %s", scan.ScanID, err)
+			return nil, fmt.Errorf("Error while polling scan %v: %s", scan.ScanID, err)
 		}
 
 		status = scan_refresh.Status
 		workflow, err := c.sys.GetScanWorkflow(scan.ScanID)
 		if err != nil {
-			return fmt.Errorf("Error while getting workflow for scan %v: %s", scan.ScanID, err)
+			return nil, fmt.Errorf("Error while getting workflow for scan %v: %s", scan.ScanID, err)
 		}
 
 		statusDetails = workflow[len(workflow)-1].Info
@@ -628,12 +775,12 @@ func (c *checkmarxOneExecuteScanHelper) PollScanStatus(scan *checkmarxOne.Scan) 
 	}
 	if status == "Canceled" {
 		log.SetErrorCategory(log.ErrorCustom)
-		return fmt.Errorf("Scan %v canceled via web interface", scan.ScanID)
+		return nil, fmt.Errorf("Scan %v canceled via web interface", scan.ScanID)
 	}
 	if status == "Failed" {
-		return fmt.Errorf("Checkmarx One scan failed with the following error: %v", statusDetails)
+		return nil, fmt.Errorf("Checkmarx One scan failed with the following error: %v", statusDetails)
 	}
-	return nil
+	return &scan_refresh, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
@@ -844,10 +991,13 @@ func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan,
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetReportPDF(scan *checkmarxOne.Scan) error {
+func (c *checkmarxOneExecuteScanHelper) GetReportPDF(scan *checkmarxOne.Scan, engines []string) error {
+	if len(engines) == 0 {
+		return fmt.Errorf("cannot generate a report for 0 engines")
+	}
 	if c.config.GeneratePdfReport {
-		pdfReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_SASTReport_%v.pdf")
-		err := c.downloadAndSaveReport(pdfReportName, scan, "pdf")
+		pdfReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_"+strings.ToUpper(engines[0])+"Report_%v.pdf")
+		err := c.downloadAndSaveReport(pdfReportName, scan, "pdf", engines)
 		if err != nil {
 			return fmt.Errorf("Report download failed: %s", err)
 		} else {
@@ -860,25 +1010,48 @@ func (c *checkmarxOneExecuteScanHelper) GetReportPDF(scan *checkmarxOne.Scan) er
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetReportSARIF(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) error {
+func (c *checkmarxOneExecuteScanHelper) GetReportSASTSARIF(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) error {
 	if c.config.ConvertToSarif {
-		log.Entry().Info("Calling conversion to SARIF function.")
-		sarif, err := checkmarxOne.ConvertCxJSONToSarif(c.sys, c.config.ServerURL, results, scanmeta, scan)
-		if err != nil {
-			return fmt.Errorf("Failed to generate SARIF: %s", err)
+		if scanmeta.SAST != nil {
+			log.Entry().Info("Calling SAST JSON conversion to SARIF function.")
+			sarif, err := checkmarxOne.ConvertCxSASTJSONToSarif(c.sys, c.config.ServerURL, results, scan)
+			if err != nil {
+				return fmt.Errorf("Failed to generate SARIF: %s", err)
+			}
+			paths, err := checkmarxOne.WriteSASTSarif(sarif)
+			if err != nil {
+				return fmt.Errorf("Failed to write SARIF: %s", err)
+			}
+			c.reports = append(c.reports, paths...)
 		}
-		paths, err := checkmarxOne.WriteSarif(sarif)
-		if err != nil {
-			return fmt.Errorf("Failed to write SARIF: %s", err)
-		}
-		c.reports = append(c.reports, paths...)
 	}
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetReportJSON(scan *checkmarxOne.Scan) error {
-	jsonReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_SASTReport_%v.json")
-	err := c.downloadAndSaveReport(jsonReportName, scan, "json")
+func (c *checkmarxOneExecuteScanHelper) GetReportIACSARIF(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) error {
+	if c.config.ConvertToSarif {
+		if scanmeta.IAC != nil {
+			log.Entry().Info("Calling IAC JSON conversion to SARIF function.")
+			sarif, err := checkmarxOne.ConvertCxIACJSONToSarif(c.sys, c.config.ServerURL, results, scan)
+			if err != nil {
+				return fmt.Errorf("Failed to generate SARIF: %s", err)
+			}
+			paths, err := checkmarxOne.WriteIACSarif(sarif)
+			if err != nil {
+				return fmt.Errorf("Failed to write SARIF: %s", err)
+			}
+			c.reports = append(c.reports, paths...)
+		}
+	}
+	return nil
+}
+
+func (c *checkmarxOneExecuteScanHelper) GetReportJSON(scan *checkmarxOne.Scan, engines []string) error {
+	if len(engines) == 0 {
+		return fmt.Errorf("cannot generate a report for 0 engines")
+	}
+	jsonReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_"+strings.ToUpper(engines[0])+"Report_%v.json")
+	err := c.downloadAndSaveReport(jsonReportName, scan, "json", engines)
 	if err != nil {
 		return fmt.Errorf("Report download failed: %s", err)
 	} else {
@@ -903,7 +1076,7 @@ func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map
 func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (map[string]interface{}, error) {
 	var detailedResults map[string]interface{}
 
-	scanmeta, err := c.sys.GetScanMetadata(scan.ScanID)
+	scanmeta, err := c.sys.GetScanMetadata(scan)
 	if err != nil {
 		return detailedResults, fmt.Errorf("Unable to fetch scan metadata for scan %v: %s", scan.ScanID, err)
 	}
@@ -928,18 +1101,36 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 		return detailedResults, fmt.Errorf("Unable to fetch detailed results for scan %v: %s", scan.ScanID, err)
 	}
 
-	err = c.GetReportJSON(scan)
-	if err != nil {
-		log.Entry().WithError(err).Warnf("Failed to get JSON report")
+	if c.ScanSAST {
+		err = c.GetReportJSON(scan, []string{"sast"})
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to get JSON SAST report")
+		}
+		err = c.GetReportPDF(scan, []string{"sast"})
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to get PDF SAST report")
+		}
+		err = c.GetReportSASTSARIF(scan, &scanmeta, &results)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to get SARIF SAST report")
+		}
 	}
-	err = c.GetReportPDF(scan)
-	if err != nil {
-		log.Entry().WithError(err).Warnf("Failed to get PDF report")
+
+	if c.ScanIAC {
+		err = c.GetReportJSON(scan, []string{"iac"})
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to get JSON IAC report")
+		}
+		err = c.GetReportPDF(scan, []string{"iac"})
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to get PDF IAC report")
+		}
+		err = c.GetReportIACSARIF(scan, &scanmeta, &results)
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to get SARIF IAC report")
+		}
 	}
-	err = c.GetReportSARIF(scan, &scanmeta, &results)
-	if err != nil {
-		log.Entry().WithError(err).Warnf("Failed to get SARIF report")
-	}
+
 	err = c.GetHeaderReportJSON(&detailedResults)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Failed to generate JSON Header report")
@@ -963,8 +1154,8 @@ func (c *checkmarxOneExecuteScanHelper) createReportName(workspace, reportFileNa
 	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
 }
 
-func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName string, scan *checkmarxOne.Scan, reportType string) error {
-	report, err := c.generateAndDownloadReport(scan, reportType)
+func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName string, scan *checkmarxOne.Scan, reportType string, engines []string) error {
+	report, err := c.generateAndDownloadReport(scan, reportType, engines)
 	if err != nil {
 		return fmt.Errorf("failed to download the report: %w", err)
 	}
@@ -972,10 +1163,10 @@ func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName str
 	return c.utils.WriteFile(reportFileName, report, 0o700)
 }
 
-func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmarxOne.Scan, reportType string) ([]byte, error) {
+func (c *checkmarxOneExecuteScanHelper) generateAndDownloadReport(scan *checkmarxOne.Scan, reportType string, engines []string) ([]byte, error) {
 	var finalStatus checkmarxOne.ReportStatus
 
-	report, err := c.sys.RequestNewReport(scan.ScanID, scan.ProjectID, scan.Branch, reportType)
+	report, err := c.sys.RequestNewReport(scan.ScanID, scan.ProjectID, scan.Branch, reportType, engines)
 	if err != nil {
 		return []byte{}, fmt.Errorf("failed to request new report: %w", err)
 	}
@@ -1049,9 +1240,6 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 		}
 	}
 
-	resultMap["LinesOfCodeScanned"] = scanmeta.LOC
-	resultMap["FilesScanned"] = scanmeta.FileCount
-
 	version, err := c.sys.GetVersion()
 	if err != nil {
 		resultMap["ToolVersion"] = "Error fetching current version"
@@ -1059,13 +1247,33 @@ func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Sc
 		resultMap["ToolVersion"] = fmt.Sprintf("CxOne: %v, SAST: %v, KICS: %v", version.CxOne, version.SAST, version.KICS)
 	}
 
-	if scanmeta.IsIncremental {
-		resultMap["ScanType"] = "Incremental"
+	if scanmeta.SAST != nil {
+		resultMap["SastPreset"] = scanmeta.SAST.PresetName
+		if !scanmeta.SAST.IsIncremental {
+			resultMap["ScanType"] = "Full"
+		} else {
+			resultMap["ScanType"] = "Incremental"
+		}
+
+		resultMap["LinesOfCodeScanned"] = scanmeta.SAST.LOC
+		resultMap["FilesScanned"] = scanmeta.SAST.FileCount
 	} else {
 		resultMap["ScanType"] = "Full"
+		resultMap["SastPreset"] = "n/a"
+
+		resultMap["LinesOfCodeScanned"] = 0
+		resultMap["FilesScanned"] = 0
 	}
 
-	resultMap["Preset"] = scanmeta.PresetName
+	if scanmeta.IAC != nil {
+		resultMap["IacPreset"] = scanmeta.IAC.PresetName
+		resultMap["IacLinesOfCodeScanned"] = scanmeta.IAC.IACLOC
+		resultMap["IacFilesScanned"] = scanmeta.IAC.FileCount
+	} else {
+		resultMap["IacPreset"] = "n/a"
+		resultMap["IacLinesOfCodeScanned"] = 0
+		resultMap["IacFilesScanned"] = 0
+	}
 	resultMap["DeepLink"] = fmt.Sprintf("%v/projects/%v/overview?branch=%v", c.config.ServerURL, c.Project.ProjectID, url.QueryEscape(scan.Branch))
 	resultMap["ReportCreationTime"] = time.Now().String()
 	resultMap["Critical"] = map[string]int{}
@@ -1177,14 +1385,14 @@ func (c *checkmarxOneExecuteScanHelper) zipWorkspaceFiles(filterPattern string, 
 	}
 	defer zipFile.Close()
 
-	err = c.zipFolder(utils.GetWorkspace(), zipFile, patterns, utils)
+	err = c.zipFolder(utils.GetWorkspace(), zipFile, patterns, zipFileName, utils)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compact folder: %w", err)
 	}
 	return zipFile, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writer, patterns []string, utils checkmarxOneExecuteScanUtils) error {
+func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writer, patterns []string, zipFileName string, utils checkmarxOneExecuteScanUtils) error {
 	archive := zip.NewWriter(zipFile)
 	defer archive.Close()
 
@@ -1200,6 +1408,13 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		baseDir = filepath.Base(source)
 	}
 
+	// resolve the output archive's absolute path so it can be skipped during the walk,
+	// otherwise the archive would recursively include itself and inflate indefinitely
+	absZipFileName, absZipErr := filepath.Abs(zipFileName)
+	if absZipErr != nil {
+		absZipFileName = filepath.Clean(zipFileName)
+	}
+
 	fileCount := 0
 	err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -1207,6 +1422,15 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		}
 
 		if !info.Mode().IsRegular() || info.Size() == 0 {
+			return nil
+		}
+
+		// skip the output archive itself to avoid recursively zipping it into itself
+		absPath, absErr := filepath.Abs(path)
+		if absErr != nil {
+			absPath = filepath.Clean(path)
+		}
+		if absPath == absZipFileName {
 			return nil
 		}
 
@@ -1550,7 +1774,8 @@ func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]inter
 	c.influx.checkmarxOne_data.fields.tool_version = (*results)["ToolVersion"].(string)
 
 	c.influx.checkmarxOne_data.fields.scan_type = (*results)["ScanType"].(string)
-	c.influx.checkmarxOne_data.fields.preset = (*results)["Preset"].(string)
+	c.influx.checkmarxOne_data.fields.preset = (*results)["SastPreset"].(string)
+	c.influx.checkmarxOne_data.fields.iac_preset = (*results)["IacPreset"].(string)
 	c.influx.checkmarxOne_data.fields.deep_link = (*results)["DeepLink"].(string)
 	c.influx.checkmarxOne_data.fields.report_creation_time = (*results)["ReportCreationTime"].(string)
 }

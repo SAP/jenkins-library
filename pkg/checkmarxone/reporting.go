@@ -27,12 +27,14 @@ type CheckmarxOneReportData struct {
 	GroupID         string     `json:"groupID"`
 	DeepLink        string     `json:"deepLink"`
 	Preset          string     `json:"preset"`
+	IACPreset       string     `json:"iacPreset"`
 	ScanType        string     `json:"scanType"`
 	Findings        *[]Finding `json:"findings"`
 }
 
 type Finding struct {
 	ClassificationName string         `json:"classificationName"`
+	Engine             string         `json:"engine"`
 	Total              int            `json:"total,omitempty"`
 	Audited            *int           `json:"audited,omitempty"`
 	Confirmed          int            `json:"confirmed,omitempty"`
@@ -61,10 +63,13 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 			{Description: "Scan start", Details: fmt.Sprint((*data)["ScanStart"])},
 			{Description: "Scan duration", Details: fmt.Sprint((*data)["ScanTime"])},
 			{Description: "Scan type", Details: fmt.Sprint((*data)["ScanType"])},
-			{Description: "Preset", Details: fmt.Sprint((*data)["Preset"])},
+			{Description: "Preset", Details: fmt.Sprint((*data)["SastPreset"])},
+			{Description: "IAC Preset", Details: fmt.Sprint((*data)["IacPreset"])},
 			{Description: "Report creation time", Details: fmt.Sprint((*data)["ReportCreationTime"])},
-			{Description: "Lines of code scanned", Details: fmt.Sprint((*data)["LinesOfCodeScanned)"])},
-			{Description: "Files scanned", Details: fmt.Sprint((*data)["FilesScanned)"])},
+			{Description: "Lines of code scanned", Details: fmt.Sprint((*data)["LinesOfCodeScanned"])},
+			{Description: "Files scanned", Details: fmt.Sprint((*data)["FilesScanned"])},
+			{Description: "IAC Lines of code scanned", Details: fmt.Sprint((*data)["IacLinesOfCodeScanned"])},
+			{Description: "IAC Files scanned", Details: fmt.Sprint((*data)["IacFilesScanned"])},
 			{Description: "Tool version", Details: fmt.Sprint((*data)["ToolVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
@@ -151,7 +156,7 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		ApplicationID:   fmt.Sprint((*data)["Application"]),
 		ApplicationName: fmt.Sprint((*data)["ApplicationFullPathOnReportDate"]),
 		DeepLink:        fmt.Sprint((*data)["DeepLink"]),
-		Preset:          fmt.Sprint((*data)["Preset"]),
+		Preset:          fmt.Sprint((*data)["SastPreset"]),
 		ToolVersion:     fmt.Sprint((*data)["ToolVersion"]),
 		ScanType:        fmt.Sprint((*data)["ScanType"]),
 		ProjectID:       fmt.Sprint((*data)["ProjectId"]),
@@ -236,11 +241,11 @@ func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path
 }
 
 // WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
-func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+func WriteSASTSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
-	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	sarifReportPath := filepath.Join(ReportsDirectory, "result-sast.sarif")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
@@ -258,9 +263,39 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, fmt.Errorf("failed to write CheckmarxOne SARIF report: %w", err)
+		return reportPaths, fmt.Errorf("failed to write CheckmarxOne SAST SARIF report: %w", err)
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SARIF Report", Target: sarifReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SAST SARIF Report", Target: sarifReportPath})
+
+	return reportPaths, nil
+}
+
+// WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
+func WriteIACSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "result-iac.sarif")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
+	}
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
+	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, fmt.Errorf("failed to write CheckmarxOne SAST SARIF report: %w", err)
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SAST SARIF Report", Target: sarifReportPath})
 
 	return reportPaths, nil
 }
