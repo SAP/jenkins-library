@@ -16,7 +16,7 @@ SAP-specific extensions live in the InnerSource `piper-library`, which imports t
 
 ## Tech stack
 
-- **Go 1.25** — step implementations in `cmd/`, shared logic in `pkg/`
+- **Go 1.26** — step implementations in `cmd/`, shared logic in `pkg/`
 - **Groovy** — Jenkins shared library in `vars/`
 - **YAML metadata** — in `resources/metadata/`, drives code generation and docs
 - **Maven** — Jenkins library JAR artifacts (`pom.xml`)
