@@ -124,6 +124,9 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 		}
 	}
 
+	// buildSettingsInfo is written only on the success path — a failed helm run
+	// produces no meaningful build artifact, so there is nothing to report to
+	// downstream compliance steps.
 	log.Entry().Debugf("creating build settings information...")
 	dockerImage, err := GetDockerImageValue("helmBuild")
 	if err != nil {
