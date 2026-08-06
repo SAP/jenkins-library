@@ -1,0 +1,5 @@
+# Values for the image-free TestHelmIntegration chart.
+# Intentionally references NO container image so helmExecute's SBOM path skips
+# the syft container scan (which would require a network download) and only the
+# pure-Go chart BOM (bom-helm.xml) is produced.
+greeting: "hello from helmExecute integration test"
