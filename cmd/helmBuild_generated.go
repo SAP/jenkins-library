@@ -51,8 +51,6 @@ type helmBuildOptions struct {
 	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
 	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
 	BuildSettingsInfo         string   `json:"buildSettingsInfo,omitempty"`
-	CreateBOM                 bool     `json:"createBOM,omitempty"`
-	DockerImage               string   `json:"dockerImage,omitempty"`
 }
 
 type helmBuildCommonPipelineEnvironment struct {
@@ -281,8 +279,6 @@ func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TemplateEndDelimiter, "templateEndDelimiter", `}}`, "When templating value files, use this end delimiter.")
 	cmd.Flags().BoolVar(&stepConfig.RenderValuesTemplate, "renderValuesTemplate", true, "A flag to turn templating value files on or off.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the helm build. This information is typically used for compliance related processes.")
-	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
-	cmd.Flags().StringVar(&stepConfig.DockerImage, "dockerImage", `alpine/k8s:1.33.13`, "Name of the docker image that executes the step.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -704,24 +700,6 @@ func helmBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
-					},
-					{
-						Name:        "createBOM",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     false,
-					},
-					{
-						Name:        "dockerImage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `alpine/k8s:1.33.13`,
 					},
 				},
 			},

@@ -385,22 +385,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
-      - name: createBOM
-        type: bool
-        description: Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.
-        scope:
-          - GENERAL
-          - STEPS
-          - STAGES
-          - PARAMETERS
-      - name: dockerImage
-        type: string
-        description: Name of the docker image that executes the step.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: alpine/k8s:1.33.13
   containers:
     - image: alpine/k8s:1.33.13
       workingDir: /config

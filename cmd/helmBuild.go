@@ -125,10 +125,13 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 	}
 
 	log.Entry().Debugf("creating build settings information...")
+	dockerImage, err := GetDockerImageValue("helmBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to retrieve dockerImage configuration: %v", err)
+	}
 	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&buildsettings.BuildOptions{
-		DockerImage:       config.DockerImage,
+		DockerImage:       dockerImage,
 		Publish:           config.Publish,
-		CreateBOM:         config.CreateBOM,
 		BuildSettingsInfo: config.BuildSettingsInfo,
 	}, "helmBuild")
 	if err != nil {
