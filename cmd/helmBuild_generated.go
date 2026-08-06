@@ -50,11 +50,15 @@ type helmBuildOptions struct {
 	TemplateStartDelimiter    string   `json:"templateStartDelimiter,omitempty"`
 	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
 	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
+	BuildSettingsInfo         string   `json:"buildSettingsInfo,omitempty"`
+	CreateBOM                 bool     `json:"createBOM,omitempty"`
+	DockerImage               string   `json:"dockerImage,omitempty"`
 }
 
 type helmBuildCommonPipelineEnvironment struct {
 	custom struct {
-		helmChartURL string
+		helmChartURL      string
+		buildSettingsInfo string
 	}
 }
 
@@ -65,6 +69,7 @@ func (p *helmBuildCommonPipelineEnvironment) persist(path, resourceName string) 
 		value    interface{}
 	}{
 		{category: "custom", name: "helmChartUrl", value: p.custom.helmChartURL},
+		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 	}
 
 	errCount := 0
@@ -275,6 +280,9 @@ func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TemplateStartDelimiter, "templateStartDelimiter", `{{`, "When templating value files, use this start delimiter.")
 	cmd.Flags().StringVar(&stepConfig.TemplateEndDelimiter, "templateEndDelimiter", `}}`, "When templating value files, use this end delimiter.")
 	cmd.Flags().BoolVar(&stepConfig.RenderValuesTemplate, "renderValuesTemplate", true, "A flag to turn templating value files on or off.")
+	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the helm build. This information is typically used for compliance related processes.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
+	cmd.Flags().StringVar(&stepConfig.DockerImage, "dockerImage", `alpine/k8s:1.33.13`, "Name of the docker image that executes the step.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -683,6 +691,38 @@ func helmBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     true,
 					},
+					{
+						Name: "buildSettingsInfo",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/buildSettingsInfo",
+							},
+						},
+						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "dockerImage",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `alpine/k8s:1.33.13`,
+					},
 				},
 			},
 			Containers: []config.Container{
@@ -695,6 +735,7 @@ func helmBuildMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"name": "custom/helmChartUrl"},
+							{"name": "custom/buildSettingsInfo"},
 						},
 					},
 				},

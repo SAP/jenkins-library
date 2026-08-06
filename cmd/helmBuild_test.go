@@ -554,3 +554,61 @@ func (f *fileHandlerMock) FileExists(name string) (bool, error) {
 	f.fileExistsCalled = append(f.fileExistsCalled, name)
 	return true, nil
 }
+
+func TestRunHelmBuildSettingsInfo(t *testing.T) {
+	t.Parallel()
+
+	t.Run("buildSettingsInfo written to CPE after successful run", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+		helmExecutor.On("RunHelmPublish").Return("", nil)
+
+		config := helmBuildOptions{
+			HelmCommand: "",
+			DockerImage: "alpine/k8s:1.33.13",
+			Publish:     true,
+			CreateBOM:   true,
+		}
+
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe)
+		require.NoError(t, err)
+		assert.NotEmpty(t, cpe.custom.buildSettingsInfo)
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "alpine/k8s:1.33.13")
+	})
+
+	t.Run("existing buildSettingsInfo is appended to", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+		helmExecutor.On("RunHelmPublish").Return("", nil)
+
+		config := helmBuildOptions{
+			HelmCommand:       "",
+			DockerImage:       "alpine/k8s:1.33.13",
+			BuildSettingsInfo: `{"mavenBuild":[{"dockerImage":"maven:3.8"}]}`,
+		}
+
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe)
+		require.NoError(t, err)
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "mavenBuild")
+	})
+
+	t.Run("buildSettingsInfo written even for lint-only run", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+
+		config := helmBuildOptions{
+			HelmCommand: "lint",
+			DockerImage: "alpine/k8s:1.33.13",
+		}
+
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe)
+		require.NoError(t, err)
+		assert.NotEmpty(t, cpe.custom.buildSettingsInfo)
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
+	})
+}

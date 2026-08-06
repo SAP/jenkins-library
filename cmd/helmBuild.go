@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -122,6 +123,18 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 			return err
 		}
 	}
+
+	log.Entry().Debugf("creating build settings information...")
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&buildsettings.BuildOptions{
+		DockerImage:       config.DockerImage,
+		Publish:           config.Publish,
+		CreateBOM:         config.CreateBOM,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+	}, "helmBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	return nil
 }

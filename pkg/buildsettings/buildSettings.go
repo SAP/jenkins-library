@@ -13,6 +13,7 @@ type BuildSettings struct {
 	DockerBuild        []BuildOptions `json:"dockerBuild,omitempty"`
 	GolangBuild        []BuildOptions `json:"golangBuild,omitempty"`
 	GradleExecuteBuild []BuildOptions `json:"gradleExecuteBuild,omitempty"`
+	HelmBuild          []BuildOptions `json:"helmBuild,omitempty"`
 	HelmExecute        []BuildOptions `json:"helmExecute,omitempty"`
 	KanikoExecute      []BuildOptions `json:"kanikoExecute,omitempty"`
 	MavenBuild         []BuildOptions `json:"mavenBuild,omitempty"`
@@ -91,6 +92,10 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		case "gradleExecuteBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				GradleExecuteBuild: settings,
+			})
+		case "helmBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				HelmBuild: settings,
 			})
 		case "helmExecute":
 			jsonResult, err = json.Marshal(BuildSettings{
