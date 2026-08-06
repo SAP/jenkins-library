@@ -47,7 +47,7 @@ func Execute() {
 	rootCmd.AddCommand(UiVeri5ExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
-	rootCmd.AddCommand(HelmExecuteCommand())
+	rootCmd.AddCommand(HelmBuildCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
 	rootCmd.AddCommand(GithubCommentIssueCommand())
