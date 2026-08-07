@@ -5,8 +5,10 @@ metadata:
       deprecated: false
   description: "This step will execute backend integration tests via the Jacoco Maven-plugin."
   longDescription: |
-    If the project contains a Maven module named "integration-tests", this step will execute
+    If the project contains a Maven module for integration tests, this step will execute
     the integration tests via the Jacoco Maven-plugin.
+    By default the module is expected at `integration-tests/pom.xml`. Use the `pomPath`
+    parameter to point to a different location.
 spec:
   inputs:
     params:
@@ -71,6 +73,17 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: pomPath
+        type: string
+        description: >
+          Path to the pom.xml of the integration-test Maven module.
+          Defaults to `integration-tests/pom.xml`. Override this if your
+          integration-test module lives under a different directory or file name.
+        scope:
+          - PARAMETERS
+          - STEPS
+          - STAGES
+        default: "integration-tests/pom.xml"
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string

@@ -200,6 +200,93 @@ func TestValidateForkCount(t *testing.T) {
 	}
 }
 
+func TestCustomPomPathDoesNotExist(t *testing.T) {
+	t.Parallel()
+	utils := newMavenIntegrationTestsUtilsBundle()
+
+	config := mavenExecuteIntegrationOptions{
+		PomPath: "my-it-module/pom.xml",
+	}
+
+	err := runMavenExecuteIntegration(&config, utils)
+
+	assert.EqualError(t, err, "maven module 'my-it-module' does not exist in project structure")
+}
+
+func TestCustomPomPath(t *testing.T) {
+	t.Parallel()
+	utils := newMavenIntegrationTestsUtilsBundle()
+	utils.FilesMock.AddFile("my-it-module/pom.xml", []byte(`<project> </project>`))
+
+	config := mavenExecuteIntegrationOptions{
+		PomPath:   "my-it-module/pom.xml",
+		Retry:     1,
+		ForkCount: "1C",
+		Goal:      "test",
+	}
+
+	err := runMavenExecuteIntegration(&config, utils)
+	if err != nil {
+		t.Fatalf("Error %s", err)
+	}
+
+	expectedTestExecutionParameters := []string{
+		"--file",
+		filepath.Join(".", "my-it-module", "pom.xml"),
+		"-Dsurefire.rerunFailingTestsCount=1",
+		"-Dsurefire.forkCount=1C",
+		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+		"--batch-mode",
+		"org.jacoco:jacoco-maven-plugin:prepare-agent",
+		"test",
+	}
+
+	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedTestExecutionParameters}, utils.ExecMockRunner.Calls[0])
+}
+
+func TestCustomPomPathWithReactorInstall(t *testing.T) {
+	t.Parallel()
+	utils := newMavenIntegrationTestsUtilsBundle()
+	utils.FilesMock.AddFile("my-it-module/pom.xml", []byte(`<project> </project>`))
+
+	config := mavenExecuteIntegrationOptions{
+		PomPath:            "my-it-module/pom.xml",
+		Retry:              1,
+		ForkCount:          "1C",
+		Goal:               "test",
+		InstallWithReactor: true,
+	}
+
+	err := runMavenExecuteIntegration(&config, utils)
+	if err != nil {
+		t.Fatalf("Error %s", err)
+	}
+
+	expectedInstallParameters := []string{
+		"-pl",
+		"my-it-module",
+		"-am",
+		"-DskipTests",
+		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+		"--batch-mode",
+		"install",
+	}
+
+	expectedTestExecutionParameters := []string{
+		"--file",
+		filepath.Join(".", "my-it-module", "pom.xml"),
+		"-Dsurefire.rerunFailingTestsCount=1",
+		"-Dsurefire.forkCount=1C",
+		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+		"--batch-mode",
+		"org.jacoco:jacoco-maven-plugin:prepare-agent",
+		"test",
+	}
+
+	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedInstallParameters}, utils.ExecMockRunner.Calls[0])
+	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedTestExecutionParameters}, utils.ExecMockRunner.Calls[1])
+}
+
 func newMavenIntegrationTestsUtilsBundle() *mavenExecuteIntegrationTestUtilsBundle {
 	utilsBundle := mavenExecuteIntegrationTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
