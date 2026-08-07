@@ -178,7 +178,7 @@ func TestNPMIntegrationCreateBOMNpm(t *testing.T) {
 
 	// Verify cyclonedx-npm is called with expected arguments for npm
 	assert.Contains(t, output,
-		"running command: ./tmp/node_modules/.bin/cyclonedx-npm --output-format XML --spec-version "+npm.CycloneDxSchemaVersion+" --omit dev --output-file bom-npm.xml package.json",
+		"running command: ./tmp/node_modules/.bin/cyclonedx-npm --output-format XML --spec-version "+npm.CycloneDxSchemaVersion+" --omit dev --ignore-npm-errors --output-file bom-npm.xml package.json",
 		"BOM generation should invoke cyclonedx-npm with the expected arguments for npm")
 
 	// Verify the generated BOM file exists and references the correct CycloneDX schema version
@@ -209,7 +209,7 @@ func TestNPMIntegrationCreateBOMYarn(t *testing.T) {
 
 	// Verify cyclonedx-npm is called with expected arguments for yarn
 	assert.Contains(t, output,
-		"running command: ./tmp/node_modules/.bin/cyclonedx-npm --output-format XML --spec-version "+npm.CycloneDxSchemaVersion+" --omit dev --output-file bom-npm.xml package.json",
+		"running command: ./tmp/node_modules/.bin/cyclonedx-npm --output-format XML --spec-version "+npm.CycloneDxSchemaVersion+" --omit dev --ignore-npm-errors --output-file bom-npm.xml package.json",
 		"BOM generation should invoke cyclonedx-npm with the expected arguments for yarn")
 
 	// Verify the generated BOM file exists and references the correct CycloneDX schema version
