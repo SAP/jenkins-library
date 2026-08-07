@@ -537,3 +537,25 @@ func TestAccessTokensFromEnvJSON(t *testing.T) {
 		assert.Equal(t, test.expectedTokenList, AccessTokensFromEnvJSON(test.inputJSON), test.description)
 	}
 }
+
+func TestHelmBuildCobraAlias(t *testing.T) {
+	t.Run("helmExecute resolves as cobra alias for helmBuild", func(t *testing.T) {
+		cmd := HelmBuildCommand()
+		assert.Equal(t, "helmBuild", cmd.Use)
+		assert.Contains(t, cmd.Aliases, "helmExecute")
+	})
+
+	t.Run("helmBuild registered in rootCmd", func(t *testing.T) {
+		// Verify the root command can resolve both helmBuild and helmExecute
+		root := &cobra.Command{Use: "piper"}
+		root.AddCommand(HelmBuildCommand())
+
+		found, _, err := root.Find([]string{"helmBuild"})
+		assert.NoError(t, err)
+		assert.Equal(t, "helmBuild", found.Use)
+
+		found, _, err = root.Find([]string{"helmExecute"})
+		assert.NoError(t, err)
+		assert.Equal(t, "helmBuild", found.Use)
+	})
+}

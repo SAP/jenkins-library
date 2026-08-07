@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestReadPipelineStepData(t *testing.T) {
@@ -792,5 +793,40 @@ func TestResolveMetadata(t *testing.T) {
 		stepName := ""
 		_, err := ResolveMetadata(map[string]string{}, testMetadataResolver, "", stepName)
 		assert.EqualError(t, err, "either one of stepMetadata or stepName parameter has to be passed")
+	})
+}
+
+func TestStepMetadataCLIAliases(t *testing.T) {
+	t.Run("cliAliases parsed from YAML", func(t *testing.T) {
+		yamlContent := `
+metadata:
+  name: myStep
+  cliAliases:
+    - myOldStep
+    - myLegacyStep
+  description: some step
+spec:
+  inputs:
+    params: []
+`
+		var stepData StepData
+		err := yaml.Unmarshal([]byte(yamlContent), &stepData)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"myOldStep", "myLegacyStep"}, stepData.Metadata.CLIAliases)
+	})
+
+	t.Run("cliAliases absent when not set", func(t *testing.T) {
+		yamlContent := `
+metadata:
+  name: myStep
+  description: some step
+spec:
+  inputs:
+    params: []
+`
+		var stepData StepData
+		err := yaml.Unmarshal([]byte(yamlContent), &stepData)
+		assert.NoError(t, err)
+		assert.Empty(t, stepData.Metadata.CLIAliases)
 	})
 }

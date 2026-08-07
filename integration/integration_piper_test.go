@@ -32,6 +32,19 @@ func TestPiperIntegrationHelp(t *testing.T) {
 	assert.Contains(t, commandOutput.String(), "Use \"piper [command] --help\" for more information about a command.")
 }
 
+func TestHelmBuildHelpAlias(t *testing.T) {
+	for _, cmd := range []string{"helmBuild", "helmExecute"} {
+		t.Run(cmd, func(t *testing.T) {
+			piperCmd := command.Command{}
+			var out bytes.Buffer
+			piperCmd.Stdout(&out)
+			err := piperCmd.RunExecutable(getPiperExecutable(), cmd, "--help")
+			assert.NoErrorf(t, err, "Calling piper %s --help failed", cmd)
+			assert.Contains(t, out.String(), "helmBuild")
+		})
+	}
+}
+
 func getPiperExecutable() string {
 	if p := os.Getenv("PIPER_INTEGRATION_EXECUTABLE"); len(p) > 0 {
 		fmt.Println("Piper executable for integration test: " + p)
