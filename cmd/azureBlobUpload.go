@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/service"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/go-playground/validator/v10"
@@ -16,18 +17,18 @@ import (
 
 // AzureContainerAPI is used to mock Azure containerClients in unit tests
 type azureContainerAPI interface {
-	NewBlockBlobClient(blobName string) (*azblob.BlockBlobClient, error)
+	NewBlockBlobClient(blobName string) *blockblob.Client
 }
 
 // newBlockBlobClient creates a blockBlobClient from a containerClient
-func newBlockBlobClient(blobName string, api azureContainerAPI) (*azblob.BlockBlobClient, error) {
+func newBlockBlobClient(blobName string, api azureContainerAPI) *blockblob.Client {
 	return api.NewBlockBlobClient(blobName)
 }
 
 // uploadFileFunc uploads a file to an Azure Blob Storage
 // The function uses the UploadFile function from the Azure SDK
 // We introduce this 'wrapper' for mocking reasons
-func uploadFileFunc(ctx context.Context, blobClient *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
+func uploadFileFunc(ctx context.Context, blobClient *blockblob.Client, file *os.File, o *blockblob.UploadFileOptions) (blockblob.UploadFileResponse, error) {
 	return blobClient.UploadFile(ctx, file, o)
 }
 
@@ -53,7 +54,7 @@ func runAzureBlobUpload(config *azureBlobUploadOptions) error {
 	return executeUpload(config, containerClient, uploadFileFunc)
 }
 
-func setup(config *azureBlobUploadOptions) (*azblob.ContainerClient, error) {
+func setup(config *azureBlobUploadOptions) (*container.Client, error) {
 	// Read credentials from JSON String
 	log.Entry().Infoln("Start reading Azure Credentials")
 	var creds azureCredentials
@@ -71,18 +72,14 @@ func setup(config *azureBlobUploadOptions) (*azblob.ContainerClient, error) {
 
 	// Initialize Azure Service Client
 	sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/?%s", creds.AccountName, creds.SASToken)
-	serviceClient, err := azblob.NewServiceClientWithNoCredential(sasURL, nil)
+	serviceClient, err := service.NewClientWithNoCredential(sasURL, nil)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
 		return nil, fmt.Errorf("Could not instantiate Azure Service Client: %w", err)
 	}
 
 	// Get a containerClient from ServiceClient
-	containerClient, err := serviceClient.NewContainerClient(creds.Container)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorService)
-		return nil, fmt.Errorf("Could not instantiate Azure Container Client from Azure Service Client: %w", err)
-	}
+	containerClient := serviceClient.NewContainerClient(creds.Container)
 	return containerClient, nil
 }
 
@@ -95,7 +92,7 @@ func validate(creds *azureCredentials) error {
 	return nil
 }
 
-func executeUpload(config *azureBlobUploadOptions, containerClient azureContainerAPI, uploadFunc func(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error)) error {
+func executeUpload(config *azureBlobUploadOptions, containerClient azureContainerAPI, uploadFunc func(ctx context.Context, api *blockblob.Client, file *os.File, o *blockblob.UploadFileOptions) (blockblob.UploadFileResponse, error)) error {
 	log.Entry().Infof("Starting walk through FilePath '%v'", config.FilePath)
 
 	// All Blob Operations operate with context.Context, in our case the clients do not expire
@@ -124,15 +121,11 @@ func executeUpload(config *azureBlobUploadOptions, containerClient azureContaine
 			key := filepath.ToSlash(currentFilePath)
 
 			// Get a blockBlobClient from containerClient
-			blockBlobClient, e := newBlockBlobClient(key, containerClient)
-			if e != nil {
-				log.SetErrorCategory(log.ErrorService)
-				return fmt.Errorf("Could not instantiate Azure blockBlobClient from Azure Container Client: %w", e)
-			}
+			blockBlobClient := newBlockBlobClient(key, containerClient)
 
 			// Upload File
 			log.Entry().Infof("Start upload of file '%v'", currentFilePath)
-			_, e = uploadFunc(ctx, blockBlobClient, data, azblob.UploadOption{})
+			_, e = uploadFunc(ctx, blockBlobClient, data, nil)
 			if e != nil {
 				log.SetErrorCategory(log.ErrorService)
 				return fmt.Errorf("There was an error during the upload of file '%v': %w", currentFilePath, e)
