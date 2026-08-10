@@ -7,7 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func newBtpCreateServiceInstanceUtils() btp.BTPUtils {
@@ -48,7 +47,7 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 	} else {
 		abapParameters, err := generateBTPServiceParameterString(config)
 		if err != nil {
-			return errors.Wrap(err, "failed to generate service parameters")
+			return fmt.Errorf("failed to generate service parameters: %w", err)
 		}
 
 		if abapParameters != "" {
@@ -58,7 +57,7 @@ func runBtpCreateServiceInstance(config *btpCreateServiceInstanceOptions, teleme
 
 	_, err := utils.CreateServiceInstance(btpConfig)
 	if err != nil {
-		return errors.Wrap(err, "failed to create BTP service instance")
+		return fmt.Errorf("failed to create BTP service instance: %w", err)
 	}
 
 	log.Entry().Info("Service creation completed successfully")
