@@ -1,10 +1,10 @@
 package btp
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 func (btp *BTPUtils) Login(options LoginOptions) error {
@@ -34,7 +34,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return errors.Wrap(errors.New(errorMsg), "failed to login to BTP")
+		return fmt.Errorf("failed to login to BTP: %s", errorMsg)
 	}
 
 	if !options.Silent {
@@ -59,7 +59,7 @@ func (btp *BTPUtils) Login(options LoginOptions) error {
 	err := btp.Exec.Run(btpLoginScript)
 
 	if err != nil {
-		return errors.Wrap(err, "failed to login to BTP")
+		return fmt.Errorf("failed to login to BTP: %w", err)
 	}
 	if !options.Silent {
 		log.Entry().Info("Logged in successfully to BTP.")
@@ -82,7 +82,7 @@ func (btp *BTPUtils) Logout() error {
 	err := btp.Exec.Run(btpLogoutScript)
 
 	if err != nil {
-		return errors.Wrap(err, "failed to Logout of BTP")
+		return fmt.Errorf("failed to Logout of BTP: %w", err)
 	}
 	log.Entry().Info("Logged out successfully")
 	return nil

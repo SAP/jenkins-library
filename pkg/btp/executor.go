@@ -2,12 +2,13 @@ package btp
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 // Stdin ..
@@ -35,7 +36,7 @@ func (e *Executor) GetStderrValue() string {
 
 func (e *Executor) Run(cmdScript []string) (err error) {
 	if err := e.Cmd.RunExecutable(cmdScript[0], cmdScript[1:]...); err != nil {
-		return errors.Wrap(err, "failed to execute BTP CLI")
+		return fmt.Errorf("failed to execute BTP CLI: %w", err)
 	}
 	return nil
 }
@@ -62,7 +63,7 @@ func (e *Executor) RunSync(opts RunSyncOptions) error {
 func handleInitialCheck(e *Executor, opts RunSyncOptions) error {
 	errorData, err := GetErrorInfos(e.GetStderrValue())
 	if err != nil {
-		return errors.Wrap(err, "failed to extract error code from JSON response")
+		return fmt.Errorf("failed to extract error code from JSON response: %w", err)
 	}
 
 	if errorData.Error == "Conflict" {
@@ -71,7 +72,7 @@ func handleInitialCheck(e *Executor, opts RunSyncOptions) error {
 		return nil
 	} else {
 		if !opts.IgnoreErrorOnFirstCall {
-			return errors.Wrap(err, "failed to execute BTP CLI (Sync)")
+			return fmt.Errorf("failed to execute BTP CLI (Sync): %w", err)
 		}
 	}
 	return nil
@@ -153,7 +154,7 @@ func handlePolling(opts RunSyncOptions) error {
 
 func handlePollingCheck(check CheckResponse) error {
 	if check.errorData.Error == "Conflict" {
-		return errors.Wrap(errors.New(check.errorData.Description), "command check returned a conflict error.")
+		return fmt.Errorf("command check returned a conflict error: %s", check.errorData.Description)
 	}
 	return nil
 }

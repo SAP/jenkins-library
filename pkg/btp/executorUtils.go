@@ -2,10 +2,9 @@ package btp
 
 import (
 	"encoding/json"
+	"errors"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 var (
