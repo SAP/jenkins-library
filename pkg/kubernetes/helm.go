@@ -210,6 +210,10 @@ func (h *HelmExecute) RunHelmLint() error {
 		helmParams = append(helmParams, "--debug")
 	}
 
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
+	}
+
 	h.utils.Stdout(h.stdout)
 	log.Entry().Info("Calling helm lint ...")
 	log.Entry().Debugf("Helm parameters: %v", helmParams)
@@ -299,6 +303,11 @@ func (h *HelmExecute) RunHelmUninstall() error {
 	if h.config.HelmDeployWaitSeconds > 0 {
 		helmParams = append(helmParams, "--wait", "--timeout", fmt.Sprintf("%vs", h.config.HelmDeployWaitSeconds))
 	}
+
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
+	}
+
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 
@@ -369,6 +378,10 @@ func (h *HelmExecute) RunHelmTest() error {
 	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
+	}
+
+	if len(h.config.AdditionalParameters) > 0 {
+		helmParams = append(helmParams, expandEnv(h.config.AdditionalParameters)...)
 	}
 
 	if err := h.runHelmCommand(helmParams); err != nil {
