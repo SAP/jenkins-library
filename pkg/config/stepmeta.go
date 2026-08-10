@@ -26,6 +26,7 @@ type StepData struct {
 type StepMetadata struct {
 	Name            string      `json:"name" yaml:"name"`
 	Aliases         []Alias     `json:"aliases,omitempty" yaml:"aliases,omitempty"`
+	CLIAliases      []string    `json:"cliAliases,omitempty" yaml:"cliAliases,omitempty"`
 	Description     string      `json:"description" yaml:"description"`
 	LongDescription string      `json:"longDescription,omitempty" yaml:"longDescription,omitempty"`
 	Orchestrators   []string    `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`

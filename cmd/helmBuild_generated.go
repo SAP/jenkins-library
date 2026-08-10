@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type helmExecuteOptions struct {
+type helmBuildOptions struct {
 	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
 	ChartPath                 string   `json:"chartPath,omitempty"`
 	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
@@ -52,13 +52,13 @@ type helmExecuteOptions struct {
 	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
 }
 
-type helmExecuteCommonPipelineEnvironment struct {
+type helmBuildCommonPipelineEnvironment struct {
 	custom struct {
 		helmChartURL string
 	}
 }
 
-func (p *helmExecuteCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *helmBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
@@ -80,21 +80,22 @@ func (p *helmExecuteCommonPipelineEnvironment) persist(path, resourceName string
 	}
 }
 
-// HelmExecuteCommand Executes helm3 functionality as the package manager for Kubernetes.
-func HelmExecuteCommand() *cobra.Command {
-	const STEP_NAME = "helmExecute"
+// HelmBuildCommand Executes helm3 functionality as the package manager for Kubernetes.
+func HelmBuildCommand() *cobra.Command {
+	const STEP_NAME = "helmBuild"
 
-	metadata := helmExecuteMetadata()
-	var stepConfig helmExecuteOptions
+	metadata := helmBuildMetadata()
+	var stepConfig helmBuildOptions
 	var startTime time.Time
-	var commonPipelineEnvironment helmExecuteCommonPipelineEnvironment
+	var commonPipelineEnvironment helmBuildCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
 
-	var createHelmExecuteCmd = &cobra.Command{
-		Use:   STEP_NAME,
-		Short: "Executes helm3 functionality as the package manager for Kubernetes.",
+	var createHelmBuildCmd = &cobra.Command{
+		Use:     STEP_NAME,
+		Aliases: []string{"helmExecute"},
+		Short:   "Executes helm3 functionality as the package manager for Kubernetes.",
 		Long: `Alpha version: please expect incompatible changes
 
 Executes helm functionality as the package manager for Kubernetes.
@@ -232,17 +233,17 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetryClient.Initialize(STEP_NAME)
-			helmExecute(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
+			helmBuild(stepConfig, &stepTelemetryData, &commonPipelineEnvironment)
 			stepTelemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addHelmExecuteFlags(createHelmExecuteCmd, &stepConfig)
-	return createHelmExecuteCmd
+	addHelmBuildFlags(createHelmBuildCmd, &stepConfig)
+	return createHelmBuildCmd
 }
 
-func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
+func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for Helm like  \"helm install [NAME] [CHART] [flags]\".")
 	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for helm. chartPath is mandatory for install/upgrade/publish commands.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryURL, "targetRepositoryURL", os.Getenv("PIPER_targetRepositoryURL"), "URL of the target repository where the compiled helm .tgz archive shall be uploaded - typically provided by the CI/CD environment.")
@@ -279,11 +280,11 @@ func addHelmExecuteFlags(cmd *cobra.Command, stepConfig *helmExecuteOptions) {
 }
 
 // retrieve step metadata
-func helmExecuteMetadata() config.StepData {
+func helmBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "helmExecute",
-			Aliases:     []config.Alias{},
+			Name:        "helmBuild",
+			Aliases:     []config.Alias{{Name: "helmExecute", Deprecated: true}},
 			Description: "Executes helm3 functionality as the package manager for Kubernetes.",
 		},
 		Spec: config.StepSpec{
@@ -685,7 +686,7 @@ func helmExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Image: "alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

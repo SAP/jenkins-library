@@ -22,7 +22,6 @@ type App struct {
 	AppId    int    `json:"app_id"`
 	AppName  string `json:"app_name"`
 	BundleId string `json:"bundle_id"`
-	JamfId   string `json:"jamf_id"`
 }
 
 type JamfAppInformationResponse struct {
@@ -124,15 +123,18 @@ func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header
 // GetAppById returns the app addressed by appId from the ASC backend
 func (sys *SystemInstance) GetAppById(appId string) (App, error) {
 	sys.logger.Debugf("Getting ASC App with ID %v...", appId)
-	var app App
 
 	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("api/v1/apps/%v", appId), nil, nil)
 	if err != nil {
-		return app, fmt.Errorf("fetching app %v failed: %w", appId, err)
+		return App{}, fmt.Errorf("fetching app %v failed: %w", appId, err)
 	}
 
-	json.Unmarshal(data, &app)
-	return app, nil
+	var apps []App
+	json.Unmarshal(data, &apps)
+	if len(apps) == 0 {
+		return App{}, fmt.Errorf("no app found with id %v", appId)
+	}
+	return apps[0], nil
 }
 
 // CreateRelease creates a release in ASC

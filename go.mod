@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.31
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.0
 	github.com/bmatcuk/doublestar v1.3.4
-	github.com/bndr/gojenkins v1.1.1-0.20240109173050-c316119c46d5
+	github.com/bndr/gojenkins v1.2.0
 	github.com/buildpacks/lifecycle v0.20.19
 	github.com/cdevents/sdk-go v0.4.1
 	github.com/cloudevents/sdk-go/v2 v2.15.2
@@ -50,7 +50,6 @@ require (
 	github.com/motemen/go-nuts v0.0.0-20251105153347-936c09797748
 	github.com/package-url/packageurl-go v0.1.6
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
-	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
@@ -138,6 +137,7 @@ require (
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

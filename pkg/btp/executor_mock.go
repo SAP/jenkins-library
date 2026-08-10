@@ -2,13 +2,14 @@ package btp
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 func (b *BtpExecutorMock) Stdin(in io.Reader) {
@@ -41,7 +42,7 @@ func (b *BtpExecutorMock) Run(cmdScript []string) (err error) {
 func (b *BtpExecutorMock) RunSync(opts RunSyncOptions) error {
 	err := b.Run(opts.CmdScript)
 	if err != nil {
-		return errors.Wrap(err, "initial command execution failed")
+		return fmt.Errorf("initial command execution failed: %w", err)
 	}
 
 	log.Entry().Infof("Started polling. Timeout: %d minutes\n", opts.TimeoutSeconds/60)
