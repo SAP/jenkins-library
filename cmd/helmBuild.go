@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -122,6 +123,24 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 			return err
 		}
 	}
+
+	// buildSettingsInfo is written only on the success path — a failed helm run
+	// produces no meaningful build artifact, so there is nothing to report to
+	// downstream compliance steps.
+	log.Entry().Debugf("creating build settings information...")
+	dockerImage, err := GetDockerImageValue("helmBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to retrieve dockerImage configuration: %v", err)
+	}
+	buildSettingsInfo, err := buildsettings.CreateBuildSettingsInfo(&buildsettings.BuildOptions{
+		DockerImage:       dockerImage,
+		Publish:           config.Publish,
+		BuildSettingsInfo: config.BuildSettingsInfo,
+	}, "helmBuild")
+	if err != nil {
+		log.Entry().Warnf("failed to create build settings info: %v", err)
+	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
 
 	return nil
 }
