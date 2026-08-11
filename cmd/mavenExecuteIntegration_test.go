@@ -25,7 +25,9 @@ func (m mavenExecuteIntegrationTestUtilsBundle) DownloadFile(url, filename strin
 func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
 	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
-	config := mavenExecuteIntegrationOptions{}
+	config := mavenExecuteIntegrationOptions{
+		PomPath: "integration-tests/pom.xml",
+	}
 
 	err := runMavenExecuteIntegration(&config, utils)
 
@@ -38,6 +40,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	config := mavenExecuteIntegrationOptions{
+		PomPath:   "integration-tests/pom.xml",
 		Retry:     2,
 		ForkCount: "1C",
 		Goal:      "post-integration-test",
@@ -68,6 +71,7 @@ func TestHappyPathIntegrationTestsWithReactorInstall(t *testing.T) {
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	config := mavenExecuteIntegrationOptions{
+		PomPath:            "integration-tests/pom.xml",
 		Retry:              2,
 		ForkCount:          "1C",
 		Goal:               "post-integration-test",
@@ -110,6 +114,7 @@ func TestMutualExclusivityOfInstallFlags(t *testing.T) {
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	config := mavenExecuteIntegrationOptions{
+		PomPath:            "integration-tests/pom.xml",
 		InstallArtifacts:   true,
 		InstallWithReactor: true,
 	}
@@ -128,7 +133,7 @@ func TestInvalidForkCountParam(t *testing.T) {
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	// test
-	err := runMavenExecuteIntegration(&mavenExecuteIntegrationOptions{ForkCount: "4.2"}, utils)
+	err := runMavenExecuteIntegration(&mavenExecuteIntegrationOptions{PomPath: "integration-tests/pom.xml", ForkCount: "4.2"}, utils)
 
 	// assert
 	if assert.Error(t, err) {
