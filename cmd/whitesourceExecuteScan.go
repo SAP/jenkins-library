@@ -991,11 +991,11 @@ const wsReportTimeStampLayout = "20060102-150405"
 // outputs an slice of alerts to an excel file
 func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
 	file := excelize.NewFile()
-	streamWriter, err := file.NewStreamWriter("Sheet1")
+	styleID, err := file.NewStyle(&excelize.Style{Font: &excelize.Font{Color: "#777777"}})
 	if err != nil {
 		return err
 	}
-	styleID, err := file.NewStyle(&excelize.Style{Font: &excelize.Font{Color: "#777777"}})
+	streamWriter, err := file.NewStreamWriter("Sheet1")
 	if err != nil {
 		return err
 	}
@@ -1025,22 +1025,13 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 }
 
 func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.StreamWriter, styleID int) error {
-	rows := []struct {
-		axis  string
-		title string
-	}{
-		{"A1", "Severity"},
-		{"B1", "Library"},
-		{"C1", "Vulnerability Id"},
-		{"D1", "CVSS 3"},
-		{"E1", "Project"},
-		{"F1", "Resolution"},
+	headers := []string{"Severity", "Library", "Vulnerability Id", "CVSS 3", "Project", "Resolution"}
+	headerRow := make([]interface{}, len(headers))
+	for i, h := range headers {
+		headerRow[i] = excelize.Cell{StyleID: styleID, Value: h}
 	}
-	for _, row := range rows {
-		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
-		if err != nil {
-			return err
-		}
+	if err := streamWriter.SetRow("A1", headerRow); err != nil {
+		return err
 	}
 
 	for i, alert := range alerts {
