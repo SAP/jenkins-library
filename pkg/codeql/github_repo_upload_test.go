@@ -15,7 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
 	"go.yaml.in/yaml/v3"
-	"k8s.io/utils/strings/slices"
+	"slices"
 )
 
 const (
