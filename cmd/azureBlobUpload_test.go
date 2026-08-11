@@ -6,35 +6,33 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log"
-	"net/http"
 	"os"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/blockblob"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockAzureContainerAPI func(blobName string) (*azblob.BlockBlobClient, error)
+type mockAzureContainerAPI func(blobName string) *blockblob.Client
 
-func (m mockAzureContainerAPI) NewBlockBlobClient(blobName string) (*azblob.BlockBlobClient, error) {
+func (m mockAzureContainerAPI) NewBlockBlobClient(blobName string) *blockblob.Client {
 	return m(blobName)
 }
 
 func mockAzureContainerClient(t *testing.T, fail bool) azureContainerAPI {
-	return mockAzureContainerAPI(func(blobName string) (*azblob.BlockBlobClient, error) {
+	return mockAzureContainerAPI(func(blobName string) *blockblob.Client {
 		t.Helper()
 		if fail {
-			return nil, fmt.Errorf("error containerClient")
+			return nil
 		}
-		return &azblob.BlockBlobClient{}, nil
+		return &blockblob.Client{}
 	})
 }
 
-func uploadFuncMock(ctx context.Context, api *azblob.BlockBlobClient, file *os.File, o azblob.UploadOption) (*http.Response, error) {
-	return &http.Response{}, nil
+func uploadFuncMock(ctx context.Context, api *blockblob.Client, file *os.File, o *blockblob.UploadFileOptions) (blockblob.UploadFileResponse, error) {
+	return blockblob.UploadFileResponse{}, nil
 }
 
 func TestRunAzureBlobUpload(t *testing.T) {
@@ -101,11 +99,14 @@ func TestRunAzureBlobUpload(t *testing.T) {
 			config := azureBlobUploadOptions{
 				FilePath: f.Name(),
 			}
-			container := mockAzureContainerClient(t, true)
+			uploadFuncFail := func(ctx context.Context, api *blockblob.Client, file *os.File, o *blockblob.UploadFileOptions) (blockblob.UploadFileResponse, error) {
+				return blockblob.UploadFileResponse{}, errors.New("error uploading")
+			}
+			container := mockAzureContainerClient(t, false)
 			// test
-			err = executeUpload(&config, container, uploadFuncMock)
+			err = executeUpload(&config, container, uploadFuncFail)
 			// assert
-			assert.EqualError(t, err, "Could not instantiate Azure blockBlobClient from Azure Container Client: error containerClient")
+			assert.EqualError(t, err, "There was an error during the upload of file '"+f.Name()+"': error uploading")
 		})
 
 		t.Run("error credentials", func(t *testing.T) {

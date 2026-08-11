@@ -35,8 +35,16 @@ func newHelmMockUtilsBundle() helmMockUtilsBundle {
 	return utils
 }
 
+func setupConfigOpenFileMock(t *testing.T) {
+	t.Helper()
+	openFileBak := configOptions.OpenFile
+	t.Cleanup(func() { configOptions.OpenFile = openFileBak })
+	configOptions.OpenFile = configOpenFileMock
+}
+
 func TestRunHelmUpgrade(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -75,6 +83,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 
 func TestRunHelmLint(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -114,6 +123,7 @@ func TestRunHelmLint(t *testing.T) {
 
 func TestRunHelmInstall(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -153,6 +163,7 @@ func TestRunHelmInstall(t *testing.T) {
 
 func TestRunHelmTest(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -191,6 +202,7 @@ func TestRunHelmTest(t *testing.T) {
 
 func TestRunHelmUninstall(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -229,6 +241,7 @@ func TestRunHelmUninstall(t *testing.T) {
 
 func TestRunHelmDependency(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -267,6 +280,7 @@ func TestRunHelmDependency(t *testing.T) {
 
 func TestRunHelmPush(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -307,6 +321,7 @@ func TestRunHelmPush(t *testing.T) {
 
 func TestRunHelmDefaultCommand(t *testing.T) {
 	t.Parallel()
+	setupConfigOpenFileMock(t)
 
 	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
@@ -553,4 +568,58 @@ func (f *fileHandlerMock) FileRead(name string) ([]byte, error) {
 func (f *fileHandlerMock) FileExists(name string) (bool, error) {
 	f.fileExistsCalled = append(f.fileExistsCalled, name)
 	return true, nil
+}
+
+func TestRunHelmBuildSettingsInfo(t *testing.T) {
+	t.Parallel()
+	setupConfigOpenFileMock(t)
+
+	t.Run("buildSettingsInfo written to CPE after successful run", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+		helmExecutor.On("RunHelmPublish").Return("", nil)
+
+		config := helmBuildOptions{
+			HelmCommand: "",
+			Publish:     true,
+		}
+
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe)
+		require.NoError(t, err)
+		assert.NotEmpty(t, cpe.custom.buildSettingsInfo)
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
+	})
+
+	t.Run("existing buildSettingsInfo is appended to", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+		helmExecutor.On("RunHelmPublish").Return("", nil)
+
+		config := helmBuildOptions{
+			HelmCommand:       "",
+			BuildSettingsInfo: `{"mavenBuild":[{"dockerImage":"maven:3.8"}]}`,
+		}
+
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe)
+		require.NoError(t, err)
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "mavenBuild")
+	})
+
+	t.Run("buildSettingsInfo written even for lint-only run", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+
+		config := helmBuildOptions{
+			HelmCommand: "lint",
+		}
+
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe)
+		require.NoError(t, err)
+		assert.NotEmpty(t, cpe.custom.buildSettingsInfo)
+		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
+	})
 }
