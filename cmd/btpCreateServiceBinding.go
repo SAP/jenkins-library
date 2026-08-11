@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func newBtpCreateServiceBindingUtils() btp.BTPUtils {
@@ -41,7 +42,7 @@ func runBtpCreateServiceBinding(config *btpCreateServiceBindingOptions, telemetr
 
 	_, err := utils.CreateServiceBinding(btpConfig)
 	if err != nil {
-		return errors.Wrap(err, "failed to create BTP service binding")
+		return fmt.Errorf("failed to create BTP service binding: %w", err)
 	}
 
 	log.Entry().Info("Service binding creation completed successfully")

@@ -40,6 +40,11 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				expected:  `{"helmExecute":[{"publish":true}]}`,
 			},
 			{
+				config:    BuildOptions{Publish: true, DockerImage: "alpine/k8s:1.33.13"},
+				buildTool: "helmBuild",
+				expected:  `{"helmBuild":[{"publish":true,"dockerImage":"alpine/k8s:1.33.13"}]}`,
+			},
+			{
 				config:    BuildOptions{Publish: true},
 				buildTool: "kanikoExecute",
 				expected:  `{"kanikoExecute":[{"publish":true}]}`,

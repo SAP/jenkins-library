@@ -3,11 +3,11 @@ package btp
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (string, error) {
@@ -31,7 +31,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", errors.Wrap(err, "login to BTP failed")
+		return "", fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	// we are logged in --> create service binding
@@ -60,7 +60,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", errors.Wrap(errors.New(errorMsg), "failed to create service binding")
+		return "", fmt.Errorf("failed to create service binding: %s", errorMsg)
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).
@@ -91,7 +91,7 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	})
 
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get service instance data")
+		return "", fmt.Errorf("failed to get service instance data: %w", err)
 	}
 
 	err = btp.Exec.RunSync(RunSyncOptions{
@@ -124,19 +124,19 @@ func (btp *BTPUtils) CreateServiceBinding(options CreateServiceBindingOptions) (
 	if err != nil {
 		// error while getting service binding
 		log.SetErrorCategory(log.ErrorService)
-		return "", errors.Wrapf(err, "creation of service binding failed for binding : %s", options.BindingName)
+		return "", fmt.Errorf("creation of service binding failed for binding : %s: %w", options.BindingName, err)
 	}
 
 	// parse and return service binding
 	serviceBindingJSON, err := GetJSON(btp.Exec.GetStdoutValue())
 
 	if err != nil {
-		return "", errors.Wrap(err, "parsing service binding JSON failed")
+		return "", fmt.Errorf("parsing service binding JSON failed: %w", err)
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceBindingJSON, errors.Wrap(err, "logout of BTP failed")
+		return serviceBindingJSON, fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return serviceBindingJSON, nil
@@ -158,7 +158,7 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", errors.Wrap(err, "login to BTP failed")
+		return "", fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	// we are logged in --> read service binding
@@ -166,12 +166,12 @@ func (btp *BTPUtils) GetServiceBinding(options GetServiceBindingOptions) (string
 
 	if err != nil {
 		// error while getting service binding
-		return res, errors.Wrap(err, "retrieving service binding failed")
+		return res, fmt.Errorf("retrieving service binding failed: %w", err)
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return res, errors.Wrap(err, "logout of BTP failed")
+		return res, fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return res, nil
@@ -205,7 +205,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", errors.Wrap(errors.New(errorMsg), "failed to read service binding")
+		return "", fmt.Errorf("failed to read service binding: %s", errorMsg)
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
@@ -232,7 +232,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
-			return "", errors.Wrap(err, "listing service bindings failed")
+			return "", fmt.Errorf("listing service bindings failed: %w", err)
 		}
 
 		if len(serviceBindings) == 0 {
@@ -244,7 +244,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 		foundedServiceBindingBytes, err := json.Marshal(data)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
-			return "", errors.Wrap(err, "failed to marshal service binding data")
+			return "", fmt.Errorf("failed to marshal service binding data: %w", err)
 		}
 		serviceBindingJSON = string(foundedServiceBindingBytes)
 	} else {
@@ -262,7 +262,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 		if err != nil {
 			// error while getting service binding
 			log.SetErrorCategory(log.ErrorService)
-			return "", errors.Wrapf(err, "retrieve service binding %v failed", options.BindingName)
+			return "", fmt.Errorf("retrieve service binding %v failed: %w", options.BindingName, err)
 		}
 
 		// parse and return service binding
@@ -270,7 +270,7 @@ func (btp *BTPUtils) RunGetServiceBinding(options GetServiceBindingOptions) (str
 
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
-			return "", errors.Wrap(err, "parsing service binding JSON failed")
+			return "", fmt.Errorf("parsing service binding JSON failed: %w", err)
 		}
 	}
 	return serviceBindingJSON, nil
@@ -293,7 +293,7 @@ func (btp *BTPUtils) RunListServiceBindings(options ListServiceBindingOptions) (
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return nil, errors.Wrap(errors.New(errorMsg), "failed to list service bindings")
+		return nil, fmt.Errorf("failed to list service bindings: %s", errorMsg)
 	}
 
 	instanceID := options.ServiceInstanceId
@@ -309,7 +309,7 @@ func (btp *BTPUtils) RunListServiceBindings(options ListServiceBindingOptions) (
 		})
 
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get service instance data")
+			return nil, fmt.Errorf("failed to get service instance data: %w", err)
 		}
 
 		instanceID = instanceData.ID
@@ -341,13 +341,13 @@ func (btp *BTPUtils) RunListServiceBindings(options ListServiceBindingOptions) (
 	err := btp.Exec.Run(btpGetBindingScript)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return nil, errors.Wrapf(err, "list service bindings failed for instance id: %s", instanceID)
+		return nil, fmt.Errorf("list service bindings failed for instance id: %s: %w", instanceID, err)
 	}
 
 	serviceBindingJSON, err := GetJSON(serviceBindingBytes.String())
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return nil, errors.Wrap(err, "parsing service bindings JSON failed")
+		return nil, fmt.Errorf("parsing service bindings JSON failed: %w", err)
 	}
 
 	serviceBindingData := []ServiceBindingData{}
@@ -358,7 +358,7 @@ func (btp *BTPUtils) RunListServiceBindings(options ListServiceBindingOptions) (
 		err2 := json.Unmarshal([]byte(serviceBindingJSON), &singleBinding)
 		if err2 != nil {
 			log.SetErrorCategory(log.ErrorService)
-			return nil, errors.Wrap(err, "failed to unmarshal service bindings JSON")
+			return nil, fmt.Errorf("failed to unmarshal service bindings JSON: %w", err)
 		}
 		serviceBindingData = append(serviceBindingData, singleBinding)
 	}
@@ -379,16 +379,16 @@ func (btp *BTPUtils) ListServiceBindings(options ListServiceBindingOptions) ([]S
 		IdentityProvider: options.IdentityProvider,
 	}
 	if err := btp.Login(loginOptions); err != nil {
-		return nil, errors.Wrap(err, "login to BTP failed")
+		return nil, fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	bindings, err := btp.RunListServiceBindings(options)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving service bindings failed")
+		return nil, fmt.Errorf("retrieving service bindings failed: %w", err)
 	}
 
 	if err := btp.Logout(); err != nil {
-		return bindings, errors.Wrap(err, "logout of BTP failed")
+		return bindings, fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return bindings, nil
@@ -415,7 +415,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 
 	if err != nil {
 		// error while trying to run btp login
-		return errors.Wrap(err, "login to BTP failed")
+		return fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	// we are logged in --> delete service binding
@@ -436,7 +436,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return errors.Wrap(errors.New(errorMsg), "failed to delete service binding")
+		return fmt.Errorf("failed to delete service binding: %s", errorMsg)
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.BindingName)
@@ -452,7 +452,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "failed to get service instance data")
+		return fmt.Errorf("failed to get service instance data: %w", err)
 	}
 
 	bindingData, err := GetServiceBindingData(btp, GetServiceBindingOptions{
@@ -467,7 +467,7 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "service binding not found")
+		return fmt.Errorf("service binding not found: %w", err)
 	}
 
 	btpDeleteBindingScript, _ := NewBTPCommandBuilder().
@@ -503,13 +503,13 @@ func (btp *BTPUtils) DeleteServiceBinding(options DeleteServiceBindingOptions) e
 	if err != nil {
 		// error while getting service binding
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "failed to delete Service-Binding: %v", options.BindingName)
+		return fmt.Errorf("failed to delete Service-Binding: %v: %w", options.BindingName, err)
 	}
 
 	err = btp.Logout()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "logout of BTP failed")
+		return fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return nil
@@ -536,7 +536,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", errors.Wrap(err, "login to BTP failed")
+		return "", fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	// we are logged in --> create service instance
@@ -570,7 +570,7 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", errors.Wrap(errors.New(errorMsg), "failed to create service instance")
+		return "", fmt.Errorf("failed to create service instance: %s", errorMsg)
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).
@@ -620,19 +620,19 @@ func (btp *BTPUtils) CreateServiceInstance(options CreateServiceInstanceOptions)
 	if err != nil {
 		// error while getting service instance
 		log.SetErrorCategory(log.ErrorService)
-		return "", errors.Wrapf(err, "creation of service instance failed")
+		return "", fmt.Errorf("creation of service instance failed: %w", err)
 	}
 
 	// parse and return service instance
 	serviceInstanceJSON, err := GetJSON(btp.Exec.GetStdoutValue())
 
 	if err != nil {
-		return "", errors.Wrap(err, "parsing service instance JSON failed")
+		return "", fmt.Errorf("parsing service instance JSON failed: %w", err)
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return serviceInstanceJSON, errors.Wrap(err, "logout of BTP failed")
+		return serviceInstanceJSON, fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return serviceInstanceJSON, nil
@@ -654,19 +654,19 @@ func (btp *BTPUtils) GetServiceInstance(options GetServiceInstanceOptions) (stri
 
 	if err != nil {
 		// error while trying to run btp login
-		return "", errors.Wrap(err, "login to BTP failed")
+		return "", fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	// we are logged in --> read service instance
 	res, err := btp.RunGetServiceInstance(options)
 
 	if err != nil {
-		return res, errors.Wrap(err, "retrieving service instance failed")
+		return res, fmt.Errorf("retrieving service instance failed: %w", err)
 	}
 
 	err = btp.Logout()
 	if err != nil {
-		return res, errors.Wrap(err, "logout of BTP failed")
+		return res, fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return res, nil
@@ -700,7 +700,7 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return "", errors.Wrap(errors.New(errorMsg), "failed to retrieve service instance")
+		return "", fmt.Errorf("failed to retrieve service instance: %s", errorMsg)
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
@@ -721,7 +721,7 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return "", errors.Wrapf(err, "retrieving service instance failed")
+		return "", fmt.Errorf("retrieving service instance failed: %w", err)
 	}
 
 	// parse and return service instance
@@ -729,7 +729,7 @@ func (btp *BTPUtils) RunGetServiceInstance(options GetServiceInstanceOptions) (s
 
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return "", errors.Wrap(err, "parsing service instance JSON failed")
+		return "", fmt.Errorf("parsing service instance JSON failed: %w", err)
 	}
 
 	return serviceInstanceJSON, nil
@@ -757,7 +757,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 	if err != nil {
 		// error while trying to run btp login
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "login to BTP failed")
+		return fmt.Errorf("login to BTP failed: %w", err)
 	}
 
 	// we are logged in --> delete service instance
@@ -775,7 +775,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 		}
 		errorMsg += strings.Join(missingParams, ", ")
 
-		return errors.Wrap(errors.New(errorMsg), "failed to delete service instance")
+		return fmt.Errorf("failed to delete service instance: %s", errorMsg)
 	}
 
 	log.Entry().WithField("subaccount", options.Subaccount).WithField("name", options.InstanceName)
@@ -791,7 +791,7 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 	})
 
 	if err != nil {
-		return errors.Wrap(err, "service instance not found")
+		return fmt.Errorf("service instance not found: %w", err)
 	}
 
 	btpGetServiceScript, _ := NewBTPCommandBuilder().
@@ -828,13 +828,13 @@ func (btp *BTPUtils) DeleteServiceInstance(options DeleteServiceInstanceOptions)
 	if err != nil {
 		// error while deleting service instance
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "checking if Service-Instance was deleted failed")
+		return fmt.Errorf("checking if Service-Instance was deleted failed: %w", err)
 	}
 
 	err = btp.Logout()
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return errors.Wrapf(err, "logout of BTP failed")
+		return fmt.Errorf("logout of BTP failed: %w", err)
 	}
 
 	return nil
@@ -858,13 +858,13 @@ func GetServiceInstanceData(btp *BTPUtils, options GetServiceInstanceOptions) (S
 	serviceInstanceJSON, err := btp.RunGetServiceInstance(options)
 
 	if err != nil {
-		return ServiceInstanceData{}, errors.Wrap(err, "failed to get service instance")
+		return ServiceInstanceData{}, fmt.Errorf("failed to get service instance: %w", err)
 	}
 
 	instanceData := ServiceInstanceData{}
 	err = json.Unmarshal([]byte(serviceInstanceJSON), &instanceData)
 	if err != nil {
-		return ServiceInstanceData{}, errors.Wrap(err, "failed to unmarshal service instance JSON")
+		return ServiceInstanceData{}, fmt.Errorf("failed to unmarshal service instance JSON: %w", err)
 	}
 	return instanceData, nil
 }
@@ -873,13 +873,13 @@ func GetServiceBindingData(btp *BTPUtils, options GetServiceBindingOptions) (Ser
 	serviceBindingJSON, err := btp.RunGetServiceBinding(options)
 
 	if err != nil {
-		return ServiceBindingData{}, errors.Wrap(err, "failed to get service binding")
+		return ServiceBindingData{}, fmt.Errorf("failed to get service binding: %w", err)
 	}
 
 	instanceData := ServiceBindingData{}
 	err = json.Unmarshal([]byte(serviceBindingJSON), &instanceData)
 	if err != nil {
-		return ServiceBindingData{}, errors.Wrap(err, "failed to unmarshal service binding JSON")
+		return ServiceBindingData{}, fmt.Errorf("failed to unmarshal service binding JSON: %w", err)
 	}
 	return instanceData, nil
 }
