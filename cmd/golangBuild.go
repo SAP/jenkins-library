@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/build"
@@ -39,6 +40,7 @@ const (
 	GolangCycloneDXPackage       = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.10.0"
 	sbomFilename                 = "bom-golang.xml"
 	GolangCycloneDXSchemaVersion = "1.4"
+	telesiactlWorkspaceBaseDir   = ".pipeline/tools/telesiactl"
 )
 
 type golangBuildUtils interface {
@@ -139,12 +141,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
 		if err := utils.RunExecutable("go", "install", golangTestsumPackage); err != nil {
-			return fmt.Errorf("failed to install pre-requisite: %w", err)
-		}
-	}
-
-	if config.CreateBOM {
-		if err := utils.RunExecutable("go", "install", GolangCycloneDXPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -620,9 +616,60 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
+	telesiactlBinary, canRunTelesiactl, err := resolveTelesiactlBinary(utils)
+	if err != nil {
+		// A failed telesiactl availability check should not silently disappear.
+		log.Entry().Warnf("telesiactl availability check failed, falling back to legacy implementation: %v", err)
+	}
+	if canRunTelesiactl {
+		if err := runTelesiactlBOMCreation(utils, telesiactlBinary, outputFilename); err == nil {
+			return nil
+		} else {
+			log.Entry().Warnf("telesiactl BOM creation failed, falling back to legacy implementation: %v", err)
+		}
+	}
+
+	if err := utils.RunExecutable("go", "install", GolangCycloneDXPackage); err != nil {
+		return fmt.Errorf("failed to install pre-requisite: %w", err)
+	}
+
 	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", GolangCycloneDXSchemaVersion); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
+	return nil
+}
+
+func resolveTelesiactlBinary(utils golangBuildUtils) (string, bool, error) {
+	for _, telesiactlBinary := range telesiactlBinaryCandidates() {
+		exists, err := utils.FileExists(telesiactlBinary)
+		if err != nil {
+			return "", false, fmt.Errorf("failed to check telesiactl binary '%s': %w", telesiactlBinary, err)
+		}
+		if exists {
+			return telesiactlBinary, true, nil
+		}
+	}
+
+	return "", false, nil
+}
+
+func telesiactlBinaryCandidates() []string {
+	platformPath := filepath.Join(telesiactlWorkspaceBaseDir, runtime.GOOS+"-"+runtime.GOARCH, "telesiactl")
+	legacyPath := filepath.Join(telesiactlWorkspaceBaseDir, "telesiactl")
+
+	return []string{platformPath, legacyPath}
+}
+
+func runTelesiactlBOMCreation(utils golangBuildUtils, telesiactlBinary, outputFilename string) error {
+	args := []string{"sbom", "generate", "--tech", "golang", "--project-path", ".", "--output", outputFilename}
+	if GeneralConfig.Verbose {
+		args = append(args, "--verbose")
+	}
+
+	if err := utils.RunExecutable(telesiactlBinary, args...); err != nil {
+		return fmt.Errorf("telesiactl BOM creation failed: %w", err)
+	}
+
 	return nil
 }
 
