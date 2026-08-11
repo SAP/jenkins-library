@@ -77,8 +77,8 @@ spec:
         type: string
         description: >
           Path to the pom.xml of the integration-test Maven module.
-          Defaults to `integration-tests/pom.xml`. Override this if your
-          integration-test module lives under a different directory or file name.
+          If not set, defaults to `integration-tests/pom.xml`.
+          Override this if your integration-test module lives under a different directory or file name.
         scope:
           - PARAMETERS
           - STEPS

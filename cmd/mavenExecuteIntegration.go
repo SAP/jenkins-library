@@ -21,9 +21,6 @@ func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry
 
 func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils maven.Utils) error {
 	pomPath := config.PomPath
-	if pomPath == "" {
-		pomPath = filepath.Join("integration-tests", "pom.xml")
-	}
 	moduleDir := filepath.Dir(pomPath)
 
 	hasIntegrationTestsModule, _ := utils.FileExists(pomPath)
