@@ -297,7 +297,7 @@ require (
 	k8s.io/client-go v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
-	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
+	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2 // indirect
 	sigs.k8s.io/kustomize/api v0.21.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.21.1 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
