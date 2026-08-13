@@ -26,6 +26,7 @@ type mavenExecuteIntegrationOptions struct {
 	Goal                        string `json:"goal,omitempty"`
 	InstallArtifacts            bool   `json:"installArtifacts,omitempty"`
 	InstallWithReactor          bool   `json:"installWithReactor,omitempty"`
+	PomPath                     string `json:"pomPath,omitempty"`
 	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
 	M2Path                      string `json:"m2Path,omitempty"`
@@ -84,8 +85,10 @@ func MavenExecuteIntegrationCommand() *cobra.Command {
 	var createMavenExecuteIntegrationCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step will execute backend integration tests via the Jacoco Maven-plugin.",
-		Long: `If the project contains a Maven module named "integration-tests", this step will execute
-the integration tests via the Jacoco Maven-plugin.`,
+		Long: `If the project contains a Maven module for integration tests, this step will execute
+the integration tests via the Jacoco Maven-plugin.
+By default the module is expected at ` + "`" + `integration-tests/pom.xml` + "`" + `. Use the ` + "`" + `pomPath` + "`" + `
+parameter to point to a different location.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -211,6 +214,7 @@ func addMavenExecuteIntegrationFlags(cmd *cobra.Command, stepConfig *mavenExecut
 	cmd.Flags().StringVar(&stepConfig.Goal, "goal", `test`, "The name of the Maven goal to execute.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", true, "If enabled, it will install all artifacts from all modules to the local maven repository. This is required if the `integration-tests` module has dependencies on other modules in the same repository which have not yet been installed. Artifacts are installed using the `install:install-file` goal which expects the artifacts to be already available. If you'd like to build the artifacts on the spot, you might want to use `installWithReactor instead. Mutually exclusive with `installWithReactor`.")
 	cmd.Flags().BoolVar(&stepConfig.InstallWithReactor, "installWithReactor", false, "If enabled, it will use the Maven reactor to build and install the `integration-tests` module and all of its dependencies. Artifacts are installed using the `install` goal which builds the artifacts on the spot if required. If you already have the artifacts available, you might want to use `installArtifacts` instead. Mutually exclusive with `installArtifacts`.")
+	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `integration-tests/pom.xml`, "Path to the pom.xml of the integration-test Maven module. If not set, defaults to `integration-tests/pom.xml`. Override this if your integration-test module lives under a different directory or file name.\n")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -273,6 +277,15 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "pomPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `integration-tests/pom.xml`,
 					},
 					{
 						Name:        "projectSettingsFile",
