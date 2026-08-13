@@ -20,10 +20,12 @@ func mavenExecuteIntegration(config mavenExecuteIntegrationOptions, _ *telemetry
 }
 
 func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils maven.Utils) error {
-	integrationTestsPomPath := filepath.Join("integration-tests", "pom.xml")
-	hasIntegrationTestsModule, _ := utils.FileExists(integrationTestsPomPath)
+	pomPath := config.PomPath
+	moduleDir := filepath.Dir(pomPath)
+
+	hasIntegrationTestsModule, _ := utils.FileExists(pomPath)
 	if !hasIntegrationTestsModule {
-		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
+		return fmt.Errorf("maven module '%s' does not exist in project structure", moduleDir)
 	}
 
 	if config.InstallArtifacts && config.InstallWithReactor {
@@ -38,7 +40,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	forkCountDefine := fmt.Sprintf("-Dsurefire.forkCount=%v", config.ForkCount)
 
 	if config.InstallWithReactor {
-		err := maven.InstallModuleWithReactor("integration-tests", &maven.EvaluateOptions{
+		err := maven.InstallModuleWithReactor(moduleDir, &maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
@@ -58,7 +60,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	}
 
 	mavenOptions := maven.ExecuteOptions{
-		PomPath:             integrationTestsPomPath,
+		PomPath:             pomPath,
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
