@@ -169,6 +169,11 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			path:         buildDescriptorFilePath,
 			versionField: "version",
 		}
+	case "rust":
+		if len(buildDescriptorFilePath) == 0 {
+			buildDescriptorFilePath = CargoBuildDescriptor
+		}
+		artifact = &Cargo{path: buildDescriptorFilePath}
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
