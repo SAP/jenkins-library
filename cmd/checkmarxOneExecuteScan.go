@@ -592,10 +592,10 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 	return incremental, fullScanExists, contiguousIncrementalScans, nil
 }
 
-const defaultZipFilterPattern = `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts, **/*.tf, **/*.yaml, **/*.yml, **/Dockerfile`
+const sastOnlyFilterPattern = `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`
 
 func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
-	if c.ScanIAC && c.config.FilterPattern == defaultZipFilterPattern {
+	if c.ScanIAC && c.config.FilterPattern == sastOnlyFilterPattern {
 		log.Entry().Warn("Zip file filter pattern is SAST-specific, but IaC scan is enabled. Verify that the IaC files are included in the filterPattern, otherwise no files will be scanned.")
 	}
 	zipFile, err := c.zipWorkspaceFiles(c.config.FilterPattern, c.utils)
