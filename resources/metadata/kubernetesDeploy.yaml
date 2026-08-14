@@ -559,7 +559,7 @@ spec:
           - STAGES
           - STEPS
         secret: true
-        default: '.pipeline/docker/config.json'
+        default: ".pipeline/docker/config.json"
         resourceRef:
           - name: dockerConfigJsonCredentialsId
             type: secret
@@ -652,7 +652,7 @@ spec:
             name: CACertificateVaultSecretName
             default: ca-certificate
   containers:
-    - image: dtzar/helm-kubectl:3
+    - image: crimson-prod.common.repositories.cloud.sap/alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u

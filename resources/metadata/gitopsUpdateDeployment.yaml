@@ -12,7 +12,6 @@ metadata:
     For *helm* the whole template is generated into a single file (`filePath`) and uploaded into the repository.
     For *kustomize* the `images` section will be update with the current image.
 
-
 spec:
   inputs:
     secrets:
@@ -218,7 +217,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: nekottyo/kustomize-kubeval:kustomizev4
+    - image: crimson-prod.common.repositories.cloud.sap/alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u
