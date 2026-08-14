@@ -1082,6 +1082,142 @@ func TestRunCustomCommand(t *testing.T) {
 	})
 }
 
+func TestSplitCommand(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		input       string
+		expected    []string
+		expectErr   bool
+		errContains string
+	}{
+		{
+			name:     "simple command without args",
+			input:    "echo",
+			expected: []string{"echo"},
+		},
+		{
+			name:     "simple command with multiple args",
+			input:    "echo hello world",
+			expected: []string{"echo", "hello", "world"},
+		},
+		{
+			name:     "double-quoted argument with spaces",
+			input:    `echo "hello world"`,
+			expected: []string{"echo", "hello world"},
+		},
+		{
+			name:     "single-quoted argument with spaces",
+			input:    `echo 'hello world'`,
+			expected: []string{"echo", "hello world"},
+		},
+		{
+			name:     "quoted and unquoted parts concatenate into one word",
+			input:    `echo foo"bar baz"qux`,
+			expected: []string{"echo", "foobar bazqux"},
+		},
+		{
+			name:     "escaped space outside quotes is preserved literally",
+			input:    `echo hello\ world`,
+			expected: []string{"echo", "hello world"},
+		},
+		{
+			name:     "escaped quote outside quotes is preserved literally",
+			input:    `echo \"hello\"`,
+			expected: []string{"echo", `"hello"`},
+		},
+		{
+			name:     "escaped quote inside double quotes",
+			input:    `echo "say \"hi\""`,
+			expected: []string{"echo", `say "hi"`},
+		},
+		{
+			name:     "backslash inside single quotes is not an escape",
+			input:    `echo 'a\qb'`,
+			expected: []string{"echo", `a\qb`},
+		},
+		{
+			name:     "backslash inside double quotes not preceding quote or backslash is kept",
+			input:    `echo "a\nb"`,
+			expected: []string{"echo", `a\nb`},
+		},
+		{
+			name:     "escaped backslash inside double quotes",
+			input:    `echo "a\\b"`,
+			expected: []string{"echo", `a\b`},
+		},
+		{
+			name:     "mixed whitespace (spaces and tabs) is collapsed",
+			input:    "echo\thello \t world",
+			expected: []string{"echo", "hello", "world"},
+		},
+		{
+			name:     "leading and trailing whitespace is trimmed",
+			input:    "  echo  ",
+			expected: []string{"echo"},
+		},
+		{
+			name:     "trailing lone backslash is preserved literally",
+			input:    `foo\`,
+			expected: []string{`foo\`},
+		},
+		{
+			name:     "empty quoted argument yields an empty string arg",
+			input:    `echo ""`,
+			expected: []string{"echo", ""},
+		},
+		{
+			name:        "empty command errors",
+			input:       "",
+			expectErr:   true,
+			errContains: "empty command",
+		},
+		{
+			name:        "whitespace-only command errors",
+			input:       "   ",
+			expectErr:   true,
+			errContains: "empty command",
+		},
+		{
+			name:        "unterminated double quote errors",
+			input:       `echo "unterminated`,
+			expectErr:   true,
+			errContains: "unterminated",
+		},
+		{
+			name:        "unterminated single quote errors",
+			input:       `echo 'unterminated`,
+			expectErr:   true,
+			errContains: "unterminated",
+		},
+		{
+			name:     `google/shlex parity: one two "three four" "five \"six\"" seven#eight # nine # ten / eleven 'twelve\'`,
+			input:    "one two \"three four\" \"five \\\"six\\\"\" seven#eight # nine # ten\n eleven 'twelve\\' thirteen=13 fourteen/14",
+			expected: []string{"one", "two", "three four", "five \"six\"", "seven#eight", "eleven", "twelve\\", "thirteen=13", "fourteen/14"},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result, err := splitCommand(tt.input)
+
+			if tt.expectErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				assert.Nil(t, result)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func Test_prepareCodeQLConfigFile(t *testing.T) {
 	t.Run("creates_or_updates_default_config_next_to_codeql_binary", func(t *testing.T) {
 		if runtime.GOOS == "windows" {

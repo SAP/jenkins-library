@@ -228,7 +228,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/googleapis/enterprise-certificate-proxy v0.3.14 // indirect
 	github.com/googleapis/gax-go/v2 v2.21.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
