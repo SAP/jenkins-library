@@ -8,10 +8,9 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"errors"
-
-	"github.com/google/shlex"
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -523,7 +522,7 @@ func uploadProjectToGitHub(config *codeqlExecuteScanOptions, repoInfo *codeql.Re
 
 func runCustomCommand(utils codeqlExecuteScanUtils, command string) error {
 	log.Entry().Infof("custom command will be run: %s", command)
-	cmd, err := shlex.Split(command)
+	cmd, err := splitCommand(command)
 	if err != nil {
 		log.Entry().WithError(err).Errorf("failed to parse custom command %s", command)
 		return err
@@ -537,6 +536,73 @@ func runCustomCommand(utils codeqlExecuteScanUtils, command string) error {
 	}
 	log.Entry().Info("Success.")
 	return nil
+}
+
+// splitCommand tokenizes a command line, honoring single/double quotes and backslash escapes.
+func splitCommand(s string) ([]string, error) {
+	var args []string
+	var current strings.Builder
+	hasToken := false
+	inSingle, inDouble := false, false
+
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case inSingle:
+			if c == '\'' {
+				inSingle = false
+			} else {
+				current.WriteByte(c)
+			}
+		case inDouble:
+			if c == '"' {
+				inDouble = false
+			} else if c == '\\' && i+1 < len(s) && (s[i+1] == '"' || s[i+1] == '\\') {
+				i++
+				current.WriteByte(s[i])
+			} else {
+				current.WriteByte(c)
+			}
+		case c == '\'':
+			inSingle = true
+			hasToken = true
+		case c == '"':
+			inDouble = true
+			hasToken = true
+		case c == '\\' && i+1 < len(s):
+			i++
+			current.WriteByte(s[i])
+			hasToken = true
+		case c == '#' && !hasToken:
+			// '#' starting a new word begins a comment that runs to end of line
+			for i < len(s) && s[i] != '\n' {
+				i++
+			}
+		case unicode.IsSpace(rune(c)):
+			if hasToken {
+				args = append(args, current.String())
+				current.Reset()
+				hasToken = false
+			}
+		default:
+			current.WriteByte(c)
+			hasToken = true
+		}
+	}
+
+	if inSingle || inDouble {
+		return nil, fmt.Errorf("unterminated quoted string in command: %s", s)
+	}
+
+	if hasToken {
+		args = append(args, current.String())
+	}
+
+	if len(args) == 0 {
+		return nil, fmt.Errorf("empty command")
+	}
+
+	return args, nil
 }
 
 func checkForCompliance(scanResults []codeql.CodeqlFindings, config *codeqlExecuteScanOptions, repoInfo *codeql.RepoInfo) error {
