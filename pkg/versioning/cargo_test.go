@@ -27,6 +27,17 @@ version = "0.1.0"
 edition = "2021"
 `
 
+// cargoTomlWithDepsVersion has a [dependencies] entry that pins the same version
+// string as the package — SetVersion must not touch the dependency line.
+const cargoTomlWithDepsVersion = `[package]
+name = "gha-rust-hello-world"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "0.1.0", features = ["derive"] }
+`
+
 func TestCargoGetVersion(t *testing.T) {
 	t.Parallel()
 	t.Run("success", func(t *testing.T) {
@@ -74,6 +85,20 @@ func TestCargoSetVersion(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "1.2.3", version)
 	})
+	t.Run("does not modify dependency with same version", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlWithDepsVersion))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("2.0.0")
+		assert.NoError(t, err)
+
+		updatedBytes, _ := fileUtils.FileRead("Cargo.toml")
+		updated := string(updatedBytes)
+		assert.Contains(t, updated, `version = "2.0.0"`, "package version should be updated")
+		assert.Contains(t, updated, `version = "0.1.0"`, "dependency version must remain unchanged")
+	})
 }
 
 func TestCargoGetCoordinates(t *testing.T) {
@@ -97,6 +122,15 @@ func TestCargoGetCoordinates(t *testing.T) {
 		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
 		_, err := cargo.GetCoordinates()
 		assert.ErrorContains(t, err, fmt.Sprintf("no name information found in file 'Cargo.toml'"))
+	})
+	t.Run("missing version", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(missingVersionCargoToml))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		_, err := cargo.GetCoordinates()
+		assert.ErrorContains(t, err, "no version information found in file 'Cargo.toml'")
 	})
 }
 

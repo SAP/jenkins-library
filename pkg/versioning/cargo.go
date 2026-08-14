@@ -60,7 +60,9 @@ func (c *Cargo) GetVersion() (string, error) {
 	return c.coordinates.Package.Version, nil
 }
 
-// SetVersion updates the version in Cargo.toml
+// SetVersion updates the version in Cargo.toml.
+// Replacement is scoped to the [package] section so that dependency entries
+// that share the same version string are not inadvertently modified.
 func (c *Cargo) SetVersion(newVersion string) error {
 	current, err := c.GetVersion()
 	if err != nil {
@@ -70,16 +72,43 @@ func (c *Cargo) SetVersion(newVersion string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read file '%v': %w", c.path, err)
 	}
-	updated := strings.ReplaceAll(string(content),
-		fmt.Sprintf("version = \"%v\"", current),
-		fmt.Sprintf("version = \"%v\"", newVersion))
-	updated = strings.ReplaceAll(updated,
-		fmt.Sprintf("version = '%v'", current),
-		fmt.Sprintf("version = '%v'", newVersion))
+	updated, err := replaceVersionInPackageSection(string(content), current, newVersion)
+	if err != nil {
+		return fmt.Errorf("failed to update version in file '%v': %w", c.path, err)
+	}
 	if err := c.writeFile(c.path, []byte(updated), 0600); err != nil {
 		return fmt.Errorf("failed to write file '%v': %w", c.path, err)
 	}
 	return nil
+}
+
+// replaceVersionInPackageSection replaces version strings only within the [package]
+// section of a Cargo.toml, leaving [dependencies] and other sections untouched.
+func replaceVersionInPackageSection(content, current, newVersion string) (string, error) {
+	pkgHeader := "[package]"
+	start := strings.Index(content, pkgHeader)
+	if start == -1 {
+		return "", fmt.Errorf("no [package] section found")
+	}
+	// Find the start of the next TOML table after [package], or use EOF.
+	rest := content[start+len(pkgHeader):]
+	nextSection := strings.Index(rest, "\n[")
+	var section string
+	var suffix string
+	if nextSection == -1 {
+		section = rest
+		suffix = ""
+	} else {
+		section = rest[:nextSection+1] // include the newline before '['
+		suffix = rest[nextSection+1:]
+	}
+	section = strings.ReplaceAll(section,
+		fmt.Sprintf("version = \"%v\"", current),
+		fmt.Sprintf("version = \"%v\"", newVersion))
+	section = strings.ReplaceAll(section,
+		fmt.Sprintf("version = '%v'", current),
+		fmt.Sprintf("version = '%v'", newVersion))
+	return content[:start+len(pkgHeader)] + section + suffix, nil
 }
 
 // GetCoordinates returns the artifact coordinates from Cargo.toml
@@ -91,7 +120,11 @@ func (c *Cargo) GetCoordinates() (Coordinates, error) {
 	if len(c.coordinates.Package.Name) == 0 {
 		return result, fmt.Errorf("no name information found in file '%v'", c.path)
 	}
+	version, err := c.GetVersion()
+	if err != nil {
+		return result, err
+	}
 	result.ArtifactID = c.coordinates.Package.Name
-	result.Version = c.coordinates.Package.Version
+	result.Version = version
 	return result, nil
 }
