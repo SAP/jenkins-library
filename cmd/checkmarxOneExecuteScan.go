@@ -592,7 +592,7 @@ func (c *checkmarxOneExecuteScanHelper) IncrementalOrFull(scans []checkmarxOne.S
 	return incremental, fullScanExists, contiguousIncrementalScans, nil
 }
 
-const defaultZipFilterPattern = `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`
+const defaultZipFilterPattern = `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts, **/*.tf, **/*.yaml, **/*.yml, **/Dockerfile`
 
 func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
 	if c.ScanIAC && c.config.FilterPattern == defaultZipFilterPattern {
@@ -888,7 +888,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 		}
 		comment := &github.IssueComment{
 			Body: github.Ptr(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
-# %s Checkmarx %s scan completed 
+# %s Checkmarx %s scan completed
 **Project**: %s
 **ScanId**: %s
 **Preset**: %s
