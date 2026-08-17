@@ -8,9 +8,6 @@ on:
     branches:
       - master
 
-env:
-  DEFAULT_GOLANG: '1.26.5'
-
 permissions:
   contents: read  # default for all jobs (checkout); only `unit` overrides for the cancel action
 
@@ -22,10 +19,10 @@ jobs:
       actions: write  # styfle/cancel-workflow-action cancels previous runs
     steps:
       - uses: styfle/cancel-workflow-action@0.11.0
-      - name: 🏗 Set up Golang ${{ env.DEFAULT_GOLANG }}
+      - name: 🏗 Set up Golang
         uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.DEFAULT_GOLANG }}
+          go-version-file: 'go.mod'
       - name: 🏗 Cache Golang packages
         uses: actions/cache@v5
         with:
@@ -52,7 +49,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.5'
+          go-version-file: 'go.mod'
       - name: Cache Golang Packages
         uses: actions/cache@v5
         with:
@@ -72,7 +69,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.5'
+          go-version-file: 'go.mod'
       - name: checkout
         uses: actions/checkout@v4
         with:
@@ -87,7 +84,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.5'
+          go-version-file: 'go.mod'
       - name: Cache Golang Packages
         uses: actions/cache@v5
         with:
@@ -107,7 +104,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.26.5'
+          go-version-file: 'go.mod'
       - name: Cache Golang Packages
         uses: actions/cache@v5
         with:
