@@ -15,7 +15,6 @@ require (
 	github.com/antchfx/htmlquery v1.3.6
 	github.com/aws/aws-sdk-go-v2/config v1.32.31
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.0
-	github.com/bmatcuk/doublestar v1.1.1
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bndr/gojenkins v1.2.0
 	github.com/buildpacks/lifecycle v0.20.19
