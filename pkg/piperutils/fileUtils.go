@@ -16,7 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 const maxFileSize int64 = 2 * 1024 * 1024 * 1024 // 2 GB
@@ -492,9 +492,15 @@ func (f Files) RemoveAll(path string) error {
 	return os.RemoveAll(path)
 }
 
-// Glob is a wrapper for doublestar.Glob().
+// Glob is a wrapper for doublestar.FilepathGlob().
 func (f Files) Glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
+	return doublestar.FilepathGlob(pattern)
+}
+
+// Glob is a package-level wrapper for doublestar.FilepathGlob() with the
+// func(string)([]string,error) signature expected by gcs.PersistReportsToGCS.
+func Glob(pattern string) ([]string, error) {
+	return doublestar.FilepathGlob(pattern)
 }
 
 // ExcludeFiles returns a slice of files, which contains only the sub-set of files that matched none
@@ -509,7 +515,7 @@ func ExcludeFiles(files, excludes []string) ([]string, error) {
 		includeFile := true
 		file = filepath.FromSlash(file)
 		for _, exclude := range excludes {
-			matched, err := doublestar.PathMatch(exclude, file)
+			matched, err := doublestar.Match(exclude, file)
 			if err != nil {
 				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
 			}

@@ -14,7 +14,6 @@ import (
 
 	"errors"
 
-	"github.com/bmatcuk/doublestar"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -50,7 +49,7 @@ var (
 	fileUtilsUnzip  = piperutils.Unzip
 	osRename        = os.Rename
 	osStat          = os.Stat
-	doublestarGlob  = doublestar.Glob
+	doublestarGlob  = piperutils.Glob
 )
 
 const (

@@ -26,7 +26,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/google/go-github/v68/github"
 )
@@ -50,7 +50,7 @@ type checkmarxExecuteScanUtilsBundle struct {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
-	return doublestar.PathMatch(pattern, name)
+	return doublestar.Match(pattern, name)
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
