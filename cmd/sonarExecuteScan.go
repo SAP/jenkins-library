@@ -14,7 +14,6 @@ import (
 
 	"errors"
 
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	keytool "github.com/SAP/jenkins-library/pkg/java"
