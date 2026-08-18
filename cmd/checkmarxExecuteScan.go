@@ -50,7 +50,7 @@ type checkmarxExecuteScanUtilsBundle struct {
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
-	return doublestar.Match(pattern, name)
+	return doublestar.PathMatch(pattern, name)
 }
 
 func (c *checkmarxExecuteScanUtilsBundle) GetWorkspace() string {

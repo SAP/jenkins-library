@@ -416,7 +416,7 @@ func (f *FilesMock) Glob(pattern string) ([]string, error) {
 	}
 	for path := range f.files {
 		path = strings.TrimLeft(path, f.Separator)
-		matched, _ := doublestar.Match(pattern, path)
+		matched, _ := doublestar.PathMatch(pattern, path)
 		if matched {
 			matches = append(matches, path)
 		}
@@ -696,7 +696,7 @@ func (f *FilesMockRelativeGlob) Glob(pattern string) ([]string, error) {
 			path = strings.TrimLeft(path, f.Separator+f.CurrentDir)
 		}
 		path = strings.TrimLeft(path, f.Separator)
-		matched, _ := doublestar.Match(pattern, path)
+		matched, _ := doublestar.PathMatch(pattern, path)
 		if matched {
 			matches = append(matches, path)
 		}

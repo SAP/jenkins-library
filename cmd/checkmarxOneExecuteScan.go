@@ -1784,7 +1784,7 @@ func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]inter
 // various utilities to set up or work with the workspace and prepare data to send to Cx1
 
 func (c *checkmarxOneExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
-	return doublestar.Match(pattern, name)
+	return doublestar.PathMatch(pattern, name)
 }
 
 func (c *checkmarxOneExecuteScanUtilsBundle) GetWorkspace() string {
