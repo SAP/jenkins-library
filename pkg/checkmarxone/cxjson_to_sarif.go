@@ -365,7 +365,8 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 
 	//handle automationDetails
 	// This field corresponds to the configuration category in GitHub Security tab, it is meant to be used for monorepos so that each project can have its own findings
-	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: projectBaseURL}
+	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: fmt.Sprintf("%s/%s", projectBaseURL, resultType)}
+	// resultType sufix is needed to enable uploading both sarif files (sast and iac)
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
