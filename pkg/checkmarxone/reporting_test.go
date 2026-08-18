@@ -15,8 +15,9 @@ func TestCreateJSONReport(t *testing.T) {
 	resultMap["Application"] = `test-app`
 	resultMap["ApplicationFullPathOnReportDate"] = `test-app-path`
 	resultMap["DeepLink"] = `https://cx1.sap/projects/f5702f86-b396-417f-82e2-4949a55d5382/scans?branch=master&page=1&id=21e40b36-0dd7-48e5-9768-da1a8f36c907`
-	resultMap["Preset"] = `Checkmarx Default`
+	resultMap["SastPreset"] = `Checkmarx Default`
 	resultMap["ToolVersion"] = `v1`
+	resultMap["SASTVersion"] = `SAST: 9.7.6`
 	resultMap["ScanType"] = `Incremental`
 	resultMap["ProjectId"] = `f5702f86-b396-417f-82e2-4949a55d5382`
 	resultMap["ScanId"] = `21e40b36-0dd7-48e5-9768-da1a8f36c907`
@@ -78,7 +79,7 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, "CheckmarxOne", reportingData.ToolName)
 	assert.Equal(t, "https://cx1.sap/projects/f5702f86-b396-417f-82e2-4949a55d5382/scans?branch=master&page=1&id=21e40b36-0dd7-48e5-9768-da1a8f36c907", reportingData.DeepLink)
 	assert.Equal(t, "Checkmarx Default", reportingData.Preset)
-	assert.Equal(t, "v1", reportingData.ToolVersion)
+	assert.Equal(t, "v1, SAST: 9.7.6", reportingData.ToolVersion)
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 
 	lowList := (*reportingData.Findings)[3].LowPerQuery
