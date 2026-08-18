@@ -829,7 +829,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Image: "alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}
