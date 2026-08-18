@@ -79,6 +79,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: Build
         # with `-tags release` we ensure that shared test utilities won't end up in the binary
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o piper -tags release
@@ -103,6 +104,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: Build
         run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go test -c -o integration_tests -tags integration ./integration/...
       - name: Form integration tests run matrix
@@ -135,6 +137,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: Download Piper binary
         uses: actions/download-artifact@v4
         with:

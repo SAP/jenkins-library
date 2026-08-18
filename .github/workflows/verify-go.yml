@@ -27,6 +27,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: 🚀 Run tests
         id: unit-test
         run: go run gotest.tools/gotestsum@latest --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile cover.out -tags=unit ./...
@@ -45,6 +46,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: format
         run: go fmt ./...
       - name: verify
@@ -59,6 +61,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: staticcheck
         uses: dominikh/staticcheck-action@v1.3.0
         with:
@@ -72,6 +75,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: generate
         run: go run pkg/generator/step-metadata.go
       - name: verify
@@ -84,6 +88,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: cleanup dependencies
         run: go mod tidy
       - name: verify

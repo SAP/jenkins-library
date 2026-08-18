@@ -28,6 +28,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
 
       - name: Install Groovy
         run: sudo apt-get update && sudo apt-get install groovy -y
