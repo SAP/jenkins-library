@@ -217,7 +217,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: crimson-prod.common.repositories.cloud.sap/alpine/k8s:1.33.13
+    - image: alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u
