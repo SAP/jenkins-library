@@ -125,6 +125,7 @@ nav:
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
+        - helmBuild: steps/helmBuild.md
         - helmExecute: steps/helmExecute.md
         - imagePushToRegistry: steps/imagePushToRegistry.md
         - influxWriteData: steps/influxWriteData.md

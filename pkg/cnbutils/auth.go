@@ -4,11 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/config/types"
-	"github.com/docker/docker/registry"
 )
 
 type DockerKeychain struct {
@@ -22,7 +22,7 @@ func (dk *DockerKeychain) ToCNBString() (string, error) {
 
 	cnbAuth := map[string]string{}
 	for reg, authConf := range dk.dockerConfig.GetAuthConfigs() {
-		registryHostname := registry.ConvertToHostname(reg)
+		registryHostname := convertToHostname(reg)
 		log.Entry().Debugf("adding credentials for registry %q", registryHostname)
 		if authConf.RegistryToken != "" {
 			cnbAuth[registryHostname] = fmt.Sprintf("Bearer %s", authConf.RegistryToken)
@@ -51,7 +51,7 @@ func (dk *DockerKeychain) ToCNBString() (string, error) {
 
 func (dk *DockerKeychain) AuthExistsForImage(image string) bool {
 	var empty types.AuthConfig
-	conf, err := dk.dockerConfig.GetAuthConfig(registry.ConvertToHostname(image))
+	conf, err := dk.dockerConfig.GetAuthConfig(convertToHostname(image))
 	if err != nil {
 		log.Entry().Errorf("failed to get auth config for the image %q, error: %s", image, err.Error())
 	}
@@ -82,4 +82,13 @@ func ParseDockerConfig(config string, utils BuildUtils) (*DockerKeychain, error)
 func encodeAuth(username, password string) string {
 	auth := username + ":" + password
 	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+// convertToHostname strips the http:// or https:// scheme and any path from a
+// registry URL, returning only the hostname (and port, if present).
+// Mirrors docker/docker registry.ConvertToHostname.
+func convertToHostname(url string) string {
+	stripped := strings.TrimPrefix(strings.TrimPrefix(url, "https://"), "http://")
+	stripped, _, _ = strings.Cut(stripped, "/")
+	return stripped
 }

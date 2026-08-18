@@ -16,7 +16,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"k8s.io/utils/strings/slices"
+	"slices"
 )
 
 type SAP_COM_0948 struct {
