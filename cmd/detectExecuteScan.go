@@ -29,8 +29,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
+	"errors"
+
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 )
 
 const NO_VERSION_SUFFIX = ""
@@ -129,11 +130,7 @@ func newDetectUtils(client *github.Client) detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 
-	provider, err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if err != nil {
-		log.Entry().WithError(err).Warning(err)
-		provider = &orchestrator.UnknownOrchestratorConfigProvider{}
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
 	utils.provider = provider
 
@@ -144,6 +141,11 @@ func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
 	sys := blackduckSystem{
 		Client: bd.NewClient(config.Token, config.ServerURL, &piperhttp.Client{}),
 	}
+	commitShortSHA := "unknown"
+	if len(GitCommit) >= 7 {
+		commitShortSHA = GitCommit[:7]
+	}
+	sys.Client.UserAgent = fmt.Sprintf("piper-detectExecuteScan-%s", commitShortSHA)
 	return &sys
 }
 
@@ -278,7 +280,7 @@ func runDetect(ctx context.Context, config detectExecuteScanOptions, utils detec
 		imageError := mapDetectError(runDetectImages(ctx, config, utils, blackduckSystem, influx, blackduckSystem), config, utils)
 		if imageError != nil {
 			if err != nil {
-				err = errors.Wrapf(err, "error during scanning images: %q", imageError.Error())
+				err = fmt.Errorf("error during scanning images: %q: %w", imageError.Error(), err)
 			} else {
 				err = imageError
 			}
@@ -316,7 +318,7 @@ func mapDetectError(err error, config detectExecuteScanOptions, utils detectUtil
 			log.Entry().Infof("policy violation(s) found - step will only create data but not fail due to setting failOnSevereVulnerabilities: false")
 		} else {
 			// Error code mapping with more human readable text
-			err = errors.Wrap(err, exitCodeMapping(utils.GetExitCode()))
+			err = fmt.Errorf(exitCodeMapping(utils.GetExitCode()), err)
 		}
 	}
 	return err
@@ -556,10 +558,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if len(config.DependencyPath) > 0 {
-		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
-	} else {
-		args = append(args, "--detect.source.path='.'")
+	if !checkIfArgumentIsInScanProperties(config, "detect.source.path") {
+		if len(config.DependencyPath) > 0 {
+			args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
+		} else {
+			args = append(args, "--detect.source.path='.'")
+		}
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {
@@ -584,7 +588,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 		err := utils.MkdirAll(".pipeline/blackduckDiagnostics", 0o755)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create diagnostics directory")
+			return nil, fmt.Errorf("failed to create diagnostics directory: %w", err)
 		}
 
 		log.Entry().Info("Diagnostics enabled, output will be stored in .pipeline/blackduckDiagnostics")
@@ -608,7 +612,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		log.Entry().Debug("pull request detected")
 		args = append(args, "--detect.blackduck.scan.mode='RAPID'")
 		_, err := sys.Client.GetProjectVersion(config.ProjectName, config.Version)
-		if err == nil {
+		if err == nil && !checkIfArgumentIsInScanProperties(config, "detect.blackduck.rapid.compare.mode") {
 			args = append(args, "--detect.blackduck.rapid.compare.mode='BOM_COMPARE_STRICT'")
 		}
 		args = append(args, "--detect.cleanup=false")
@@ -809,7 +813,7 @@ func postScanChecksAndReporting(ctx context.Context, config detectExecuteScanOpt
 			strings.Contains(err.Error(), "No Components found for project version") {
 			log.Entry().Debug(err.Error())
 		} else {
-			return errors.Wrap(err, "failed to fetch vulnerabilities")
+			return fmt.Errorf("failed to fetch vulnerabilities: %w", err)
 		}
 	}
 
@@ -981,7 +985,7 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	htmlReportPath := "piper_detect_policy_violation_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0o666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrap(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
 
@@ -989,11 +993,11 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0o777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return reportPaths, fmt.Errorf("failed to create reporting directory: %w", err)
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0o666); err != nil {
-		return reportPaths, errors.Wrap(err, "failed to write json report")
+		return reportPaths, fmt.Errorf("failed to write json report: %w", err)
 	}
 
 	return reportPaths, nil
@@ -1002,10 +1006,13 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
-		return errors.Wrap(err, "failed to get License Policy Violations"), 0
+		return fmt.Errorf("failed to get License Policy Violations: %w", err), 0
 	}
 
-	violationCount := getActivePolicyViolations(components)
+	violationCount, err := countComponentsActiveLicensePolicyViolations(sys, components)
+	if err != nil {
+		return fmt.Errorf("failed to get License Policy Violations: %w", err), 0
+	}
 	violations := struct {
 		PolicyViolations int      `json:"policyViolations"`
 		Reports          []string `json:"reports"`
@@ -1035,21 +1042,44 @@ func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths
 	return nil, violationCount
 }
 
-func getActivePolicyViolations(components *bd.Components) int {
+func countComponentsActiveLicensePolicyViolations(sys *blackduckSystem, components *bd.Components) (int, error) {
 	if components.TotalCount == 0 {
-		return 0
+		return 0, nil
 	}
 	activeViolations := 0
 	for _, component := range components.Items {
-		if isActivePolicyViolation(component.PolicyStatus) {
+		hasActiveViolations, err := hasActiveLicensePolicyViolations(sys, component)
+		if err != nil {
+			return 0, err
+		}
+		if hasActiveViolations {
 			activeViolations++
 		}
 	}
-	return activeViolations
+	return activeViolations, nil
 }
 
-func isActivePolicyViolation(status string) bool {
-	return status == "IN_VIOLATION"
+func hasActiveLicensePolicyViolations(sys *blackduckSystem, component bd.Component) (bool, error) {
+	if component.PolicyStatus != "IN_VIOLATION" {
+		return false, nil
+	}
+
+	policyRules, err := sys.Client.GetComponentPolicyRules(component)
+	if err != nil {
+		return false, err
+	}
+
+	for _, policyRule := range policyRules {
+		policyRuleDetails, err := sys.Client.GetPolicyRuleDetails(policyRule)
+		if err != nil {
+			return false, err
+		}
+		if policyRuleDetails.Category == "LICENSE" && policyRule.PolicyApprovalStatus == "IN_VIOLATION" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // create toolrecord file for detectExecute

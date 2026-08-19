@@ -3,7 +3,6 @@ package vault
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -61,12 +60,12 @@ func NewClient(cfg *ClientConfig) (*Client, error) {
 	}
 	applyApiClientRetryConfiguration(c.vaultApiClient)
 
-	initialLoginDone := make(chan struct{})
-	go c.startTokenLifecycleManager(initialLoginDone) // this goroutine ends with main goroutine
-	// wait for initial login or a failure
-	<-initialLoginDone
-
-	// In case of a failure, the function returns an unauthorized client, which will cause subsequent requests to fail.
+	initialLoginDone := make(chan error)
+	// No outer retry loop: transient failures are retried at the HTTP layer by applyApiClientRetryConfiguration (up to 3 attempts, 5–90s backoff).
+	go c.startTokenLifecycleManager(initialLoginDone)
+	if err := <-initialLoginDone; err != nil {
+		return nil, fmt.Errorf("vault authentication failed: %w", err)
+	}
 	return c, nil
 }
 
@@ -80,45 +79,31 @@ func NewClientWithToken(cfg *ClientConfig, token string) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) startTokenLifecycleManager(initialLoginDone chan struct{}) {
-	defer func() {
-		// make sure to close channel to avoid blocking of the caller
-		log.Entry().Debugf("exiting Vault token lifecycle manager")
-		initialLoginDone <- struct{}{}
+func (c *Client) startTokenLifecycleManager(initialLoginDone chan error) {
+	vaultLoginResp, err := c.login()
+	if err != nil {
+		log.Entry().WithError(err).Warn("Vault authentication failed")
+		initialLoginDone <- err
 		close(initialLoginDone)
-	}()
+		return
+	}
+	initialLoginDone <- nil
+	close(initialLoginDone)
 
-	initialLoginSucceed := false
-	retryAttemptDuration := c.vaultApiClient.MinRetryWait()
-	for i := 0; i <= c.vaultApiClient.MaxRetries(); i++ {
-		if i != 0 {
-			log.Entry().WithField("attempt", i).WithField("maxRetries", c.vaultApiClient.MaxRetries()).WithField("retryDelay", retryAttemptDuration.Seconds()).Info("Retrying Vault login")
-			time.Sleep(retryAttemptDuration)
-		}
+	if !vaultLoginResp.Auth.Renewable {
+		log.Entry().Debugf("Vault token is not configured to be renewable.")
+		return
+	}
 
-		vaultLoginResp, err := c.login()
-		if err != nil {
-			if i == 0 {
-				log.Entry().WithError(err).Warn("Vault authentication failed")
-			} else {
-				log.Entry().WithError(err).WithField("attempt", i).Warn("Vault authentication retry failed")
-			}
-			continue
-		}
-		if !initialLoginSucceed {
-			initialLoginDone <- struct{}{}
-			initialLoginSucceed = true
-		}
-
-		if !vaultLoginResp.Auth.Renewable {
-			log.Entry().Debugf("Vault token is not configured to be renewable.")
+	for {
+		if tokenErr := c.manageTokenLifecycle(vaultLoginResp); tokenErr != nil {
+			log.Entry().Warnf("unable to manage token lifecycle: %v", tokenErr)
 			return
 		}
-
-		tokenErr := c.manageTokenLifecycle(vaultLoginResp)
-		if tokenErr != nil {
-			log.Entry().Warnf("unable to start managing token lifecycle: %v", err)
-			continue
+		vaultLoginResp, err = c.login()
+		if err != nil {
+			log.Entry().WithError(err).Warn("Vault re-authentication failed")
+			return
 		}
 	}
 }
@@ -195,17 +180,18 @@ func applyApiClientRetryConfiguration(vaultApiClient *vaultAPI.Client) {
 			isEOF = true
 		}
 
-		retry, err := vaultAPI.DefaultRetryPolicy(ctx, resp, err)
+		originalErr := err
+		retry, retryPolicyErr := vaultAPI.DefaultRetryPolicy(ctx, resp, err)
 
-		if err != nil || err == io.EOF || isEOF || retry {
+		if retryPolicyErr != nil || isEOF || retry {
 			if resp != nil {
-				if err != nil {
-					log.Entry().Infof("Retrying vault request... %s (err: %v)", resp.Status, err)
+				if originalErr != nil {
+					log.Entry().Infof("Retrying vault request... %s (err was: %v)", resp.Status, originalErr)
 				} else {
 					log.Entry().Infof("Retrying vault request... %s", resp.Status)
 				}
 			} else {
-				log.Entry().Infof("Retrying vault request... (err: %v)", err)
+				log.Entry().Infof("Retrying vault request... (err was: %v)", originalErr)
 			}
 			return true, nil
 		}

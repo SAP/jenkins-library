@@ -4,10 +4,11 @@
 package cloudfoundry
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestVarsFiles(t *testing.T) {

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
@@ -154,6 +154,7 @@ Define ` + "`" + `buildTool: custom` + "`" + ` as well as ` + "`" + `filePath: <
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.txt` + "`" + ` file or to a file without extension.
 
 **Warning:** Using a plain version file may lead to issues in later pipeline steps, as some steps expect structured files (ini, yaml, json) for version extraction.
+In addition, no artifact name can be derived from a plain version file, so ` + "`" + `artifactId` + "`" + ` in the commonPipelineEnvironment stays empty. Steps which rely on it (e.g. for artifact download) then require ` + "`" + `artifactId` + "`" + ` to be configured explicitly.
 
 #### ` + "`" + `ini` + "`" + ` file containing the version:
 
@@ -161,13 +162,19 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 
 **Please note:** ` + "`" + `<path to your file>` + "`" + ` need to point either to a ` + "`" + `*.cfg` + "`" + ` or a ` + "`" + `*.ini` + "`" + ` file.
 
+If the file additionally contains a ` + "`" + `name` + "`" + ` field in the same section as the version (` + "`" + `customVersionSection` + "`" + `), its value is published as ` + "`" + `artifactId` + "`" + ` to the commonPipelineEnvironment so that subsequent steps can consume the artifact name. Quotes around the values are not required.
+
 #### ` + "`" + `json` + "`" + ` file containing the version:
 
 Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.json file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.
 
+If the file additionally contains a top-level ` + "`" + `name` + "`" + ` field, its value is published as ` + "`" + `artifactId` + "`" + ` to the commonPipelineEnvironment.
+
 #### ` + "`" + `yaml` + "`" + ` file containing the version
 
-Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.`,
+Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to your *.yml/*.yaml file>` + "`" + ` as well as parameter ` + "`" + `customVersionField` + "`" + ` to point to the parameter containing the version.
+
+If the file additionally contains a top-level ` + "`" + `ID` + "`" + ` field, its value is published as ` + "`" + `artifactId` + "`" + ` to the commonPipelineEnvironment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -229,8 +236,10 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -259,17 +268,18 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+				if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) > 0 {
+					if err := eventing.PublishTaskRunFinishedEvent(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineID: telemetryClient.GetBuildURL(),
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}

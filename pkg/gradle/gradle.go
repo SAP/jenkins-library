@@ -69,6 +69,9 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	log.Entry().Infof("All commands will be executed with the '%s' tool", exec)
 
 	if options.InitScriptContent != "" {
+		// Run 'tasks' first to detect if the target task is already registered by the project.
+		// If it is, skip the init script — applying it would conflict with the project's own
+		// plugin declaration (e.g. org.cyclonedx.bom already applied in build.gradle).
 		parameters := []string{"tasks"}
 		if options.BuildGradlePath != "" {
 			parameters = append(parameters, "-p", options.BuildGradlePath)
@@ -77,12 +80,12 @@ func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 			return "", fmt.Errorf("failed list gradle tasks: %v", err)
 		}
 		if !strings.Contains(stdOutBuf.String(), options.Task) {
-			err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644)
-			if err != nil {
+			if err := utils.FileWrite(initScriptName, []byte(options.InitScriptContent), 0644); err != nil {
 				return "", fmt.Errorf("failed create init script: %v", err)
 			}
 			defer utils.FileRemove(initScriptName)
 			options.setInitScript = true
+			log.Entry().Debugf("Using gradle init script:\n%s", options.InitScriptContent)
 		}
 	}
 

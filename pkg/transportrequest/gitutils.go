@@ -2,12 +2,13 @@ package transportrequest
 
 import (
 	"fmt"
+
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/pkg/errors"
+
 	"os"
 	"regexp"
 	"sort"
@@ -26,7 +27,7 @@ type transportRequestGitUtils struct {
 func (g *transportRequestGitUtils) PlainOpen(directory string) (*git.Repository, error) {
 	r, err := gitUtils.PlainOpen(directory)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", directory)
+		return nil, fmt.Errorf("Unable to open git repository at '%s': %w", directory, err)
 	}
 	return r, nil
 }
@@ -42,23 +43,23 @@ func findIDInRange(label, from, to string, trGitUtils iTransportRequestGitUtils)
 
 	workdir, err := os.Getwd()
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot open git repo in current working directory '%s'", workdir)
+		return "", fmt.Errorf("Cannot open git repo in current working directory '%s': %w", workdir, err)
 	}
 	log.Entry().Infof("Opening git repo at '%s'", workdir)
 
 	r, err := trGitUtils.PlainOpen(workdir)
 	if err != nil {
-		return "", errors.Wrapf(err, "Unable to open git repository at '%s'", workdir)
+		return "", fmt.Errorf("Unable to open git repository at '%s': %w", workdir, err)
 	}
 
 	cIter, err := logRange(r, from, to)
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to resolve commits in range '%s..%s'", label, from, to)
+		return "", fmt.Errorf("Cannot retrieve '%s'. Unable to resolve commits in range '%s..%s': %w", label, from, to, err)
 	}
 
 	ids, err := findLabelsInCommits(cIter, label)
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to traverse commits in range '%s..%s'", label, from, to)
+		return "", fmt.Errorf("Cannot retrieve '%s'. Unable to traverse commits in range '%s..%s': %w", label, from, to, err)
 	}
 
 	if len(ids) > 1 {

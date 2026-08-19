@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/google/go-github/v68/github"
-	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 )
@@ -43,7 +43,7 @@ func runGithubCreatePullRequest(ctx context.Context, config *githubCreatePullReq
 	newPR, resp, err := ghPRService.Create(ctx, config.Owner, config.Repository, &prRequest)
 	if err != nil {
 		log.Entry().Errorf("GitHub response code %v", resp.Status)
-		return errors.Wrap(err, "Error occurred when creating pull request")
+		return fmt.Errorf("Error occurred when creating pull request: %w", err)
 	}
 	log.Entry().Debugf("New pull request created: %v", newPR)
 
@@ -55,7 +55,7 @@ func runGithubCreatePullRequest(ctx context.Context, config *githubCreatePullReq
 	updatedPr, resp, err := ghIssueService.Edit(ctx, config.Owner, config.Repository, newPR.GetNumber(), &issueRequest)
 	if err != nil {
 		log.Entry().Errorf("GitHub response code %v", resp.Status)
-		return errors.Wrap(err, "Error occurred when editing pull request")
+		return fmt.Errorf("Error occurred when editing pull request: %w", err)
 	}
 	log.Entry().Debugf("Updated pull request: %v", updatedPr)
 

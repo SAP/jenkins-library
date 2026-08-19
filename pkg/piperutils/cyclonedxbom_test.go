@@ -253,15 +253,59 @@ func TestValidatePurl(t *testing.T) {
 	}
 }
 
-func TestGetBomVersion(t *testing.T) {
+func TestBomSchemaVersionFromXmlns(t *testing.T) {
 	tests := []struct {
 		name            string
-		bomContent      string
+		xmlns           string
 		expectedVersion string
+		errorContains   string
 	}{
 		{
-			name: "CycloneDX 1.4",
-			bomContent: `<?xml version="1.0"?>
+			name:            "CycloneDX 1.4",
+			xmlns:           "http://cyclonedx.org/schema/bom/1.4",
+			expectedVersion: "1.4",
+		},
+		{
+			name:            "CycloneDX 1.5",
+			xmlns:           "http://cyclonedx.org/schema/bom/1.5",
+			expectedVersion: "1.5",
+		},
+		{
+			name:            "CycloneDX 1.6",
+			xmlns:           "http://cyclonedx.org/schema/bom/1.6",
+			expectedVersion: "1.6",
+		},
+		{
+			name:          "unsupported CycloneDX 2.0",
+			xmlns:         "http://cyclonedx.org/schema/bom/2.0",
+			errorContains: "unable to determine CycloneDX version from BOM",
+		},
+		{
+			name:          "empty xmlns",
+			xmlns:         "",
+			errorContains: "unable to determine CycloneDX version from BOM",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			version, err := bomSchemaVersionFromXmlns(tt.xmlns)
+
+			if tt.errorContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorContains)
+				assert.Empty(t, version)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedVersion, version)
+			}
+		})
+	}
+}
+
+func TestGetBomSchemaVersionFromContent(t *testing.T) {
+	t.Run("valid BOM content", func(t *testing.T) {
+		bomContent := []byte(`<?xml version="1.0"?>
 <bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
 	<metadata>
 		<component>
@@ -269,35 +313,62 @@ func TestGetBomVersion(t *testing.T) {
 			<purl>pkg:maven/com.example/test@1.0.0</purl>
 		</component>
 	</metadata>
-</bom>`,
-			expectedVersion: "1.4",
-		},
-		{
-			name: "CycloneDX 1.5",
-			bomContent: `<?xml version="1.0"?>
-<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1">
+</bom>`)
+
+		version, err := GetBomSchemaVersionFromContent(bomContent)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "1.4", version)
+	})
+
+	t.Run("unmarshal error on invalid XML", func(t *testing.T) {
+		invalidXML := []byte("<bom><metadata><component><purl>invalid xml</metadata></bom>")
+
+		version, err := GetBomSchemaVersionFromContent(invalidXML)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse BOM")
+		assert.Empty(t, version)
+	})
+
+	t.Run("unmarshal error on empty XML content", func(t *testing.T) {
+		invalidXML := []byte("")
+
+		version, err := GetBomSchemaVersionFromContent(invalidXML)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse BOM")
+		assert.Empty(t, version)
+	})
+}
+
+func TestGetBomSchemaVersion(t *testing.T) {
+	t.Run("valid BOM file", func(t *testing.T) {
+		bomContent := `<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.4" version="1">
 	<metadata>
 		<component>
 			<name>test</name>
 			<purl>pkg:maven/com.example/test@1.0.0</purl>
 		</component>
 	</metadata>
-</bom>`,
-			expectedVersion: "1.5",
-		},
-	}
+</bom>`
+		fileName, cleanup := createTempFile(t, bomContent)
+		defer cleanup()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fileName, cleanup := createTempFile(t, tt.bomContent)
-			defer cleanup()
+		version, err := GetBomSchemaVersion(fileName)
 
-			version, err := GetBomSchemaVersion(fileName)
+		assert.NoError(t, err)
+		assert.Equal(t, "1.4", version)
+	})
 
-			assert.NoError(t, err)
-			assert.Equal(t, tt.expectedVersion, version)
-		})
-	}
+	t.Run("file not found", func(t *testing.T) {
+		version, err := GetBomSchemaVersion("nonexistent.xml")
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no such file or directory")
+		assert.Empty(t, version)
+	})
 }
 
 func TestParseMTASampleBOM(t *testing.T) {
@@ -435,4 +506,92 @@ func TestUpdateBOMPurl(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParsePurl(t *testing.T) {
+	tests := []struct {
+		name         string
+		purl         string
+		wantRegistry string
+		wantName     string
+		wantVersion  string
+		wantErr      bool
+	}{
+		{
+			name:         "purl with registry namespace",
+			purl:         "pkg:docker/ghcr.io/my-org/nginx@1.25",
+			wantRegistry: "ghcr.io",
+			wantName:     "nginx",
+			wantVersion:  "1.25",
+		},
+		{
+			name:         "purl without namespace defaults to docker.io",
+			purl:         "pkg:docker/nginx@1.25",
+			wantRegistry: "docker.io",
+			wantName:     "nginx",
+			wantVersion:  "1.25",
+		},
+		{
+			name:         "namespace without a dot defaults to docker.io",
+			purl:         "pkg:docker/library/nginx@1.25",
+			wantRegistry: "docker.io",
+			wantName:     "nginx",
+			wantVersion:  "1.25",
+		},
+		{
+			name:    "invalid purl string returns an error",
+			purl:    "not-a-purl",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry, name, version, err := ParsePurl(tt.purl)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantRegistry, registry)
+			assert.Equal(t, tt.wantName, name)
+			assert.Equal(t, tt.wantVersion, version)
+		})
+	}
+}
+
+func TestBuildRegistryFreeDockerPurl(t *testing.T) {
+	t.Run("strips the registry and yields a clean docker purl", func(t *testing.T) {
+		purl, registry, name, version, err := BuildRegistryFreeDockerPurl("ghcr.io/my-org/nginx", "1.25")
+
+		require.NoError(t, err)
+		// The registry host is stripped from the final purl.
+		assert.Equal(t, "pkg:docker/nginx@1.25", purl)
+		assert.Equal(t, "ghcr.io", registry)
+		assert.Equal(t, "nginx", name)
+		assert.Equal(t, "1.25", version)
+	})
+
+	t.Run("registry-free image defaults to docker.io registry", func(t *testing.T) {
+		purl, registry, name, version, err := BuildRegistryFreeDockerPurl("nginx", "1.25")
+
+		require.NoError(t, err)
+		assert.Equal(t, "pkg:docker/nginx@1.25", purl)
+		assert.Equal(t, "docker.io", registry)
+		assert.Equal(t, "nginx", name)
+		assert.Equal(t, "1.25", version)
+	})
+
+	t.Run("invalid image reference fails the first purl construction", func(t *testing.T) {
+		// RefToPURL parses the "<name>:<version>" reference; an uppercase name is
+		// an invalid docker reference ("repository name must be lowercase"), so
+		// the first RefToPURL call returns an error. This is the only one of the
+		// three error guards reachable by input: once the first PURL is built,
+		// ParsePurl cannot fail on it and the second RefToPURL runs on an
+		// already-validated name/version, so those two guards are defensive only.
+		_, _, _, _, err := BuildRegistryFreeDockerPurl("UPPER", "1.0")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unable to create purl from reference")
+	})
 }

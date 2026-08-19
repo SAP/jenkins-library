@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions

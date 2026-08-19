@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
-	"helm.sh/helm/v3/pkg/chart"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestHelmChartInit(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		chartMetadata := Metadata{Version: "1.2.3"}
 		content, err := yaml.Marshal(chartMetadata)
 		assert.NoError(t, err)
 
@@ -32,7 +31,7 @@ func TestHelmChartInit(t *testing.T) {
 	})
 
 	t.Run("success case - with chart path", func(t *testing.T) {
-		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		chartMetadata := Metadata{Version: "1.2.3"}
 		content, err := yaml.Marshal(chartMetadata)
 		assert.NoError(t, err)
 
@@ -106,7 +105,7 @@ func TestHelmChartVersioningScheme(t *testing.T) {
 
 func TestHelmChartGetVersion(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		chartMetadata := chart.Metadata{Version: "1.2.3"}
+		chartMetadata := Metadata{Version: "1.2.3"}
 		content, err := yaml.Marshal(chartMetadata)
 		assert.NoError(t, err)
 
@@ -141,7 +140,7 @@ func TestHelmChartSetVersion(t *testing.T) {
 		helmChart := HelmChart{
 			utils:    fileUtils,
 			path:     "testchart/Chart.yaml",
-			metadata: chart.Metadata{Version: "1.2.3"},
+			metadata: Metadata{Version: "1.2.3"},
 		}
 
 		err := helmChart.SetVersion("1.2.4")
@@ -159,7 +158,7 @@ func TestHelmChartSetVersion(t *testing.T) {
 		helmChart := HelmChart{
 			utils:            fileUtils,
 			path:             "testchart/Chart.yaml",
-			metadata:         chart.Metadata{Version: "1.2.3"},
+			metadata:         Metadata{Version: "1.2.3"},
 			updateAppVersion: true,
 		}
 
@@ -174,7 +173,7 @@ func TestHelmChartSetVersion(t *testing.T) {
 		helmChart := HelmChart{
 			utils:            fileUtils,
 			path:             "testchart/Chart.yaml",
-			metadata:         chart.Metadata{Version: "1.2.3"},
+			metadata:         Metadata{Version: "1.2.3"},
 			updateAppVersion: true,
 		}
 
@@ -202,7 +201,7 @@ func TestHelmChartSetVersion(t *testing.T) {
 		helmChart := HelmChart{
 			path:     "testchart/Chart.yaml",
 			utils:    fileUtils,
-			metadata: chart.Metadata{Version: "1.2.3"},
+			metadata: Metadata{Version: "1.2.3"},
 		}
 
 		err := helmChart.SetVersion("1.2.4")
@@ -216,7 +215,7 @@ func TestHelmChartGetCoordinates(t *testing.T) {
 		helmChart := HelmChart{
 			utils:    fileUtils,
 			path:     "testchart/Chart.yaml",
-			metadata: chart.Metadata{Version: "1.2.3", Name: "myChart", Home: "myHome"},
+			metadata: Metadata{Version: "1.2.3", Name: "myChart", Home: "myHome"},
 		}
 
 		coordinates, err := helmChart.GetCoordinates()

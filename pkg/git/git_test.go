@@ -6,6 +6,8 @@ package git
 import (
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
@@ -13,7 +15,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCommit(t *testing.T) {

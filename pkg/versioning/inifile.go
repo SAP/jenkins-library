@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"gopkg.in/ini.v1"
 )
 
@@ -33,11 +33,11 @@ func (i *INIfile) init() error {
 	if i.content == nil {
 		conf, err := i.readFile(i.path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", i.path)
+			return fmt.Errorf("failed to read file '%v': %w", i.path, err)
 		}
 		i.content, err = ini.Load(conf)
 		if err != nil {
-			return errors.Wrapf(err, "failed to load content from file '%v'", i.path)
+			return fmt.Errorf("failed to load content from file '%v': %w", i.path, err)
 		}
 	}
 	return nil
@@ -80,12 +80,28 @@ func (i *INIfile) SetVersion(version string) error {
 	i.content.WriteTo(&buf)
 	err := i.writeFile(i.path, buf.Bytes(), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", i.path)
+		return fmt.Errorf("failed to write file '%v': %w", i.path, err)
 	}
 	return nil
 }
 
 // GetCoordinates returns the coordinates
 func (i *INIfile) GetCoordinates() (Coordinates, error) {
-	return Coordinates{}, nil
+	result := Coordinates{}
+	if i.content == nil {
+		if err := i.init(); err != nil {
+			return result, err
+		}
+	}
+	section := i.content.Section(i.versionSection)
+	if section.HasKey("name") {
+		result.ArtifactID = section.Key("name").String()
+	} else {
+		log.Entry().Debugf("no 'name' field found in section '%v' of file '%v': artifactId remains empty", i.versionSection, i.path)
+	}
+	if version, err := i.GetVersion(); err == nil {
+		result.Version = version
+	}
+
+	return result, nil
 }

@@ -1,14 +1,19 @@
 package git
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	gogitconfig "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/pkg/errors"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -39,7 +44,7 @@ func CommitSingleFile(filePath, commitMessage, author string, worktree *git.Work
 func commitSingleFile(filePath, commitMessage, author string, worktree utilsWorkTree) (plumbing.Hash, error) {
 	_, err := worktree.Add(filePath)
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "failed to add file to git")
+		return [20]byte{}, fmt.Errorf("failed to add file to git: %w", err)
 	}
 
 	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
@@ -47,7 +52,7 @@ func commitSingleFile(filePath, commitMessage, author string, worktree utilsWork
 		Author: &object.Signature{Name: author, When: time.Now()},
 	})
 	if err != nil {
-		return [20]byte{}, errors.Wrap(err, "failed to commit file")
+		return [20]byte{}, fmt.Errorf("failed to commit file: %w", err)
 	}
 
 	return commit, nil
@@ -71,7 +76,7 @@ func pushChangesToRepository(username, password string, force *bool, repository 
 	}
 	err := repository.Push(pushOptions)
 	if err != nil {
-		return errors.Wrap(err, "failed to push commit")
+		return fmt.Errorf("failed to push commit: %w", err)
 	}
 	return nil
 }
@@ -96,7 +101,7 @@ func plainClone(username, password, serverURL, branchName, directory string, abs
 
 	repository, err := abstractionGit.plainClone(directory, false, &gitCloneOptions)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to clone git")
+		return nil, fmt.Errorf("failed to clone git: %w", err)
 	}
 	return repository, nil
 }
@@ -111,7 +116,7 @@ func plainOpen(path string, abstractionGit utilsGit) (*git.Repository, error) {
 	log.Entry().Infof("Opening git repo at '%s'", path)
 	r, err := abstractionGit.plainOpen(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", path)
+		return nil, fmt.Errorf("Unable to open git repository at '%s': %w", path, err)
 	}
 	return r, nil
 }
@@ -137,7 +142,7 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 		checkoutOptions.Create = true
 		err = worktree.Checkout(checkoutOptions)
 		if err != nil {
-			return errors.Wrap(err, "failed to checkout branch")
+			return fmt.Errorf("failed to checkout branch: %w", err)
 		}
 	}
 
@@ -150,11 +155,11 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 
 	cTo, err := getCommitObject(to, repo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot provide log range (to: '%s' not found)", to)
+		return nil, fmt.Errorf("Cannot provide log range (to: '%s' not found): %w", to, err)
 	}
 	cFrom, err := getCommitObject(from, repo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot provide log range (from: '%s' not found)", from)
+		return nil, fmt.Errorf("Cannot provide log range (from: '%s' not found): %w", from, err)
 	}
 	ignore := []plumbing.Hash{}
 	err = object.NewCommitPreorderIter(
@@ -166,7 +171,7 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Cannot provide log range")
+		return nil, fmt.Errorf("Cannot provide log range: %w", err)
 	}
 
 	return object.NewCommitPreorderIter(cTo, map[plumbing.Hash]bool{}, ignore), nil
@@ -179,11 +184,11 @@ func getCommitObject(ref string, repo *git.Repository) (*object.Commit, error) {
 	}
 	r, err := repo.ResolveRevision(plumbing.Revision(ref))
 	if err != nil {
-		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+		return nil, fmt.Errorf("Trouble resolving '%s': %w", ref, err)
 	}
 	c, err := repo.CommitObject(*r)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+		return nil, fmt.Errorf("Trouble resolving '%s': %w", ref, err)
 	}
 	return c, nil
 }
@@ -195,5 +200,61 @@ func (abstractionGit) plainClone(path string, isBare bool, o *git.CloneOptions) 
 }
 
 func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
-	return git.PlainOpen(path)
+	if err := unsetWorktreeConfig(path); err != nil {
+		return nil, fmt.Errorf("unsetting extensions.worktreeConfig: %w", err)
+	}
+	return git.PlainOpenWithOptions(path, &git.PlainOpenOptions{DetectDotGit: true})
+}
+
+// Workaround for go-git v1.17.0+ rejecting the 'worktreeconfig' extension
+// Equivalent to running 'git config --unset extensions.worktreeConfig'
+// This workaround is from this issue: https://github.com/go-git/go-git/pull/1982
+// Jira reference: https://sap.atlassian.net/browse/HSPIPER-1191
+func unsetWorktreeConfig(repoPath string) error {
+	dotGitDir, found := findDotGitDir(repoPath)
+	if !found {
+		return fmt.Errorf("not a git repository")
+	}
+	configPath := filepath.Join(dotGitDir, "config")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("opening git config: %w", err)
+	}
+
+	cfg := gogitconfig.New()
+	if err := gogitconfig.NewDecoder(bytes.NewReader(data)).Decode(cfg); err != nil {
+		return fmt.Errorf("decoding git config: %w", err)
+	}
+
+	section := cfg.Section("extensions")
+	if !section.HasOption("worktreeConfig") {
+		return nil
+	}
+	section.RemoveOption("worktreeConfig")
+
+	var buf bytes.Buffer
+	if err := gogitconfig.NewEncoder(&buf).Encode(cfg); err != nil {
+		return fmt.Errorf("writing git config: %w", err)
+	}
+	return os.WriteFile(configPath, buf.Bytes(), 0644)
+}
+
+// mirrors DetectDotGit behavior; used only by unsetWorktreeConfig workaround
+func findDotGitDir(startPath string) (string, bool) {
+	p := startPath
+	for {
+		candidate := filepath.Join(p, ".git")
+		info, err := os.Stat(candidate)
+		if err == nil && info.IsDir() {
+			return candidate, true
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			return "", false
+		}
+		p = parent
+	}
 }

@@ -6,8 +6,9 @@ package cmd
 import (
 	"testing"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

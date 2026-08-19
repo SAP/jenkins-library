@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/iancoleman/orderedmap"
-	"github.com/pkg/errors"
 )
 
 // JSONfile defines an artifact using a json file for versioning
@@ -43,15 +42,18 @@ func (j *JSONfile) GetVersion() (string, error) {
 
 	content, err := j.readFile(j.path)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read file '%v'", j.path)
+		return "", fmt.Errorf("failed to read file '%v': %w", j.path, err)
 	}
 
 	err = json.Unmarshal(content, &j.content)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read json content of file '%v'", j.content)
+		return "", fmt.Errorf("failed to read json content of file '%v': %w", j.content, err)
 	}
 
-	version, _ := j.content.Get(j.versionField)
+	version, exists := j.content.Get(j.versionField)
+	if !exists || version == nil {
+		return "", nil
+	}
 
 	return fmt.Sprint(version), nil
 }
@@ -73,11 +75,11 @@ func (j *JSONfile) SetVersion(version string) error {
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(j.content); err != nil {
-		return errors.Wrapf(err, "failed to create json content for '%v'", j.path)
+		return fmt.Errorf("failed to create json content for '%v': %w", j.path, err)
 	}
 	err := j.writeFile(j.path, buf.Bytes(), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", j.path)
+		return fmt.Errorf("failed to write file '%v': %w", j.path, err)
 	}
 
 	return nil
@@ -90,9 +92,9 @@ func (j *JSONfile) GetCoordinates() (Coordinates, error) {
 	if err != nil {
 		return result, err
 	}
-	projectName, _ := j.content.Get("name")
-
-	result.ArtifactID = fmt.Sprint(projectName)
+	if projectName, exists := j.content.Get("name"); exists && projectName != nil {
+		result.ArtifactID = fmt.Sprint(projectName)
+	}
 	result.Version = projectVersion
 
 	return result, nil

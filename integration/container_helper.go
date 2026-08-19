@@ -9,10 +9,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
+	"github.com/moby/moby/api/types/container"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/exec"
@@ -21,10 +22,12 @@ import (
 
 // ContainerConfig holds configuration for creating a test container
 type ContainerConfig struct {
-	Image    string // Docker image to use
-	TestData string // Path relative to integration/testdata (e.g., "TestGradleIntegration/java-project")
-	WorkDir  string // Working directory inside container (e.g., "/java-project")
-	User     string // User to run as (optional, defaults to image default)
+	Image          string   // Docker image to use
+	TestData       string   // Path relative to integration/testdata (e.g., "TestGradleIntegration/java-project")
+	WorkDir        string   // Working directory inside container (e.g., "/java-project")
+	User           string   // User to run as (optional, defaults to image default)
+	Networks       []string // Docker networks to attach the container to (optional)
+	NetworkAliases []string // Aliases the container is reachable by on those networks (optional)
 }
 
 // K3dContainerConfig holds configuration for creating a k3d cluster container
@@ -60,6 +63,16 @@ func StartPiperContainer(t *testing.T, cfg ContainerConfig) testcontainers.Conta
 
 	if cfg.User != "" {
 		req.User = cfg.User
+	}
+
+	if len(cfg.Networks) > 0 {
+		req.Networks = cfg.Networks
+		if len(cfg.NetworkAliases) > 0 {
+			req.NetworkAliases = map[string][]string{}
+			for _, network := range cfg.Networks {
+				req.NetworkAliases[network] = cfg.NetworkAliases
+			}
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -181,22 +194,42 @@ func RunPiper(t *testing.T, container testcontainers.Container, workDir, command
 
 // RunPiperExpectFailure executes a piper command expecting it to fail.
 // It returns the exit code and output. Use this for negative test cases.
+// The piper command is wrapped in a shell so the exit code is reliably
+// propagated even when the Docker exec API has transient exit-code races.
 func RunPiperExpectFailure(t *testing.T, container testcontainers.Container, workDir, command string, args ...string) (int, string) {
 	t.Helper()
 
 	ctx := context.Background()
-	cmd := append([]string{"/piperbin/piper", command}, args...)
 
-	code, reader, err := container.Exec(ctx, cmd, exec.WithWorkingDir(workDir))
+	// Build the piper invocation as a shell command so the exit code is
+	// captured by sh and written to a sentinel file. This avoids a race in
+	// the Docker exec inspect API where a very-fast exit can be seen as 0.
+	piperArgs := append([]string{"/piperbin/piper", command}, args...)
+	quotedArgs := make([]string, len(piperArgs))
+	for i, a := range piperArgs {
+		quotedArgs[i] = fmt.Sprintf("%q", a)
+	}
+	shellCmd := fmt.Sprintf("cd %q && %s; echo $? > /tmp/piper_exit_code", workDir, strings.Join(quotedArgs, " "))
+
+	_, reader, err := container.Exec(ctx, []string{"sh", "-c", shellCmd})
 
 	output, readErr := io.ReadAll(reader)
 	outputStr := string(output)
 
 	require.NoError(t, err,
 		"Failed to execute piper command: %v\nCommand: %v\nWorkDir: %s",
-		err, cmd, workDir)
+		err, piperArgs, workDir)
 	require.NoError(t, readErr,
-		"Failed to read command output for: %v", cmd)
+		"Failed to read command output for: %v", piperArgs)
+
+	// Read the exit code from the sentinel file, which is immune to the
+	// Docker exec inspect race.
+	codeReader, readFileErr := container.CopyFileFromContainer(ctx, "/tmp/piper_exit_code")
+	require.NoError(t, readFileErr, "Failed to read exit code sentinel file")
+	defer codeReader.Close()
+	codeBytes, _ := io.ReadAll(codeReader)
+	var code int
+	fmt.Sscanf(strings.TrimSpace(string(codeBytes)), "%d", &code)
 
 	if code == 0 {
 		t.Errorf("WARNING: Command succeeded with exit code 0 (expected failure)\nOutput:\n%s", outputStr)

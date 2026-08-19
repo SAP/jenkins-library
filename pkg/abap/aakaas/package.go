@@ -2,12 +2,14 @@ package aakaas
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
+
+	"errors"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 // PackageStatus : Status of an ABAP delivery package
@@ -85,7 +87,7 @@ func (p *Package) ReserveNext() error {
 	}
 	var jPck jsonPackageDeterminePackageForScv
 	if err := json.Unmarshal(body, &jPck); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for reserve package: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for reserve package: "+string(body), err)
 	}
 	p.PackageName = jPck.DeterminePackage.Package.PackageName
 	p.Type = jPck.DeterminePackage.Package.Type
@@ -111,7 +113,7 @@ func (p *Package) GetPackageAndNamespace() error {
 
 	var jPck jsonPackage
 	if err := json.Unmarshal(body, &jPck); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for check of package status: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for check of package status: "+string(body), err)
 	}
 
 	p.Status = jPck.Package.Status
@@ -140,7 +142,7 @@ func (p *Package) Register() error {
 
 	var jPck jsonPackage
 	if err := json.Unmarshal(body, &jPck); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for register package: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for register package: "+string(body), err)
 	}
 	p.Status = jPck.Package.Status
 	log.Entry().Infof("Package status %s", p.Status)
@@ -160,7 +162,7 @@ func (p *Package) Release() error {
 	}
 	var jPck jsonPackage
 	if err := json.Unmarshal(body, &jPck); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for release package: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for release package: "+string(body), err)
 	}
 	p.Status = jPck.Package.Status
 	return nil

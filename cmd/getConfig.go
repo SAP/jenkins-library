@@ -8,12 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -133,7 +134,7 @@ func GetStageConfig() (config.StepConfig, error) {
 	customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+			return stepConfig, fmt.Errorf("config: open configuration file '%v' failed: %w", projectConfigFile, err)
 		}
 		customConfig = nil
 	}
@@ -146,7 +147,7 @@ func GetStageConfig() (config.StepConfig, error) {
 		fc, err := configOptions.OpenFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
-			return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+			return stepConfig, fmt.Errorf("config: getting defaults failed: '%v': %w", f, err)
 		}
 		if err == nil {
 			defaultConfig = append(defaultConfig, fc)
@@ -168,7 +169,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 	if configOptions.StageConfig {
 		stepConfig, err = GetStageConfig()
 		if err != nil {
-			return stepConfig, errors.Wrap(err, "getting stage config failed")
+			return stepConfig, fmt.Errorf("getting stage config failed: %w", err)
 		}
 		// add hooks (defaults + custom defaults) to stage-config.json output
 		stepConfig.Config["hooks"] = stepConfig.HookConfig
@@ -179,7 +180,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 		}
 		metadata, err := config.ResolveMetadata(GeneralConfig.GitHubAccessTokens, GeneralConfig.MetaDataResolver, configOptions.StepMetadata, configOptions.StepName)
 		if err != nil {
-			return stepConfig, errors.Wrapf(err, "failed to resolve metadata")
+			return stepConfig, fmt.Errorf("failed to resolve metadata: %w", err)
 		}
 
 		// prepare output resource directories:
@@ -198,21 +199,21 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 		customConfig, err := configOptions.OpenFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
-				return stepConfig, errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
+				return stepConfig, fmt.Errorf("config: open configuration file '%v' failed: %w", projectConfigFile, err)
 			}
 			customConfig = nil
 		}
 
 		defaultConfig, paramFilter, err := defaultsAndFilters(&metadata, metadata.Metadata.Name)
 		if err != nil {
-			return stepConfig, errors.Wrap(err, "defaults: retrieving step defaults failed")
+			return stepConfig, fmt.Errorf("defaults: retrieving step defaults failed: %w", err)
 		}
 
 		for _, f := range GeneralConfig.DefaultConfig {
 			fc, err := configOptions.OpenFile(f, GeneralConfig.GitHubAccessTokens)
 			// only create error for non-default values
 			if err != nil && f != ".pipeline/defaults.yaml" {
-				return stepConfig, errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
+				return stepConfig, fmt.Errorf("config: getting defaults failed: '%v': %w", f, err)
 			}
 			if err == nil {
 				defaultConfig = append(defaultConfig, fc)
@@ -244,7 +245,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, metadata, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name)
 		if err != nil {
-			return stepConfig, errors.Wrap(err, "getting step config failed")
+			return stepConfig, fmt.Errorf("getting step config failed: %w", err)
 		}
 
 		// apply context conditions if context configuration is requested
@@ -310,7 +311,7 @@ func defaultsAndFilters(metadata *config.StepData, stepName string) ([]io.ReadCl
 	if configOptions.ContextConfig {
 		defaults, err := metadata.GetContextDefaults(stepName)
 		if err != nil {
-			return nil, config.StepFilters{}, errors.Wrap(err, "metadata: getting context defaults failed")
+			return nil, config.StepFilters{}, fmt.Errorf("metadata: getting context defaults failed: %w", err)
 		}
 		return []io.ReadCloser{defaults}, metadata.GetContextParameterFilters(), nil
 	}

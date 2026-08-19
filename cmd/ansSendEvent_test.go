@@ -5,11 +5,12 @@ package cmd
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/ans"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 const testTimestamp = 1651585103

@@ -6,8 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"errors"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -49,13 +50,15 @@ type imagePushToRegistryUtilsBundle struct {
 	// imagePushToRegistryUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newImagePushToRegistryUtils() imagePushToRegistryUtils {
+func newImagePushToRegistryUtils(disableHTTP2 bool) imagePushToRegistryUtils {
+	craneBundle := docker.NewCraneUtilsBundle()
+	craneBundle.DisableHTTP2 = disableHTTP2
 	utils := imagePushToRegistryUtilsBundle{
 		Command: &command.Command{
 			StepName: "imagePushToRegistry",
 		},
 		Files:            &piperutils.Files{},
-		dockerImageUtils: &docker.CraneUtilsBundle{},
+		dockerImageUtils: craneBundle,
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -66,7 +69,7 @@ func newImagePushToRegistryUtils() imagePushToRegistryUtils {
 func imagePushToRegistry(config imagePushToRegistryOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newImagePushToRegistryUtils()
+	utils := newImagePushToRegistryUtils(config.DisableHTTP2)
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -107,30 +110,30 @@ func runImagePushToRegistry(config *imagePushToRegistryOptions, telemetryData *t
 
 	log.Entry().Debug("Handling destination registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.TargetRegistryURL, config.TargetRegistryUser, config.TargetRegistryPassword, utils); err != nil {
-		return errors.Wrap(err, "failed to handle credentials for target registry")
+		return fmt.Errorf("failed to handle credentials for target registry: %w", err)
 	}
 
 	if config.PushLocalDockerImage {
 		if err := pushLocalImageToTargetRegistry(config, utils); err != nil {
-			return errors.Wrapf(err, "failed to push local image to %q", config.TargetRegistryURL)
+			return fmt.Errorf("failed to push local image to %q: %w", config.TargetRegistryURL, err)
 		}
 		return nil
 	}
 
 	log.Entry().Debug("Handling source registry credentials")
 	if err := handleCredentialsForPrivateRegistry(config.DockerConfigJSON, config.SourceRegistryURL, config.SourceRegistryUser, config.SourceRegistryPassword, utils); err != nil {
-		return errors.Wrap(err, "failed to handle credentials for source registry")
+		return fmt.Errorf("failed to handle credentials for source registry: %w", err)
 	}
 
 	if config.UseImageNameTags {
 		if err := pushImageNameTagsToTargetRegistry(config, utils); err != nil {
-			return errors.Wrapf(err, "failed to push imageNameTags to target registry")
+			return fmt.Errorf("failed to push imageNameTags to target registry: %w", err)
 		}
 		return nil
 	}
 
 	if err := copyImages(config, utils); err != nil {
-		return errors.Wrap(err, "failed to copy images")
+		return fmt.Errorf("failed to copy images: %w", err)
 	}
 
 	return nil
@@ -143,17 +146,17 @@ func handleCredentialsForPrivateRegistry(dockerConfigJsonPath, registry, usernam
 		}
 
 		if _, err := docker.CreateDockerConfigJSON(registry, username, password, "", targetDockerConfigPath, utils); err != nil {
-			return errors.Wrap(err, "failed to create new docker config")
+			return fmt.Errorf("failed to create new docker config: %w", err)
 		}
 		return nil
 	}
 
 	if _, err := docker.CreateDockerConfigJSON(registry, username, password, targetDockerConfigPath, dockerConfigJsonPath, utils); err != nil {
-		return errors.Wrapf(err, "failed to update docker config %q", dockerConfigJsonPath)
+		return fmt.Errorf("failed to update docker config %q: %w", dockerConfigJsonPath, err)
 	}
 
 	if err := docker.MergeDockerConfigJSON(targetDockerConfigPath, dockerConfigJsonPath, utils); err != nil {
-		return errors.Wrapf(err, "failed to merge docker config files")
+		return fmt.Errorf("failed to merge docker config files: %w", err)
 	}
 
 	return nil
@@ -168,10 +171,11 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 		sourceImage := sourceImage
 		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
-		targetImage, ok := config.TargetImages[sourceImage].(string)
+		targetImage, ok := config.TargetImages[sourceImage]
 		if !ok {
 			return fmt.Errorf("incorrect name of target image: %v", config.TargetImages[sourceImage])
 		}
+		log.Entry().Debugf("Current target image: %s", targetImage)
 
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
@@ -216,14 +220,9 @@ func pushLocalImageToTargetRegistry(config *imagePushToRegistryOptions, utils im
 		return err
 	}
 	log.Entry().Infof("Loading local image... Done")
+	log.Entry().Debugf("Selected target images: %s", config.TargetImages)
 
-	for _, trgImage := range config.TargetImages {
-		trgImage := trgImage
-		targetImage, ok := trgImage.(string)
-		if !ok {
-			return fmt.Errorf("incorrect name of target image: %v", trgImage)
-		}
-
+	for _, targetImage := range config.TargetImages {
 		if config.TargetImageTag != "" {
 			g.Go(func() error {
 				dst := fmt.Sprintf("%s/%s:%s", config.TargetRegistryURL, targetImage, config.TargetImageTag)
@@ -287,11 +286,14 @@ func pushImageNameTagsToTargetRegistry(config *imagePushToRegistryOptions, utils
 	return nil
 }
 
-func mapSourceTargetImages(sourceImages []string) map[string]any {
-	targetImages := make(map[string]any, len(sourceImages))
+func mapSourceTargetImages(sourceImages []string) map[string]string {
+	targetImages := make(map[string]string, len(sourceImages))
+
 	for _, sourceImage := range sourceImages {
 		targetImages[sourceImage] = sourceImage
 	}
+
+	log.Entry().Debugf("Mapped target images: %s", targetImages)
 
 	return targetImages
 }

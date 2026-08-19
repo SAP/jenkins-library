@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/magiconair/properties"
-	"github.com/pkg/errors"
 )
 
 // PropertiesFile defines an artifact using a properties file for versioning
@@ -29,7 +28,7 @@ func (p *PropertiesFile) init() error {
 		var err error
 		p.content, err = properties.LoadFile(p.path, properties.UTF8)
 		if err != nil {
-			return errors.Wrapf(err, "failed to load file %v", p.path)
+			return fmt.Errorf("failed to load file %v: %w", p.path, err)
 		}
 	}
 	return nil
@@ -64,17 +63,17 @@ func (p *PropertiesFile) SetVersion(version string) error {
 	}
 	err = p.content.SetValue(p.versionField, version)
 	if err != nil {
-		return errors.Wrapf(err, "failed to set version")
+		return fmt.Errorf("failed to set version: %w", err)
 	}
 
 	var propsContent bytes.Buffer
 	_, err = p.content.Write(&propsContent, properties.UTF8)
 	if err != nil {
-		return errors.Wrap(err, "failed to write version")
+		return fmt.Errorf("failed to write version: %w", err)
 	}
 	err = p.writeFile(p.path, propsContent.Bytes(), 0666)
 	if err != nil {
-		return errors.Wrap(err, "failed to write file")
+		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 const piperDbName string = "piper_step_db.db"
@@ -42,18 +41,14 @@ func newCDUtils() credentialdiggerUtils {
 func credentialdiggerScan(config credentialdiggerScanOptions, telemetryData *telemetry.CustomData) error {
 	utils := newCDUtils()
 	// 0: Get attributes from orchestrator
-	provider, prov_err := orchestrator.GetOrchestratorConfigProvider(nil)
-	if prov_err != nil {
-		log.Entry().WithError(prov_err).Error(
-			"Unable to load orchestrator specific configuration.")
-	}
+	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 	if config.Repository == "" {
 		// Get current repository from orchestrator
 		log.Entry().Debug("Repository URL not defined in step configuration. Try get it from orchestrators")
 		repoUrlOrchestrator := provider.RepoURL()
 		if repoUrlOrchestrator == "n/a" {
 			// Jenkins configuration error
-			configError := errors.New(fmt.Sprintf("Unknown repository URL %s", repoUrlOrchestrator))
+			configError := fmt.Errorf("Unknown repository URL %s", repoUrlOrchestrator)
 			log.Entry().WithError(configError).Error(
 				"Repository URL n/a. Please verify git plugin is installed.")
 			// The repository to scan was not identified. Return an error

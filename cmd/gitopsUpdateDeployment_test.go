@@ -5,15 +5,16 @@ package cmd
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBuildRegistryPlusImage(t *testing.T) {

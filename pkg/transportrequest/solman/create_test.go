@@ -6,9 +6,10 @@ package solman
 import (
 	"bytes"
 	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSolmanCreateTransportRequest(t *testing.T) {

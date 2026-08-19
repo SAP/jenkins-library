@@ -2,16 +2,18 @@ package buildsettings
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type BuildSettings struct {
+	DockerBuild        []BuildOptions `json:"dockerBuild,omitempty"`
 	GolangBuild        []BuildOptions `json:"golangBuild,omitempty"`
 	GradleExecuteBuild []BuildOptions `json:"gradleExecuteBuild,omitempty"`
+	HelmBuild          []BuildOptions `json:"helmBuild,omitempty"`
 	HelmExecute        []BuildOptions `json:"helmExecute,omitempty"`
 	KanikoExecute      []BuildOptions `json:"kanikoExecute,omitempty"`
 	MavenBuild         []BuildOptions `json:"mavenBuild,omitempty"`
@@ -40,12 +42,13 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		dockerImage = envDockerImage
 	}
 
+	// BuildSettingsInfo is intentionally omitted to avoid recursive nesting.
 	currentBuildSettingsInfo := BuildOptions{
-		CreateBOM:                   config.CreateBOM,
-		GlobalSettingsFile:          config.GlobalSettingsFile,
-		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		Profiles:                    config.Profiles,
 		Publish:                     config.Publish,
+		CreateBOM:                   config.CreateBOM,
+		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
+		GlobalSettingsFile:          config.GlobalSettingsFile,
 		DefaultNpmRegistry:          config.DefaultNpmRegistry,
 		DockerImage:                 dockerImage,
 	}
@@ -56,7 +59,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 
 		err := json.Unmarshal([]byte(config.BuildSettingsInfo), &jsonMap)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to unmarshal existing build settings json '%v'", config.BuildSettingsInfo)
+			return "", fmt.Errorf("failed to unmarshal existing build settings json '%v': %w", config.BuildSettingsInfo, err)
 		}
 
 		if build, exist := jsonMap[buildTool]; exist {
@@ -71,13 +74,17 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 
 		jsonResult, err = json.Marshal(&jsonMap)
 		if err != nil {
-			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
+			return "", fmt.Errorf("Creating build settings failed with json marshalling: %w", err)
 		}
 	} else {
 		var settings []BuildOptions
 		settings = append(settings, currentBuildSettingsInfo)
 		var err error
 		switch buildTool {
+		case "dockerBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				DockerBuild: settings,
+			})
 		case "golangBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				GolangBuild: settings,
@@ -85,6 +92,10 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 		case "gradleExecuteBuild":
 			jsonResult, err = json.Marshal(BuildSettings{
 				GradleExecuteBuild: settings,
+			})
+		case "helmBuild":
+			jsonResult, err = json.Marshal(BuildSettings{
+				HelmBuild: settings,
 			})
 		case "helmExecute":
 			jsonResult, err = json.Marshal(BuildSettings{
@@ -119,7 +130,7 @@ func CreateBuildSettingsInfo(config *BuildOptions, buildTool string) (string, er
 			return "", nil
 		}
 		if err != nil {
-			return "", errors.Wrap(err, "Creating build settings failed with json marshalling")
+			return "", fmt.Errorf("Creating build settings failed with json marshalling: %w", err)
 		}
 	}
 

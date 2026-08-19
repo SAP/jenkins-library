@@ -275,6 +275,60 @@ go 1.17`
 		}
 	})
 
+	t.Run("success - publishes binaries (single arch with packages)", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:          []string{"linux,amd64"},
+			Output:                       "outputDir",
+			Packages:                     []string{"./cmd/somePkg"},
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: false,
+			TargetRepositoryURL:          "https://my.target.repository.local",
+			TargetRepositoryUser:         "user",
+			TargetRepositoryPassword:     "password",
+			ArtifactVersion:              "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "main",
+		}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1, len(utils.fileUploads))
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir/somePkg", utils.fileUploads["outputDir/somePkg"])
+		}
+	})
+
+	t.Run("success - publishes binaries (single arch with dot package)", func(t *testing.T) {
+		config := golangBuildOptions{
+			TargetArchitectures:          []string{"linux,amd64"},
+			Output:                       "outputDir",
+			Packages:                     []string{"."},
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: false,
+			TargetRepositoryURL:          "https://my.target.repository.local",
+			TargetRepositoryUser:         "user",
+			TargetRepositoryPassword:     "password",
+			ArtifactVersion:              "1.0.0",
+		}
+		utils := newGolangBuildTestsUtils()
+		utils.returnFileUploadStatus = 201
+		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		telemetryData := telemetry.CustomData{}
+
+		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
+		if assert.NoError(t, err) {
+			assert.Equal(t, 1, len(utils.fileUploads))
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir/module", utils.fileUploads["outputDir/module"])
+		}
+	})
+
 	t.Run("success - create BOM", func(t *testing.T) {
 		config := golangBuildOptions{
 			CreateBOM:           true,
@@ -288,9 +342,9 @@ go 1.17`
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"install", golangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, []string{"install", GolangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", "1.4"}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[1].Params)
 		assert.Equal(t, "go", utils.ExecMockRunner.Calls[2].Exec)
 		assert.Equal(t, []string{"build", "-trimpath"}, utils.ExecMockRunner.Calls[2].Params)
 	})
@@ -313,6 +367,7 @@ go 1.17`
 		assert.NoError(t, err)
 
 		assert.Equal(t, []byte("content"), b)
+		// Should run linting directly with v1 syntax (no version command)
 		assert.Equal(t, binaryPath, utils.Calls[0].Exec)
 		assert.Equal(t, []string{"run", "--out-format", "checkstyle"}, utils.Calls[0].Params)
 	})
@@ -334,7 +389,7 @@ go 1.17`
 			CreateBOM: true,
 		}
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"go install " + golangCycloneDXPackage: fmt.Errorf("install failure")}
+		utils.ShouldFailOnCommand = map[string]error{"go install " + GolangCycloneDXPackage: fmt.Errorf("install failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -485,7 +540,7 @@ go 1.17`
 		}
 		GeneralConfig.Verbose = false
 		utils := newGolangBuildTestsUtils()
-		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version 1.4": fmt.Errorf("BOM creation failure")}
+		utils.ShouldFailOnCommand = map[string]error{"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDXSchemaVersion: fmt.Errorf("BOM creation failure")}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
@@ -745,7 +800,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		binaryName, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
 		assert.NoError(t, err)
 		assert.Greater(t, len(utils.Env), 3)
 		assert.Contains(t, utils.Env, "CGO_ENABLED=0")
@@ -764,7 +819,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-linux.amd64")
@@ -775,6 +830,79 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		assert.Contains(t, binaryNames, "testBin-linux.amd64")
 	})
 
+	t.Run("success - single arch single package", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
+		assert.NoError(t, err)
+		assert.Contains(t, utils.Calls[1].Params, "-o")
+		assert.Contains(t, utils.Calls[1].Params, "outputDir/")
+		assert.Len(t, binaryNames, 1)
+		assert.Contains(t, binaryNames, "outputDir/somePkg")
+	})
+
+	t.Run("success - single arch multiple packages", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "test/", Packages: []string{"package/foo", "package/bar"}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} package/foo": "main",
+			"go list -f {{ .Name }} package/bar": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
+		assert.NoError(t, err)
+		assert.Len(t, binaryNames, 2)
+		assert.Contains(t, binaryNames, "test/foo")
+		assert.Contains(t, binaryNames, "test/bar")
+	})
+
+	t.Run("success - single arch windows single package", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
+		assert.NoError(t, err)
+		assert.Len(t, binaryNames, 1)
+		assert.Contains(t, binaryNames, "outputDir/somePkg.exe")
+	})
+
+	t.Run("success - single pkg multi-arch uses os.arch suffix (bypasses getOutputBinaries)", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		utils := newGolangBuildTestsUtils()
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
+		assert.NoError(t, err)
+		// go list must NOT be called — single-pkg multi-arch bypasses getOutputBinaries
+		assert.Equal(t, "go", utils.Calls[0].Exec)
+		assert.Equal(t, "build", utils.Calls[0].Params[0])
+		assert.Contains(t, utils.Calls[0].Params, "outputDir-linux.amd64")
+		assert.Len(t, binaryNames, 1)
+		assert.Equal(t, "outputDir-linux.amd64", binaryNames[0])
+	})
+
 	t.Run("success - windows", func(t *testing.T) {
 		t.Parallel()
 		config := golangBuildOptions{Output: "testBin"}
@@ -783,7 +911,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "-o")
 		assert.Contains(t, utils.Calls[0].Params, "testBin-windows.amd64.exe")
@@ -803,7 +931,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "list")
 		assert.Contains(t, utils.Calls[0].Params, "package/foo")
@@ -827,7 +955,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "list")
 		assert.Contains(t, utils.Calls[0].Params, "package/foo")
@@ -851,7 +979,7 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, true)
 		assert.NoError(t, err)
 		assert.Contains(t, utils.Calls[0].Params, "list")
 		assert.Contains(t, utils.Calls[0].Params, "package/foo")
@@ -871,12 +999,162 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
-		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture)
+		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
 		assert.EqualError(t, err, "failed to run build for linux.amd64: execution error")
+	})
+
+	t.Run("failure - nil goModFile and no output (cannot determine default binary name)", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{}
+		utils := newGolangBuildTestsUtils()
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		_, err := runGolangBuildPerArchitecture(&config, nil, utils, ldflags, architecture, false)
+		assert.EqualError(t, err, "go.mod not found: cannot determine default binary name")
+	})
+
+	t.Run("failure - go list error propagated from getOutputBinaries", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"go list -f {{ .Name }} ./cmd/somePkg": errors.New("go list error"),
+		}
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "error detail",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+		_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
+		assert.EqualError(t, err, "failed to calculate output binaries or directory: go list error: error detail")
+	})
+
+	t.Run("failure - nil goModFile with dot package", func(t *testing.T) {
+		t.Parallel()
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"."}}
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		ldflags := ""
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		_, err := runGolangBuildPerArchitecture(&config, nil, utils, ldflags, architecture, false)
+		assert.EqualError(t, err, "failed to calculate output binaries or directory: cannot determine binary name for package '.': go.mod not found or has no module declaration")
+	})
+}
+
+func TestGetOutputBinaries(t *testing.T) {
+	t.Parallel()
+
+	t.Run("single arch - dot package", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, err := getOutputBinaries("outputDir/", []string{"."}, utils, architecture, nil, "golang-hello-world")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"outputDir/golang-hello-world"}, binaries)
+	})
+
+	t.Run("single arch - linux", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, err := getOutputBinaries("outputDir/", []string{"./cmd/somePkg"}, utils, architecture, nil, "testBinary")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"outputDir/somePkg"}, binaries)
+	})
+
+	t.Run("multiple arch - linux", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, err := getOutputBinaries("outputDir-linux-amd64/", []string{"./cmd/somePkg"}, utils, architecture, nil, "testBinary")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"outputDir-linux-amd64/somePkg"}, binaries)
+	})
+
+	t.Run("single arch - windows", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} ./cmd/somePkg": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
+
+		binaries, err := getOutputBinaries("outputDir/", []string{"./cmd/somePkg"}, utils, architecture, nil, "testBinary")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"outputDir/somePkg.exe"}, binaries)
+	})
+
+	t.Run("error - go list fails for one package in multi-package build", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"go list -f {{ .Name }} package/bar": errors.New("go list error"),
+		}
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} package/foo": "main",
+			"go list -f {{ .Name }} package/bar": "error detail",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, err := getOutputBinaries("outputDir-linux-amd64/", []string{"package/foo", "package/bar"}, utils, architecture, nil, "testBinary")
+		assert.EqualError(t, err, "go list error: error detail")
+		assert.Empty(t, binaries)
+	})
+
+	t.Run("buildFlags forwarded to go list after filtering build-only flags", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		// StdoutReturn key uses only the filtered flags (-tags=unit kept, -ldflags stripped).
+		// If filterFlagsForGoList didn't strip -ldflags or didn't forward -tags=unit,
+		// the key wouldn't match → isMainPackage returns false → binaries would be empty → assertion fails.
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} -tags=unit ./cmd/pkg": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		binaries, err := getOutputBinaries("outputDir/", []string{"./cmd/pkg"}, utils, architecture, []string{"-tags=unit", "-ldflags=-s"}, "testBinary")
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"outputDir/pkg"}, binaries)
+		listCall := utils.Calls[0]
+		assert.Equal(t, "go", listCall.Exec)
+		assert.Contains(t, listCall.Params, "-tags=unit")
+		assert.NotContains(t, listCall.Params, "-ldflags=-s")
+	})
+
+	t.Run("error - dot package with no module info (nil modBaseName)", func(t *testing.T) {
+		t.Parallel()
+		utils := newGolangBuildTestsUtils()
+		utils.StdoutReturn = map[string]string{
+			"go list -f {{ .Name }} .": "main",
+		}
+		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+
+		// modBaseName="" simulates goModFile being nil at the call site
+		_, err := getOutputBinaries("outputDir/", []string{"."}, utils, architecture, nil, "")
+		assert.EqualError(t, err, "cannot determine binary name for package '.': go.mod not found or has no module declaration")
 	})
 }
 
 func TestIsMainPackageError(t *testing.T) {
+	t.Parallel()
 	utils := newGolangBuildTestsUtils()
 	utils.ShouldFailOnCommand = map[string]error{
 		"go list -f {{ .Name }} package/foo": errors.New("some error"),
@@ -884,9 +1162,98 @@ func TestIsMainPackageError(t *testing.T) {
 	utils.StdoutReturn = map[string]string{
 		"go list -f {{ .Name }} package/foo": "some specific error log",
 	}
-	ok, err := isMainPackage(utils, "package/foo")
+	ok, err := isMainPackage(utils, "package/foo", nil)
 	assert.False(t, ok)
 	assert.EqualError(t, err, "some error: some specific error log")
+}
+
+func TestFilterFlagsForGoList(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name:     "passes buildvcs combined form",
+			input:    []string{"-buildvcs=false"},
+			expected: []string{"-buildvcs=false"},
+		},
+		{
+			name:     "passes buildvcs standalone (boolean, no value token)",
+			input:    []string{"-buildvcs"},
+			expected: []string{"-buildvcs"},
+		},
+		{
+			name:     "passes tags combined form",
+			input:    []string{"-tags=unit"},
+			expected: []string{"-tags=unit"},
+		},
+		{
+			name:     "passes tags two-arg form",
+			input:    []string{"-tags", "unit"},
+			expected: []string{"-tags", "unit"},
+		},
+		{
+			name:     "passes tags two-arg form with dash-prefixed value",
+			input:    []string{"-tags", "-race"},
+			expected: []string{"-tags", "-race"},
+		},
+		{
+			name:     "passes modfile two-arg form with dash-prefixed value",
+			input:    []string{"-modfile", "-backup.mod"},
+			expected: []string{"-modfile", "-backup.mod"},
+		},
+		{
+			name:     "strips ldflags",
+			input:    []string{"-ldflags=-s -w", "-buildvcs=false"},
+			expected: []string{"-buildvcs=false"},
+		},
+		{
+			name:     "strips gcflags and asmflags",
+			input:    []string{"-gcflags=all=-trimpath", "-asmflags=all=-trimpath", "-mod=vendor"},
+			expected: []string{"-mod=vendor"},
+		},
+		{
+			name:     "passes mod two-arg form",
+			input:    []string{"-mod", "vendor"},
+			expected: []string{"-mod", "vendor"},
+		},
+		{
+			name:     "mixed: strips build-only, keeps list-compatible",
+			input:    []string{"-ldflags=-s", "-tags", "-race", "-gcflags=x", "-buildvcs=false"},
+			expected: []string{"-tags", "-race", "-buildvcs=false"},
+		},
+		{
+			name:     "tags standalone at end of slice (no value token)",
+			input:    []string{"-tags"},
+			expected: []string{"-tags"},
+		},
+		{
+			name:     "mod standalone at end of slice (no value token)",
+			input:    []string{"-mod"},
+			expected: []string{"-mod"},
+		},
+		{
+			name:     "modfile standalone at end of slice (no value token)",
+			input:    []string{"-modfile"},
+			expected: []string{"-modfile"},
+		},
+		{
+			name:     "empty input",
+			input:    nil,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := filterFlagsForGoList(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestPrepareGolangEnvironment(t *testing.T) {
@@ -933,6 +1300,30 @@ go 1.17`
 		},
 	}
 
+	t.Run("success - goProxy is set when parameter is provided", func(t *testing.T) {
+		t.Cleanup(func() { os.Unsetenv("GOPROXY") })
+		utils := newGolangBuildTestsUtils()
+		goModFile, _ := modfile.Parse("go.mod", []byte(modTestFile), nil)
+		config := golangBuildOptions{GoProxy: "https://proxy.example.com,direct"}
+
+		err := prepareGolangEnvironment(&config, goModFile, utils)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "https://proxy.example.com,direct", os.Getenv("GOPROXY"))
+	})
+
+	t.Run("success - GOPROXY is not set when goProxy parameter is empty", func(t *testing.T) {
+		os.Unsetenv("GOPROXY")
+		utils := newGolangBuildTestsUtils()
+		goModFile, _ := modfile.Parse("go.mod", []byte(modTestFile), nil)
+		config := golangBuildOptions{}
+
+		err := prepareGolangEnvironment(&config, goModFile, utils)
+
+		assert.NoError(t, err)
+		assert.Empty(t, os.Getenv("GOPROXY"))
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			utils := newGolangBuildTestsUtils()
@@ -973,50 +1364,65 @@ func TestRunGolangciLint(t *testing.T) {
 
 	tt := []struct {
 		name                string
+		lintArgs            []string
 		shouldFailOnCommand map[string]error
 		fileWriteError      error
 		exitCode            int
-		expectedCommand     []string
+		expectedCommands    [][]string
 		expectedErr         error
 		failOnLintingError  bool
 	}{
 		{
-			name:                "success",
+			name:                "success - v1 syntax",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      nil,
 			exitCode:            0,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
+			expectedErr:         nil,
+		},
+		{
+			name:                "success - v2 syntax",
+			lintArgs:            []string{"run", "--output.checkstyle.path", lintSettings["reportOutputPath"]},
+			shouldFailOnCommand: map[string]error{},
+			fileWriteError:      nil,
+			exitCode:            0,
+			expectedCommands:    [][]string{{binaryPath, "run", "--output.checkstyle.path", lintSettings["reportOutputPath"]}},
 			expectedErr:         nil,
 		},
 		{
 			name:                "failure - failed to run golangci-lint",
-			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format %s", binaryPath, lintSettings["reportStyle"]): fmt.Errorf("err")},
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
+			shouldFailOnCommand: map[string]error{fmt.Sprintf("%s run --out-format checkstyle", binaryPath): fmt.Errorf("err")},
 			fileWriteError:      nil,
-			exitCode:            0,
-			expectedCommand:     []string{},
+			exitCode:            2, // Non-1 exit code should cause error
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("running golangci-lint failed: err"),
 		},
 		{
 			name:                "failure - failed to write golangci-lint report",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			fileWriteError:      fmt.Errorf("failed to write golangci-lint report"),
 			exitCode:            0,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{},
 			expectedErr:         fmt.Errorf("writing golangci-lint report failed: failed to write golangci-lint report"),
 		},
 		{
-			name:                "failure - failed with ExitCode == 1",
+			name:                "failure - failed with ExitCode == 1 and failOnError true",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
-			expectedCommand:     []string{},
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
 			expectedErr:         fmt.Errorf("golangci-lint found issues, see report above"),
 			failOnLintingError:  true,
 		},
 		{
-			name:                "success - ignore failed with ExitCode == 1",
+			name:                "success - ignore failed with ExitCode == 1 and failOnError false",
+			lintArgs:            []string{"run", "--out-format", "checkstyle"},
 			shouldFailOnCommand: map[string]error{},
 			exitCode:            1,
-			expectedCommand:     []string{binaryPath, "run", "--out-format", lintSettings["reportStyle"]},
+			expectedCommands:    [][]string{{binaryPath, "run", "--out-format", "checkstyle"}},
 			expectedErr:         nil,
 			failOnLintingError:  false,
 		},
@@ -1030,11 +1436,17 @@ func TestRunGolangciLint(t *testing.T) {
 			utils.ShouldFailOnCommand = test.shouldFailOnCommand
 			utils.FileWriteError = test.fileWriteError
 			utils.ExitCode = test.exitCode
-			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings)
+
+			err := runGolangciLint(utils, golangciLintDir, test.failOnLintingError, lintSettings, test.lintArgs)
 
 			if test.expectedErr == nil {
-				assert.Equal(t, test.expectedCommand[0], utils.Calls[0].Exec)
-				assert.Equal(t, test.expectedCommand[1:], utils.Calls[0].Params)
+				assert.NoError(t, err)
+				if len(test.expectedCommands) > 0 {
+					for i, expectedCmd := range test.expectedCommands {
+						assert.Equal(t, expectedCmd[0], utils.Calls[i].Exec)
+						assert.Equal(t, expectedCmd[1:], utils.Calls[i].Params)
+					}
+				}
 			} else {
 				assert.EqualError(t, err, test.expectedErr.Error())
 			}
@@ -1072,6 +1484,165 @@ func TestGoCreateBuildArtifactMetadata(t *testing.T) {
 	err, version := createGoBuildArtifactsMetadata("testBin", config.TargetRepositoryURL, "1.0.0", utils)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, version.ArtifactID, "testBin")
+}
+
+func TestGetGolangciLintArgs(t *testing.T) {
+	t.Parallel()
+
+	lintSettings := map[string]string{
+		"reportStyle":      "checkstyle",
+		"reportOutputPath": "golangci-lint-report.xml",
+		"additionalParams": "",
+	}
+
+	tt := []struct {
+		name            string
+		golangciLintURL string
+		expectedArgs    []string
+		expectedErr     error
+	}{
+		{
+			name:            "success - v1.51.2 version (v1 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v1.50.1 version (v1 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - default URL v1.64.8 (v1 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v2.0.0 version (v2 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.0.0/golangci-lint-2.0.0-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v2.1.5 version (v2 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v2.1.5/golangci-lint-2.1.5-windows-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v3.0.0 version (v2 syntax)",
+			golangciLintURL: "https://github.com/golangci/golangci-lint/releases/download/v3.0.0/golangci-lint-3.0.0-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--output.checkstyle.path", "golangci-lint-report.xml"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "fallback - invalid URL format (fallback to v1 syntax)",
+			golangciLintURL: "https://invalid-url-without-version/golangci-lint.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "fallback - URL without version pattern (fallback to v1 syntax)",
+			golangciLintURL: "https://example.com/downloads/golangci-lint-linux-amd64.tar.gz",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+		{
+			name:            "fallback - empty URL (fallback to v1 syntax)",
+			golangciLintURL: "",
+			expectedArgs:    []string{"run", "--out-format", "checkstyle"},
+			expectedErr:     nil,
+		},
+	}
+
+	for _, test := range tt {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			args, err := getGolangciLintArgs(test.golangciLintURL, lintSettings)
+
+			if test.expectedErr != nil {
+				assert.EqualError(t, err, test.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedArgs, args)
+			}
+		})
+	}
+}
+
+func TestExtractVersionFromURL(t *testing.T) {
+	t.Parallel()
+
+	tt := []struct {
+		name            string
+		url             string
+		expectedVersion string
+		expectedErr     error
+	}{
+		{
+			name:            "success - v1.51.2",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz",
+			expectedVersion: "v1.51.2",
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v2.0.0",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v2.0.0/golangci-lint-2.0.0-linux-amd64.tar.gz",
+			expectedVersion: "v2.0.0",
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v1.50.1",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v1.50.1/golangci-lint-1.50.1-darwin-amd64.tar.gz",
+			expectedVersion: "v1.50.1",
+			expectedErr:     nil,
+		},
+		{
+			name:            "success - v3.15.7",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/v3.15.7/golangci-lint-3.15.7-windows-amd64.tar.gz",
+			expectedVersion: "v3.15.7",
+			expectedErr:     nil,
+		},
+		{
+			name:            "failure - no version in URL",
+			url:             "https://example.com/downloads/golangci-lint-linux-amd64.tar.gz",
+			expectedVersion: "",
+			expectedErr:     fmt.Errorf("could not extract version from URL: https://example.com/downloads/golangci-lint-linux-amd64.tar.gz"),
+		},
+		{
+			name:            "failure - invalid version format",
+			url:             "https://github.com/golangci/golangci-lint/releases/download/invalid-version/golangci-lint.tar.gz",
+			expectedVersion: "",
+			expectedErr:     fmt.Errorf("could not extract version from URL: https://github.com/golangci/golangci-lint/releases/download/invalid-version/golangci-lint.tar.gz"),
+		},
+		{
+			name:            "failure - empty URL",
+			url:             "",
+			expectedVersion: "",
+			expectedErr:     fmt.Errorf("could not extract version from URL: "),
+		},
+	}
+
+	for _, test := range tt {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			version, err := extractVersionFromURL(test.url)
+
+			if test.expectedErr != nil {
+				assert.EqualError(t, err, test.expectedErr.Error())
+				assert.Equal(t, test.expectedVersion, version)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expectedVersion, version)
+			}
+		})
+	}
 }
 
 func TestRetrieveGolangciLint(t *testing.T) {
@@ -1182,4 +1753,62 @@ func Test_gitConfigurationForPrivateModules(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setVerbose(t *testing.T, v bool) {
+	t.Helper()
+	orig := GeneralConfig.Verbose
+	t.Cleanup(func() { GeneralConfig.Verbose = orig })
+	GeneralConfig.Verbose = v
+}
+
+func TestRunBOMCreation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - verbose disabled", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - verbose enabled", func(t *testing.T) {
+		setVerbose(t, true)
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=true", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - custom output filename", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+
+		err := runBOMCreation(utils, "custom-bom.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Contains(t, utils.ExecMockRunner.Calls[0].Params, "custom-bom.xml")
+	})
+
+	t.Run("failure - cyclonedx-gomod execution fails", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version " + GolangCycloneDXSchemaVersion: fmt.Errorf("BOM creation failure"),
+		}
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
+	})
 }

@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"net/url"
 
+	"errors"
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) {
@@ -50,14 +51,14 @@ func runIntegrationArtifactGetMplStatus(
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := "GET"
 	mplStatusResp, httpErr := httpClient.SendRequest(httpMethod, mplStatusEncodedURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, mplStatusEncodedURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, mplStatusEncodedURL, httpErr)
 	}
 
 	if mplStatusResp != nil && mplStatusResp.Body != nil {
@@ -65,20 +66,20 @@ func runIntegrationArtifactGetMplStatus(
 	}
 
 	if mplStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if mplStatusResp.StatusCode == 200 {
 		bodyText, readErr := io.ReadAll(mplStatusResp.Body)
 		if readErr != nil {
-			return errors.Wrap(readErr, "HTTP response body could not be read")
+			return fmt.Errorf("HTTP response body could not be read: %w", readErr)
 		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
-			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+			return fmt.Errorf("HTTP response body could not be parsed as JSON: %v: %w", string(bodyText), parsingErr)
 		}
 		if jsonResponse == nil {
-			return errors.Errorf("Empty json response: %v", string(bodyText))
+			return fmt.Errorf("Empty json response: %v", string(bodyText))
 		}
 		if jsonResponse.Exists("d", "results", "0") {
 			mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
@@ -99,11 +100,11 @@ func runIntegrationArtifactGetMplStatus(
 	responseBody, readErr := io.ReadAll(mplStatusResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", mplStatusResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", mplStatusResp.StatusCode, readErr)
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), mplStatusResp.StatusCode)
-	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", mplStatusResp.StatusCode)
+	return fmt.Errorf("Unable to get integration flow MPL status, Response Status code: %v", mplStatusResp.StatusCode)
 }
 
 // getIntegrationArtifactMPLError - Get integration artifact MPL error details
@@ -119,7 +120,7 @@ func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifa
 	}
 
 	if errorStatusResp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if errorStatusResp.StatusCode == http.StatusOK {
@@ -128,7 +129,7 @@ func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifa
 			Info("Successfully retrieved Integration Flow artefact message processing error")
 		responseBody, readErr := io.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
+			return "", fmt.Errorf("HTTP response body could not be read, response status code: %v: %w", errorStatusResp.StatusCode, readErr)
 		}
 		mplErrorDetails := string(responseBody)
 		commonPipelineEnvironment.custom.integrationFlowMplError = mplErrorDetails
@@ -137,5 +138,5 @@ func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifa
 	if httpErr != nil {
 		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
 	}
-	return "", errors.Errorf("failed to get Integration Flow artefact message processing error, response Status code: %v", errorStatusResp.StatusCode)
+	return "", fmt.Errorf("failed to get Integration Flow artefact message processing error, response Status code: %v", errorStatusResp.StatusCode)
 }

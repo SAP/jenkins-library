@@ -2,8 +2,9 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type whitesourcePoller interface {

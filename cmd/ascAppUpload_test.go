@@ -4,13 +4,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/asc"
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/asc"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 type ascAppUploadMockUtils struct {
@@ -72,7 +73,6 @@ func TestRunAscAppUpload(t *testing.T) {
 				AppId:    1,
 				AppName:  "Sample App",
 				BundleId: "sample.bundle.id",
-				JamfId:   "1",
 			},
 			createReleaseResponse: asc.CreateReleaseResponse{
 				Status: "success",
@@ -111,7 +111,6 @@ func TestRunAscAppUpload(t *testing.T) {
 				AppId:    1,
 				AppName:  "Sample App",
 				BundleId: "sample.bundle.id",
-				JamfId:   "1",
 			},
 			createReleaseResponse: asc.CreateReleaseResponse{Status: "failure", Message: errorMessage},
 		}
@@ -140,7 +139,6 @@ func TestRunAscAppUpload(t *testing.T) {
 				AppId:    1,
 				AppName:  "Sample App",
 				BundleId: "sample.bundle.id",
-				JamfId:   "1",
 			},
 			createReleaseResponse: asc.CreateReleaseResponse{Status: "success", Data: asc.Release{ReleaseID: 1}},
 			jamfAppInfoError:      errors.New(errorMessage),
@@ -168,7 +166,6 @@ func TestRunAscAppUpload(t *testing.T) {
 				AppId:    1,
 				AppName:  "Sample App",
 				BundleId: "sample.bundle.id",
-				JamfId:   "1",
 			},
 			createReleaseResponse: asc.CreateReleaseResponse{Status: "success", Data: asc.Release{ReleaseID: 1}},
 			jamfAppInfo: asc.JamfAppInformationResponse{

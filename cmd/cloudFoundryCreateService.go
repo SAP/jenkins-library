@@ -7,7 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData) {
@@ -83,14 +82,14 @@ func cloudFoundryCreateServiceRequest(config *cloudFoundryCreateServiceOptions, 
 		if len(config.ManifestVariablesFiles) >= 0 {
 			varFileOpts, err := cloudfoundry.GetVarsFileOptions(config.ManifestVariablesFiles)
 			if err != nil {
-				return errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+				return fmt.Errorf("Cannot prepare var-file-options: '%v': %w", config.ManifestVariablesFiles, err)
 			}
 			cfCreateServiceScript = append(cfCreateServiceScript, varFileOpts...)
 		}
 		if len(config.ManifestVariables) >= 0 {
 			varOptions, err := cloudfoundry.GetVarsOptions(config.ManifestVariables)
 			if err != nil {
-				return errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
+				return fmt.Errorf("Cannot prepare var-options: '%v': %w", config.ManifestVariables, err)
 			}
 			cfCreateServiceScript = append(cfCreateServiceScript, varOptions...)
 		}

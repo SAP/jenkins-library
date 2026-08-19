@@ -1,9 +1,9 @@
 //go:build unit
-// +build unit
 
 package helper
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -21,6 +21,8 @@ func configOpenFileMock(name string) (io.ReadCloser, error) {
   aliases:
     - name: testStepAlias
       deprecated: true
+  cliAliases:
+    - testStepOldName
   description: Test description
   longDescription: |
     Long Test description
@@ -57,7 +59,7 @@ spec:
         type: stash
     params:
       - name: param0
-        aliases: 
+        aliases:
         - name: oldparam0
         type: string
         description: param0 description
@@ -67,7 +69,7 @@ spec:
         - PARAMETERS
         mandatory: true
       - name: param1
-        aliases: 
+        aliases:
         - name: oldparam1
           deprecated: true
         type: string
@@ -101,6 +103,14 @@ spec:
           value: value1
         - name: param2
           value: value2
+      - name: param4
+        type: string
+        description: param4 description
+        scope:
+        - PARAMETERS
+        mandatoryIf:
+        - name: param1
+          notEmpty: true
 `
 	var r string
 	switch name {
@@ -112,6 +122,7 @@ spec:
 	return io.NopCloser(strings.NewReader(r)), nil
 }
 
+var updateGolden = flag.Bool("update-golden", false, "update golden files")
 var files map[string][]byte
 
 func writeFileMock(filename string, data []byte, perm os.FileMode) error {
@@ -129,22 +140,29 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		//t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated_test.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
 	})
 
@@ -153,14 +171,49 @@ func TestProcessMetaFiles(t *testing.T) {
 		ProcessMetaFiles([]string{"testStep.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
+		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
+		if *updateGolden {
+			os.WriteFile(goldenFilePath, files[resultFilePath], 0644)
+			return
+		}
 		expected, err := os.ReadFile(goldenFilePath)
 		if err != nil {
 			t.Fatalf("failed reading %v", goldenFilePath)
 		}
-		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		//t.Log(string(files[resultFilePath]))
 	})
+}
+
+func TestProcessMetaFilesNoCLIAliases(t *testing.T) {
+	noCLIAliasesMock := func(name string) (io.ReadCloser, error) {
+		meta := `metadata:
+  name: noAliasStep
+  aliases:
+    - name: noAliasStepOldName
+      deprecated: true
+  description: Step without cliAliases
+spec:
+  inputs:
+    params: []
+`
+		if name == "noAliasStep.yaml" {
+			return io.NopCloser(strings.NewReader(meta)), nil
+		}
+		return io.NopCloser(strings.NewReader("")), nil
+	}
+
+	localFiles := make(map[string][]byte)
+	localWrite := func(filename string, data []byte, perm os.FileMode) error {
+		localFiles[filename] = data
+		return nil
+	}
+
+	stepHelperData := StepHelperData{noCLIAliasesMock, localWrite, ""}
+	ProcessMetaFiles([]string{"noAliasStep.yaml"}, "./cmd", stepHelperData)
+
+	generated := string(localFiles[filepath.Join("cmd", "noAliasStep_generated.go")])
+	assert.NotEmpty(t, generated, "generated file should not be empty")
+	assert.NotContains(t, generated, "Aliases: []string{", "cobra Aliases must not be emitted when cliAliases is absent")
 }
 
 func TestSetDefaultParameters(t *testing.T) {
@@ -198,11 +251,9 @@ func TestSetDefaultParameters(t *testing.T) {
 			"1",
 		}
 
-		osImport, err := setDefaultParameters(&stepData)
+		err := setDefaultParameters(&stepData)
 
 		assert.NoError(t, err, "error occurred but none expected")
-
-		assert.Equal(t, true, osImport, "import of os package required")
 
 		for k, v := range expected {
 			assert.Equal(t, v, stepData.Spec.Inputs.Parameters[k].Default, fmt.Sprintf("default not correct for parameter %v", k))
@@ -233,7 +284,7 @@ func TestSetDefaultParameters(t *testing.T) {
 		}
 
 		for k, v := range stepData {
-			_, err := setDefaultParameters(&v)
+			err := setDefaultParameters(&v)
 			assert.Error(t, err, fmt.Sprintf("error expected but none occurred for parameter %v", k))
 		}
 	})
@@ -256,7 +307,7 @@ func TestGetStepInfo(t *testing.T) {
 		},
 	}
 
-	myStepInfo, err := getStepInfo(&stepData, true, "")
+	myStepInfo, err := getStepInfo(&stepData, "")
 
 	assert.NoError(t, err)
 
@@ -330,5 +381,68 @@ func TestGetStringSliceFromInterface(t *testing.T) {
 
 	for _, v := range tt {
 		assert.Equal(t, v.expected, getStringSliceFromInterface(v.input), "interface conversion failed")
+	}
+}
+
+func TestStructTag(t *testing.T) {
+	t.Parallel()
+	tt := []struct {
+		name     string
+		param    config.StepParameters
+		expected string
+	}{
+		{
+			name:     "no validators",
+			param:    config.StepParameters{Name: "foo", Type: "string"},
+			expected: "`json:\"foo,omitempty\"`",
+		},
+		{
+			name: "required_if single condition",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "bar", Value: "baz"},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_if=Bar baz\"`",
+		},
+		{
+			name: "required_if two different fields (AND semantics – one tag)",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "field1", Value: "val1"},
+					{Name: "field2", Value: "val2"},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_if=Field1 val1 Field2 val2\"`",
+		},
+		{
+			name: "notEmpty emits required_with",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "scanContainerDistro", NotEmpty: true},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_with=ScanContainerDistro\"`",
+		},
+		{
+			name: "notEmpty combined with required_if",
+			param: config.StepParameters{
+				Name: "foo", Type: "string",
+				MandatoryIf: []config.ParameterDependence{
+					{Name: "bar", Value: "baz"},
+					{Name: "distro", NotEmpty: true},
+				},
+			},
+			expected: "`json:\"foo,omitempty\" validate:\"required_if=Bar baz,required_with=Distro\"`",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, structTag(tc.param))
+		})
 	}
 }

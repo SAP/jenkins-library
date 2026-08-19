@@ -8,34 +8,27 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 )
 
-type utilsBundle struct {
-	command.Command
-}
-
-// prepare golang private packages for whitesource and blackduck(detectExecuteScan)
+// PrepareGolangPrivatePackages prepares golang private packages for whitesource and blackduck(detectExecuteScan)
 func PrepareGolangPrivatePackages(stepName, privateModules, privateModulesGitToken string) error {
-	utils := &utilsBundle{
-		Command: command.Command{
-			StepName: stepName,
-		},
-	}
-	os.Setenv("GOPRIVATE", privateModules)
-	err := gitConfigurationForPrivateModules(privateModules, privateModulesGitToken, utils)
-	if err != nil {
+	if err := os.Setenv("GOPRIVATE", privateModules); err != nil {
 		return err
 	}
-	return nil
+	return gitConfigurationForPrivateModules(privateModules, privateModulesGitToken, &command.Command{StepName: stepName})
 }
 
-func gitConfigurationForPrivateModules(privateMod string, token string, utils *utilsBundle) error {
+func gitConfigurationForPrivateModules(privateMod string, token string, cmd *command.Command) error {
 	privateMod = strings.ReplaceAll(privateMod, "/*", "")
 	privateMod = strings.ReplaceAll(privateMod, "*.", "")
 	modules := strings.Split(privateMod, ",")
 	for _, v := range modules {
-		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
-		repoBaseURL := fmt.Sprintf("https://%s", v)
-		err := utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)
-		if err != nil {
+		// Inline construction of authenticated URL key and base URL
+		if err := cmd.RunExecutable(
+			"git",
+			"config",
+			"--global",
+			fmt.Sprintf("url.https://%s@%s.insteadOf", token, v),
+			fmt.Sprintf("https://%s", v),
+		); err != nil {
 			return err
 		}
 	}

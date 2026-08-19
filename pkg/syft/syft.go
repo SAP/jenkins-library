@@ -9,10 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 type SyftScanner struct {
@@ -40,7 +41,7 @@ func CreateSyftScanner(syftDownloadURL string, fileUtils piperutils.FileUtils, h
 
 	err = install(syftDownloadURL, syftFile, fileUtils, httpClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to install syft")
+		return nil, fmt.Errorf("failed to install syft: %w", err)
 	}
 
 	return &SyftScanner{syftFile: syftFile}, nil
@@ -66,7 +67,12 @@ func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.Exec
 			return errors.New("syft: image name must not be empty")
 		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index), "-q"}
+		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index), "-q",
+			// Exclude Windows PE launcher stubs shipped by pip's distlib on Linux images.
+			// These are detected as "Simple Launcher" without a PURL, causing SBOM validation failures.
+			// The glob covers distlib/ and versioned variants (distlib-x.y.z/) at any depth.
+			"--exclude=**/{distlib,distlib-*}/**/*.exe",
+		}
 		args = append(args, s.additionalArgs...)
 		err := execRunner.RunExecutable(s.syftFile, args...)
 		if err != nil {
@@ -86,7 +92,7 @@ func install(syftDownloadURL, dest string, fileUtils piperutils.FileUtils, httpC
 
 	err = extractSyft(response.Body, dest, fileUtils)
 	if err != nil {
-		return errors.Wrap(err, "failed to extract syft binary")
+		return fmt.Errorf("failed to extract syft binary: %w", err)
 	}
 
 	err = fileUtils.Chmod(dest, 0755)
@@ -114,7 +120,7 @@ func extractSyft(archive io.Reader, dest string, fileUtils piperutils.FileUtils)
 		}
 
 		if err != nil {
-			return errors.Wrap(err, "failed to read archive")
+			return fmt.Errorf("failed to read archive: %w", err)
 		}
 
 		if filepath.Base(f.Name) == "syft" {
@@ -122,7 +128,7 @@ func extractSyft(archive io.Reader, dest string, fileUtils piperutils.FileUtils)
 
 			df, err := fileUtils.Create(dest)
 			if err != nil {
-				return errors.Wrapf(err, "failed to create file %q", dest)
+				return fmt.Errorf("failed to create file %q: %w", dest, err)
 			}
 
 			size, err := io.Copy(df, tr)

@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 var ErrorGaugeInstall error = errors.New("error installing gauge")
@@ -82,7 +83,7 @@ func installGauge(gaugeInstallCommand string, utils gaugeExecuteTestsUtils) erro
 	err := utils.RunExecutable(installGaugeTokens[0], installGaugeTokens[1:]...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(ErrorGaugeInstall, err.Error())
+		return fmt.Errorf("%s: %w", err.Error(), ErrorGaugeInstall)
 	}
 
 	return nil
@@ -94,7 +95,7 @@ func installLanguageRunner(languageRunner string, utils gaugeExecuteTestsUtils) 
 	err := utils.RunExecutable(gaugePath, installParams...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrap(ErrorGaugeRunnerInstall, err.Error())
+		return fmt.Errorf("%s: %w", err.Error(), ErrorGaugeRunnerInstall)
 	}
 	return nil
 
@@ -108,7 +109,7 @@ func runGauge(config *gaugeExecuteTestsOptions, utils gaugeExecuteTestsUtils) er
 	gaugePath := filepath.FromSlash(filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/gauge"))
 	err := utils.RunExecutable(gaugePath, runCommandTokens...)
 	if err != nil {
-		return errors.Wrap(ErrorGaugeRun, err.Error())
+		return fmt.Errorf("%s: %w", err.Error(), ErrorGaugeRun)
 	}
 	return nil
 }

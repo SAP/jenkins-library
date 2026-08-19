@@ -35,6 +35,7 @@ class AbapEnvironmentPipelineStageATCTest extends BasePiperTest {
         helper.registerAllowedMethod('abapEnvironmentRunATCCheck', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunATCCheck')})
         helper.registerAllowedMethod('abapEnvironmentPushATCSystemConfig', [Map.class], {m -> stepsCalled.add('abapEnvironmentPushATCSystemConfig')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
+        helper.registerAllowedMethod('btpCreateServiceBinding', [Map.class], {m -> stepsCalled.add('btpCreateServiceBinding')})
     }
 
     @Test

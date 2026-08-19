@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/contrast"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type contrastExecuteScanUtils interface {
@@ -173,7 +174,7 @@ func generateSarifReport(config *contrastExecuteScanOptions, utils contrastExecu
 
 	data, err := client.GenerateSarifReport(config.ApplicationID)
 	if err != nil {
-		return nil, errors.Wrap(err, "SARIF generation failed")
+		return nil, fmt.Errorf("SARIF generation failed: %w", err)
 	}
 
 	return contrast.SaveReportFile(utils, "piper_contrast.sarif", "Contrast SARIF Report", data)
@@ -185,7 +186,7 @@ func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecute
 
 	data, err := client.GeneratePdfReport(config.ApplicationID)
 	if err != nil {
-		return nil, errors.Wrap(err, "PDF generation failed")
+		return nil, fmt.Errorf("PDF generation failed: %w", err)
 	}
 
 	return contrast.SaveReportFile(utils, "piper_contrast_attestation.pdf", "Contrast PDF Attestation Report", data)

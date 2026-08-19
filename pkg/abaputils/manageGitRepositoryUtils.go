@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 const numberOfEntriesPerPage = 100000
@@ -101,6 +102,9 @@ func PrintLogs(api SoftwareComponentApiInterface, logOutputManager *LogOutputMan
 		// Print Details
 		if len(results) != 0 {
 			for _, logEntryForDetails := range results {
+				if logOutputManager.LogOutput == "ERROR_ONLY" && logEntryForDetails.Status != "Error" {
+					continue
+				}
 				printLog(logEntryForDetails, api)
 			}
 		}

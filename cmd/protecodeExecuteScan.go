@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
@@ -85,7 +83,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		log.Entry().Debugf("Get docker image: %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath)
 		fileName, filePath, err = getDockerImage(utils, config, cachePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to get Docker image")
+			return fmt.Errorf("failed to get Docker image: %w", err)
 		}
 		if len(config.FilePath) <= 0 {
 			(*config).FilePath = filePath
@@ -143,7 +141,7 @@ func getDockerImage(utils protecodeUtils, config *protecodeExecuteScanOptions, c
 	}
 
 	if _, err = utils.DownloadImage(config.ScanImage, tarFilePath); err != nil {
-		return "", "", errors.Wrap(err, "failed to download docker image")
+		return "", "", fmt.Errorf("failed to download docker image: %w", err)
 	}
 
 	return filepath.Base(tarFilePath), filepath.Dir(tarFilePath), nil
@@ -353,7 +351,7 @@ func uploadFile(utils protecodeUtils, config protecodeExecuteScanOptions, produc
 
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.CustomDataJSONMap, config.FetchURL, version, productID, replaceBinary)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.CustomDataJSONMap, config.FetchCustomHeadersJSONMap, config.FetchURL, version, productID, replaceBinary)
 		productID = resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
@@ -385,7 +383,7 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions, utils protec
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "failed to create / update docker config json file")
+		return fmt.Errorf("failed to create / update docker config json file: %w", err)
 	}
 
 	if len(path) > 0 {

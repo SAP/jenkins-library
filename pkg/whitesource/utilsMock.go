@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"os"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 func newTestScan(config *ScanOptions) *Scan {

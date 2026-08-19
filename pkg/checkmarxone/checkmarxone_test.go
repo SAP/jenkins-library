@@ -209,7 +209,8 @@ func TestGetGroups(t *testing.T) {
 	})
 }
 
-func TestGetScanMetadata(t *testing.T) {
+// TODO: similar test for IAC
+func TestGetScanSASTMetadata(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
@@ -217,7 +218,7 @@ func TestGetScanMetadata(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		scanmeta, err := sys.GetScanMetadata("03d66397-36df-40b5-8976-f38bcce695a7")
+		scanmeta, err := sys.GetScanSASTMetadata("03d66397-36df-40b5-8976-f38bcce695a7")
 		assert.NoError(t, err, "Error occurred but none expected")
 
 		assert.Equal(t, "03d66397-36df-40b5-8976-f38bcce695a7", scanmeta.ScanID, "ScanID is incorrect")
@@ -235,9 +236,73 @@ func TestGetScanMetadata(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
-		_, err := sys.GetScanMetadata("03d66397-36df-40b5-8976-f38bcce695a7")
+		_, err := sys.GetScanSASTMetadata("03d66397-36df-40b5-8976-f38bcce695a7")
 		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
 	})
+}
+func TestGetScanIACMetadata(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne_test")
+	opts := piperHttp.ClientOptions{}
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"scanId":"b2f0ad4e-414c-45a1-8e49-9b2af97be7b2","projectId":"7553c43d-d371-4061-9173-594f713bce31","loc":9,"kicsLoc":11,"fileCount":1}`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+
+		scanmeta, err := sys.GetScanIACMetadata("b2f0ad4e-414c-45a1-8e49-9b2af97be7b2")
+		assert.NoError(t, err, "Error occurred but none expected")
+
+		assert.Equal(t, "b2f0ad4e-414c-45a1-8e49-9b2af97be7b2", scanmeta.ScanID, "ScanID is incorrect")
+		assert.Equal(t, "7553c43d-d371-4061-9173-594f713bce31", scanmeta.ProjectID, "ProjectID is incorrect")
+		assert.Equal(t, 9, scanmeta.LOC, "LOC is incorrect")
+		assert.Equal(t, 11, scanmeta.IACLOC, "IAC LOC is incorrect")
+		assert.Equal(t, 1, scanmeta.FileCount, "FileCount is incorrect")
+		assert.Equal(t, IACDefaultBlankPreset, scanmeta.PresetName, "PresetName is incorrect")
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		_, err := sys.GetScanIACMetadata("03d66397-36df-40b5-8976-f38bcce695a7")
+		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
+	})
+}
+
+func TestGetIACFindingInfo(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarxOne_test")
+	opts := piperHttp.ClientOptions{}
+	result := ScanResult{
+		Data: ScanResultData{
+			QueryID:   scanresultQueryID{Value: "b03a748a-542d-44f4-bb86-9199ab4fd2d5"},
+			Platform:  "Dockerfile",
+			QueryName: "Healthcheck Instruction Missing",
+		},
+	}
+
+	t.Run("test success", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `[{"title":"Checkmarx predefined","key":"cx","children":[{"title":"common","key":"Cx-common","children":[{"isLeaf":true,"title":"Last User Is 'root'","key":"67fd0c4a-68cf-46d7-8c41-bc9fba7e40ae","data":{"custom":false,"cwe":250,"severity":"HIGH","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/67fd0c4a-68cf-46d7-8c41-bc9fba7e40ae"}},{"isLeaf":true,"title":"Missing User Instruction","key":"fd54f200-402c-4333-a5a4-36ef6709af2f","data":{"custom":false,"cwe":250,"severity":"HIGH","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/fd54f200-402c-4333-a5a4-36ef6709af2f"}},{"isLeaf":true,"title":"Add Instead of Copy","key":"9513a694-aa0d-41d8-be61-3271e056f36b","data":{"custom":false,"cwe":610,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/9513a694-aa0d-41d8-be61-3271e056f36b"}},{"isLeaf":true,"title":"Apt Get Install Pin Version Not Defined","key":"965a08d7-ef86-4f14-8792-4a3b2098937e","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/965a08d7-ef86-4f14-8792-4a3b2098937e"}},{"isLeaf":true,"title":"Changing Default Shell Using RUN Command","key":"8a301064-c291-4b20-adcb-403fe7fd95fd","data":{"custom":false,"cwe":710,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/8a301064-c291-4b20-adcb-403fe7fd95fd"}},{"isLeaf":true,"title":"Gem Install Without Version","key":"22cd11f7-9c6c-4f6e-84c0-02058120b341","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/22cd11f7-9c6c-4f6e-84c0-02058120b341"}},{"isLeaf":true,"title":"Image Version Not Explicit","key":"9efb0b2d-89c9-41a3-91ca-dcc0aec911fd","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/9efb0b2d-89c9-41a3-91ca-dcc0aec911fd"}},{"isLeaf":true,"title":"Image Version Using 'latest'","key":"f45ea400-6bbe-4501-9fc7-1c3d75c32067","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/f45ea400-6bbe-4501-9fc7-1c3d75c32067"}},{"isLeaf":true,"title":"Missing Version Specification In dnf install","key":"93d88cf7-f078-46a8-8ddc-178e03aeacf1","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/93d88cf7-f078-46a8-8ddc-178e03aeacf1"}},{"isLeaf":true,"title":"Missing Zypper Non-interactive Switch","key":"45e1fca5-f90e-465d-825f-c2cb63fa3944","data":{"custom":false,"cwe":710,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/45e1fca5-f90e-465d-825f-c2cb63fa3944"}},{"isLeaf":true,"title":"NPM Install Command Without Pinned Version","key":"e36d8880-3f78-4546-b9a1-12f0745ca0d5","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/e36d8880-3f78-4546-b9a1-12f0745ca0d5"}},{"isLeaf":true,"title":"Not Using JSON In CMD And ENTRYPOINT Arguments","key":"b86987e1-6397-4619-81d5-8807f2387c79","data":{"custom":false,"cwe":573,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/b86987e1-6397-4619-81d5-8807f2387c79"}},{"isLeaf":true,"title":"Run Using Sudo","key":"8ada6e80-0ade-439e-b176-0b28f6bce35a","data":{"custom":false,"cwe":440,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/8ada6e80-0ade-439e-b176-0b28f6bce35a"}},{"isLeaf":true,"title":"Unpinned Package Version in Apk Add","key":"d3499f6d-1651-41bb-a9a7-de925fea487b","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/d3499f6d-1651-41bb-a9a7-de925fea487b"}},{"isLeaf":true,"title":"Unpinned Package Version in Pip Install","key":"02d9c71f-3ee8-4986-9c27-1a20d0d19bfc","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/02d9c71f-3ee8-4986-9c27-1a20d0d19bfc"}},{"isLeaf":true,"title":"Yum install Without Version","key":"6452c424-1d92-4deb-bb18-a03e95d579c4","data":{"custom":false,"cwe":1357,"severity":"MEDIUM","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/6452c424-1d92-4deb-bb18-a03e95d579c4"}},{"isLeaf":true,"title":"APT-GET Missing Flags To Avoid Manual Input","key":"77783205-c4ca-4f80-bb80-c777f267c547","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/77783205-c4ca-4f80-bb80-c777f267c547"}},{"isLeaf":true,"title":"COPY '--from' References Current FROM Alias","key":"cdddb86f-95f6-4fc4-b5a1-483d9afceb2b","data":{"custom":false,"cwe":706,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/cdddb86f-95f6-4fc4-b5a1-483d9afceb2b"}},{"isLeaf":true,"title":"Chown Flag Exists","key":"aa93e17f-b6db-4162-9334-c70334e7ac28","data":{"custom":false,"cwe":282,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/aa93e17f-b6db-4162-9334-c70334e7ac28"}},{"isLeaf":true,"title":"Copy With More Than Two Arguments Not Ending With Slash","key":"6db6e0c2-32a3-4a2e-93b5-72c35f4119db","data":{"custom":false,"cwe":628,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/6db6e0c2-32a3-4a2e-93b5-72c35f4119db"}},{"isLeaf":true,"title":"Curl or Wget Instead of Add","key":"4b410d24-1cbe-4430-a632-62c9a931cf1c","data":{"custom":false,"cwe":610,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/4b410d24-1cbe-4430-a632-62c9a931cf1c"}},{"isLeaf":true,"title":"Exposing Port 22 (SSH)","key":"5907595b-5b6d-4142-b173-dbb0e73fbff8","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/5907595b-5b6d-4142-b173-dbb0e73fbff8"}},{"isLeaf":true,"title":"Healthcheck Instruction Missing","key":"b03a748a-542d-44f4-bb86-9199ab4fd2d5","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/b03a748a-542d-44f4-bb86-9199ab4fd2d5"}},{"isLeaf":true,"title":"MAINTAINER Instruction Being Used","key":"99614418-f82b-4852-a9ae-5051402b741c","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/99614418-f82b-4852-a9ae-5051402b741c"}},{"isLeaf":true,"title":"Missing Dnf Clean All","key":"295acb63-9246-4b21-b441-7c1f1fb62dc0","data":{"custom":false,"cwe":459,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/295acb63-9246-4b21-b441-7c1f1fb62dc0"}},{"isLeaf":true,"title":"Missing Flag From Dnf Install","key":"7ebd323c-31b7-4e5b-b26f-de5e9e477af8","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/7ebd323c-31b7-4e5b-b26f-de5e9e477af8"}},{"isLeaf":true,"title":"Missing Zypper Clean","key":"38300d1a-feb2-4a48-936a-d1ef1cd24313","data":{"custom":false,"cwe":459,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/38300d1a-feb2-4a48-936a-d1ef1cd24313"}},{"isLeaf":true,"title":"Multiple CMD Instructions Listed","key":"41c195f4-fc31-4a5c-8a1b-90605538d49f","data":{"custom":false,"cwe":1041,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/41c195f4-fc31-4a5c-8a1b-90605538d49f"}},{"isLeaf":true,"title":"Multiple ENTRYPOINT Instructions Listed","key":"6938958b-3f1a-451c-909b-baeee14bdc97","data":{"custom":false,"cwe":1041,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/6938958b-3f1a-451c-909b-baeee14bdc97"}},{"isLeaf":true,"title":"Multiple RUN, ADD, COPY, Instructions Listed","key":"0008c003-79aa-42d8-95b8-1c2fe37dbfe6","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/0008c003-79aa-42d8-95b8-1c2fe37dbfe6"}},{"isLeaf":true,"title":"Pip install Keeping Cached Packages","key":"f2f903fb-b977-461e-98d7-b3e2185c6118","data":{"custom":false,"cwe":459,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/f2f903fb-b977-461e-98d7-b3e2185c6118"}},{"isLeaf":true,"title":"RUN Instruction Using 'cd' Instead of WORKDIR","key":"f4a6bcd3-e231-4acf-993c-aa027be50d2e","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/f4a6bcd3-e231-4acf-993c-aa027be50d2e"}},{"isLeaf":true,"title":"Run Using 'wget' and 'curl'","key":"fc775e75-fcfb-4c98-b2f2-910c5858b359","data":{"custom":false,"cwe":1041,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/fc775e75-fcfb-4c98-b2f2-910c5858b359"}},{"isLeaf":true,"title":"Run Using apt","key":"b84a0b47-2e99-4c9f-8933-98bcabe2b94d","data":{"custom":false,"cwe":758,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/b84a0b47-2e99-4c9f-8933-98bcabe2b94d"}},{"isLeaf":true,"title":"Same Alias In Different Froms","key":"f2daed12-c802-49cd-afed-fe41d0b82fed","data":{"custom":false,"cwe":694,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/f2daed12-c802-49cd-afed-fe41d0b82fed"}},{"isLeaf":true,"title":"Shell Running A Pipe Without Pipefail Flag","key":"efbf148a-67e9-42d2-ac47-02fa1c0d0b22","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/efbf148a-67e9-42d2-ac47-02fa1c0d0b22"}},{"isLeaf":true,"title":"Update Instruction Alone","key":"9bae49be-0aa3-4de5-bab2-4c3a069e40cd","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/9bae49be-0aa3-4de5-bab2-4c3a069e40cd"}},{"isLeaf":true,"title":"Using Unnamed Build Stages","key":"68a51e22-ae5a-4d48-8e87-b01a323605c9","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/68a51e22-ae5a-4d48-8e87-b01a323605c9"}},{"isLeaf":true,"title":"WORKDIR Path Not Absolute","key":"6b376af8-cfe8-49ab-a08d-f32de23661a4","data":{"custom":false,"cwe":665,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/6b376af8-cfe8-49ab-a08d-f32de23661a4"}},{"isLeaf":true,"title":"Yum Clean All Missing","key":"00481784-25aa-4a55-8633-3136dfcf4f37","data":{"custom":false,"cwe":459,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/00481784-25aa-4a55-8633-3136dfcf4f37"}},{"isLeaf":true,"title":"Yum Install Allows Manual Input","key":"6e19193a-8753-436d-8a09-76dcff91bb03","data":{"custom":false,"cwe":710,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/6e19193a-8753-436d-8a09-76dcff91bb03"}},{"isLeaf":true,"title":"Zypper Install Without Version","key":"562952e4-0348-4dea-9826-44f3a2c6117b","data":{"custom":false,"cwe":1357,"severity":"LOW","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/562952e4-0348-4dea-9826-44f3a2c6117b"}},{"isLeaf":true,"title":"APT-GET Not Avoiding Additional Packages","key":"7384dfb2-fcd1-4fbf-91cd-6c44c318c33c","data":{"custom":false,"cwe":710,"severity":"INFO","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/7384dfb2-fcd1-4fbf-91cd-6c44c318c33c"}},{"isLeaf":true,"title":"Apk Add Using Local Cache Path","key":"ae9c56a6-3ed1-4ac0-9b54-31267f51151d","data":{"custom":false,"cwe":459,"severity":"INFO","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/ae9c56a6-3ed1-4ac0-9b54-31267f51151d"}},{"isLeaf":true,"title":"Apt Get Install Lists Were Not Deleted","key":"df746b39-6564-4fed-bf85-e9c44382303c","data":{"custom":false,"cwe":459,"severity":"INFO","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/df746b39-6564-4fed-bf85-e9c44382303c"}},{"isLeaf":true,"title":"Run Utilities And POSIX Commands","key":"9b6b0f38-92a2-41f9-b881-3a1083d99f1b","data":{"custom":false,"cwe":710,"severity":"INFO","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/9b6b0f38-92a2-41f9-b881-3a1083d99f1b"}},{"isLeaf":true,"title":"UNIX Ports Out Of Range","key":"71bf8cf8-f0a1-42fa-b9d2-d10525e0a38e","data":{"custom":false,"cwe":682,"severity":"INFO","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/71bf8cf8-f0a1-42fa-b9d2-d10525e0a38e"}},{"isLeaf":true,"title":"Using Platform Flag with FROM Command","key":"b16e8501-ef3c-44e1-a543-a093238099c9","data":{"custom":false,"cwe":695,"severity":"INFO","url":"https://docs.kics.io/2.1.20/queries/dockerfile-queries/b16e8501-ef3c-44e1-a543-a093238099c9"}}]}]}]`, httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger, iacQueryCache: make(map[string]IACFindingInfo)}
+		myTestClient.SetOptions(opts)
+
+		info, err := sys.GetIACFindingInfo(result)
+		assert.NoError(t, err, "Error occurred but none expected")
+
+		assert.Equal(t, 710, info.Cwe, "CWE is incorrect")
+		assert.Equal(t, "https://docs.kics.io/2.1.20/queries/dockerfile-queries/b03a748a-542d-44f4-bb86-9199ab4fd2d5", info.URL, "URL is incorrect")
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		myTestClient := senderMock{httpStatusCode: 200}
+		sys := SystemInstance{serverURL: "https://cx1.server.com", iamURL: "https://cx1iam.server.com", tenant: "tenant", client: &myTestClient, logger: logger, iacQueryCache: make(map[string]IACFindingInfo)}
+		myTestClient.SetOptions(opts)
+		myTestClient.errorExp = true
+
+		_, err := sys.GetIACFindingInfo(result)
+		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
+	})
+
 }
 
 func TestGetScan(t *testing.T) {

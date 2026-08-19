@@ -6,10 +6,11 @@ package mock_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
 type ExecRunner interface {

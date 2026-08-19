@@ -1,0 +1,6 @@
+general:
+
+steps:
+  pythonBuild:
+    runTests: true
+    testOptions: ['--junitxml=hijack.xml']

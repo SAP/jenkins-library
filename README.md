@@ -10,7 +10,13 @@
   
 - No further updates, bug fixes, or pull requests will be accepted after December 31, 2026
 
-- Contact your SAP representative for details
+### For SAP Internal Teams
+
+**If you're an SAP internal development team using Piper through internal platforms, you are not affected by this change.** Your access and support will continue uninterrupted. Please reach out through your internal support channels for any questions.
+
+### For External Users
+
+For information about alternatives or migration paths, please contact your SAP representative.
 
 ### Timeline
 

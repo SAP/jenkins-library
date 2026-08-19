@@ -66,6 +66,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: goProxy
+        type: string
+        description: "Configures the value of the GOPROXY environment variable, specifying the Go module proxy to use for dependency resolution. Supports a list of proxies separated by commas (`,`) or pipes (`|`). A comma causes Go to fall through to the next proxy only on `404`/`410` responses; a pipe causes fallthrough on any error. Use `|direct` if your proxy may return non-404/410 errors for modules it cannot serve (e.g. `\"https://proxy.example.com|direct\"`)."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: excludeGeneratedFromCoverage
         type: bool
         description: "Defines if generated files should be excluded, according to [https://golang.org/s/generatedcode](https://golang.org/s/generatedcode)."
@@ -98,7 +106,14 @@ spec:
           - STEPS
       - name: output
         type: string
-        description: Defines the resulting executable or object name as per `go build` documentation. For multiple architectures, output serves as prefix, and the resulting name will be in format `<output>-<os>.<arch>`.
+        description: |
+          Defines the output path/name for the compiled binary or binaries.
+
+          **Single package** (zero or one entry in `packages`): produces a single binary named `<output>-<os>.<arch>` (e.g. `myapp-linux.amd64`).
+
+          **Multiple packages** (two or more entries in `packages`): produces a **directory** named `<output>-<os>-<arch>/` (e.g. `myapp-linux-amd64/`) containing one binary per `main` package, where each binary is named after the last path element of the package (e.g. `myapp-linux-amd64/datasync-consumer`).
+
+          Note: only packages whose entry point is `package main` are included in the output directory; library packages are silently skipped.
         scope:
           - PARAMETERS
           - STAGES
@@ -252,11 +267,11 @@ spec:
             param: artifactVersion
       - name: golangciLintUrl
         type: string
-        description: Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases.
+        description: "Specifies the download url of the Golangci-Lint Linux amd64 tar binary file. This can be found at https://github.com/golangci/golangci-lint/releases. **Notice:** We will soon upgrade to V2 which requires configuration migration if present. Migration guide: https://golangci-lint.run/usage/migration-guide/"
         scope:
           - PARAMETERS
           - STEPS
-        default: "https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz"
+        default: "https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-linux-amd64.tar.gz"
       - name: createBuildArtifactsMetadata
         type: bool
         default: false

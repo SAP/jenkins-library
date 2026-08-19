@@ -2,10 +2,12 @@ package aakaas
 
 import (
 	"encoding/json"
+	"fmt"
+
+	"errors"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 )
 
 type jsonProductVersionHeader struct {
@@ -85,12 +87,12 @@ func (pv *ProductVersionHeader) CheckAndResolveVersion(conn *abapbuild.Connector
 	appendum := "/odata/aas_ocs_package/ProductVersionHeaderSet"
 	responseBody, err := conn.Post(appendum, string(requestJson))
 	if err != nil {
-		return errors.Wrap(err, "Checking Product Modeling in AAkaaS failed")
+		return fmt.Errorf("Checking Product Modeling in AAkaaS failed: %w", err)
 	}
 
 	var resultPv jsonProductVersionHeader
 	if err := json.Unmarshal(responseBody, &resultPv); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for checking Product Modeling "+string(responseBody))
+		return fmt.Errorf("Unexpected AAKaaS response for checking Product Modeling "+string(responseBody), err)
 	}
 
 	pv.ProductVersion = resultPv.Pvh.ProductVersion

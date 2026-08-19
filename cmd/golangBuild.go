@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/build"
@@ -28,15 +29,16 @@ import (
 )
 
 const (
-	coverageFile                = "cover.out"
-	golangUnitTestOutput        = "TEST-go.xml"
-	golangIntegrationTestOutput = "TEST-integration.xml"
-	unitJsonReport              = "unit-report.out"
-	integrationJsonReport       = "integration-report.out"
-	golangCoberturaPackage      = "github.com/boumenot/gocover-cobertura@latest"
-	golangTestsumPackage        = "gotest.tools/gotestsum@latest"
-	golangCycloneDXPackage      = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0"
-	sbomFilename                = "bom-golang.xml"
+	coverageFile                 = "cover.out"
+	golangUnitTestOutput         = "TEST-go.xml"
+	golangIntegrationTestOutput  = "TEST-integration.xml"
+	unitJsonReport               = "unit-report.out"
+	integrationJsonReport        = "integration-report.out"
+	golangCoberturaPackage       = "github.com/boumenot/gocover-cobertura@latest"
+	golangTestsumPackage         = "gotest.tools/gotestsum@latest"
+	GolangCycloneDXPackage       = "github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.10.0"
+	sbomFilename                 = "bom-golang.xml"
+	GolangCycloneDXSchemaVersion = "1.4"
 )
 
 type golangBuildUtils interface {
@@ -142,7 +144,7 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBOM {
-		if err := utils.RunExecutable("go", "install", golangCycloneDXPackage); err != nil {
+		if err := utils.RunExecutable("go", "install", GolangCycloneDXPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -190,8 +192,13 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 			"reportOutputPath": "golangci-lint-report.xml",
 			"additionalParams": "",
 		}
+		// Detect golangci-lint version to use appropriate command syntax
+		lintArgs, err := getGolangciLintArgs(config.GolangciLintURL, lintSettings)
+		if err != nil {
+			return fmt.Errorf("failed to determine golangci-lint command syntax: %w", err)
+		}
 
-		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings); err != nil {
+		if err := runGolangciLint(utils, golangciLintDir, config.FailOnLintingError, lintSettings, lintArgs); err != nil {
 			return err
 		}
 	}
@@ -219,8 +226,10 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		return err
 	}
 
+	multipleArchitectures := len(platforms) > 1
+
 	for _, platform := range platforms {
-		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform)
+		binaryNames, err := runGolangBuildPerArchitecture(config, goModFile, utils, ldflags, platform, multipleArchitectures)
 		if err != nil {
 			return err
 		}
@@ -366,6 +375,11 @@ func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.Fil
 	// configure truststore
 	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
 
+	if config.GoProxy != "" {
+		os.Setenv("GOPROXY", config.GoProxy)
+		log.Entry().Debugf("GOPROXY set to: %s", config.GoProxy)
+	}
+
 	if config.PrivateModules == "" {
 		return nil
 	}
@@ -474,12 +488,43 @@ func retrieveGolangciLint(utils golangBuildUtils, golangciLintDir, golangciLintU
 	return nil
 }
 
-func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string) error {
+func getGolangciLintArgs(golangciLintURL string, lintSettings map[string]string) ([]string, error) {
+	// Extract version from golangci-lint URL to determine command syntax
+	version, err := extractVersionFromURL(golangciLintURL)
+	if err != nil {
+		// If version extraction fails, fall back to v1 syntax
+		log.Entry().Debugf("Could not extract golangci-lint version from URL, using v1 syntax: %v", err)
+		return []string{"run", "--out-format", lintSettings["reportStyle"]}, nil
+	}
+	log.Entry().Debugf("golangci-lint version from URL: %s", version)
+
+	// Check if this is v1.x
+	if strings.HasPrefix(version, "v1.") {
+		return []string{"run", "--out-format", lintSettings["reportStyle"]}, nil
+	} else {
+		// support golangci-lint v2 and later
+		return []string{"run", fmt.Sprintf("--output.%s.path", lintSettings["reportStyle"]), lintSettings["reportOutputPath"]}, nil
+	}
+}
+
+// extractVersionFromURL extracts the version from golangci-lint download URL using regex
+// URL format: https://github.com/golangci/golangci-lint/releases/download/v1.51.2/golangci-lint-1.51.2-linux-amd64.tar.gz
+func extractVersionFromURL(url string) (string, error) {
+	// Use regex to match version pattern like v1.51.2
+	versionRegex := regexp.MustCompile(`/v(\d+\.\d+\.\d+)/`)
+	matches := versionRegex.FindStringSubmatch(url)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("could not extract version from URL: %s", url)
+	}
+	return "v" + matches[1], nil
+}
+
+func runGolangciLint(utils golangBuildUtils, golangciLintDir string, failOnError bool, lintSettings map[string]string, lintArgs []string) error {
 	binaryPath := filepath.Join(golangciLintDir, "golangci-lint")
 
 	var outputBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
-	err := utils.RunExecutable(binaryPath, "run", "--out-format", lintSettings["reportStyle"])
+	err := utils.RunExecutable(binaryPath, lintArgs...)
 	if err != nil && utils.GetExitCode() != 1 {
 		return fmt.Errorf("running golangci-lint failed: %w", err)
 	}
@@ -509,7 +554,7 @@ func prepareLdflags(config *golangBuildOptions, utils golangBuildUtils, envRootP
 	return cpe.ParseTemplate(config.LdflagsTemplate)
 }
 
-func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform) ([]string, error) {
+func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils, ldflags string, architecture multiarch.Platform, multipleArchitectures bool) ([]string, error) {
 	var binaryNames []string
 
 	envVars := os.Environ()
@@ -523,13 +568,24 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 	buildOptions := []string{"build", "-trimpath"}
 
 	if len(config.Output) > 0 {
-		if len(config.Packages) > 1 {
-			binaries, outputDir, err := getOutputBinaries(config.Output, config.Packages, utils, architecture)
+		var modBaseName string
+		if goModFile != nil && goModFile.Module != nil {
+			modBaseName = path.Base(goModFile.Module.Mod.Path)
+		}
+		// Use getOutputBinaries when building multiple packages or a single package for a single architecture.
+		// Single-package multi-arch is excluded: each arch pass produces one binary named output-os.arch,
+		// which is handled by the else branch below.
+		if len(config.Packages) > 1 || (len(config.Packages) == 1 && !multipleArchitectures) {
+			outDir := strings.TrimRight(config.Output, string(os.PathSeparator)) + string(os.PathSeparator)
+			if multipleArchitectures {
+				outDir = fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(config.Output, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
+			}
+			binaries, err := getOutputBinaries(outDir, config.Packages, utils, architecture, config.BuildFlags, modBaseName)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)
-				return nil, fmt.Errorf("failed to calculate output binaries or directory, error: %s", err.Error())
+				return nil, fmt.Errorf("failed to calculate output binaries or directory: %w", err)
 			}
-			buildOptions = append(buildOptions, "-o", outputDir)
+			buildOptions = append(buildOptions, "-o", outDir)
 			binaryNames = append(binaryNames, binaries...)
 		} else {
 			fileExtension := ""
@@ -542,6 +598,9 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 		}
 	} else {
 		// use default name in case no name is defined via Output
+		if goModFile == nil || goModFile.Module == nil {
+			return nil, fmt.Errorf("go.mod not found: cannot determine default binary name")
+		}
 		binaryName := path.Base(goModFile.Module.Mod.Path)
 		binaryNames = append(binaryNames, binaryName)
 	}
@@ -561,7 +620,7 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
-	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", "1.4"); err != nil {
+	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", GolangCycloneDXSchemaVersion); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
 	return nil
@@ -584,14 +643,13 @@ func readGoModFile(utils golangBuildUtils) (*modfile.File, error) {
 	return modfile.Parse(modFilePath, modFileContent, nil)
 }
 
-func getOutputBinaries(out string, packages []string, utils golangBuildUtils, architecture multiarch.Platform) ([]string, string, error) {
+func getOutputBinaries(outDir string, packages []string, utils golangBuildUtils, architecture multiarch.Platform, buildFlags []string, modBaseName string) ([]string, error) {
 	var binaries []string
-	outDir := fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(out, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
 
 	for _, pkg := range packages {
-		ok, err := isMainPackage(utils, pkg)
+		ok, err := isMainPackage(utils, pkg, buildFlags)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 
 		if ok {
@@ -599,23 +657,88 @@ func getOutputBinaries(out string, packages []string, utils golangBuildUtils, ar
 			if architecture.OS == "windows" {
 				fileExt = ".exe"
 			}
-			binaries = append(binaries, filepath.Join(outDir, filepath.Base(pkg)+fileExt))
+			binName := filepath.Base(pkg)
+			if binName == "." {
+				if modBaseName == "" {
+					return nil, fmt.Errorf("cannot determine binary name for package '.': go.mod not found or has no module declaration")
+				}
+				binName = modBaseName
+			}
+			binaries = append(binaries, filepath.Join(outDir, binName+fileExt))
 		}
 	}
 
-	return binaries, outDir, nil
+	return binaries, nil
 }
 
-func isMainPackage(utils golangBuildUtils, pkg string) (bool, error) {
+// filterFlagsForGoList returns only the flags from buildFlags that are understood by `go list`.
+// The allowed set is intentionally short: build-only flags (-ldflags, -gcflags, -asmflags, -race,
+// -trimpath, etc.) are excluded because passing them to `go list` causes it to fail.
+// Only flags that affect package resolution or module behaviour are forwarded.
+func filterFlagsForGoList(buildFlags []string) []string {
+	// Boolean flags: standalone (-buildvcs) or combined (-buildvcs=false); never followed by a separate value token.
+	boolFlags := []string{"-buildvcs"}
+	// Value flags: combined (-tags=unit) or two-arg (-tags unit); the value token is consumed unconditionally
+	// because values can start with '-' (e.g. -tags=-race, -modfile=-backup.mod).
+	valueFlags := []string{"-tags", "-mod", "-modfile", "-overlay"}
+
+	var filtered []string
+	for i := 0; i < len(buildFlags); i++ {
+		flag := buildFlags[i]
+		matched := false
+
+		for _, prefix := range boolFlags {
+			if flag == prefix || strings.HasPrefix(flag, prefix+"=") {
+				filtered = append(filtered, flag)
+				matched = true
+				break
+			}
+		}
+		if matched {
+			continue
+		}
+
+		for _, prefix := range valueFlags {
+			if strings.HasPrefix(flag, prefix+"=") {
+				filtered = append(filtered, flag)
+				break
+			}
+			if flag == prefix {
+				filtered = append(filtered, flag)
+				// Two-arg form: always consume the next token as the value.
+				// Values can start with '-' (e.g. -tags=-race), so we do not check the prefix.
+				if i+1 < len(buildFlags) {
+					i++
+					filtered = append(filtered, buildFlags[i])
+				}
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+func isMainPackage(utils golangBuildUtils, pkg string, buildFlags []string) (bool, error) {
 	outBuffer := bytes.NewBufferString("")
+	errBuffer := bytes.NewBufferString("")
 	utils.Stdout(outBuffer)
-	utils.Stderr(outBuffer)
-	err := utils.RunExecutable("go", "list", "-f", "{{ .Name }}", pkg)
+	utils.Stderr(errBuffer)
+	args := append([]string{"list", "-f", "{{ .Name }}"}, append(filterFlagsForGoList(buildFlags), pkg)...)
+	err := utils.RunExecutable("go", args...)
+	// restore stdout/stderr to log writer after capture so subsequent commands log correctly
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", err, outBuffer.String())
+		errDetails := errBuffer.String()
+		if errDetails == "" {
+			errDetails = outBuffer.String()
+		}
+		return false, fmt.Errorf("%w: %s", err, errDetails)
 	}
 
-	if outBuffer.String() != "main" {
+	log.Entry().Debugf("go list output for package %s: %q", pkg, outBuffer.String())
+
+	if strings.TrimSpace(outBuffer.String()) != "main" {
 		return false, nil
 	}
 

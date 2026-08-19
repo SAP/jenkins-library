@@ -167,6 +167,31 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: useArtifactoryMirror
+        type: bool
+        description: If set to true, an init script is injected that adds the defined repository mirror to all projects' dependency and plugin classpaths. This prepends the mirror to the resolution order, so dependencies available there are fetched from it. Any artifact not found in the mirror will still fall back to the repositories declared in the project's own build scripts (e.g. Maven Central).
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+      - name: artifactoryMirrorUrl
+        type: string
+        description: URL of the Maven mirror repository to use for dependency resolution when useArtifactoryMirror is enabled.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: artifactoryGradlePluginsUrl
+        type: string
+        description: URL of the repository to use for resolving Gradle plugin dependencies (buildscript classpath) when useArtifactoryMirror is enabled.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   outputs:
     resources:
       - name: reports

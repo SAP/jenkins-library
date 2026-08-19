@@ -10,6 +10,10 @@ on:
     paths:
       - '**/*.md'
 
+permissions:
+  contents: read  # checkout
+  actions: write  # styfle/cancel-workflow-action cancels previous runs
+
 jobs:
   markdownlint:
     runs-on: ubuntu-latest

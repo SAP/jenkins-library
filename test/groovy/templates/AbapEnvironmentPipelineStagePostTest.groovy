@@ -37,6 +37,7 @@ class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
             return null
         })
         helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m -> stepsCalled.add('cloudFoundryDeleteService')})
+        helper.registerAllowedMethod('btpDeleteServiceInstance', [Map.class], {m -> stepsCalled.add('btpDeleteServiceInstance')})
     }
 
     @Test

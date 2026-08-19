@@ -6,13 +6,14 @@ import (
 	"net/url"
 	"sort"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"go.yaml.in/yaml/v3"
 )
 
 type TmsUtils interface {
@@ -174,7 +175,7 @@ func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDes
 					wrongMtaIdExtDescriptors = append(wrongMtaIdExtDescriptors, mappedValueString)
 				}
 			} else {
-				wrappedErr := errors.Wrapf(errGetYamlAsMap, "tried to parse %v as yaml, but got an error", mappedValueString)
+				wrappedErr := fmt.Errorf("tried to parse %v as yaml, but got an error: %w", mappedValueString, errGetYamlAsMap)
 				errorMessage += fmt.Sprintf("%v\n", wrappedErr)
 			}
 		} else {

@@ -1,12 +1,13 @@
 package rfc
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/config/validation"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
-	"strconv"
 )
 
 const (
@@ -131,7 +132,7 @@ func (action *UploadAction) Perform(command Exec) error {
 			// error chaining (the other error is not necessaryly a "predecessor" of this one).
 			// But it is a pragmatic approach for not loosing information for trouble shooting. There
 			// is no possibility to have something like suppressed errors.
-			err = errors.Wrap(err, message)
+			err = fmt.Errorf("%s: %w", message, err)
 		} else {
 			err = errors.New(message)
 		}
@@ -141,12 +142,12 @@ func (action *UploadAction) Perform(command Exec) error {
 		log.Entry().Infof("Deploying artifact '%s' to '%s', client: '%s', instance: '%s' succeeded.",
 			action.ApplicationURL, action.Connection.Endpoint, action.Connection.Client, action.Connection.Instance,
 		)
-	} else {
-		log.Entry().Warnf("Deploying artifact '%s' to '%s', client: '%s', instance: '%s' failed.",
-			action.ApplicationURL, action.Connection.Endpoint, action.Connection.Client, action.Connection.Instance,
-		)
+		return nil
 	}
-	return errors.Wrap(err, "cannot upload artifact")
+	log.Entry().Warnf("Deploying artifact '%s' to '%s', client: '%s', instance: '%s' failed.",
+		action.ApplicationURL, action.Connection.Endpoint, action.Connection.Client, action.Connection.Instance,
+	)
+	return fmt.Errorf("cannot upload artifact: %w", err)
 }
 
 func toAbapBool(b bool) string {

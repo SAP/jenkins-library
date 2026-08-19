@@ -1,0 +1,100 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/btp"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+)
+
+func newBtpDeleteServiceInstanceUtils() btp.BTPUtils {
+	e := &btp.Executor{}
+	btpUtils := btp.NewBTPUtils(e)
+	return *btpUtils
+}
+
+func btpDeleteServiceInstance(config btpDeleteServiceInstanceOptions, telemetryData *telemetry.CustomData) {
+	btpUtils := newBtpDeleteServiceInstanceUtils()
+
+	err := runBtpDeleteServiceInstance(&config, telemetryData, btpUtils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runBtpDeleteServiceInstance(config *btpDeleteServiceInstanceOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
+	btpConfig := btp.DeleteServiceInstanceOptions{
+		Url:              config.BtpAPIEndpoint,
+		Subdomain:        config.BtpSubdomain,
+		Subaccount:       config.BtpSubaccount,
+		User:             config.User,
+		Password:         config.Password,
+		IdentityProvider: config.BtpIDp,
+		InstanceName:     config.BtpServiceInstanceName,
+		Timeout:          config.Timeout,
+		PollInterval:     config.PollInterval,
+		MaxRetries:       6,
+		MaxBadRequests:   10,
+	}
+
+	if config.DeleteServiceBindings {
+		serviceBindings, err := utils.ListServiceBindings(btp.ListServiceBindingOptions{
+			Url:              config.BtpAPIEndpoint,
+			Subdomain:        config.BtpSubdomain,
+			Subaccount:       config.BtpSubaccount,
+			User:             config.User,
+			Password:         config.Password,
+			IdentityProvider: config.BtpIDp,
+			ServiceInstance:  config.BtpServiceInstanceName,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to list service bindings of the service instance: %w", err)
+		}
+
+		if len(serviceBindings) > 0 {
+			log.Entry().Info("Found service bindings for the service instance")
+
+			err := btpDeleteServiceBindings(*config, serviceBindings, telemetryData, utils)
+			if err != nil {
+				return fmt.Errorf("failed to delete service bindings: %w", err)
+			}
+		}
+	}
+
+	err := utils.DeleteServiceInstance(btpConfig)
+	if err != nil {
+		return fmt.Errorf("failed to delete BTP service instance: %w", err)
+	}
+
+	log.Entry().Info("Service deletion completed successfully")
+
+	return nil
+}
+
+func btpDeleteServiceBindings(config btpDeleteServiceInstanceOptions, serviceBindings []btp.ServiceBindingData, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
+	log.Entry().Info("Deleting inherent Service Bindings of the Service Instance")
+
+	for _, serviceBinding := range serviceBindings {
+		log.Entry().WithField("bindingName", serviceBinding.Name).Info("Deleting Service Binding")
+		deleteConfig := btpDeleteServiceBindingOptions{
+			BtpAPIEndpoint:         config.BtpAPIEndpoint,
+			BtpSubdomain:           config.BtpSubdomain,
+			BtpSubaccount:          config.BtpSubaccount,
+			User:                   config.User,
+			Password:               config.Password,
+			BtpIDp:                 config.BtpIDp,
+			BtpServiceInstanceName: config.BtpServiceInstanceName,
+			BtpServiceBindingName:  serviceBinding.Name,
+			Timeout:                config.Timeout,
+			PollInterval:           config.PollInterval,
+		}
+
+		err := runBtpDeleteServiceBinding(&deleteConfig, telemetryData, utils)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

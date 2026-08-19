@@ -1,4 +1,3 @@
-
 # ${docGenStepName}
 
 ## ${docGenParameters}

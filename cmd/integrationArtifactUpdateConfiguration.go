@@ -12,7 +12,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func integrationArtifactUpdateConfiguration(config integrationArtifactUpdateConfigurationOptions, telemetryData *telemetry.CustomData) {
@@ -42,7 +41,7 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
@@ -55,11 +54,11 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	jsonBody, jsonErr := json.Marshal(jsonObj)
 
 	if jsonErr != nil {
-		return errors.Wrapf(jsonErr, "input json body is invalid for parameterValue %q", config.ParameterValue)
+		return fmt.Errorf("input json body is invalid for parameterValue %q: %w", config.ParameterValue, jsonErr)
 	}
 	configUpdateResp, httpErr := httpClient.SendRequest(httpMethod, configUpdateURL, bytes.NewBuffer(jsonBody), header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %q request to %q failed with error", httpMethod, configUpdateURL)
+		return fmt.Errorf("HTTP %q request to %q failed with error: %w", httpMethod, configUpdateURL, httpErr)
 	}
 
 	if configUpdateResp != nil && configUpdateResp.Body != nil {
@@ -67,7 +66,7 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	}
 
 	if configUpdateResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response")
+		return fmt.Errorf("did not retrieve a HTTP response")
 	}
 
 	if configUpdateResp.StatusCode == http.StatusAccepted {
@@ -79,9 +78,9 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	response, readErr := io.ReadAll(configUpdateResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", configUpdateResp.StatusCode)
+		return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", configUpdateResp.StatusCode, readErr)
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(response), configUpdateResp.StatusCode)
-	return errors.Errorf("Failed to update the integration flow configuration parameter, Response Status code: %v", configUpdateResp.StatusCode)
+	return fmt.Errorf("Failed to update the integration flow configuration parameter, Response Status code: %v", configUpdateResp.StatusCode)
 }

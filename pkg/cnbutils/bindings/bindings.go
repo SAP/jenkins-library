@@ -10,7 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
+
 	k8sjson "sigs.k8s.io/json"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
@@ -90,7 +91,7 @@ func (b *bindingData) bindingContentType() bindingContentType {
 func ProcessBindings(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, platformPath string, bindings map[string]interface{}) error {
 	typedBindings, err := toTyped(bindings)
 	if err != nil {
-		return errors.Wrap(err, "error while reading bindings")
+		return fmt.Errorf("error while reading bindings: %w", err)
 	}
 
 	for name, binding := range typedBindings {
@@ -117,12 +118,12 @@ func processBinding(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, plat
 	bindingDir := filepath.Join(platformPath, "bindings", name)
 	err = utils.MkdirAll(bindingDir, 0755)
 	if err != nil {
-		return errors.Wrap(err, "failed to create binding directory")
+		return fmt.Errorf("failed to create binding directory: %w", err)
 	}
 
 	err = utils.FileWrite(filepath.Join(bindingDir, "type"), []byte(bindingType), 0644)
 	if err != nil {
-		return errors.Wrap(err, "failed to write the 'type' binding file")
+		return fmt.Errorf("failed to write the 'type' binding file: %w", err)
 	}
 
 	var bindingContent []byte
@@ -131,20 +132,20 @@ func processBinding(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, plat
 	case fileBinding:
 		bindingContent, err = utils.FileRead(*data.File)
 		if err != nil {
-			return errors.Wrap(err, "failed to copy binding file")
+			return fmt.Errorf("failed to copy binding file: %w", err)
 		}
 	case contentBinding:
 		bindingContent = []byte(*data.Content)
 	case fromURLBinding:
 		response, err := httpClient.SendRequest(http.MethodGet, *data.FromURL, nil, nil, nil)
 		if err != nil {
-			return errors.Wrap(err, "failed to load binding from url")
+			return fmt.Errorf("failed to load binding from url: %w", err)
 		}
 
 		bindingContent, err = io.ReadAll(response.Body)
 		defer response.Body.Close()
 		if err != nil {
-			return errors.Wrap(err, "error reading response")
+			return fmt.Errorf("error reading response: %w", err)
 		}
 	case vaultBinding:
 		envVar := config.VaultCredentialEnvPrefixDefault + config.ConvertEnvVar(*data.VaultCredentialKey)
@@ -157,7 +158,7 @@ func processBinding(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, plat
 
 	err = utils.FileWrite(filepath.Join(bindingDir, data.Key), bindingContent, 0644)
 	if err != nil {
-		return errors.Wrap(err, "failed to write binding")
+		return fmt.Errorf("failed to write binding: %w", err)
 	}
 
 	return nil
@@ -170,7 +171,7 @@ func validateBinding(name string, data bindingData) error {
 
 	err := data.validate()
 	if err != nil {
-		return errors.Wrapf(err, "failed to validate binding '%s'", name)
+		return fmt.Errorf("failed to validate binding '%s': %w", name, err)
 	}
 	return nil
 }
@@ -183,7 +184,7 @@ func toTyped(rawMap map[string]interface{}) (bindings, error) {
 
 		b, err := fromRaw(rawBinding)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not process binding '%s'", name)
+			return nil, fmt.Errorf("could not process binding '%s': %w", name, err)
 		}
 
 		if b.Key != "" {
@@ -220,10 +221,10 @@ func fromRaw(rawData interface{}) (binding, error) {
 			if err == nil {
 				err = e
 			} else {
-				err = errors.Wrap(err, e.Error())
+				err = fmt.Errorf("%s: %w", e.Error(), err)
 			}
 		}
-		err = errors.Wrap(err, "validation error")
+		err = fmt.Errorf("validation error: %w", err)
 		return binding{}, err
 	}
 

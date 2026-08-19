@@ -1,5 +1,4 @@
 //go:build unit
-// +build unit
 
 package cmd
 
@@ -7,17 +6,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/ghodss/yaml"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
+
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -165,13 +165,13 @@ func TestPrepareConfig(t *testing.T) {
 func TestRetrieveHookConfig(t *testing.T) {
 	tt := []struct {
 		hookJSON           []byte
-		expectedHookConfig HookConfiguration
+		expectedHookConfig config.HookConfiguration
 	}{
-		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
-		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+		{hookJSON: []byte(""), expectedHookConfig: config.HookConfiguration{}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: config.HookConfiguration{SentryConfig: config.SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
 		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}, "splunk":{"dsn":"https://my.splunk.dsn", "token": "mytoken", "index": "myindex", "sendLogs": true}}`),
-			expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"},
-				SplunkConfig: SplunkConfiguration{
+			expectedHookConfig: config.HookConfiguration{SentryConfig: config.SentryConfiguration{Dsn: "https://my.sentry.dsn"},
+				SplunkConfig: config.SplunkConfiguration{
 					Dsn:      "https://my.splunk.dsn",
 					Token:    "mytoken",
 					Index:    "myindex",
@@ -182,7 +182,7 @@ func TestRetrieveHookConfig(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		var target HookConfiguration
+		var target config.HookConfiguration
 		var hookJSONinterface map[string]interface{}
 		if len(test.hookJSON) > 0 {
 			err := json.Unmarshal(test.hookJSON, &hookJSONinterface)
@@ -536,4 +536,26 @@ func TestAccessTokensFromEnvJSON(t *testing.T) {
 	for _, test := range tt {
 		assert.Equal(t, test.expectedTokenList, AccessTokensFromEnvJSON(test.inputJSON), test.description)
 	}
+}
+
+func TestHelmBuildCobraAlias(t *testing.T) {
+	t.Run("helmExecute resolves as cobra alias for helmBuild", func(t *testing.T) {
+		cmd := HelmBuildCommand()
+		assert.Equal(t, "helmBuild", cmd.Use)
+		assert.Contains(t, cmd.Aliases, "helmExecute")
+	})
+
+	t.Run("helmBuild registered in rootCmd", func(t *testing.T) {
+		// Verify the root command can resolve both helmBuild and helmExecute
+		root := &cobra.Command{Use: "piper"}
+		root.AddCommand(HelmBuildCommand())
+
+		found, _, err := root.Find([]string{"helmBuild"})
+		assert.NoError(t, err)
+		assert.Equal(t, "helmBuild", found.Use)
+
+		found, _, err = root.Find([]string{"helmExecute"})
+		assert.NoError(t, err)
+		assert.Equal(t, "helmBuild", found.Use)
+	})
 }

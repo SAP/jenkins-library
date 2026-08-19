@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+permissions:
+  issues: write         # actions/stale labels, comments on and closes stale issues
+  pull-requests: write  # actions/stale labels, comments on and closes stale PRs
+  actions: write        # styfle/cancel-workflow-action cancels previous runs
+
 jobs:
   stale:
     runs-on: ubuntu-latest

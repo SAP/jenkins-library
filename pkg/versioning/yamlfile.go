@@ -5,8 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
+	"go.yaml.in/yaml/v3"
 )
 
 // YAMLDescriptor holds the unique identifier combination for an artifact
@@ -48,11 +47,11 @@ func (y *YAMLfile) readContent() error {
 	}
 	content, err := y.readFile(y.path)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read file '%v'", y.path)
+		return fmt.Errorf("failed to read file '%v': %w", y.path, err)
 	}
 	err = yaml.Unmarshal(content, &y.content)
 	if err != nil {
-		return errors.Wrapf(err, "failed to read yaml content of file '%v'", y.content)
+		return fmt.Errorf("failed to read yaml content of file '%v': %w", y.content, err)
 	}
 	return nil
 }
@@ -60,9 +59,13 @@ func (y *YAMLfile) readContent() error {
 func (y *YAMLfile) readField(key string) (string, error) {
 	err := y.readContent()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get key %s", key)
+		return "", fmt.Errorf("failed to get key %s: %w", key, err)
 	}
-	return strings.TrimSpace(fmt.Sprint(y.content[key])), nil
+	value, exists := y.content[key]
+	if !exists || value == nil {
+		return "", nil
+	}
+	return strings.TrimSpace(fmt.Sprint(value)), nil
 }
 
 // VersioningScheme returns the relevant versioning scheme
@@ -86,18 +89,18 @@ func (y *YAMLfile) GetVersion() (string, error) {
 func (y *YAMLfile) SetVersion(version string) error {
 	err := y.readContent()
 	if err != nil {
-		return errors.Wrapf(err, "failed to set version")
+		return fmt.Errorf("failed to set version: %w", err)
 	}
 
 	y.content[y.versionField] = version
 
 	content, err := yaml.Marshal(y.content)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create yaml content for '%v'", y.path)
+		return fmt.Errorf("failed to create yaml content for '%v': %w", y.path, err)
 	}
 	err = y.writeFile(y.path, content, 0700)
 	if err != nil {
-		return errors.Wrapf(err, "failed to write file '%v'", y.path)
+		return fmt.Errorf("failed to write file '%v': %w", y.path, err)
 	}
 
 	return nil

@@ -38,7 +38,7 @@ import (
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const getClasspathScriptContent = `
@@ -281,7 +281,7 @@ func runFortifyScan(ctx context.Context, config fortifyExecuteScanOptions, sys f
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
 	if err != nil {
-		return reports, errors.Wrap(err, "failed to scan project")
+		return reports, fmt.Errorf("failed to scan project: %w", err)
 	}
 
 	var message string
@@ -367,14 +367,14 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	// Perform audit compliance checks
 	issueFilterSelectorSet, err := sys.GetIssueFilterSelectorOfProjectVersionByName(projectVersion.ID, []string{"Analysis", "Folder", "Category"}, nil)
 	if err != nil {
-		return reports, errors.Wrapf(err, "failed to fetch project version issue filter selector for project version ID %v", projectVersion.ID)
+		return reports, fmt.Errorf("failed to fetch project version issue filter selector for project version ID %v: %w", projectVersion.ID, err)
 	}
 	log.Entry().Debugf("initial filter selector set: %v", issueFilterSelectorSet)
 
 	spotChecksCountByCategory := []fortify.SpotChecksAuditCount{}
 	numberOfViolations, issueGroups, err := analyseUnauditedIssues(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus, &spotChecksCountByCategory)
 	if err != nil {
-		return reports, errors.Wrap(err, "failed to analyze unaudited issues")
+		return reports, fmt.Errorf("failed to analyze unaudited issues: %w", err)
 	}
 	numberOfSuspiciousExploitable, issueGroupsSuspiciousExploitable := analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
 	numberOfViolations += numberOfSuspiciousExploitable
@@ -392,7 +392,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	scanReport := fortify.CreateCustomReport(fortifyReportingData, issueGroups)
 	paths, err := fortify.WriteCustomReports(scanReport)
 	if err != nil {
-		return reports, errors.Wrap(err, "failed to write custom reports")
+		return reports, fmt.Errorf("failed to write custom reports: %w", err)
 	}
 	reports = append(reports, paths...)
 
@@ -415,7 +415,7 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 	jsonReport := fortify.CreateJSONReport(fortifyReportingData, spotChecksCountByCategory, config.ServerURL)
 	paths, err = fortify.WriteJSONReport(jsonReport)
 	if err != nil {
-		return reports, errors.Wrap(err, "failed to write json report")
+		return reports, fmt.Errorf("failed to write json report: %w", err)
 	}
 	reports = append(reports, paths...)
 
@@ -457,13 +457,13 @@ func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System
 	reducedFilterSelectorSet := sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Folder"}, nil)
 	fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersion.ID, "", filterSet.GUID, reducedFilterSelectorSet)
 	if err != nil {
-		return 0, fetchedIssueGroups, errors.Wrapf(err, "failed to fetch project version issue groups with filter set %v and selector %v for project version ID %v", filterSet, issueFilterSelectorSet, projectVersion.ID)
+		return 0, fetchedIssueGroups, fmt.Errorf("failed to fetch project version issue groups with filter set %v and selector %v for project version ID %v: %w", filterSet, issueFilterSelectorSet, projectVersion.ID, err)
 	}
 	overallViolations := 0
 	for _, issueGroup := range fetchedIssueGroups {
 		issueDelta, err := getIssueDeltaFor(config, sys, issueGroup, projectVersion.ID, filterSet, issueFilterSelectorSet, influx, auditStatus, spotChecksCountByCategory)
 		if err != nil {
-			return overallViolations, fetchedIssueGroups, errors.Wrap(err, "failed to get issue delta")
+			return overallViolations, fetchedIssueGroups, fmt.Errorf("failed to get issue delta: %w", err)
 		}
 		overallViolations += issueDelta
 	}
@@ -510,7 +510,7 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 			filter := fmt.Sprintf("%v:%v", folderSelector.EntityType, folderSelector.SelectorOptions[0].Value)
 			fetchedIssueGroups, err := sys.GetProjectIssuesByIDAndFilterSetGroupedBySelector(projectVersionID, filter, filterSet.GUID, sys.ReduceIssueFilterSelectorSet(issueFilterSelectorSet, []string{"Category"}, nil))
 			if err != nil {
-				return totalMinusAuditedDelta, errors.Wrapf(err, "failed to fetch project version issue groups with filter %v, filter set %v and selector %v for project version ID %v", filter, filterSet, issueFilterSelectorSet, projectVersionID)
+				return totalMinusAuditedDelta, fmt.Errorf("failed to fetch project version issue groups with filter %v, filter set %v and selector %v for project version ID %v: %w", filter, filterSet, issueFilterSelectorSet, projectVersionID, err)
 			}
 			totalMinusAuditedDelta += getSpotIssueCount(config, sys, fetchedIssueGroups, projectVersionID, filterSet, reducedFilterSelectorSet, influx, auditStatus, spotChecksCountByCategory)
 		}
@@ -652,7 +652,7 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 	log.Entry().Infof("Generating report with template ID %v", config.ReportTemplateID)
 	report, err := sys.GenerateQGateReport(project.ID, projectVersion.ID, int64(config.ReportTemplateID), *project.Name, *projectVersion.Name, config.ReportType)
 	if err != nil {
-		return []byte{}, errors.Wrap(err, "failed to generate Q-Gate report")
+		return []byte{}, fmt.Errorf("failed to generate Q-Gate report: %w", err)
 	}
 	log.Entry().Debugf("Triggered report generation of report ID %v", report.ID)
 	status := report.Status
@@ -770,13 +770,13 @@ func executeTemplatedCommand(utils fortifyUtils, cmdTemplate []string, context m
 	for index, cmdTemplatePart := range cmdTemplate {
 		result, err := piperutils.ExecuteTemplate(cmdTemplatePart, context)
 		if err != nil {
-			return errors.Wrapf(err, "failed to transform template for command fragment: %v", cmdTemplatePart)
+			return fmt.Errorf("failed to transform template for command fragment: %v: %w", cmdTemplatePart, err)
 		}
 		cmdTemplate[index] = result
 	}
 	err := utils.RunExecutable(cmdTemplate[0], cmdTemplate[1:]...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute command %v", cmdTemplate)
+		return fmt.Errorf("failed to execute command %v: %w", cmdTemplate, err)
 	}
 	return nil
 }
@@ -785,13 +785,13 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	// redirect stdout and create cp file from command output
 	outfile, err := os.Create(file)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create classpath file")
+		return "", fmt.Errorf("failed to create classpath file: %w", err)
 	}
 	defer outfile.Close()
 	utils.Stdout(outfile)
 	err = utils.RunExecutable(executable, parameters...)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to run classpath autodetection command %v with parameters %v", executable, parameters)
+		return "", fmt.Errorf("failed to run classpath autodetection command %v with parameters %v: %w", executable, parameters, err)
 	}
 	utils.Stdout(log.Entry().Writer())
 	return readClasspathFile(file), nil
@@ -955,7 +955,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			script := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
 			classpath, err = autoresolvePipClasspath(config.PythonVersion, []string{"-c", script}, classpathFileName, utils)
 			if err != nil {
-				return errors.Wrap(err, "failed to autoresolve pip classpath")
+				return fmt.Errorf("failed to autoresolve pip classpath: %w", err)
 			}
 		}
 		// install the dev dependencies
@@ -1076,7 +1076,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyUti
 		log.Entry().Debugf("Running sourceanalyzer translate command with options %v", translateOptions)
 		err := command.RunExecutable("sourceanalyzer", translateOptions...)
 		if err != nil {
-			return errors.Wrapf(err, "failed to execute sourceanalyzer translate command with options %v", translateOptions)
+			return fmt.Errorf("failed to execute sourceanalyzer translate command with options %v: %w", translateOptions, err)
 		}
 	} else {
 		log.Entry().Debug("Skipping translate with nil value")
@@ -1109,7 +1109,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 
 	err := command.RunExecutable("sourceanalyzer", scanOptions...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute sourceanalyzer scan command with scanOptions %v", scanOptions)
+		return fmt.Errorf("failed to execute sourceanalyzer scan command with scanOptions %v: %w", scanOptions, err)
 	}
 	return nil
 }

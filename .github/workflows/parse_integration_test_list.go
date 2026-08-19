@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"os"
+
+	"go.yaml.in/yaml/v3"
 )
 
 func main() {

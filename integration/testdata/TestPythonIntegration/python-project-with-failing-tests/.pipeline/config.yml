@@ -1,0 +1,5 @@
+general:
+
+steps:
+  pythonBuild:
+    runTests: true

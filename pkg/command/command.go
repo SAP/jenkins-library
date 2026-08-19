@@ -12,7 +12,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 // Command defines the information required for executing a call to any executable
@@ -118,7 +117,7 @@ func (c *Command) RunShell(shell, script string) error {
 	log.Entry().Infof("running shell script: %v %v", shell, script)
 
 	if err := c.runCmd(cmd); err != nil {
-		return errors.Wrapf(err, "running shell script failed with %v", shell)
+		return fmt.Errorf("running shell script failed with %v: %w", shell, err)
 	}
 	return nil
 }
@@ -154,7 +153,7 @@ func (c *Command) RunExecutableWithAttrs(executable string, sysProcAttr *syscall
 	}
 
 	if err := c.runCmd(cmd); err != nil {
-		return errors.Wrapf(err, "running command '%v' failed", executable)
+		return fmt.Errorf("running command '%v' failed: %w", executable, err)
 	}
 	return nil
 }
@@ -182,7 +181,7 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 
 	execution, err := c.startCmd(cmd)
 	if err != nil {
-		return nil, errors.Wrapf(err, "starting command '%v' failed", executable)
+		return nil, fmt.Errorf("starting command '%v' failed: %w", executable, err)
 	}
 
 	return execution, nil
@@ -222,12 +221,12 @@ func appendEnvironment(cmd *exec.Cmd, env []string) {
 func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	stdout, stderr, err := cmdPipes(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting command pipes failed")
+		return nil, fmt.Errorf("getting command pipes failed: %w", err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return nil, errors.Wrap(err, "starting command failed")
+		return nil, fmt.Errorf("starting command failed: %w", err)
 	}
 
 	execution := execution{cmd: cmd, ul: log.NewURLLogger(c.StepName)}
@@ -371,7 +370,7 @@ func (c *Command) runCmd(cmd *exec.Cmd) error {
 				c.exitCode = status.ExitStatus()
 			}
 		}
-		return errors.Wrap(err, "cmd.Run() failed")
+		return fmt.Errorf("cmd.Run() failed: %w", err)
 	}
 	c.exitCode = 0
 	return nil
@@ -393,12 +392,12 @@ func (c *Command) prepareOut() {
 func cmdPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting Stdout pipe failed")
+		return nil, nil, fmt.Errorf("getting Stdout pipe failed: %w", err)
 	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting Stderr pipe failed")
+		return nil, nil, fmt.Errorf("getting Stderr pipe failed: %w", err)
 	}
 
 	return stdout, stderr, nil

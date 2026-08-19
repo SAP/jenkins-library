@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/gcp"
+	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -25,23 +25,28 @@ import (
 type checkmarxOneExecuteScanOptions struct {
 	Assignees                            []string `json:"assignees,omitempty"`
 	AvoidDuplicateProjectScans           bool     `json:"avoidDuplicateProjectScans,omitempty"`
+	Engines                              []string `json:"engines,omitempty"`
 	FilterPattern                        string   `json:"filterPattern,omitempty"`
 	FullScanCycle                        string   `json:"fullScanCycle,omitempty"`
 	FullScansScheduled                   bool     `json:"fullScansScheduled,omitempty"`
 	GeneratePdfReport                    bool     `json:"generatePdfReport,omitempty"`
 	GithubAPIURL                         string   `json:"githubApiUrl,omitempty"`
 	GithubToken                          string   `json:"githubToken,omitempty"`
+	IacHelpLinks                         string   `json:"iacHelpLinks,omitempty"`
+	IacFilterPattern                     string   `json:"iacFilterPattern,omitempty"`
+	IacPreset                            string   `json:"iacPreset,omitempty"`
 	ScanSummaryInPullRequest             bool     `json:"scanSummaryInPullRequest,omitempty"`
 	Incremental                          bool     `json:"incremental,omitempty"`
 	Owner                                string   `json:"owner,omitempty"`
 	GitBranch                            string   `json:"gitBranch,omitempty"`
 	ClientSecret                         string   `json:"clientSecret,omitempty"`
 	APIKey                               string   `json:"APIKey,omitempty"`
-	Preset                               string   `json:"preset,omitempty"`
 	LanguageMode                         string   `json:"languageMode,omitempty"`
 	ProjectCriticality                   string   `json:"projectCriticality,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
 	ProjectTags                          string   `json:"projectTags,omitempty"`
+	SastFilterPattern                    string   `json:"sastFilterPattern,omitempty"`
+	SastPreset                           string   `json:"sastPreset,omitempty"`
 	ScanTags                             string   `json:"scanTags,omitempty"`
 	Branch                               string   `json:"branch,omitempty"`
 	PullRequestName                      string   `json:"pullRequestName,omitempty"`
@@ -129,6 +134,7 @@ type checkmarxOneExecuteScanInflux struct {
 			tool_version                         string
 			scan_type                            string
 			preset                               string
+			iac_preset                           string
 			deep_link                            string
 			report_creation_time                 string
 		}
@@ -194,6 +200,7 @@ func (i *checkmarxOneExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "tool_version", value: i.checkmarxOne_data.fields.tool_version},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "scan_type", value: i.checkmarxOne_data.fields.scan_type},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "preset", value: i.checkmarxOne_data.fields.preset},
+		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "iac_preset", value: i.checkmarxOne_data.fields.iac_preset},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "deep_link", value: i.checkmarxOne_data.fields.deep_link},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "report_creation_time", value: i.checkmarxOne_data.fields.report_creation_time},
 	}
@@ -339,8 +346,10 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 		},
 		Run: func(_ *cobra.Command, _ []string) {
 			vaultClient := config.GlobalVaultClient()
+			var oidcTokenProvider func(string) (string, error)
 			if vaultClient != nil {
 				defer vaultClient.MustRevokeToken()
+				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
 			stepTelemetryData := telemetry.CustomData{}
@@ -370,17 +379,18 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 						GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 					splunkClient.Send(telemetryClient.GetData(), logCollector)
 				}
-				if GeneralConfig.HookConfig.GCPPubSubConfig.Enabled {
-					err := gcp.NewGcpPubsubClient(
-						vaultClient,
-						GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityPool,
-						GeneralConfig.HookConfig.GCPPubSubConfig.IdentityProvider,
-						GeneralConfig.CorrelationID,
-						GeneralConfig.HookConfig.OIDCConfig.RoleID,
-					).Publish(GeneralConfig.HookConfig.GCPPubSubConfig.Topic, telemetryClient.GetDataBytes())
-					if err != nil {
-						log.Entry().WithError(err).Warn("event publish failed")
+				if len(GeneralConfig.HookConfig.GCPPubSubConfig.ProjectNumber) > 0 {
+					if err := eventing.PublishTaskRunFinishedEvent(
+						oidcTokenProvider,
+						&GeneralConfig,
+						eventing.EventContext{
+							StepName:   STEP_NAME,
+							StageName:  telemetryClient.GetData().StageName,
+							ErrorCode:  stepTelemetryData.ErrorCode,
+							PipelineID: telemetryClient.GetBuildURL(),
+						},
+					); err != nil {
+						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
 					}
 				}
 			}
@@ -400,23 +410,28 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOneExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Github Issue created/updated with the results of the scan as a list of login names. [Not yet supported]")
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not  [Not yet supported]")
-	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
+	cmd.Flags().StringSliceVar(&stepConfig.Engines, "engines", []string{`sast`}, "The scan engines to trigger for this scan. Can be: sast, iac")
+	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory. For multiple-engine scans, this filter should include all files applicable to all engines - per-engine filters should be set separately through sastFileFilter and iacFileFilter.")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&stepConfig.IacHelpLinks, "iacHelpLinks", ``, "A path to a json file (remote if http/https, local otherwise) containing a map of IAC_query_id:help_url")
+	cmd.Flags().StringVar(&stepConfig.IacFilterPattern, "iacFilterPattern", ``, "The pattern to filter the files relevant for scanning in IAC, patterns can be negated by setting an exclamation mark in front i.e. `!**/*.yaml` would avoid adding any yaml files located in the test directory")
+	cmd.Flags().StringVar(&stepConfig.IacPreset, "iacPreset", os.Getenv("PIPER_iacPreset"), "The preset to use for IAC scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().BoolVar(&stepConfig.ScanSummaryInPullRequest, "scanSummaryInPullRequest", true, "Whether the scan summary shall be added to the pull request as a comment or not. This is only applied if the step is executed in a pull request context. githubToken and githubApiUrl parameters must be set to allow the step to create the comment.")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Set the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.GitBranch, "gitBranch", os.Getenv("PIPER_gitBranch"), "Set the GitHub repository branch.")
 	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", os.Getenv("PIPER_clientSecret"), "The clientSecret to authenticate using a service account")
 	cmd.Flags().StringVar(&stepConfig.APIKey, "APIKey", os.Getenv("PIPER_APIKey"), "The APIKey to authenticate")
-	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.LanguageMode, "languageMode", `multi`, "Specifies whether the scan should be run for a 'single' language or 'multi' language, default 'multi'")
 	cmd.Flags().StringVar(&stepConfig.ProjectCriticality, "projectCriticality", `3`, "The criticality of the checkmarxOne project, used during project creation")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the checkmarxOne project to scan into")
 	cmd.Flags().StringVar(&stepConfig.ProjectTags, "projectTags", os.Getenv("PIPER_projectTags"), "Used to tag a project with a JSON string, e.g., {\"key\":\"value\", \"keywithoutvalue\":\"\"}")
+	cmd.Flags().StringVar(&stepConfig.SastFilterPattern, "sastFilterPattern", ``, "The pattern to filter the files relevant for scanning in SAST, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
+	cmd.Flags().StringVar(&stepConfig.SastPreset, "sastPreset", os.Getenv("PIPER_sastPreset"), "The preset to use for SAST scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxOneCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.ScanTags, "scanTags", os.Getenv("PIPER_scanTags"), "Used to tag a scan with a JSON string, e.g., {\"key\":\"value\", \"keywithoutvalue\":\"\"}")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Used to supply the branch scanned in the repository, or a friendly-name set by the user")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "Used to supply the name for the newly created PR project branch when being used in pull request scenarios. This is supplied by the orchestrator.")
@@ -505,13 +520,22 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Default:     true,
 					},
 					{
+						Name:        "engines",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{`sast`},
+					},
+					{
 						Name:        "filterPattern",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`,
 					},
 					{
 						Name:        "fullScanCycle",
@@ -568,6 +592,33 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
+						Name:        "iacHelpLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     ``,
+					},
+					{
+						Name:        "iacFilterPattern",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     ``,
+					},
+					{
+						Name:        "iacPreset",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_iacPreset"),
 					},
 					{
 						Name:        "scanSummaryInPullRequest",
@@ -658,15 +709,6 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_APIKey"),
 					},
 					{
-						Name:        "preset",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_preset"),
-					},
-					{
 						Name:        "languageMode",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -701,6 +743,24 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_projectTags"),
+					},
+					{
+						Name:        "sastFilterPattern",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     ``,
+					},
+					{
+						Name:        "sastPreset",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "preset"}},
+						Default:     os.Getenv("PIPER_sastPreset"),
 					},
 					{
 						Name:        "scanTags",
@@ -972,7 +1032,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarxOne"}}},
-							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "critical_issues"}, {"name": "critical_not_false_postive"}, {"name": "critical_not_exploitable"}, {"name": "critical_confirmed"}, {"name": "critical_urgent"}, {"name": "critical_proposed_not_exploitable"}, {"name": "critical_to_verify"}, {"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "tool_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
+							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "critical_issues"}, {"name": "critical_not_false_postive"}, {"name": "critical_not_exploitable"}, {"name": "critical_confirmed"}, {"name": "critical_urgent"}, {"name": "critical_proposed_not_exploitable"}, {"name": "critical_to_verify"}, {"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "tool_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "iac_preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
 						},
 					},
 					{

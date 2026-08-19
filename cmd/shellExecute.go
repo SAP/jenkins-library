@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -58,7 +56,7 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 		if strings.Contains(source, "https") {
 			scriptLocation, err := piperhttp.DownloadExecutable(config.GithubToken, utils, utils, scriptPath)
 			if err != nil {
-				return errors.Wrap(err, "script download error")
+				return fmt.Errorf("script download error: %w", err)
 			}
 			scriptPath = scriptLocation
 		}
@@ -91,13 +89,13 @@ func runShellExecute(config *shellExecuteOptions, telemetryData *telemetry.Custo
 				// success
 				return nil
 			case 1:
-				return errors.Wrap(err, "an error occurred while executing the script")
+				return fmt.Errorf("an error occurred while executing the script: %w", err)
 			default:
 				// exit code 2 or >2 - unstable
-				return errors.Wrap(err, "script execution unstable or something went wrong")
+				return fmt.Errorf("script execution unstable or something went wrong: %w", err)
 			}
 		} else if err != nil {
-			return errors.Wrap(err, "script execution error occurred")
+			return fmt.Errorf("script execution error occurred: %w", err)
 		}
 	}
 

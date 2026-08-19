@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
+
+	"errors"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -14,7 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type abapEnvironmentBuildUtils interface {
@@ -112,12 +114,12 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, utils abapEnvi
 
 	conn := new(abapbuild.Connector)
 	if err := initConnection(conn, config, utils); err != nil {
-		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
+		return fmt.Errorf("Connector initialization for communication with the ABAP system failed: %w", err)
 	}
 
 	valuesList, err := evaluateAddonDescriptor(config)
 	if err != nil {
-		return errors.Wrap(err, "Error during the evaluation of the AddonDescriptor")
+		return fmt.Errorf("Error during the evaluation of the AddonDescriptor: %w", err)
 	}
 
 	finalValues, err := runBuilds(conn, config, utils, valuesList)
@@ -129,7 +131,7 @@ func runAbapEnvironmentBuild(config *abapEnvironmentBuildOptions, utils abapEnvi
 
 	cpe.abap.buildValues, err = convertValuesForCPE(finalValues)
 	if err != nil {
-		return errors.Wrap(err, "Error during the conversion of the values for the commonPipelineenvironment")
+		return fmt.Errorf("Error during the conversion of the values for the commonPipelineenvironment: %w", err)
 	}
 	return nil
 }
@@ -140,11 +142,11 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 	if len(valuesList) == 0 {
 		values, err := generateValuesOnlyFromConfig(config)
 		if err != nil {
-			return finalValues, errors.Wrap(err, "Generating the values from config failed")
+			return finalValues, fmt.Errorf("Generating the values from config failed: %w", err)
 		}
 		finalValues, err = runBuild(conn, config, utils, values)
 		if err != nil {
-			return finalValues, errors.Wrap(err, "Error during execution of build framework")
+			return finalValues, fmt.Errorf("Error during execution of build framework: %w", err)
 		}
 	} else {
 		// Run several times for each repository in the addonDescriptor
@@ -154,11 +156,11 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 		for _, values := range valuesList {
 			cummulatedValues, err := generateValuesWithAddonDescriptor(config, values)
 			if err != nil {
-				return finalValues, errors.Wrap(err, "Error generating input values")
+				return finalValues, fmt.Errorf("Error generating input values: %w", err)
 			}
 			finalValuesForOneBuild, err := runBuild(conn, config, utils, cummulatedValues)
 			if err != nil {
-				err = errors.Wrapf(err, "Build with input values %s failed", values2string(values))
+				err = fmt.Errorf("Build with input values %s failed: %w", values2string(values), err)
 				if config.StopOnFirstError {
 					return finalValues, err
 				}
@@ -172,7 +174,7 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 		}
 		finalValues = vE.generateValueSlice()
 		if len(errstrings) > 0 {
-			finalError := errors.Errorf("%d out %d build runs failed:\n%s", len(errstrings), len(valuesList), (strings.Join(errstrings, "\n")))
+			finalError := fmt.Errorf("%d out %d build runs failed:\n%s", len(errstrings), len(valuesList), (strings.Join(errstrings, "\n")))
 			return finalValues, finalError
 		}
 	}
@@ -222,18 +224,18 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 	}
 
 	if err := build.Poll(); err != nil {
-		return finalValues, errors.Wrap(err, "Error during the polling for the final state of the build run")
+		return finalValues, fmt.Errorf("Error during the polling for the final state of the build run: %w", err)
 	}
 
 	if err := build.PrintLogs(); err != nil {
-		return finalValues, errors.Wrap(err, "Error printing the logs")
+		return finalValues, fmt.Errorf("Error printing the logs: %w", err)
 	}
 
 	errBuildRun := build.EvaluteIfBuildSuccessful()
 
 	if err := build.Download(); err != nil {
 		if errBuildRun != nil {
-			errWraped := errors.Errorf("Download failed after execution of build failed: %v. Build error: %v", err, errBuildRun)
+			errWraped := fmt.Errorf("Download failed after execution of build failed: %v. Build error: %v", err, errBuildRun)
 			return finalValues, errWraped
 		}
 		return finalValues, err
@@ -256,14 +258,14 @@ type myBuild struct {
 
 func (b *myBuild) Start(values abapbuild.Values) error {
 	if err := b.Build.Start(b.abapEnvironmentBuildOptions.Phase, values); err != nil {
-		return errors.Wrap(err, "Error starting the build framework")
+		return fmt.Errorf("Error starting the build framework: %w", err)
 	}
 	return nil
 }
 
 func (b *myBuild) EvaluteIfBuildSuccessful() error {
 	if err := b.Build.EvaluteIfBuildSuccessful(b.TreatWarningsAsError); err != nil {
-		return errors.Wrap(err, "Build ended without success")
+		return fmt.Errorf("Build ended without success: %w", err)
 	}
 	return nil
 }
@@ -271,11 +273,11 @@ func (b *myBuild) EvaluteIfBuildSuccessful() error {
 func (b *myBuild) Download() error {
 	if b.DownloadAllResultFiles {
 		if err := b.DownloadAllResults(b.SubDirectoryForDownload, b.FilenamePrefixForDownload); err != nil {
-			return errors.Wrap(err, "Error during the download of the result files")
+			return fmt.Errorf("Error during the download of the result files: %w", err)
 		}
 	} else {
 		if err := b.DownloadResults(b.DownloadResultFilenames, b.SubDirectoryForDownload, b.FilenamePrefixForDownload); err != nil {
-			return errors.Wrapf(err, "Error during the download of the result files %s", b.DownloadResultFilenames)
+			return fmt.Errorf("Error during the download of the result files %s: %w", b.DownloadResultFilenames, err)
 		}
 	}
 	return nil
@@ -286,7 +288,7 @@ func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
 		b.PublishAllDownloadedResults("abapEnvironmentBuild", utils)
 	} else {
 		if err := b.PublishDownloadedResults("abapEnvironmentBuild", b.PublishResultFilenames, utils); err != nil {
-			return errors.Wrapf(err, "Error during the publish of the result files %s", b.PublishResultFilenames)
+			return fmt.Errorf("Error during the publish of the result files %s: %w", b.PublishResultFilenames, err)
 		}
 	}
 	return nil
@@ -295,7 +297,7 @@ func (b *myBuild) Publish(utils abapEnvironmentBuildUtils) error {
 func (b *myBuild) GetFinalValues() ([]abapbuild.Value, error) {
 	var values []abapbuild.Value
 	if err := b.GetValues(); err != nil {
-		return values, errors.Wrapf(err, "Error getting the values from build framework")
+		return values, fmt.Errorf("Error getting the values from build framework: %w", err)
 	}
 	return b.Build.Values, nil
 }
@@ -309,14 +311,14 @@ func convertValuesForCPE(values []abapbuild.Value) (string, error) {
 	var cpeValues []cpeValue
 	byt, err := json.Marshal(&values)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error converting the values from the build framework")
+		return "", fmt.Errorf("Error converting the values from the build framework: %w", err)
 	}
 	if err := json.Unmarshal(byt, &cpeValues); err != nil {
-		return "", errors.Wrapf(err, "Error converting the values from the build framework into the structure for the commonPipelineEnvironment")
+		return "", fmt.Errorf("Error converting the values from the build framework into the structure for the commonPipelineEnvironment: %w", err)
 	}
 	jsonBytes, err := json.Marshal(cpeValues)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error converting the converted values")
+		return "", fmt.Errorf("Error converting the converted values: %w", err)
 	}
 	return string(jsonBytes), nil
 }
@@ -364,7 +366,7 @@ func generateValuesFromString(stringValues string) ([]abapbuild.Value, error) {
 	if len(stringValues) > 0 {
 		if err := json.Unmarshal([]byte(stringValues), &values); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return values, errors.Wrapf(err, "Could not convert the values %s", stringValues)
+			return values, fmt.Errorf("Could not convert the values %s: %w", stringValues, err)
 		}
 	}
 	return values, nil
@@ -377,18 +379,18 @@ type valuesEvaluator struct {
 func (vE *valuesEvaluator) initialize(stringValues string) error {
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
-		return errors.Wrapf(err, "Error converting the vales from the config")
+		return fmt.Errorf("Error converting the vales from the config: %w", err)
 	}
 	vE.m = make(map[string]string)
 	for _, value := range values {
 		if (len(value.ValueID) == 0) || (len(value.Value) == 0) {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Errorf("Values %s from config have not the right format", stringValues)
+			return fmt.Errorf("Values %s from config have not the right format", stringValues)
 		}
 		_, present := vE.m[value.ValueID]
 		if present {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Errorf("Value_id %s is not unique in the config", value.ValueID)
+			return fmt.Errorf("Value_id %s is not unique in the config", value.ValueID)
 		}
 		vE.m[value.ValueID] = value.Value
 	}
@@ -399,7 +401,7 @@ func (vE *valuesEvaluator) appendStringValuesIfNotPresent(stringValues string, t
 	var values []abapbuild.Value
 	values, err := generateValuesFromString(stringValues)
 	if err != nil {
-		return errors.Wrapf(err, "Error converting the vales from the commonPipelineEnvironment")
+		return fmt.Errorf("Error converting the vales from the commonPipelineEnvironment: %w", err)
 	}
 	if err := vE.appendValuesIfNotPresent(values, throwErrorIfPresent); err != nil {
 		return err
@@ -415,7 +417,7 @@ func (vE *valuesEvaluator) appendValuesIfNotPresent(values []abapbuild.Value, th
 		_, present := vE.m[value.ValueID]
 		if present {
 			if throwErrorIfPresent {
-				return errors.Errorf("Value_id %s already existed in the config", value.ValueID)
+				return fmt.Errorf("Value_id %s already existed in the config", value.ValueID)
 			}
 			log.Entry().Infof("Value '%s':'%s' already existed -> discard this value", value.ValueID, value.Value)
 		} else {
@@ -461,7 +463,7 @@ func evaluateAddonDescriptor(config *abapEnvironmentBuildOptions) ([][]abapbuild
 		addonDescriptor := new(abaputils.AddonDescriptor)
 		if err := addonDescriptor.InitFromJSONstring(config.AddonDescriptor); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return listOfValuesList, errors.Wrap(err, "Error during the conversion of the AddonDescriptor")
+			return listOfValuesList, fmt.Errorf("Error during the conversion of the AddonDescriptor: %w", err)
 		}
 		for _, repo := range addonDescriptor.Repositories {
 			myRepo := myRepo{
@@ -469,12 +471,12 @@ func evaluateAddonDescriptor(config *abapEnvironmentBuildOptions) ([][]abapbuild
 			}
 			use, err := myRepo.checkCondition(config)
 			if err != nil {
-				return listOfValuesList, errors.Wrapf(err, "Checking of ConditionOnAddonDescriptor failed")
+				return listOfValuesList, fmt.Errorf("Checking of ConditionOnAddonDescriptor failed: %w", err)
 			}
 			if use {
 				values, err := myRepo.generateValues(config)
 				if err != nil {
-					return listOfValuesList, errors.Wrap(err, "Error generating values from AddonDescriptor")
+					return listOfValuesList, fmt.Errorf("Error generating values from AddonDescriptor: %w", err)
 				}
 				if len(values) > 0 {
 					listOfValuesList = append(listOfValuesList, values)
@@ -490,16 +492,16 @@ func (mR *myRepo) checkCondition(config *abapEnvironmentBuildOptions) (bool, err
 	if len(config.ConditionOnAddonDescriptor) > 0 {
 		if err := json.Unmarshal([]byte(config.ConditionOnAddonDescriptor), &conditions); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return false, errors.Wrapf(err, "Conversion of ConditionOnAddonDescriptor in the config failed")
+			return false, fmt.Errorf("Conversion of ConditionOnAddonDescriptor in the config failed: %w", err)
 		}
 		for _, cond := range conditions {
 			if cond.Field == "" || cond.Operator == "" || cond.Value == "" {
 				log.SetErrorCategory(log.ErrorConfiguration)
-				return false, errors.Errorf("Invalid condition for field %s with operator %s and value %s", cond.Field, cond.Operator, cond.Value)
+				return false, fmt.Errorf("Invalid condition for field %s with operator %s and value %s", cond.Field, cond.Operator, cond.Value)
 			}
 			use, err := mR.amI(cond.Field, cond.Operator, cond.Value)
 			if err != nil {
-				return false, errors.Wrapf(err, "Checking the field %s failed", cond.Field)
+				return false, fmt.Errorf("Checking the field %s failed: %w", cond.Field, err)
 			}
 			if !use {
 				log.Entry().Infof("addonDescriptor with the name %s does not fulfil the requierement %s%s%s from the ConditionOnAddonDescriptor, therefore it is not used", mR.Name, cond.Field, cond.Operator, cond.Value)
@@ -519,13 +521,13 @@ func (mR *myRepo) generateValues(config *abapEnvironmentBuildOptions) ([]abapbui
 	} else {
 		if err := json.Unmarshal([]byte(config.UseFieldsOfAddonDescriptor), &useFields); err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return values, errors.Wrapf(err, "Conversion of UseFieldsOfAddonDescriptor in the config failed")
+			return values, fmt.Errorf("Conversion of UseFieldsOfAddonDescriptor in the config failed: %w", err)
 		}
 		m := make(map[string]string)
 		for _, uF := range useFields {
 			if uF.Use == "" || uF.Rename == "" {
 				log.SetErrorCategory(log.ErrorConfiguration)
-				return values, errors.Errorf("Invalid UseFieldsOfAddonDescriptor for use %s and renameTo %s", uF.Use, uF.Rename)
+				return values, fmt.Errorf("Invalid UseFieldsOfAddonDescriptor for use %s and renameTo %s", uF.Use, uF.Rename)
 			}
 			m[uF.Use] = uF.Rename
 		}
@@ -545,7 +547,7 @@ func (mR *myRepo) generateValues(config *abapEnvironmentBuildOptions) ([]abapbui
 		}
 		if len(values) != len(useFields) {
 			log.SetErrorCategory(log.ErrorConfiguration)
-			return values, errors.Errorf("Not all fields in UseFieldsOfAddonDescriptor have been found. Probably a 'use' was used which does not exist")
+			return values, fmt.Errorf("Not all fields in UseFieldsOfAddonDescriptor have been found. Probably a 'use' was used which does not exist")
 		}
 	}
 	return values, nil
@@ -567,7 +569,7 @@ func (mR *myRepo) amI(field string, operator string, comp string) (bool, error) 
 		return fn(name, comp), nil
 	}
 	log.SetErrorCategory(log.ErrorConfiguration)
-	return false, errors.Errorf("Invalid operator %s", operator)
+	return false, fmt.Errorf("Invalid operator %s", operator)
 }
 
 type OperatorCallback map[string]func(string, string) bool

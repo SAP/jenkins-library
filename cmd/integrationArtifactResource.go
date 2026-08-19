@@ -10,13 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"errors"
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 type integrationArtifactResourceData struct {
@@ -58,7 +59,7 @@ func runIntegrationArtifactResource(config *integrationArtifactResourceOptions, 
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
@@ -83,7 +84,7 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 	header.Add("content-type", "application/json")
 	payload, jsonError := GetJSONPayload(config, "create", fileUtils)
 	if jsonError != nil {
-		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.ResourcePath)
+		return fmt.Errorf("Failed to get json payload for file %v, failed with error: %w", config.ResourcePath, jsonError)
 	}
 
 	uploadIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadIflowStatusURL, payload, header, nil)
@@ -115,7 +116,7 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 	updateIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$links/Resources(Name='%s',ResourceType='%s')", apiHost, config.IntegrationFlowID, "Active", fileName, fileExt)
 	payload, jsonError := GetJSONPayload(config, "update", fileUtils)
 	if jsonError != nil {
-		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.ResourcePath)
+		return fmt.Errorf("Failed to get json payload for file %v, failed with error: %w", config.ResourcePath, jsonError)
 	}
 	updateIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, updateIflowStatusURL, payload, header, nil)
 
@@ -164,7 +165,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 func GetJSONPayload(config *integrationArtifactResourceOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
 	fileContent, readError := fileUtils.FileRead(config.ResourcePath)
 	if readError != nil {
-		return nil, errors.Wrapf(readError, "Error reading file")
+		return nil, fmt.Errorf("Error reading file: %w", readError)
 	}
 	fileName := filepath.Base(config.ResourcePath)
 	jsonObj := gabs.New()
@@ -181,7 +182,7 @@ func GetJSONPayload(config *integrationArtifactResourceOptions, mode string, fil
 	jsonBody, jsonErr := json.Marshal(jsonObj)
 
 	if jsonErr != nil {
-		return nil, errors.Wrapf(jsonErr, "json payload is invalid for integration flow artifact %q", config.IntegrationFlowID)
+		return nil, fmt.Errorf("json payload is invalid for integration flow artifact %q: %w", config.IntegrationFlowID, jsonErr)
 	}
 	return bytes.NewBuffer(jsonBody), nil
 }
@@ -211,7 +212,7 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifact
 	}
 
 	if resp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
 	if resp.StatusCode == integrationArtifactResourceData.StatusCode {
@@ -223,10 +224,10 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifact
 	if httpErr != nil {
 		responseBody, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", resp.StatusCode)
+			return fmt.Errorf("HTTP response body could not be read, Response status code: %v: %w", resp.StatusCode, readErr)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), resp.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", integrationArtifactResourceData.Method, integrationArtifactResourceData.URL, string(responseBody))
+		return fmt.Errorf("HTTP %v request to %v failed with error: %v: %w", integrationArtifactResourceData.Method, integrationArtifactResourceData.URL, string(responseBody), httpErr)
 	}
-	return errors.Errorf("%s, Response Status code: %v", integrationArtifactResourceData.FlrMessage, resp.StatusCode)
+	return fmt.Errorf("%s, Response Status code: %v", integrationArtifactResourceData.FlrMessage, resp.StatusCode)
 }

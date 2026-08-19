@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/ans"
-	"github.com/pkg/errors"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -91,13 +91,13 @@ func registerANSHookIfConfigured(correlationID string, util registrationUtil) er
 
 	ansServiceKey, err := ans.UnmarshallServiceKeyJSON(ansServiceKeyJSON)
 	if err != nil {
-		return errors.Wrap(err, "cannot initialize SAP Alert Notification Service due to faulty serviceKey json")
+		return fmt.Errorf("cannot initialize SAP Alert Notification Service due to faulty serviceKey json: %w", err)
 	}
 	RegisterSecret(ansServiceKey.ClientSecret)
 
 	util.SetServiceKey(ansServiceKey)
 	if err = util.CheckCorrectSetup(); err != nil {
-		return errors.Wrap(err, "check http request to SAP Alert Notification Service failed; not setting up the ANS hook")
+		return fmt.Errorf("check http request to SAP Alert Notification Service failed; not setting up the ANS hook: %w", err)
 	}
 
 	eventTemplate, err := setupEventTemplate(os.Getenv("PIPER_ansEventTemplate"), correlationID)
@@ -123,7 +123,7 @@ func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event,
 
 	if len(customerEventTemplate) > 0 {
 		if err := event.MergeWithJSON([]byte(customerEventTemplate)); err != nil {
-			return ans.Event{}, errors.Wrapf(err, "provided SAP Alert Notification Service event template '%s' could not be unmarshalled", customerEventTemplate)
+			return ans.Event{}, fmt.Errorf("provided SAP Alert Notification Service event template '%s' could not be unmarshalled: %w", customerEventTemplate, err)
 		}
 	}
 	if len(event.Severity) > 0 {
@@ -135,7 +135,7 @@ func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event,
 		event.Category = ""
 	}
 	if err := event.Validate(); err != nil {
-		return ans.Event{}, errors.Wrap(err, "did not initialize SAP Alert Notification Service due to faulty event template json")
+		return ans.Event{}, fmt.Errorf("did not initialize SAP Alert Notification Service due to faulty event template json: %w", err)
 	}
 	return event, nil
 }

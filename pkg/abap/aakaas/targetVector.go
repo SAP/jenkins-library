@@ -2,13 +2,15 @@ package aakaas
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
+	"errors"
+
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/pkg/errors"
 )
 
 // TargetVectorStatus : Status of TargetVector in AAKaaS
@@ -97,16 +99,16 @@ func (tv *TargetVector) CreateTargetVector(conn *abapbuild.Connector) error {
 	conn.GetToken("/odata/aas_ocs_package")
 	tvJSON, err := json.Marshal(tv)
 	if err != nil {
-		return errors.Wrap(err, "Generating Request Data for Create Target Vector failed")
+		return fmt.Errorf("Generating Request Data for Create Target Vector failed: %w", err)
 	}
 	appendum := "/odata/aas_ocs_package/TargetVectorSet"
 	body, err := conn.Post(appendum, string(tvJSON))
 	if err != nil {
-		return errors.Wrap(err, "Creating Target Vector in AAKaaS failed")
+		return fmt.Errorf("Creating Target Vector in AAKaaS failed: %w", err)
 	}
 	var jTV jsonTargetVector
 	if err := json.Unmarshal(body, &jTV); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for create target vector: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for create target vector: "+string(body), err)
 	}
 	tv.ID = jTV.Tv.ID
 	tv.Status = jTV.Tv.Status
@@ -118,12 +120,12 @@ func (tv *TargetVector) PublishTargetVector(conn *abapbuild.Connector, targetVec
 	appendum := "/odata/aas_ocs_package/PublishTargetVector?Id='" + url.QueryEscape(tv.ID) + "'&Scope='" + url.QueryEscape(string(targetVectorScope)) + "'"
 	body, err := conn.Post(appendum, "")
 	if err != nil {
-		return errors.Wrap(err, "Publish Target Vector in AAKaaS failed")
+		return fmt.Errorf("Publish Target Vector in AAKaaS failed: %w", err)
 	}
 
 	var jTV jsonTargetVector
 	if err := json.Unmarshal(body, &jTV); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for publish target vector: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for publish target vector: "+string(body), err)
 	}
 
 	tv.Status = jTV.Tv.Status
@@ -139,12 +141,12 @@ func (tv *TargetVector) GetTargetVector(conn *abapbuild.Connector) error {
 	appendum := "/odata/aas_ocs_package/TargetVectorSet('" + url.QueryEscape(tv.ID) + "')"
 	body, err := conn.Get(appendum)
 	if err != nil {
-		return errors.Wrap(err, "Getting Target Vector details from AAKaaS failed")
+		return fmt.Errorf("Getting Target Vector details from AAKaaS failed: %w", err)
 	}
 
 	var jTV jsonTargetVector
 	if err := json.Unmarshal(body, &jTV); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for getting target vector details: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for getting target vector details: "+string(body), err)
 	}
 
 	tv.Status = jTV.Tv.Status
@@ -168,7 +170,7 @@ func (tv *TargetVector) PollForStatus(conn *abapbuild.Connector, targetStatus Ta
 			}
 		case <-ticker:
 			if err := tv.GetTargetVector(conn); err != nil {
-				return errors.Wrap(err, "Getting TargetVector status during polling resulted in an error")
+				return fmt.Errorf("Getting TargetVector status during polling resulted in an error: %w", err)
 			}
 			switch TargetVectorStatus(tv.PublishStatus) {
 			case TargetVectorPublishStatusRunning:

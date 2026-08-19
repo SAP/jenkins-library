@@ -2,12 +2,12 @@ package aakaas
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 const pvQueryURL string = "/odata/aas_ocs_package/xSSDAxC_Product_Version"
@@ -48,7 +48,7 @@ func (p *ProductVersion) ValidateAndResolveVersionFields() error {
 	}
 	var response jsonProductVersionValidationResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return errors.Wrap(err, "Unexpected AAKaaS response for Validate Product Version: "+string(body))
+		return fmt.Errorf("Unexpected AAKaaS response for Validate Product Version: "+string(body), err)
 	}
 	p.Name = response.Wrapper.Name
 	p.TechRelease = response.Wrapper.TechRelease

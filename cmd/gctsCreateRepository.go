@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
@@ -12,7 +13,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData) {
@@ -38,7 +38,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 
 	cookieJar, cookieErr := cookiejar.New(nil)
 	if cookieErr != nil {
-		return errors.Wrapf(cookieErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, cookieErr)
 	}
 	clientOptions := piperhttp.ClientOptions{
 		CookieJar: cookieJar,
@@ -75,7 +75,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	jsonBody, marshalErr := json.Marshal(reqBody)
 
 	if marshalErr != nil {
-		return errors.Wrapf(marshalErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, marshalErr)
 	}
 
 	header := make(http.Header)
@@ -100,19 +100,19 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 	}()
 
 	if resp == nil {
-		return errors.Errorf("creating repository on the ABAP system %v failed: %v", config.Host, httpErr)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %v", config.Host, httpErr)
 	}
 
 	bodyText, readErr := io.ReadAll(resp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, readErr)
 	}
 
 	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
 
 	if parsingErr != nil {
-		return errors.Wrapf(parsingErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, parsingErr)
 	}
 
 	if httpErr != nil {
@@ -125,7 +125,7 @@ func createRepository(config *gctsCreateRepositoryOptions, telemetryData *teleme
 			}
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
-		return errors.Wrapf(httpErr, "creating repository on the ABAP system %v failed", config.Host)
+		return fmt.Errorf("creating repository on the ABAP system %v failed: %w", config.Host, httpErr)
 	}
 
 	log.Entry().

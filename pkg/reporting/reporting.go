@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"text/template"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // IssueDetail represents any content that can be transformed into the body of a GitHub issue
@@ -225,12 +223,12 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	report := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportHTMLTemplate)
 	if err != nil {
-		return report, errors.Wrap(err, "failed to create HTML report template")
+		return report, fmt.Errorf("failed to create HTML report template: %w", err)
 	}
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, s)
 	if err != nil {
-		return report, errors.Wrap(err, "failed to execute HTML report template")
+		return report, fmt.Errorf("failed to execute HTML report template: %w", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -301,12 +299,12 @@ func (s ScanReport) ToMarkdown() ([]byte, error) {
 	report := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportMdTemplate)
 	if err != nil {
-		return report, errors.Wrap(err, "failed to create Markdown report template")
+		return report, fmt.Errorf("failed to create Markdown report template: %w", err)
 	}
 	buf := new(bytes.Buffer)
 	err = tmpl.Execute(buf, s)
 	if err != nil {
-		return report, errors.Wrap(err, "failed to execute Markdown report template")
+		return report, fmt.Errorf("failed to execute Markdown report template: %w", err)
 	}
 	return buf.Bytes(), nil
 }

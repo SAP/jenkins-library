@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 const jvmTarGz = "jvm.tar.gz"
@@ -49,7 +48,7 @@ func (s *Scan) ExecuteUAScanForMTA(config *ScanOptions, utils Utils) error {
 		mavenConfig := *config
 		mavenConfig.BuildTool = "maven"
 		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, config.ScanPath); err != nil {
-			return errors.Wrap(err, "failed to run scan for maven modules of mta")
+			return fmt.Errorf("failed to run scan for maven modules of mta: %w", err)
 		}
 	} else {
 		if pomFiles, _ := utils.Glob("**/pom.xml"); len(pomFiles) > 0 {
@@ -67,7 +66,7 @@ func (s *Scan) ExecuteUAScanForMultiModuleNPM(config *ScanOptions, utils Utils) 
 
 	packageJSONFiles, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
-		return errors.Wrap(err, "failed to find package.json files")
+		return fmt.Errorf("failed to find package.json files: %w", err)
 	}
 	if len(packageJSONFiles) > 0 {
 		npmConfig := *config
@@ -77,13 +76,13 @@ func (s *Scan) ExecuteUAScanForMultiModuleNPM(config *ScanOptions, utils Utils) 
 			modulePath, _ := filepath.Split(packageJSONFile)
 			projectName, err := getProjectNameFromPackageJSON(packageJSONFile, utils)
 			if err != nil {
-				return errors.Wrapf(err, "failed retrieve project name")
+				return fmt.Errorf("failed retrieve project name: %w", err)
 			}
 			npmConfig.ProjectName = projectName
 			// ToDo: likely needs to be refactored, AggregateProjectName should only be available if we want to force aggregation?
 			s.AggregateProjectName = projectName
 			if err := s.ExecuteUAScanInPath(&npmConfig, utils, modulePath); err != nil {
-				return errors.Wrapf(err, "failed to run scan for npm module %v", modulePath)
+				return fmt.Errorf("failed to run scan for npm module %v: %w", modulePath, err)
 			}
 		}
 	}
@@ -112,7 +111,7 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	utils.Stdout(&versionBuffer)
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-v")
 	if err != nil {
-		return errors.Wrap(err, "Failed to determine UA version")
+		return fmt.Errorf("Failed to determine UA version: %w", err)
 	}
 	s.AgentVersion = strings.TrimSpace(versionBuffer.String())
 	log.Entry().Debugf("Read UA version %v from Stdout", s.AgentVersion)
@@ -180,7 +179,7 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		exitCode := utils.GetExitCode()
 		log.Entry().Infof("WhiteSource scan failed with exit code %v", exitCode)
 		evaluateExitCode(exitCode)
-		return errors.Wrapf(err, "failed to execute WhiteSource scan with exit code %v", exitCode)
+		return fmt.Errorf("failed to execute WhiteSource scan with exit code %v: %w", exitCode, err)
 	}
 	return nil
 }
@@ -216,7 +215,7 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 	agentFile := config.AgentFileName
 	exists, err := utils.FileExists(agentFile)
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if file '%s' exists", agentFile)
+		return fmt.Errorf("failed to check if file '%s' exists: %w", agentFile, err)
 	}
 	if !exists {
 		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
@@ -231,7 +230,7 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 		}
 
 		if err != nil {
-			return errors.Wrapf(err, "failed to download unified agent from URL '%s' to file '%s'", config.AgentDownloadURL, agentFile)
+			return fmt.Errorf("failed to download unified agent from URL '%s' to file '%s': %w", config.AgentDownloadURL, agentFile, err)
 		}
 	}
 	return nil
@@ -258,13 +257,13 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 			retries++
 			if retries >= maxRetries {
 				log.Entry().Errorf("Download failed after %d attempts", retries)
-				return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
+				return "", fmt.Errorf("failed to download jre from URL '%s': %w", config.JreDownloadURL, err)
 			}
 			time.Sleep(1 * time.Second)
 		}
 
 		if err != nil {
-			return "", errors.Wrapf(err, "Even after retry failed to download jre from URL '%s'", config.JreDownloadURL)
+			return "", fmt.Errorf("Even after retry failed to download jre from URL '%s': %w", config.JreDownloadURL, err)
 		}
 
 		// ToDo: replace tar call with go library call
@@ -272,7 +271,7 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 
 		err = utils.RunExecutable("tar", fmt.Sprintf("--directory=%v", jvmDir), "--strip-components=1", "-xzf", jvmTarGz)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to extract %v", jvmTarGz)
+			return "", fmt.Errorf("failed to extract %v: %w", jvmTarGz, err)
 		}
 		log.Entry().Info("Java successfully installed")
 		javaPath = filepath.Join(jvmDir, "bin", "java")
@@ -298,11 +297,11 @@ func removeJre(javaPath string, utils Utils) error {
 func getProjectNameFromPackageJSON(packageJSONPath string, utils Utils) (string, error) {
 	fileContents, err := utils.FileRead(packageJSONPath)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to read file %v", packageJSONPath)
+		return "", fmt.Errorf("failed to read file %v: %w", packageJSONPath, err)
 	}
 	var packageJSON = make(map[string]interface{})
 	if err := json.Unmarshal(fileContents, &packageJSON); err != nil {
-		return "", errors.Wrapf(err, "failed to read file content of %v", packageJSONPath)
+		return "", fmt.Errorf("failed to read file content of %v: %w", packageJSONPath, err)
 	}
 
 	projectNameEntry, exists := packageJSON["name"]

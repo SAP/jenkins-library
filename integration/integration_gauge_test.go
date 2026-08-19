@@ -48,7 +48,7 @@ cd /test
 
 	reqNode := testcontainers.ContainerRequest{
 		Image: "timbru31/java-node:17-jdk-22",
-		Cmd:   []string{"tail", "-f"},
+		Cmd:   []string{"tail", "-f", "/dev/null"},
 		Mounts: testcontainers.Mounts(
 			testcontainers.BindMount(pwd, "/piperbin"),
 			testcontainers.BindMount(tempDir, "/test"),

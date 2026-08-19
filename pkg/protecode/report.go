@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
@@ -106,11 +104,11 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	htmlReportPath := filepath.Join(ReportsDirectory, "piper_protecode_report.html")
 	// Ensure reporting directory exists
 	if err := fileUtils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 	if err := fileUtils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Protecode Vulnerability Report", Target: htmlReportPath})
 
@@ -120,11 +118,11 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
 		err := fileUtils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return reportPaths, fmt.Errorf("failed to create reporting directory: %w", err)
 		}
 	}
 	if err := fileUtils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("protecodeExecuteScan_osvm_%v.json", reportShaProtecode([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, fmt.Errorf("failed to write json report: %w", err)
 	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later

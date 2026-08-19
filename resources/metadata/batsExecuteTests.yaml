@@ -44,7 +44,7 @@ spec:
         default: "src/test"
       - name: envVars
         type: "[]string"
-        description: "Injects environment variables to step execution. Format of value must be ['<KEY1>=<VALUE1>','<KEY2>=<VALUE2>']. Example: ['CONTAINER_NAME=piper-jenskins','IMAGE_NAME=my-image']"
+        description: "Injects environment variables to step execution. Format of value must be ['<KEY1>=<VALUE1>','<KEY2>=<VALUE2>']. Example: ['CONTAINER_NAME=piper-jenskins','IMAGE_NAME=my-image']."
         scope:
           - STEPS
           - STAGES

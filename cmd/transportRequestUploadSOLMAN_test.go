@@ -5,10 +5,11 @@ package cmd
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/solman"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type transportRequestUploadSOLMANMockUtils struct {

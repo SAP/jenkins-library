@@ -12,6 +12,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type helmMockUtilsBundle struct {
@@ -469,6 +470,114 @@ func TestRunHelmPackage(t *testing.T) {
 			assert.Equal(t, testCase.expectedExecCalls, utils.Calls)
 		})
 	}
+}
+
+func TestRunHelmTemplate(t *testing.T) {
+	renderedManifests := "apiVersion: apps/v1\nkind: Deployment\nspec:\n  template:\n    spec:\n      containers:\n        - image: registry.example.com/app:1.2.3\n"
+
+	t.Run("argument construction and stdout capture", func(t *testing.T) {
+		testTable := []struct {
+			name           string
+			config         HelmExecuteOptions
+			verbose        bool
+			expectedParams []string
+		}{
+			{
+				name:           "minimal",
+				config:         HelmExecuteOptions{ChartPath: ".", DeploymentName: "testChart"},
+				expectedParams: []string{"template", "testChart", "."},
+			},
+			{
+				name:           "with values files",
+				config:         HelmExecuteOptions{ChartPath: ".", DeploymentName: "testChart", HelmValues: []string{"a.yaml", "b.yaml"}},
+				expectedParams: []string{"template", "testChart", ".", "--values", "a.yaml", "--values", "b.yaml"},
+			},
+			{
+				name:           "with namespace",
+				config:         HelmExecuteOptions{ChartPath: ".", DeploymentName: "testChart", Namespace: "prod"},
+				expectedParams: []string{"template", "testChart", ".", "--namespace", "prod"},
+			},
+			{
+				name:           "verbose adds --debug",
+				config:         HelmExecuteOptions{ChartPath: ".", DeploymentName: "testChart"},
+				verbose:        true,
+				expectedParams: []string{"template", "testChart", ".", "--debug"},
+			},
+			{
+				name:           "all options combined",
+				config:         HelmExecuteOptions{ChartPath: "charts/app", DeploymentName: "testChart", HelmValues: []string{"v.yaml"}, Namespace: "ns"},
+				verbose:        true,
+				expectedParams: []string{"template", "testChart", "charts/app", "--values", "v.yaml", "--namespace", "ns", "--debug"},
+			},
+		}
+
+		for _, testCase := range testTable {
+			t.Run(testCase.name, func(t *testing.T) {
+				utils := helmMockUtilsBundle{
+					ExecMockRunner: &mock.ExecMockRunner{
+						StdoutReturn: map[string]string{"helm template.*": renderedManifests},
+					},
+				}
+				helmExecute := HelmExecute{
+					utils:   utils,
+					config:  testCase.config,
+					verbose: testCase.verbose,
+					stdout:  log.Writer(),
+				}
+
+				out, err := helmExecute.RunHelmTemplate()
+
+				require.NoError(t, err)
+				require.Len(t, utils.Calls, 1)
+				assert.Equal(t, "helm", utils.Calls[0].Exec)
+				assert.Equal(t, testCase.expectedParams, utils.Calls[0].Params)
+				assert.Equal(t, renderedManifests, string(out), "must return the manifests captured from stdout")
+			})
+		}
+	})
+
+	t.Run("missing ChartPath returns an error, no exec", func(t *testing.T) {
+		utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
+		helmExecute := HelmExecute{utils: utils, config: HelmExecuteOptions{DeploymentName: "testChart"}, stdout: log.Writer()}
+
+		out, err := helmExecute.RunHelmTemplate()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "chartPath value is mandatory")
+		assert.Nil(t, out)
+		assert.Empty(t, utils.Calls, "helm must not be invoked when ChartPath is missing")
+	})
+
+	t.Run("helm execution failure is surfaced", func(t *testing.T) {
+		utils := helmMockUtilsBundle{
+			ExecMockRunner: &mock.ExecMockRunner{
+				ShouldFailOnCommand: map[string]error{"helm template.*": fmt.Errorf("template boom")},
+			},
+		}
+		helmExecute := HelmExecute{utils: utils, config: HelmExecuteOptions{ChartPath: ".", DeploymentName: "testChart"}, stdout: log.Writer()}
+
+		out, err := helmExecute.RunHelmTemplate()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to execute helm template")
+		assert.Contains(t, err.Error(), "template boom")
+		assert.Nil(t, out)
+	})
+
+	t.Run("stdout is restored after the call", func(t *testing.T) {
+		utils := helmMockUtilsBundle{
+			ExecMockRunner: &mock.ExecMockRunner{
+				StdoutReturn: map[string]string{"helm template.*": renderedManifests},
+			},
+		}
+		originalStdout := log.Writer()
+		helmExecute := HelmExecute{utils: utils, config: HelmExecuteOptions{ChartPath: ".", DeploymentName: "testChart"}, stdout: originalStdout}
+
+		_, err := helmExecute.RunHelmTemplate()
+
+		require.NoError(t, err)
+		assert.Equal(t, originalStdout, utils.GetStdout(), "the capture buffer must be replaced by the original stdout after the call")
+	})
 }
 
 func TestRunHelmTest(t *testing.T) {

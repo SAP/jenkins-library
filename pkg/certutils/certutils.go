@@ -1,13 +1,13 @@
 package certutils
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 )
 
 // CertificateUpdate adds certificates to the given truststore
@@ -20,7 +20,7 @@ func CertificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 
 	caCerts, err := fileUtils.FileRead(caCertsFile)
 	if err != nil {
-		return errors.Wrapf(err, "failed to load file '%v'", caCertsFile)
+		return fmt.Errorf("failed to load file '%v': %w", caCertsFile, err)
 	}
 
 	byteCerts, err := CertificateDownload(certLinks, httpClient)
@@ -32,7 +32,7 @@ func CertificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 
 	err = fileUtils.FileWrite(caCertsFile, caCerts, 0644)
 	if err != nil {
-		return errors.Wrapf(err, "failed to update file '%v'", caCertsFile)
+		return fmt.Errorf("failed to update file '%v': %w", caCertsFile, err)
 	}
 	return nil
 }
@@ -48,12 +48,12 @@ func CertificateDownload(certLinks []string, client piperhttp.Sender) ([]byte, e
 		log.Entry().Debugf("Downloading CA certificate from URL: %s", certLink)
 		response, err := client.SendRequest(http.MethodGet, certLink, nil, nil, nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to load certificate from url")
+			return nil, fmt.Errorf("failed to load certificate from url: %w", err)
 		}
 
 		content, err := io.ReadAll(response.Body)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to read response")
+			return nil, fmt.Errorf("failed to read response: %w", err)
 		}
 		_ = response.Body.Close()
 		content = append(content, []byte("\n")...)

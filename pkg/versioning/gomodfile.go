@@ -1,13 +1,14 @@
 package versioning
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
-
-	"github.com/pkg/errors"
 )
 
 // GoMod utility to interact with Go Modules specific versioning
@@ -29,41 +30,60 @@ func (m *GoMod) init() error {
 	if len(m.buildDescriptorContent) == 0 {
 		content, err := m.readFile(m.path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", m.path)
+			return fmt.Errorf("failed to read file '%v': %w", m.path, err)
 		}
 		m.buildDescriptorContent = string(content)
 	}
 	return nil
 }
 
-// GetVersion returns the go.mod descriptor version property
+// GetVersion returns the version from a VERSION file, or falls back to go.mod
 func (m *GoMod) GetVersion() (string, error) {
-	buildDescriptorFilePath := m.path
-	var err error
-	if strings.Contains(m.path, "go.mod") {
-		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, m.fileExists)
-		if err != nil {
-			err = m.init()
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to read file '%v'", m.path)
-			}
-
-			parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
-			if err != nil {
-				return "", errors.Wrap(err, "failed to parse go.mod file")
-			}
-			if parsed.Module.Mod.Version != "" {
-				return parsed.Module.Mod.Version, nil
-			}
-
-			return "", errors.Wrap(err, "failed to retrieve version")
-		}
+	// If path is not go.mod, just read it as a version file
+	if filepath.Base(m.path) != "go.mod" {
+		return m.readVersionFile(m.path)
 	}
+
+	// For go.mod projects, first try to find a dedicated version file
+	versionFile, versionFileErr := m.findVersionFile()
+	if versionFileErr == nil {
+		return m.readVersionFile(versionFile)
+	}
+
+	// Fall back to extracting version from go.mod itself
+	version, gomodErr := m.extractVersionFromGoMod()
+	if gomodErr != nil {
+		return "", fmt.Errorf("no version file found (%v) and %w", versionFileErr, gomodErr)
+	}
+	if version == "" {
+		return "", fmt.Errorf("no version file found (%v) and go.mod has no version", versionFileErr)
+	}
+	return version, nil
+}
+
+func (m *GoMod) findVersionFile() (string, error) {
+	return searchDescriptor([]string{"version.txt", "VERSION"}, m.fileExists)
+}
+
+func (m *GoMod) readVersionFile(path string) (string, error) {
 	artifact := &Versionfile{
-		path:             buildDescriptorFilePath,
+		path:             path,
 		versioningScheme: m.VersioningScheme(),
 	}
 	return artifact.GetVersion()
+}
+
+func (m *GoMod) extractVersionFromGoMod() (string, error) {
+	if err := m.init(); err != nil {
+		return "", fmt.Errorf("failed to read go.mod: %w", err)
+	}
+
+	parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse go.mod: %w", err)
+	}
+
+	return parsed.Module.Mod.Version, nil
 }
 
 // SetVersion sets the go.mod descriptor version property
@@ -86,7 +106,7 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 
 	parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
 	if err != nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
+		return result, fmt.Errorf("failed to parse go.mod file: %w", err)
 	}
 
 	if parsed.Module == nil {
@@ -95,7 +115,7 @@ func (m *GoMod) GetCoordinates() (Coordinates, error) {
 
 	// validate module path as defined by golang
 	if err = module.CheckPath(parsed.Module.Mod.Path); err != nil {
-		return result, errors.Wrap(err, "failed to parse go.mod file")
+		return result, fmt.Errorf("failed to parse go.mod file: %w", err)
 	}
 
 	if parsed.Module.Mod.Path != "" {

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
 )
 
 type jwtPayload struct {
@@ -45,12 +44,12 @@ func getJWTPayload(token string) (*jwtPayload, error) {
 
 	decodedBytes, err := base64.RawStdEncoding.DecodeString(parts[1])
 	if err != nil {
-		return nil, errors.Wrap(err, "JWT payload couldn't be decoded: %s")
+		return nil, fmt.Errorf("JWT payload couldn't be decoded: %w", err)
 	}
 
 	var payload jwtPayload
 	if err = json.Unmarshal(decodedBytes, &payload); err != nil {
-		return nil, errors.Wrap(err, "JWT unmarshal failed")
+		return nil, fmt.Errorf("JWT unmarshal failed: %w", err)
 	}
 
 	return &payload, nil

@@ -13,8 +13,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
-
-	"github.com/pkg/errors"
 )
 
 type CheckmarxOneReportData struct {
@@ -29,12 +27,14 @@ type CheckmarxOneReportData struct {
 	GroupID         string     `json:"groupID"`
 	DeepLink        string     `json:"deepLink"`
 	Preset          string     `json:"preset"`
+	IACPreset       string     `json:"iacPreset"`
 	ScanType        string     `json:"scanType"`
 	Findings        *[]Finding `json:"findings"`
 }
 
 type Finding struct {
 	ClassificationName string         `json:"classificationName"`
+	Engine             string         `json:"engine"`
 	Total              int            `json:"total,omitempty"`
 	Audited            *int           `json:"audited,omitempty"`
 	Confirmed          int            `json:"confirmed,omitempty"`
@@ -63,10 +63,13 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 			{Description: "Scan start", Details: fmt.Sprint((*data)["ScanStart"])},
 			{Description: "Scan duration", Details: fmt.Sprint((*data)["ScanTime"])},
 			{Description: "Scan type", Details: fmt.Sprint((*data)["ScanType"])},
-			{Description: "Preset", Details: fmt.Sprint((*data)["Preset"])},
+			{Description: "Preset", Details: fmt.Sprint((*data)["SastPreset"])},
+			{Description: "IAC Preset", Details: fmt.Sprint((*data)["IacPreset"])},
 			{Description: "Report creation time", Details: fmt.Sprint((*data)["ReportCreationTime"])},
-			{Description: "Lines of code scanned", Details: fmt.Sprint((*data)["LinesOfCodeScanned)"])},
-			{Description: "Files scanned", Details: fmt.Sprint((*data)["FilesScanned)"])},
+			{Description: "Lines of code scanned", Details: fmt.Sprint((*data)["LinesOfCodeScanned"])},
+			{Description: "Files scanned", Details: fmt.Sprint((*data)["FilesScanned"])},
+			{Description: "IAC Lines of code scanned", Details: fmt.Sprint((*data)["IacLinesOfCodeScanned"])},
+			{Description: "IAC Files scanned", Details: fmt.Sprint((*data)["IacFilesScanned"])},
 			{Description: "Tool version", Details: fmt.Sprint((*data)["ToolVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
@@ -153,7 +156,7 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		ApplicationID:   fmt.Sprint((*data)["Application"]),
 		ApplicationName: fmt.Sprint((*data)["ApplicationFullPathOnReportDate"]),
 		DeepLink:        fmt.Sprint((*data)["DeepLink"]),
-		Preset:          fmt.Sprint((*data)["Preset"]),
+		Preset:          fmt.Sprint((*data)["SastPreset"]),
 		ToolVersion:     fmt.Sprint((*data)["ToolVersion"]),
 		ScanType:        fmt.Sprint((*data)["ScanType"]),
 		ProjectID:       fmt.Sprint((*data)["ProjectId"]),
@@ -224,13 +227,13 @@ func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path
 	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_checkmarxone_report.json")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	file, _ := json.Marshal(jsonReport)
 	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write CheckmarxOne JSON compliance report")
+		return reportPaths, fmt.Errorf("failed to write CheckmarxOne JSON compliance report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne JSON Compliance Report", Target: jsonComplianceReportPath})
 
@@ -238,14 +241,14 @@ func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path
 }
 
 // WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
-func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+func WriteSASTSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
-	sarifReportPath := filepath.Join(ReportsDirectory, "result.sarif")
+	sarifReportPath := filepath.Join(ReportsDirectory, "result-sast.sarif")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
@@ -260,9 +263,39 @@ func WriteSarif(sarif format.SARIF) ([]piperutils.Path, error) {
 	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write CheckmarxOne SARIF report")
+		return reportPaths, fmt.Errorf("failed to write CheckmarxOne SAST SARIF report: %w", err)
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SARIF Report", Target: sarifReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SAST SARIF Report", Target: sarifReportPath})
+
+	return reportPaths, nil
+}
+
+// WriteSarif writes a json file to disk as a .sarif if it respects the specification declared in format.SARIF
+func WriteIACSarif(sarif format.SARIF) ([]piperutils.Path, error) {
+	utils := piperutils.Files{}
+	reportPaths := []piperutils.Path{}
+
+	sarifReportPath := filepath.Join(ReportsDirectory, "result-iac.sarif")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
+	}
+
+	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
+	buffer := new(bytes.Buffer)
+	// create JSON encoder for buffer
+	bufEncoder := json.NewEncoder(buffer)
+	// set options
+	bufEncoder.SetEscapeHTML(false)
+	bufEncoder.SetIndent("", "  ")
+	//encode to buffer
+	bufEncoder.Encode(sarif)
+	log.Entry().Info("Writing file to disk: ", sarifReportPath)
+	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, fmt.Errorf("failed to write CheckmarxOne SAST SARIF report: %w", err)
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne SAST SARIF Report", Target: sarifReportPath})
 
 	return reportPaths, nil
 }
@@ -276,11 +309,11 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	htmlReportPath := filepath.Join(ReportsDirectory, "piper_checkmarxone_report.html")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne Report", Target: htmlReportPath})
 
@@ -290,11 +323,11 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+			return reportPaths, fmt.Errorf("failed to create reporting directory: %w", err)
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("checkmarxOneExecuteScan_sast_%v.json", reportShaCheckmarxOne([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, fmt.Errorf("failed to write json report: %w", err)
 	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later

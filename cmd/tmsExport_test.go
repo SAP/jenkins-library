@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"testing"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/tms"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -99,6 +99,10 @@ func newBlackduckMockSystem(config detectExecuteScanOptions) blackduckSystem {
 			"https://my.blackduck.system/api/projects/5ca86e11/versions/a6c94786/policy-status":                                                 policyStatusContent,
 			"https://my.blackduck.system/api/projects?q=name%3ARapid_scan_on_PRs":                                                               projectContentRapidScan,
 			"https://my.blackduck.system/api/projects/654ggfdgf-1983-4e7b-97d4-eb1a0aeffbbf/versions?limit=100&offset=0":                        projectVersionContentRapid,
+			"https://my.blackduck.system/api/projects/33716152-0d8a-42b4-a08e-433043f1069f/versions/519053ed-e753-4962-b396-f6e263337ddc/components/2e03fc5f-55b8-43b8-80cd-b3f2cee4bd41/versions/f19941ef-4421-4f08-9675-a905ed076e6e/policy-rules": componentPolicyRules,
+			"https://my.blackduck.system/api/policy-rules/f3e0eb8f-3af2-4656-827e-97769211e19a": policyRuleLicense,
+			"https://my.blackduck.system/api/policy-rules/112ba222-3bc0-4341-89c3-1b1053760722": policyRuleOperational,
+			"https://my.blackduck.system/api/policy-rules/212ba222-3bc0-4341-89c3-1b1053760722": policyRuleLicense,
 		},
 		header: map[string]http.Header{},
 	}
@@ -161,15 +165,41 @@ const (
             {
                 "componentName": "Spring Framework",
                 "componentVersionName": "5.3.9",
-                "policyStatus": "IN_VIOLATION"
-            }, {
+                "policyStatus": "IN_VIOLATION",
+				"_meta": {
+					"links": [
+						{
+							"rel": "policy-rules",
+            				"href": "https://my.blackduck.system/api/projects/33716152-0d8a-42b4-a08e-433043f1069f/versions/519053ed-e753-4962-b396-f6e263337ddc/components/2e03fc5f-55b8-43b8-80cd-b3f2cee4bd41/versions/f19941ef-4421-4f08-9675-a905ed076e6e/policy-rules"
+						}
+					]
+				}
+            },
+			{
                 "componentName": "Apache Tomcat",
                 "componentVersionName": "9.0.52",
-                "policyStatus": "IN_VIOLATION"
-            }, {
+                "policyStatus": "IN_VIOLATION",
+				"_meta": {
+					"links": [
+						{
+							"rel": "policy-rules",
+            				"href": "https://my.blackduck.system/api/projects/33716152-0d8a-42b4-a08e-433043f1069f/versions/519053ed-e753-4962-b396-f6e263337ddc/components/2e03fc5f-55b8-43b8-80cd-b3f2cee4bd41/versions/f19941ef-4421-4f08-9675-a905ed076e6e/policy-rules"
+						}
+					]
+				}
+            },
+			{
                 "componentName": "Apache Log4j",
                 "componentVersionName": "4.5.16",
-                "policyStatus": "UNKNOWN"
+                "policyStatus": "UNKNOWN",
+				"_meta": {
+					"links": [
+						{
+							"rel": "policy-rules",
+            				"href": "https://my.blackduck.system/api/projects/33716152-0d8a-42b4-a08e-433043f1069f/versions/519053ed-e753-4962-b396-f6e263337ddc/components/3e03fc5f-55b8-43b8-80cd-b3f2cee4bd41/versions/f19941ef-4421-4f08-9675-a905ed076e6e/policy-rules"
+						}
+					]
+				}
             }
         ]
     }`
@@ -261,6 +291,61 @@ const (
             }
         ]
     }`
+	componentPolicyRules = `{
+	  "totalCount": 2,
+	  "items": [
+		{
+		  "name": "license policy rule overridden",
+		  "enabled": true,
+		  "policyApprovalStatus": "IN_VIOLATION_OVERRIDDEN",
+		  "_meta": {
+			"allow": [
+			  "DELETE",
+			  "GET",
+			  "PUT"
+			],
+			"href": "https://my.blackduck.system/api/policy-rules/f3e0eb8f-3af2-4656-827e-97769211e19a",
+			"links": []
+		  }
+		},
+		{
+		  "name": "operational policy rule",
+		  "enabled": true,
+		  "policyApprovalStatus": "IN_VIOLATION",
+		  "_meta": {
+			"allow": [
+			  "DELETE",
+			  "GET",
+			  "PUT"
+			],
+			"href": "https://my.blackduck.system/api/policy-rules/112ba222-3bc0-4341-89c3-1b1053760722",
+			"links": []
+		  }
+		},
+		{
+		  "name": "license policy rule violated",
+		  "enabled": true,
+		  "policyApprovalStatus": "IN_VIOLATION",
+		  "_meta": {
+			"allow": [
+			  "DELETE",
+			  "GET",
+			  "PUT"
+			],
+			"href": "https://my.blackduck.system/api/policy-rules/212ba222-3bc0-4341-89c3-1b1053760722",
+			"links": []
+		  }
+		}
+	  ]
+	}`
+	policyRuleLicense = `{
+  			"name": "license policy rule",
+			"category": "LICENSE"
+	}`
+	policyRuleOperational = `{
+  			"name": "operational policy rule",
+			"category": "OPERATIONAL"
+	}`
 )
 
 func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
@@ -885,26 +970,20 @@ func TestIsActiveVulnerability(t *testing.T) {
 	})
 }
 
-func TestIsActivePolicyViolation(t *testing.T) {
+func TestCountComponentsActiveLicensePolicyViolations(t *testing.T) {
 	t.Parallel()
-	t.Run("Case true", func(t *testing.T) {
-		assert.True(t, isActivePolicyViolation("IN_VIOLATION"))
-	})
-	t.Run("Case False", func(t *testing.T) {
-		assert.False(t, isActivePolicyViolation("NOT_IN_VIOLATION"))
-	})
-}
-
-func TestGetActivePolicyViolations(t *testing.T) {
-	t.Parallel()
-	t.Run("Case true", func(t *testing.T) {
+	t.Run("components with active license policy violations", func(t *testing.T) {
 		config := detectExecuteScanOptions{Token: "token", ServerURL: "https://my.blackduck.system", ProjectName: "SHC-PiperTest", Version: "", CustomScanVersion: "1.0"}
 		sys := newBlackduckMockSystem(config)
 
 		components, err := sys.Client.GetComponents("SHC-PiperTest", "1.0")
-		assert.NoError(t, err)
-		assert.Equal(t, 2, getActivePolicyViolations(components))
+		require.NoError(t, err)
+
+		violationCount, err := countComponentsActiveLicensePolicyViolations(&sys, components)
+		require.NoError(t, err)
+		assert.Equal(t, 2, violationCount)
 	})
+
 }
 
 func TestGetVulnerabilitiesWithComponents(t *testing.T) {

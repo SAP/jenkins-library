@@ -8,7 +8,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 func apiProxyDownload(config apiProxyDownloadOptions, telemetryData *telemetry.CustomData) {
@@ -41,17 +40,17 @@ func runApiProxyDownload(config *apiProxyDownloadOptions, telemetryData *telemet
 		Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
-		return errors.Wrap(err, "failed to fetch Bearer Token")
+		return fmt.Errorf("failed to fetch Bearer Token: %w", err)
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := http.MethodGet
 	downloadResp, httpErr := httpClient.SendRequest(httpMethod, downloadArtifactURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, downloadArtifactURL)
+		return fmt.Errorf("HTTP %v request to %v failed with error: %w", httpMethod, downloadArtifactURL, httpErr)
 	}
 	if downloadResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return fmt.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 	failureMessage := "Failed to download API Proxy artefact"
 	httpFileDownloadRequestParameters := cpi.HttpFileDownloadRequestParameters{ErrMessage: failureMessage, FileDownloadPath: config.DownloadPath, Response: downloadResp}

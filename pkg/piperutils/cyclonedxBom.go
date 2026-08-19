@@ -9,6 +9,8 @@ import (
 
 	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/moby/buildkit/util/purl"
+	purlParser "github.com/package-url/packageurl-go"
 )
 
 // CycloneDX 1.4 BOM structure
@@ -69,17 +71,28 @@ func GetBomSchemaVersion(bomFilePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return bomSchemaVersionFromXmlns(bom.Xmlns)
+}
 
-	if strings.Contains(bom.Xmlns, "/1.4") {
+// GetBomSchemaVersionFromContent extracts the CycloneDX schema version from BOM content bytes
+func GetBomSchemaVersionFromContent(bomContent []byte) (string, error) {
+	var bom Bom
+	if err := xml.Unmarshal(bomContent, &bom); err != nil {
+		return "", fmt.Errorf("failed to parse BOM: %w", err)
+	}
+	return bomSchemaVersionFromXmlns(bom.Xmlns)
+}
+
+func bomSchemaVersionFromXmlns(xmlns string) (string, error) {
+	if strings.Contains(xmlns, "/1.4") {
 		return "1.4", nil
 	}
-	if strings.Contains(bom.Xmlns, "/1.5") {
+	if strings.Contains(xmlns, "/1.5") {
 		return "1.5", nil
 	}
-	if strings.Contains(bom.Xmlns, "/1.6") {
+	if strings.Contains(xmlns, "/1.6") {
 		return "1.6", nil
 	}
-
 	return "", fmt.Errorf("unable to determine CycloneDX version from BOM")
 }
 
@@ -185,4 +198,64 @@ func UpdatePurl(sbomPath string, newPurl string) error {
 
 	log.Entry().Debugf("SBOM updated successfully for: %s", sbomPath)
 	return nil
+}
+
+// BuildRegistryFreeDockerPurl constructs a clean, registry-free docker PURL of
+// the form pkg:docker/<name>@<version> for the given image name and version.
+//
+// Syft omits the PURL for the parent/root component of a container-image BOM
+// (https://github.com/anchore/syft/issues/1408); callers use this to construct
+// a replacement and inject it via UpdatePurl. The registry (host:port) is
+// stripped so the emitted PURL is deterministic and does not leak the registry
+// host. It also returns the parsed registry, name and version (from the
+// intermediate PURL) so callers that need them — e.g. to build build-artifact
+// coordinates — do not have to parse again.
+func BuildRegistryFreeDockerPurl(name, version string) (registryFreePurl, registry, parsedName, parsedVersion string, err error) {
+	constructedPurl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("unable to create purl from reference: %w", err)
+	}
+
+	registry, parsedName, parsedVersion, err = ParsePurl(constructedPurl)
+	// Defensive: constructedPurl was just produced by RefToPURL, so ParsePurl
+	// cannot realistically fail on it — not reachable by input in a unit test.
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("unable to parse purl: %w", err)
+	}
+
+	registryFreePurl, err = purl.RefToPURL("docker", fmt.Sprintf("%s:%s", parsedName, parsedVersion), nil)
+	// Defensive: parsedName/parsedVersion come from an already-validated PURL, so
+	// this second RefToPURL cannot realistically fail — not reachable by input.
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("unable to create registry-free purl from reference: %w", err)
+	}
+
+	return registryFreePurl, registry, parsedName, parsedVersion, nil
+}
+
+// ParsePurl splits a docker PURL string into its registry, name and version.
+// A PURL without a registry-like namespace defaults the registry to docker.io.
+func ParsePurl(purlStr string) (registry, name, version string, err error) {
+	p, err := purlParser.FromString(purlStr)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	// Split namespace to extract registry
+	// E.g., namespace = "ghcr.io/my-org"
+	namespace := p.Namespace
+	if namespace == "" {
+		registry = "docker.io"
+	} else {
+		nsParts := strings.Split(namespace, "/")
+		if strings.Contains(nsParts[0], ".") {
+			registry = nsParts[0]
+		} else {
+			registry = "docker.io"
+		}
+	}
+
+	name = p.Name
+	version = p.Version
+	return
 }

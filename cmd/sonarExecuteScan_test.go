@@ -12,9 +12,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"errors"
+
 	"github.com/bmatcuk/doublestar"
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

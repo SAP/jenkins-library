@@ -17,8 +17,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/piper-validation/fortify-client-go/models"
-
-	"github.com/pkg/errors"
 )
 
 type FortifyReportData struct {
@@ -132,13 +130,13 @@ func WriteJSONReport(jsonReport FortifyReportData) ([]piperutils.Path, error) {
 	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_fortify_report.json")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	file, _ := json.Marshal(jsonReport)
 	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write fortify json compliance report")
+		return reportPaths, fmt.Errorf("failed to write fortify json compliance report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify JSON Compliance Report", Target: jsonComplianceReportPath})
 
@@ -152,7 +150,7 @@ func WriteSarif(sarif format.SARIF, fileName string) ([]piperutils.Path, error) 
 	sarifReportPath := filepath.Join(ReportsDirectory, fileName)
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	// This solution did not allow for special HTML characters. If this causes any issue, revert l148-l157 with these two
@@ -171,7 +169,7 @@ func WriteSarif(sarif format.SARIF, fileName string) ([]piperutils.Path, error) 
 	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, buffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write fortify SARIF report")
+		return reportPaths, fmt.Errorf("failed to write fortify SARIF report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify SARIF Report", Target: sarifReportPath})
 
@@ -185,7 +183,7 @@ func WriteGzipSarif(sarif format.SARIF, fileName string) ([]piperutils.Path, err
 	sarifReportPath := filepath.Join(ReportsDirectory, fileName)
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	// HTML characters will most likely be present: we need to use encode: create a buffer to hold JSON data
@@ -208,7 +206,7 @@ func WriteGzipSarif(sarif format.SARIF, fileName string) ([]piperutils.Path, err
 	log.Entry().Info("Writing file to disk: ", sarifReportPath)
 	if err := utils.FileWrite(sarifReportPath, gzBuffer.Bytes(), 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write Fortify SARIF gzip report")
+		return reportPaths, fmt.Errorf("failed to write Fortify SARIF gzip report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify SARIF gzip Report", Target: sarifReportPath})
 
@@ -224,11 +222,11 @@ func WriteCustomReports(scanReport reporting.ScanReport) ([]piperutils.Path, err
 	htmlReportPath := filepath.Join(ReportsDirectory, "piper_fortify_report.html")
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "Fortify Report", Target: htmlReportPath})
 

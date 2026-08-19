@@ -5,9 +5,10 @@ package solman
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestSolmanUpload(t *testing.T) {

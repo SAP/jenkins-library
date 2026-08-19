@@ -6,18 +6,19 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 )
 
 var atcFailure, aUnitFailure bool
@@ -55,26 +56,15 @@ func rungctsExecuteABAPQualityChecks(config *gctsExecuteABAPQualityChecksOptions
 	const repository = "repository"
 	const packages = "packages"
 
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
+	clientOptions, err := gcts.NewHttpClientOptions(config.Username, config.Password, config.Proxy, config.SkipSSLVerification)
+	if err != nil {
+		return err
 	}
-
-	maxRetries := -1
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar:                 cookieJar,
-		Username:                  config.Username,
-		Password:                  config.Password,
-		MaxRetries:                maxRetries,
-		TransportSkipVerification: config.SkipSSLVerification,
-	}
-
 	httpClient.SetOptions(clientOptions)
 
 	log.Entry().Infof("start of gctsExecuteABAPQualityChecks step with configuration values: %v", config)
 
 	var objects []repoObject
-	var err error
 
 	log.Entry().Info("scope:", config.Scope)
 
@@ -166,18 +156,18 @@ func getLocalObjects(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: localChangedObjects you need to specify a commit")
+		return []repoObject{}, fmt.Errorf("For scope: localChangedObjects you need to specify a commit")
 
 	}
 
 	history, err := getHistory(config, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
+		return []repoObject{}, fmt.Errorf("get local changed objects failed: %w", err)
 	}
 
 	if len(history.Result) == 0 {
 
-		return []repoObject{}, errors.Wrap(err, "no activities (from commit - to commit) were found")
+		return []repoObject{}, fmt.Errorf("no activities (from commit - to commit) were found: %w", err)
 	}
 
 	fromCommit := history.Result[0].FromCommit
@@ -188,7 +178,7 @@ func getLocalObjects(config *gctsExecuteABAPQualityChecksOptions, client piperht
 	// object delta between FromCommit and ToCommit retrieved from Activities Tab in gCTS
 	resp, err := getObjectDifference(config, fromCommit, toCommit, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
+		return []repoObject{}, fmt.Errorf("get local changed objects failed: %w", err)
 	}
 
 	for _, object := range resp.Objects {
@@ -212,14 +202,14 @@ func getRemoteObjects(config *gctsExecuteABAPQualityChecksOptions, client piperh
 
 	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: remoteChangedObjects you need to specify a commit")
+		return []repoObject{}, fmt.Errorf("For scope: remoteChangedObjects you need to specify a commit")
 
 	}
 
 	commitList, err := getCommitList(config, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get remote changed objects failed")
+		return []repoObject{}, fmt.Errorf("get remote changed objects failed: %w", err)
 	}
 
 	for i, commit := range commitList.Commits {
@@ -237,7 +227,7 @@ func getRemoteObjects(config *gctsExecuteABAPQualityChecksOptions, client piperh
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.Commit, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get remote changed objects failed")
+		return []repoObject{}, fmt.Errorf("get remote changed objects failed: %w", err)
 	}
 
 	for _, object := range resp.Objects {
@@ -260,18 +250,18 @@ func getLocalPackages(config *gctsExecuteABAPQualityChecksOptions, client piperh
 
 	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: localChangedPackages you need to specify a commit")
+		return []repoObject{}, fmt.Errorf("For scope: localChangedPackages you need to specify a commit")
 
 	}
 
 	history, err := getHistory(config, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get local changed objects failed")
+		return []repoObject{}, fmt.Errorf("get local changed objects failed: %w", err)
 	}
 
 	if len(history.Result) == 0 {
 
-		return []repoObject{}, errors.Wrap(err, "no activities (from commit - to commit) were found")
+		return []repoObject{}, fmt.Errorf("no activities (from commit - to commit) were found: %w", err)
 	}
 
 	fromCommit := history.Result[0].FromCommit
@@ -283,7 +273,7 @@ func getLocalPackages(config *gctsExecuteABAPQualityChecksOptions, client piperh
 	resp, err := getObjectDifference(config, fromCommit, config.Commit, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
+		return []repoObject{}, fmt.Errorf("get local changed packages failed: %w", err)
 
 	}
 
@@ -293,7 +283,7 @@ func getLocalPackages(config *gctsExecuteABAPQualityChecksOptions, client piperh
 	for _, object := range resp.Objects {
 		objInfo, err := getObjectInfo(config, client, object.Name, object.Type)
 		if err != nil {
-			return []repoObject{}, errors.Wrap(err, "get local changed packages failed")
+			return []repoObject{}, fmt.Errorf("get local changed packages failed: %w", err)
 		}
 		if myPackages[objInfo.Devclass] {
 
@@ -320,14 +310,14 @@ func getRemotePackages(config *gctsExecuteABAPQualityChecksOptions, client piper
 
 	if config.Commit == "" {
 
-		return []repoObject{}, errors.Errorf("For scope: remoteChangedPackages you need to specify a commit")
+		return []repoObject{}, fmt.Errorf("For scope: remoteChangedPackages you need to specify a commit")
 
 	}
 
 	commitList, err := getCommitList(config, client)
 
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
+		return []repoObject{}, fmt.Errorf("get remote changed packages failed: %w", err)
 	}
 
 	for i, commit := range commitList.Commits {
@@ -338,14 +328,14 @@ func getRemotePackages(config *gctsExecuteABAPQualityChecksOptions, client piper
 	}
 
 	if currentRemoteCommit == "" {
-		return []repoObject{}, errors.Wrap(err, "current remote commit was not found")
+		return []repoObject{}, fmt.Errorf("current remote commit was not found: %w", err)
 
 	}
 	log.Entry().Info("current commit in the remote repository: ", currentRemoteCommit)
 	//object delta between the commit that triggered the pipeline and the current commit in the remote repository
 	resp, err := getObjectDifference(config, currentRemoteCommit, config.Commit, client)
 	if err != nil {
-		return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
+		return []repoObject{}, fmt.Errorf("get remote changed packages failed: %w", err)
 	}
 
 	myPackages := map[string]bool{}
@@ -353,7 +343,7 @@ func getRemotePackages(config *gctsExecuteABAPQualityChecksOptions, client piper
 	for _, object := range resp.Objects {
 		objInfo, err := getObjectInfo(config, client, object.Name, object.Type)
 		if err != nil {
-			return []repoObject{}, errors.Wrap(err, "get remote changed packages failed")
+			return []repoObject{}, fmt.Errorf("get remote changed packages failed: %w", err)
 		}
 		if myPackages[objInfo.Devclass] {
 
@@ -395,14 +385,14 @@ func getRepositoryObjects(config *gctsExecuteABAPQualityChecksOptions, client pi
 	}()
 
 	if httpErr != nil {
-		return []repoObject{}, errors.Wrap(httpErr, "could not get repository objects")
+		return []repoObject{}, fmt.Errorf("could not get repository objects: %w", httpErr)
 	} else if resp == nil {
 		return []repoObject{}, errors.New("could not get repository objects: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoResp)
 	if parsingErr != nil {
-		return []repoObject{}, errors.Errorf("%v", parsingErr)
+		return []repoObject{}, fmt.Errorf("%v", parsingErr)
 	}
 
 	var repositoryObjects []repoObject
@@ -451,14 +441,14 @@ func getPackages(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 	}()
 
 	if httpErr != nil {
-		return []repoObject{}, errors.Wrap(httpErr, "get packages failed: could not get repository objects")
+		return []repoObject{}, fmt.Errorf("get packages failed: could not get repository objects: %w", httpErr)
 	} else if resp == nil {
 		return []repoObject{}, errors.New("get packages failed: could not get repository objects: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoResp)
 	if parsingErr != nil {
-		return []repoObject{}, errors.Errorf("%v", parsingErr)
+		return []repoObject{}, fmt.Errorf("%v", parsingErr)
 	}
 	// chose only DEVC from repository objects
 	for _, object := range repoResp.Objects {
@@ -499,7 +489,7 @@ func discoverServer(config *gctsExecuteABAPQualityChecksOptions, client piperhtt
 	}()
 
 	if httpErr != nil {
-		return nil, errors.Wrap(httpErr, "discovery of the ABAP server failed")
+		return nil, fmt.Errorf("discovery of the ABAP server failed: %w", httpErr)
 	} else if disc == nil || disc.Header == nil {
 		return nil, errors.New("discovery of the ABAP server failed: did not retrieve a HTTP response")
 	}
@@ -549,7 +539,7 @@ func executeAUnitTest(config *gctsExecuteABAPQualityChecksOptions, client piperh
 
 	resp, err := runAUnitTest(config, client, xmlBody)
 	if err != nil {
-		return errors.Wrap(err, "execute of Aunit test has failed")
+		return fmt.Errorf("execute of Aunit test has failed: %w", err)
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &result)
@@ -586,12 +576,12 @@ func runAUnitTest(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.
 	discHeader, discError := discoverServer(config, client)
 
 	if discError != nil {
-		return response, errors.Wrap(discError, "run of unit tests failed")
+		return response, fmt.Errorf("run of unit tests failed: %w", discError)
 	}
 
 	if discHeader.Get("X-Csrf-Token") == "" {
 
-		return response, errors.Errorf("could not retrieve x-csrf-token from server")
+		return response, fmt.Errorf("could not retrieve x-csrf-token from server")
 	}
 
 	header := make(http.Header)
@@ -602,7 +592,7 @@ func runAUnitTest(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.
 	response, httpErr := client.SendRequest("POST", url, bytes.NewBuffer(xml), header, nil)
 
 	if httpErr != nil {
-		return response, errors.Wrap(httpErr, "run of unit tests failed")
+		return response, fmt.Errorf("run of unit tests failed: %w", httpErr)
 	} else if response == nil {
 		return response, errors.New("run of unit tests failed: did not retrieve a HTTP response")
 	}
@@ -638,13 +628,13 @@ func parseUnitResult(config *gctsExecuteABAPQualityChecksOptions, client piperht
 			aUnitError.Line, err = findLine(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName, objectType)
 			log.Entry().Error("line: ", aUnitError.Line)
 			if err != nil {
-				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
+				return parsedResult, fmt.Errorf("parse AUnit Result failed: %w", err)
 
 			}
 			fileName, err = getFileName(config, client, program.Alerts.Alert.Stack.StackEntry.URI, objectName)
 			log.Entry().Error("file path: ", aUnitError.Line)
 			if err != nil {
-				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
+				return parsedResult, fmt.Errorf("parse AUnit Result failed: %w", err)
 
 			}
 
@@ -715,7 +705,7 @@ func parseUnitResult(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 			fileName, err = getFileName(config, client, testClass.URI, objectName)
 			if err != nil {
-				return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
+				return parsedResult, fmt.Errorf("parse AUnit Result failed: %w", err)
 
 			}
 		}
@@ -724,7 +714,7 @@ func parseUnitResult(config *gctsExecuteABAPQualityChecksOptions, client piperht
 		log.Entry().Error("file path: ", aUnitFile.Name)
 		if err != nil {
 
-			return parsedResult, errors.Wrap(err, "parse AUnit Result failed")
+			return parsedResult, fmt.Errorf("parse AUnit Result failed: %w", err)
 		}
 		parsedResult.File = append(parsedResult.File, aUnitFile)
 		aUnitFile = file{}
@@ -794,19 +784,19 @@ func executeATCCheck(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 	worklist, err := getWorklist(config, client)
 	if err != nil {
-		return errors.Wrap(err, "execution of ATC Checks failed")
+		return fmt.Errorf("execution of ATC Checks failed: %w", err)
 	}
 
 	err = startATCRun(config, client, xmlBody, worklist)
 
 	if err != nil {
-		return errors.Wrap(err, "execution of ATC Checks failed")
+		return fmt.Errorf("execution of ATC Checks failed: %w", err)
 	}
 
 	resp, err := getATCRun(config, client, worklist)
 
 	if err != nil {
-		return errors.Wrap(err, "execution of ATC Checks failed")
+		return fmt.Errorf("execution of ATC Checks failed: %w", err)
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyXML(resp, &result)
@@ -819,7 +809,7 @@ func executeATCCheck(config *gctsExecuteABAPQualityChecksOptions, client piperht
 
 	if err != nil {
 		log.Entry().Error(err)
-		return errors.Wrap(err, "execution of ATC Checks failed")
+		return fmt.Errorf("execution of ATC Checks failed: %w", err)
 	}
 
 	log.Entry().Info("execute ATC Checks finished.", atcRes.Text)
@@ -833,11 +823,11 @@ func startATCRun(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 	discHeader, discError := discoverServer(config, client)
 	if discError != nil {
-		return errors.Wrap(discError, "start of ATC run failed")
+		return fmt.Errorf("start of ATC run failed: %w", discError)
 	}
 
 	if discHeader.Get("X-Csrf-Token") == "" {
-		return errors.Errorf("could not retrieve x-csrf-token from server")
+		return fmt.Errorf("could not retrieve x-csrf-token from server")
 	}
 
 	header := make(http.Header)
@@ -863,7 +853,7 @@ func startATCRun(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 	}()
 
 	if httpErr != nil {
-		return errors.Wrap(httpErr, "start of ATC run failed")
+		return fmt.Errorf("start of ATC run failed: %w", httpErr)
 	} else if resp == nil {
 		return errors.New("start of ATC run failed: did not retrieve a HTTP response")
 	}
@@ -895,7 +885,7 @@ func getATCRun(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Sen
 	resp, httpErr := client.SendRequest("GET", url, nil, header, nil)
 
 	if httpErr != nil {
-		return response, errors.Wrap(httpErr, "get ATC run failed")
+		return response, fmt.Errorf("get ATC run failed: %w", httpErr)
 	} else if resp == nil {
 		return response, errors.New("get ATC run failed: did not retrieve a HTTP response")
 	}
@@ -918,11 +908,11 @@ func getWorklist(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 	}
 
 	if discError != nil {
-		return worklistID, errors.Wrap(discError, "get worklist failed")
+		return worklistID, fmt.Errorf("get worklist failed: %w", discError)
 	}
 
 	if discHeader.Get("X-Csrf-Token") == "" {
-		return worklistID, errors.Errorf("could not retrieve x-csrf-token from server")
+		return worklistID, fmt.Errorf("could not retrieve x-csrf-token from server")
 	}
 
 	header := make(http.Header)
@@ -937,7 +927,7 @@ func getWorklist(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 	}()
 
 	if httpErr != nil {
-		return worklistID, errors.Wrap(httpErr, "get worklist failed")
+		return worklistID, fmt.Errorf("get worklist failed: %w", httpErr)
 	} else if resp == nil {
 		return worklistID, errors.New("get worklist failed: did not retrieve a HTTP response")
 	}
@@ -971,7 +961,7 @@ func parseATCCheckResult(config *gctsExecuteABAPQualityChecksOptions, client pip
 			path, err := url.PathUnescape(atcworklist.Location)
 
 			if err != nil {
-				return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+				return atcResults, fmt.Errorf("conversion of ATC check results to CheckStyle has failed: %w", err)
 
 			}
 
@@ -980,7 +970,7 @@ func parseATCCheckResult(config *gctsExecuteABAPQualityChecksOptions, client pip
 				priority, err := strconv.Atoi(atcworklist.Priority)
 
 				if err != nil {
-					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+					return atcResults, fmt.Errorf("conversion of ATC check results to CheckStyle has failed: %w", err)
 
 				}
 
@@ -1033,13 +1023,13 @@ func parseATCCheckResult(config *gctsExecuteABAPQualityChecksOptions, client pip
 				fileName, err := getFileName(config, client, path, objectName)
 
 				if err != nil {
-					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+					return atcResults, fmt.Errorf("conversion of ATC check results to CheckStyle has failed: %w", err)
 				}
 
 				atcFile.Name, err = constructPath(config, client, fileName, objectName, objectType)
 				log.Entry().Info("file path: ", atcFile.Name)
 				if err != nil {
-					return atcResults, errors.Wrap(err, "conversion of ATC check results to CheckStyle has failed")
+					return atcResults, fmt.Errorf("conversion of ATC check results to CheckStyle has failed: %w", err)
 				}
 				atcResults.File = append(atcResults.File, atcFile)
 				atcFile = file{}
@@ -1065,7 +1055,7 @@ func constructPath(config *gctsExecuteABAPQualityChecksOptions, client piperhttp
 
 	targetDir, err := getTargetDir(config, client)
 	if err != nil {
-		return filePath, errors.Wrap(err, "path could not be constructed")
+		return filePath, fmt.Errorf("path could not be constructed: %w", err)
 
 	}
 
@@ -1083,7 +1073,7 @@ func findLine(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Send
 
 	if err != nil {
 
-		return line, errors.Wrap(err, "could not find line in source code")
+		return line, fmt.Errorf("could not find line in source code: %w", err)
 
 	}
 
@@ -1097,7 +1087,7 @@ func findLine(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Send
 
 	filePath, err := constructPath(config, client, fileName, objectName, objectType)
 	if err != nil {
-		return line, errors.Wrap(err, objectType+"/"+objectName+"could not find line in source code")
+		return line, fmt.Errorf(objectType+"/"+objectName+"could not find line in source code", err)
 
 	}
 
@@ -1109,7 +1099,7 @@ func findLine(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Send
 
 		if err != nil {
 
-			return line, errors.Wrapf(err, "could not find object in the workspace of your CI/CD tool ")
+			return line, fmt.Errorf("could not find object in the workspace of your CI/CD tool : %w", err)
 		}
 
 		file := string(rawfile)
@@ -1189,7 +1179,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 	readableSource, err := checkReadableSource(config, client)
 	if err != nil {
-		return fileName, errors.Wrap(err, "get file name has failed")
+		return fileName, fmt.Errorf("get file name has failed: %w", err)
 
 	}
 
@@ -1202,7 +1192,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 	}
 
 	if err != nil {
-		return fileName, errors.Wrap(err, "get file name has failed")
+		return fileName, fmt.Errorf("get file name has failed: %w", err)
 
 	}
 
@@ -1446,7 +1436,7 @@ func checkReadableSource(config *gctsExecuteABAPQualityChecksOptions, client pip
 
 	repoLayout, err := getRepositoryLayout(config, client)
 	if err != nil {
-		return readableSource, errors.Wrap(err, "could not check readable source format")
+		return readableSource, fmt.Errorf("could not check readable source format: %w", err)
 	}
 
 	if repoLayout.Layout.ReadableSource == "true" || repoLayout.Layout.ReadableSource == "only" || repoLayout.Layout.ReadableSource == "all" {
@@ -1484,14 +1474,14 @@ func getRepo(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Sende
 	}()
 
 	if httpErr != nil {
-		return repositoryResponse{}, errors.Wrap(httpErr, "could not get repository")
+		return repositoryResponse{}, fmt.Errorf("could not get repository: %w", httpErr)
 	} else if resp == nil {
 		return repositoryResponse{}, errors.New("could not get repository: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repositoryResp)
 	if parsingErr != nil {
-		return repositoryResponse{}, errors.Errorf("%v", parsingErr)
+		return repositoryResponse{}, fmt.Errorf("%v", parsingErr)
 	}
 
 	return repositoryResp, nil
@@ -1521,14 +1511,14 @@ func getRepositoryLayout(config *gctsExecuteABAPQualityChecksOptions, client pip
 	}()
 
 	if httpErr != nil {
-		return layoutResponse{}, errors.Wrap(httpErr, "could not get repository layout")
+		return layoutResponse{}, fmt.Errorf("could not get repository layout: %w", httpErr)
 	} else if resp == nil {
 		return layoutResponse{}, errors.New("could not get repository layout: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoLayoutResponse)
 	if parsingErr != nil {
-		return layoutResponse{}, errors.Errorf("%v", parsingErr)
+		return layoutResponse{}, fmt.Errorf("%v", parsingErr)
 	}
 
 	return repoLayoutResponse, nil
@@ -1556,14 +1546,14 @@ func getCommitList(config *gctsExecuteABAPQualityChecksOptions, client piperhttp
 	}()
 
 	if httpErr != nil {
-		return commitResponse{}, errors.Wrap(httpErr, "get repository history failed")
+		return commitResponse{}, fmt.Errorf("get repository history failed: %w", httpErr)
 	} else if resp == nil {
 		return commitResponse{}, errors.New("get repository history failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &commitResp)
 	if parsingErr != nil {
-		return commitResponse{}, errors.Errorf("%v", parsingErr)
+		return commitResponse{}, fmt.Errorf("%v", parsingErr)
 	}
 
 	return commitResp, nil
@@ -1592,14 +1582,14 @@ func getObjectDifference(config *gctsExecuteABAPQualityChecksOptions, fromCommit
 	}()
 
 	if httpErr != nil {
-		return objectsResponse{}, errors.Wrap(httpErr, "get object difference failed")
+		return objectsResponse{}, fmt.Errorf("get object difference failed: %w", httpErr)
 	} else if resp == nil {
 		return objectsResponse{}, errors.New("get object difference failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &objectResponse)
 	if parsingErr != nil {
-		return objectsResponse{}, errors.Errorf("%v", parsingErr)
+		return objectsResponse{}, fmt.Errorf("%v", parsingErr)
 	}
 	log.Entry().Info("get object differences: ", objectResponse.Objects)
 	return objectResponse, nil
@@ -1628,14 +1618,14 @@ func getObjectInfo(config *gctsExecuteABAPQualityChecksOptions, client piperhttp
 	}()
 
 	if httpErr != nil {
-		return objectInfo{}, errors.Wrap(httpErr, "resolve package failed")
+		return objectInfo{}, fmt.Errorf("resolve package failed: %w", httpErr)
 	} else if resp == nil {
 		return objectInfo{}, errors.New("resolve package failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &objectMetInfoResponse)
 	if parsingErr != nil {
-		return objectInfo{}, errors.Errorf("%v", parsingErr)
+		return objectInfo{}, fmt.Errorf("%v", parsingErr)
 	}
 	return objectMetInfoResponse, nil
 
@@ -1662,14 +1652,14 @@ func getHistory(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.Se
 		}
 	}()
 	if httpErr != nil {
-		return historyResponse{}, errors.Wrap(httpErr, "get history failed")
+		return historyResponse{}, fmt.Errorf("get history failed: %w", httpErr)
 	} else if resp == nil {
 		return historyResponse{}, errors.New("get history failed: did not retrieve a HTTP response")
 	}
 
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &historyResp)
 	if parsingErr != nil {
-		return historyResponse{}, errors.Errorf("%v", parsingErr)
+		return historyResponse{}, fmt.Errorf("%v", parsingErr)
 	}
 
 	return historyResp, nil

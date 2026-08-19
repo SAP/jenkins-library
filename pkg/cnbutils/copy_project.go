@@ -1,6 +1,7 @@
 package cnbutils
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -8,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/pkg/errors"
+
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -61,7 +62,7 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 		relPath, err := filepath.Rel(source, sourceFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
-			return errors.Wrapf(err, "Calculating relative path for '%s' failed", sourceFile)
+			return fmt.Errorf("Calculating relative path for '%s' failed: %w", sourceFile, err)
 		}
 
 		if !isIgnored(relPath, include, exclude) {
@@ -91,14 +92,14 @@ func CopyProject(source, target string, include, exclude *ignore.GitIgnore, util
 				err = utils.MkdirAll(target, os.ModePerm)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Creating directory '%s' failed", target)
+					return fmt.Errorf("Creating directory '%s' failed: %w", target, err)
 				}
 			} else {
 				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
 				err = copyFile(sourceFile, target, utils)
 				if err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
+					return fmt.Errorf("Copying '%s' to '%s' failed: %w", sourceFile, target, err)
 				}
 			}
 		}

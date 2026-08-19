@@ -20,7 +20,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
-	"github.com/pkg/errors"
 )
 
 // CreateCustomVulnerabilityReport creates a vulnerability ScanReport to be used for uploading into various sinks
@@ -149,12 +148,12 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 	htmlReportPath := filepath.Join(ReportsDirectory, "piper_whitesource_vulnerability_report.html")
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
+		return reportPaths, fmt.Errorf("failed to write html report: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
 
@@ -164,11 +163,11 @@ func WriteCustomVulnerabilityReports(productName string, scan *Scan, scanReport 
 	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
 		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
-			return reportPaths, errors.Wrap(err, "failed to create step reporting directory")
+			return reportPaths, fmt.Errorf("failed to create step reporting directory: %w", err)
 		}
 	}
 	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_oss_%v.json", ReportSha(productName, scan))), jsonReport, 0666); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write json report")
+		return reportPaths, fmt.Errorf("failed to write json report: %w", err)
 	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
@@ -335,15 +334,15 @@ func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperuti
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	sarifReport, errorMarshall := json.Marshal(sarif)
 	if errorMarshall != nil {
-		return reportPaths, errors.Wrapf(errorMarshall, "failed to marshall SARIF json file")
+		return reportPaths, fmt.Errorf("failed to marshall SARIF json file: %w", errorMarshall)
 	}
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 	sarifReportPath := filepath.Join(ReportsDirectory, "piper_whitesource_vulnerability.sarif")
 	if err := utils.FileWrite(sarifReportPath, sarifReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write SARIF file")
+		return reportPaths, fmt.Errorf("failed to write SARIF file: %w", err)
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability SARIF file", Target: sarifReportPath})
 
@@ -554,7 +553,7 @@ func transformAlertsToVulnerabilities(scan *Scan, alerts *[]Alert) []cdx.Vulnera
 func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	paths := []piperutils.Path{}
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
-		return paths, errors.Wrapf(err, "failed to create report directory")
+		return paths, fmt.Errorf("failed to create report directory: %w", err)
 	}
 
 	sbomPath := filepath.Join(ReportsDirectory, "piper_whitesource_sbom.xml")
@@ -562,7 +561,7 @@ func WriteCycloneSBOM(sbom []byte, utils piperutils.FileUtils) ([]piperutils.Pat
 	// Write file
 	if err := utils.FileWrite(sbomPath, sbom, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return paths, errors.Wrapf(err, "failed to write SARIF file")
+		return paths, fmt.Errorf("failed to write SARIF file: %w", err)
 	}
 	paths = append(paths, piperutils.Path{Name: "WhiteSource SBOM file", Target: sbomPath})
 

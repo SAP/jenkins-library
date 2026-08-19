@@ -9,6 +9,7 @@ package main
 import (
 	"testing"
 
+	"github.com/SAP/jenkins-library/cmd"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
@@ -29,13 +30,13 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 	output := RunPiper(t, container, "/golang-project1", "golangBuild")
 
 	assert.Contains(output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	assert.Contains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
+	assert.Contains(output, "info  golangBuild - running command: go install "+cmd.GolangCycloneDXPackage)
 	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
 	assert.Contains(output, "info  golangBuild - DONE 8 tests")
 	assert.Contains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
 	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
-	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64 cmd/server/server.go")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version "+cmd.GolangCycloneDXSchemaVersion)
+	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app/ ./cmd/server")
 	assert.Contains(output, "info  golangBuild - SUCCESS")
 
 	// Verify files were created
@@ -45,7 +46,7 @@ func TestGolangIntegrationBuildProject1(t *testing.T) {
 		"/golang-project1/bom-golang.xml",
 		"/golang-project1/cover.out",
 		"/golang-project1/coverage.html",
-		"/golang-project1/golang-app-linux.amd64",
+		"/golang-project1/golang-app/server",
 	)
 }
 
@@ -63,13 +64,13 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 	output := RunPiper(t, container, "/golang-project1", "golangBuild", "--packages", "github.com/example/golang-app/cmd/server,github.com/example/golang-app/cmd/helper")
 
 	assert.Contains(output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	assert.Contains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
+	assert.Contains(output, "info  golangBuild - running command: go install "+cmd.GolangCycloneDXPackage)
 	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
 	assert.Contains(output, "info  golangBuild - DONE 8 tests")
 	assert.Contains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
 	assert.Contains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
-	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux-amd64/ github.com/example/golang-app/cmd/server github.com/example/golang-app/cmd/helper")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version "+cmd.GolangCycloneDXSchemaVersion)
+	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app/ github.com/example/golang-app/cmd/server github.com/example/golang-app/cmd/helper")
 	assert.Contains(output, "info  golangBuild - SUCCESS")
 
 	// Verify files were created
@@ -79,8 +80,8 @@ func TestGolangIntegrationBuildProject1MultiPackage(t *testing.T) {
 		"/golang-project1/bom-golang.xml",
 		"/golang-project1/cover.out",
 		"/golang-project1/coverage.html",
-		"/golang-project1/golang-app-linux-amd64/server",
-		"/golang-project1/golang-app-linux-amd64/helper",
+		"/golang-project1/golang-app/server",
+		"/golang-project1/golang-app/helper",
 	)
 }
 
@@ -100,11 +101,11 @@ func TestGolangIntegrationBuildProject2(t *testing.T) {
 
 	// Should NOT run testing or BOM generation
 	assert.NotContains(output, "info  golangBuild - running command: go install gotest.tools/gotestsum@latest")
-	assert.NotContains(output, "info  golangBuild - running command: go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0")
+	assert.NotContains(output, "info  golangBuild - running command: go install "+cmd.GolangCycloneDXPackage)
 	assert.NotContains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-go.xml --jsonfile unit-report.out -- -coverprofile=cover.out -tags=unit ./...")
 	assert.NotContains(output, "info  golangBuild - running command: go tool cover -html cover.out -o coverage.html")
 	assert.NotContains(output, "info  golangBuild - running command: gotestsum --junitfile TEST-integration.xml --jsonfile integration-report.out -- -tags=integration ./...")
-	assert.NotContains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
+	assert.NotContains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version "+cmd.GolangCycloneDXSchemaVersion)
 
 	// Should only run build
 	assert.Contains(output, "info  golangBuild - running command: go build -trimpath -o golang-app-linux.amd64")
@@ -124,7 +125,7 @@ func TestGolangIntegrationBuildWithBOMValidation(t *testing.T) {
 
 	// First, run golangBuild to generate the BOM
 	output := RunPiper(t, container, "/golang-project1", "golangBuild")
-	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml")
+	assert.Contains(output, "info  golangBuild - running command: cyclonedx-gomod mod -licenses -verbose=false -test -output bom-golang.xml -output-version "+cmd.GolangCycloneDXSchemaVersion)
 	assert.Contains(output, "info  golangBuild - SUCCESS")
 
 	// Verify BOM file was created
@@ -134,4 +135,9 @@ func TestGolangIntegrationBuildWithBOMValidation(t *testing.T) {
 	bomContent := ReadFile(t, container, "/golang-project1/bom-golang.xml")
 	err := piperutils.ValidateBOM(bomContent)
 	assert.NoError(err, "BOM validation should pass for Golang project")
+
+	// Verify BOM references correct CycloneDX schema version
+	schemaVersion, err := piperutils.GetBomSchemaVersionFromContent(bomContent)
+	assert.NoError(err, "bom-golang.xml should contain the CycloneDX schema version")
+	assert.Equal(schemaVersion, cmd.GolangCycloneDXSchemaVersion, "bom-pip.xml should reference CycloneDX schema version "+cmd.GolangCycloneDXSchemaVersion)
 }

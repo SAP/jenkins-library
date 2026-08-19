@@ -3,16 +3,37 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"slices"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
+
+// npmScriptsPackageJSONExcludesKey is the StepConfig key used to extend the default
+// list of glob patterns that are excluded from package.json discovery when the
+// `npmScripts` step-activation condition is evaluated.
+//
+// The value may be supplied at any scope that resolves into StepConfig (general,
+// stages, steps, or the step itself). A typical use case is excluding test
+// fixtures that intentionally contain invalid JSON, e.g.:
+//
+//	general:
+//	  npmScriptsPackageJSONExcludes:
+//	    - "test_fixtures/**"
+//	    - "tests/**"
+const npmScriptsPackageJSONExcludesKey = "npmScriptsPackageJSONExcludes"
+
+// defaultNpmScriptsPackageJSONExcludes mirrors the default exclusion patterns
+// used by pkg/npm.Execute.FindPackageJSONFilesWithExcludes so that step
+// activation evaluation discovers the same set of package.json files as the
+// npm steps that will eventually run.
+var defaultNpmScriptsPackageJSONExcludes = []string{
+	"**/node_modules/**",
+	"**/gen/**",
+	"**/tmp/**",
+}
 
 const (
 	configCondition                = "config"
@@ -129,13 +150,12 @@ func (s *StepCondition) evaluateV1(
 	envRootPath string,
 	runSteps map[string]bool,
 ) (bool, error) {
-
 	// only the first condition will be evaluated.
 	// if multiple conditions should be checked they need to provided via the Conditions list
 	if s.Config != nil {
 
 		if len(s.Config) > 1 {
-			return false, errors.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
+			return false, fmt.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
 		}
 
 		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
@@ -157,7 +177,7 @@ func (s *StepCondition) evaluateV1(
 	if len(s.FilePattern) > 0 {
 		files, err := utils.Glob(s.FilePattern)
 		if err != nil {
-			return false, errors.Wrap(err, "failed to check filePattern condition")
+			return false, fmt.Errorf("failed to check filePattern condition: %w", err)
 		}
 		if len(files) > 0 {
 			return true, nil
@@ -173,7 +193,7 @@ func (s *StepCondition) evaluateV1(
 		}
 		files, err := utils.Glob(configValue)
 		if err != nil {
-			return false, errors.Wrap(err, "failed to check filePatternFromConfig condition")
+			return false, fmt.Errorf("failed to check filePatternFromConfig condition: %w", err)
 		}
 		if len(files) > 0 {
 			return true, nil
@@ -238,7 +258,8 @@ func getCPEEntry(param string, value interface{}, metadata *StepData, stepName s
 		dataType = "string"
 	}
 	metadata.Spec.Inputs.Parameters = []StepParameters{
-		{Name: stepName,
+		{
+			Name:        stepName,
 			Type:        dataType,
 			ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: param}},
 		},
@@ -261,42 +282,62 @@ func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, 
 func checkForNpmScriptsInPackagesV1(npmScript string, config StepConfig, utils piperutils.FileUtils) (bool, error) {
 	packages, err := utils.Glob("**/package.json")
 	if err != nil {
-		return false, errors.Wrap(err, "failed to check if file-exists")
+		return false, fmt.Errorf("failed to check if file-exists: %w", err)
 	}
-	for _, pack := range packages {
-		packDirs := strings.Split(path.Dir(pack), "/")
-		isNodeModules := false
-		for _, dir := range packDirs {
-			if dir == "node_modules" {
-				isNodeModules = true
-				break
-			}
-		}
-		if isNodeModules {
-			continue
-		}
 
+	excludes := append([]string{}, defaultNpmScriptsPackageJSONExcludes...)
+	excludes = append(excludes, npmScriptsPackageJSONExcludesFromConfig(config)...)
+
+	packages, err = piperutils.ExcludeFiles(packages, excludes)
+	if err != nil {
+		return false, fmt.Errorf("failed to apply package.json excludes: %w", err)
+	}
+
+	for _, pack := range packages {
 		jsonFile, err := utils.FileRead(pack)
 		if err != nil {
-			return false, errors.Errorf("failed to open file %s: %v", pack, err)
+			return false, fmt.Errorf("failed to open file %s: %v", pack, err)
 		}
-		packageJSON := map[string]interface{}{}
+		packageJSON := map[string]any{}
 		if err := json.Unmarshal(jsonFile, &packageJSON); err != nil {
-			return false, errors.Errorf("failed to unmarshal json file %s: %v", pack, err)
+			return false, fmt.Errorf("failed to unmarshal json file %s: %v", pack, err)
 		}
 		npmScripts, ok := packageJSON["scripts"]
 		if !ok {
 			continue
 		}
-		scriptsMap, ok := npmScripts.(map[string]interface{})
+		scriptsMap, ok := npmScripts.(map[string]any)
 		if !ok {
-			return false, errors.Errorf("failed to read scripts from package.json: %T", npmScripts)
+			return false, fmt.Errorf("failed to read scripts from package.json: %T", npmScripts)
 		}
 		if _, ok := scriptsMap[npmScript]; ok {
 			return true, nil
 		}
 	}
 	return false, nil
+}
+
+func npmScriptsPackageJSONExcludesFromConfig(config StepConfig) []string {
+	raw, ok := config.Config[npmScriptsPackageJSONExcludesKey]
+	if !ok || raw == nil {
+		return nil
+	}
+
+	switch v := raw.(type) {
+	case []string:
+		return v
+	case []any:
+		excludes := make([]string, 0, len(v))
+		for _, entry := range v {
+			if pattern, ok := entry.(string); ok && pattern != "" {
+				excludes = append(excludes, pattern)
+			}
+		}
+		return excludes
+	default:
+		log.Entry().Warnf("ignoring %s: expected []string, got %T", npmScriptsPackageJSONExcludesKey, raw)
+		return nil
+	}
 }
 
 // anyOtherStepIsActive loops through previous steps active states and returns true

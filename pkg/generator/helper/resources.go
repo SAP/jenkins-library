@@ -3,6 +3,7 @@ package helper
 import (
 	"bytes"
 	"fmt"
+	"go/format"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -92,7 +93,11 @@ func (p *PiperEnvironmentResource) StructString() (string, error) {
 		return "", err
 	}
 
-	return string(generatedCode.Bytes()), nil
+	formatted, err := format.Source(generatedCode.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("Error formatting generated code: %v\n", err)
+	}
+	return string(formatted), nil
 }
 
 // InfluxResource defines an Influx resouece that holds measurement information for a pipeline run
@@ -184,12 +189,15 @@ func (i *InfluxResource) StructString() (string, error) {
 	}
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, &i)
-	if err != nil {
+	if err = tmpl.Execute(&generatedCode, &i); err != nil {
 		return "", err
 	}
 
-	return string(generatedCode.Bytes()), nil
+	formatted, err := format.Source(generatedCode.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("Error formatting generated code: %v\n", err)
+	}
+	return string(formatted), nil
 }
 
 // StructName returns the name of the influx resource struct
@@ -266,10 +274,13 @@ func (p *ReportsResource) StructString() (string, error) {
 	}
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, &p)
-	if err != nil {
+	if err = tmpl.Execute(&generatedCode, &p); err != nil {
 		return "", err
 	}
 
-	return string(generatedCode.String()), nil
+	formatted, err := format.Source(generatedCode.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("Error formatting generated code: %v\n", err)
+	}
+	return string(formatted), nil
 }

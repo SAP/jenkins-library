@@ -5,6 +5,11 @@ on:
     branches:
       - 'renovate/**'
 
+permissions:
+  contents: read        # checkout
+  pull-requests: read   # github.rest.pulls.list finds the PR for the branch
+  issues: write         # github.rest.issues.createComment posts the /it-go comment
+
 jobs:
   comment:
     runs-on: ubuntu-latest

@@ -1,0 +1,50 @@
+package cmd
+
+import (
+	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/btp"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+)
+
+func newBtpDeleteServiceBindingUtils() btp.BTPUtils {
+	e := &btp.Executor{}
+	btpUtils := btp.NewBTPUtils(e)
+	return *btpUtils
+}
+
+func btpDeleteServiceBinding(config btpDeleteServiceBindingOptions, telemetryData *telemetry.CustomData) {
+	btpUtils := newBtpDeleteServiceBindingUtils()
+
+	err := runBtpDeleteServiceBinding(&config, telemetryData, btpUtils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runBtpDeleteServiceBinding(config *btpDeleteServiceBindingOptions, telemetryData *telemetry.CustomData, utils btp.BTPUtils) error {
+	btpConfig := btp.DeleteServiceBindingOptions{
+		Url:              config.BtpAPIEndpoint,
+		Subdomain:        config.BtpSubdomain,
+		Subaccount:       config.BtpSubaccount,
+		User:             config.User,
+		Password:         config.Password,
+		IdentityProvider: config.BtpIDp,
+		BindingName:      config.BtpServiceBindingName,
+		Timeout:          config.Timeout,
+		PollInterval:     config.PollInterval,
+		ServiceInstance:  config.BtpServiceInstanceName,
+		MaxRetries:       6,
+		MaxBadRequests:   10,
+	}
+
+	err := utils.DeleteServiceBinding(btpConfig)
+	if err != nil {
+		return fmt.Errorf("failed to delete BTP service binding: %w", err)
+	}
+
+	log.Entry().Info("Service binding deletion completed successfully")
+
+	return nil
+}
