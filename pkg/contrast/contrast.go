@@ -13,17 +13,18 @@ import (
 )
 
 const (
-	StatusReported       = "REPORTED"
-	Critical             = "CRITICAL"
-	High                 = "HIGH"
-	Medium               = "MEDIUM"
-	AuditAll             = "Audit All"
-	Optional             = "Optional"
-	pageSize             = 100
-	startPage            = 0
-	ContentType          = "Content-Type"
-	JSONContentType      = "application/json"
-	MinRouteCoveragePct  = 30.0
+	StatusReported               = "REPORTED"
+	Critical                     = "CRITICAL"
+	High                         = "HIGH"
+	Medium                       = "MEDIUM"
+	AuditAll                     = "Audit All"
+	Optional                     = "Optional"
+	pageSize                     = 100
+	startPage                    = 0
+	ContentType                  = "Content-Type"
+	JSONContentType              = "application/json"
+	MinRouteCoveragePct          = 30.0
+	MinAgentInactivityThresholdDays = 7
 )
 
 type VulnerabilitiesResponse struct {
@@ -359,8 +360,8 @@ func (c *Client) GetServers(appID string) ([]ServerResource, error) {
 // RouteCoverageResponse is returned by GET /ng/{orgUuid}/applications/{appId}/route
 type RouteCoverageResponse struct {
 	Success         bool `json:"success"`
-	DiscoveredCount int  `json:"discoveredCount"`
-	ExercisedCount  int  `json:"exercisedCount"`
+	DiscoveredCount int  `json:"discovered_count"`
+	ExercisedCount  int  `json:"exercised_count"`
 }
 
 // GetRouteCoverage returns route coverage stats for the application.

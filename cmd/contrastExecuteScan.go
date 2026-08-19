@@ -81,7 +81,8 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 	client := contrast.NewClient(config.UserAPIKey, config.ServiceKey, config.Username, config.OrganizationID, config.Server, appAPIUrl)
 
 	// Pre-flight agent setup checks
-	if err := checkAgentSetup(client, config); err != nil {
+	routeCoveragePct, err := checkAgentSetup(client, config)
+	if err != nil {
 		log.Entry().Errorf("Agent setup check failed: %v", err)
 		return nil, err
 	}
@@ -147,7 +148,7 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		}
 	}
 
-	toolRecordFileName, err := contrast.CreateAndPersistToolRecord(utils, appInfo, "./")
+	toolRecordFileName, err := contrast.CreateAndPersistToolRecord(utils, appInfo, "./", routeCoveragePct)
 	if err != nil {
 		log.Entry().Warning("TR_CONTRAST: Failed to create toolrecord file ...", err)
 	} else {
@@ -195,24 +196,24 @@ func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecute
 // checkAgentSetup performs agent pre-flight checks.
 // Hard fails if no agents are connected to the application.
 // Warns if all agents have been inactive beyond the configured threshold.
-func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions) error {
+func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions) (*float64, error) {
 	servers, err := client.GetServers(config.ApplicationID)
 	if err != nil {
 		// Non-fatal: don't break the pipeline on a transient API error.
 		log.Entry().Warnf("Could not retrieve server list: %v", err)
-		return nil
+		return nil, nil
 	}
 
 	// Check 1: Are there any servers?
 	if len(servers) == 0 {
-		return fmt.Errorf("application %s has no agents connected in organization %s. "+
+		return nil, fmt.Errorf("application %s has no agents connected in organization %s. "+
 			"Please finish your Contrast agent setup before running this step.",
 			config.ApplicationID, config.OrganizationID)
 	}
 	log.Entry().Infof("Agent check: %d server(s) connected to the application.", len(servers))
 
 	// Check 2: When was the last server active?
-	if config.AgentInactivityThresholdDays > 0 {
+	if contrast.MinAgentInactivityThresholdDays > 0 {
 		latestActivity := int64(0)
 		for _, srv := range servers {
 			if srv.LastActivity > latestActivity {
@@ -222,14 +223,14 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 		if latestActivity > 0 {
 			lastSeen := time.UnixMilli(latestActivity)
 			inactiveSince := time.Since(lastSeen)
-			threshold := time.Duration(config.AgentInactivityThresholdDays) * 24 * time.Hour
+			threshold := time.Duration(contrast.MinAgentInactivityThresholdDays) * 24 * time.Hour
 			if inactiveSince > threshold {
 				log.Entry().Warnf("Agent activity check: most recent server activity was %s ago (%s). "+
 					"No agent has been active in the last %d day(s). "+
 					"Results may be incomplete — consider restarting your agent.",
 					inactiveSince.Round(time.Hour),
 					lastSeen.Format(time.RFC3339),
-					config.AgentInactivityThresholdDays,
+					contrast.MinAgentInactivityThresholdDays,
 				)
 			} else {
 				log.Entry().Infof("Agent activity check: last active %s ago.", inactiveSince.Round(time.Minute))
@@ -237,19 +238,19 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 		}
 	}
 
-	checkRouteCoverage(client, config)
+	routeCoveragePct := checkRouteCoverage(client, config)
 
-	return nil
+	return routeCoveragePct, nil
 }
 
-func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOptions) {
+func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOptions) *float64 {
 	coverage, err := client.GetRouteCoverage(config.ApplicationID)
 	if err != nil {
 		log.Entry().Warnf("Could not retrieve route coverage: %v", err)
-		return
+		return nil
 	}
 	if coverage.DiscoveredCount == 0 {
-		return
+		return nil
 	}
 	exercisedPct := float64(coverage.ExercisedCount) / float64(coverage.DiscoveredCount) * 100
 	if exercisedPct < contrast.MinRouteCoveragePct {
@@ -260,4 +261,5 @@ func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOpti
 		log.Entry().Infof("Route coverage check: %.1f%% of routes exercised (%d/%d).",
 			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)
 	}
+	return &exercisedPct
 }
