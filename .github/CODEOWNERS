@@ -73,6 +73,10 @@ WhitesourceExecuteScan*                         @SAP/oss-team
 protecodeExecuteScan*                           @SAP/oss-team
 ProtecodeExecuteScan*                           @SAP/oss-team
 
+checkmarxOneExecuteScan*                        @SAP/jenkins-library-security
+codeqlExecuteScan*                              @SAP/jenkins-library-security
+contrastExecuteScan*                            @SAP/jenkins-library-security
+
 #######################
 ##### BUILD STEPS #####
 #######################
