@@ -26,7 +26,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/go-github/v68/github"
 )
 
@@ -818,7 +818,20 @@ func (g *gitComment) Parse(findings *[]checkmarxOne.Finding, config *checkmarxOn
 			}
 		case "Low":
 			if finding.LowPerQuery != nil {
-				for _, lowFinding := range *finding.LowPerQuery {
+				lowPerQuery := *finding.LowPerQuery
+				if config.VulnerabilityThresholdLowPerQuery {
+					sort.Slice(lowPerQuery, func(i, j int) bool {
+						iRequired := min(int(math.Ceil(float64(lowPerQuery[i].Total)*float64(config.VulnerabilityThresholdLow)/100.0)), config.VulnerabilityThresholdLowPerQueryMax)
+						jRequired := min(int(math.Ceil(float64(lowPerQuery[j].Total)*float64(config.VulnerabilityThresholdLow)/100.0)), config.VulnerabilityThresholdLowPerQueryMax)
+						iFailing := lowPerQuery[i].Audited < iRequired
+						jFailing := lowPerQuery[j].Audited < jRequired
+						if iFailing != jFailing {
+							return iFailing // failing entries first
+						}
+						return lowPerQuery[i].QueryName < lowPerQuery[j].QueryName
+					})
+				}
+				for _, lowFinding := range lowPerQuery {
 					if config.VulnerabilityThresholdLowPerQuery {
 						confirmedLowString := ""
 						if lowFinding.Confirmed > 0 {
