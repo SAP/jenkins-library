@@ -82,7 +82,7 @@ spec:
           value: localhost,selenium,$NO_PROXY
       workingDir: /home/node
   sidecars:
-    - image: selenium/standalone-chrome
+    - image: selenium/standalone-chrome:151.0
       name: selenium
       securityContext:
         privileged: true
