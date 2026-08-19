@@ -10,14 +10,26 @@ on:
 
 permissions:
   contents: write  # peaceiris/actions-gh-pages deploys docs to gh-pages (master push only)
-  actions: write   # styfle/cancel-workflow-action cancels previous runs
+
+# Supersedes styfle/cancel-workflow-action: cancels queued/running PR builds as soon as a
+# new commit lands, instead of only once the replacement job gets a runner. Master builds
+# are never cancelled so a deploy can't be killed half way.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Matches the version the Ubuntu 'groovy' package used to provide, and the
+  # org.codehaus.groovy:groovy-all version in pom.xml (2.4.x).
+  GROOVY_VERSION: 2.4.21
+  JENKINSFILE_RUNNER_IMAGE: ppiper/jenkinsfile-runner:latest
+  MKDOCS_IMAGE: squidfunk/mkdocs-material:8.5.11
 
 jobs:
   Build:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
-      - uses: styfle/cancel-workflow-action@0.11.0
-
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
@@ -28,27 +40,40 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: '1.26.6'
+          # setup-go caches ~/go/pkg/mod and the build cache by default, keyed on go.sum.
+
+      - name: Cache Groovy
+        uses: actions/cache@v5
+        with:
+          path: ~/groovy
+          key: groovy-${{ env.GROOVY_VERSION }}
 
       - name: Install Groovy
-        run: sudo apt-get update && sudo apt-get install groovy -y
+        run: |
+          if [ ! -x "$HOME/groovy/bin/groovy" ]; then
+            curl -sSfL -o /tmp/groovy.zip \
+              "https://archive.apache.org/dist/groovy/${GROOVY_VERSION}/distribution/apache-groovy-binary-${GROOVY_VERSION}.zip"
+            unzip -q /tmp/groovy.zip -d /tmp/groovy-dist
+            mv "/tmp/groovy-dist/groovy-${GROOVY_VERSION}" "$HOME/groovy"
+          fi
+          echo "$HOME/groovy/bin" >> "$GITHUB_PATH"
 
       - name: Cache Maven Packages
         uses: actions/cache@v5
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          # Only the root pom drives dependencies; the ~20 poms under test/ and
+          # integration/testdata are fixtures and must not churn the cache key.
+          key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Cache Go Packages
-        uses: actions/cache@v5
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - run: docker pull ppiper/jenkinsfile-runner:latest
+      - name: Pull Container Images
+        run: |
+          pids=()
+          docker pull "$JENKINSFILE_RUNNER_IMAGE" & pids+=($!)
+          docker pull "$MKDOCS_IMAGE" & pids+=($!)
+          for pid in "${pids[@]}"; do wait "$pid"; done
 
       - name: Generate Groovy Docs
         env:
@@ -63,7 +88,7 @@ jobs:
           docker run \
             -u $(id -u):$(id -g) \
             -v ${GITHUB_WORKSPACE}/documentation:/docs \
-            squidfunk/mkdocs-material:8.5.11 build --clean --strict
+            "$MKDOCS_IMAGE" build --clean --strict
 
       - name: Provide Docs Metadata
         run: |
