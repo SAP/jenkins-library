@@ -19,9 +19,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  # Matches the version the Ubuntu 'groovy' package used to provide, and the
-  # org.codehaus.groovy:groovy-all version in pom.xml (2.4.x).
-  GROOVY_VERSION: 2.4.21
+  # createDocu.sh pulls this one itself, in the background, while Maven runs.
   JENKINSFILE_RUNNER_IMAGE: ppiper/jenkinsfile-runner:latest
   MKDOCS_IMAGE: squidfunk/mkdocs-material:8.5.11
 
@@ -42,22 +40,6 @@ jobs:
           go-version: '1.26.6'
           # setup-go caches ~/go/pkg/mod and the build cache by default, keyed on go.sum.
 
-      - name: Cache Groovy
-        uses: actions/cache@v5
-        with:
-          path: ~/groovy
-          key: groovy-${{ env.GROOVY_VERSION }}
-
-      - name: Install Groovy
-        run: |
-          if [ ! -x "$HOME/groovy/bin/groovy" ]; then
-            curl -sSfL -o /tmp/groovy.zip \
-              "https://archive.apache.org/dist/groovy/${GROOVY_VERSION}/distribution/apache-groovy-binary-${GROOVY_VERSION}.zip"
-            unzip -q /tmp/groovy.zip -d /tmp/groovy-dist
-            mv "/tmp/groovy-dist/groovy-${GROOVY_VERSION}" "$HOME/groovy"
-          fi
-          echo "$HOME/groovy/bin" >> "$GITHUB_PATH"
-
       - name: Cache Maven Packages
         uses: actions/cache@v5
         with:
@@ -67,13 +49,6 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-
-      - name: Pull Container Images
-        run: |
-          pids=()
-          docker pull "$JENKINSFILE_RUNNER_IMAGE" & pids+=($!)
-          docker pull "$MKDOCS_IMAGE" & pids+=($!)
-          for pid in "${pids[@]}"; do wait "$pid"; done
 
       - name: Generate Groovy Docs
         env:
