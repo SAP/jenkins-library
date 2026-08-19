@@ -225,8 +225,10 @@ type ScanResult struct {
 	VulnerabilityDetails ScanResultDetails
 }
 
+type maybeStringInt int
+
 type ScanResultDetails struct {
-	CweId       int // empty for kics results, pending case 283343
+	CweId       maybeStringInt // empty for kics results, pending case 283343
 	Compliances []string
 }
 
@@ -1935,5 +1937,36 @@ func (q *scanresultQueryID) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	q.Value = u
+	return nil
+}
+
+func (fi *maybeStringInt) UnmarshalJSON(data []byte) error {
+	// First, try to unmarshal directly as a standard integer
+	var rawInt int
+	if err := json.Unmarshal(data, &rawInt); err == nil {
+		*fi = maybeStringInt(rawInt)
+		return nil
+	}
+
+	// If that fails, try to unmarshal as a string
+	var rawString string
+	if err := json.Unmarshal(data, &rawString); err != nil {
+		return err
+	}
+
+	// Handle empty string cases gracefully (sets value to 0)
+	rawString = strings.TrimSpace(rawString)
+	if rawString == "" {
+		*fi = 0
+		return nil
+	}
+
+	// Convert the string to an integer
+	parsedInt, err := strconv.Atoi(rawString)
+	if err != nil {
+		return fmt.Errorf("failed to parse string as integer: %v", err)
+	}
+
+	*fi = maybeStringInt(parsedInt)
 	return nil
 }
