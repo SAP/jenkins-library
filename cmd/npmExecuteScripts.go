@@ -51,7 +51,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 	if config.CreateBOM {
 		if len(config.BuildDescriptorList) > 0 {
-			if err := npmExecutor.CreateBOM(config.BuildDescriptorList, config.IgnoreNPMErrors); err != nil {
+			if err := npmExecutor.CreateBOM(config.BuildDescriptorList); err != nil {
 				return err
 			}
 		} else {
@@ -60,7 +60,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 				return err
 			}
 
-			if err := npmExecutor.CreateBOM(packageJSONFiles, config.IgnoreNPMErrors); err != nil {
+			if err := npmExecutor.CreateBOM(packageJSONFiles); err != nil {
 				return err
 			}
 		}

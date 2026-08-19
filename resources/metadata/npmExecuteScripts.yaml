@@ -236,14 +236,7 @@ spec:
           - PARAMETERS
       - name: pnpmVersion
         type: string
-        description: Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: ignoreNPMErrors
-        type: bool
-        description: If true, npm invalid/missing dependency errors during cyclone dx sbom generation will be ignored and the sbom will be generated. This flag is only considered when ``Yarn`` is used as a package manager and due to the mismatch when yarn.lock resolves the dependencies to a particular version that satisfies yarn but npm fails to resolve the same dependency to a valid version. This is a known issue with yarn and npm and can be ignored if the user is aware of this issue.
+        description: Versions of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.
         scope:
           - PARAMETERS
           - STAGES

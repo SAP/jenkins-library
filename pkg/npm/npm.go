@@ -41,7 +41,7 @@ type Executor interface {
 	InstallAllDependencies(packageJSONFiles []string) error
 	PublishAllPackages(packageJSONFiles []string, registry, username, password, publishTag string, packBeforePublish bool, buildCoordinates *[]versioning.Coordinates) error
 	SetNpmRegistries() error
-	CreateBOM(packageJSONFiles []string, ignoreNPMErrors bool) error
+	CreateBOM(packageJSONFiles []string) error
 }
 
 // ExecutorOptions holds common parameters for functions of Executor
