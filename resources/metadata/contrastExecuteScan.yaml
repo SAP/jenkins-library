@@ -126,6 +126,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: agentInactivityThresholdDays
+        type: int
+        default: 7
+        description: >
+          If all servers for this application have been inactive for longer than this many days,
+          the step logs a warning. Set to 0 to disable the check.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports

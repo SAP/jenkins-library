@@ -13,16 +13,17 @@ import (
 )
 
 const (
-	StatusReported  = "REPORTED"
-	Critical        = "CRITICAL"
-	High            = "HIGH"
-	Medium          = "MEDIUM"
-	AuditAll        = "Audit All"
-	Optional        = "Optional"
-	pageSize        = 100
-	startPage       = 0
-	ContentType     = "Content-Type"
-	JSONContentType = "application/json"
+	StatusReported       = "REPORTED"
+	Critical             = "CRITICAL"
+	High                 = "HIGH"
+	Medium               = "MEDIUM"
+	AuditAll             = "Audit All"
+	Optional             = "Optional"
+	pageSize             = 100
+	startPage            = 0
+	ContentType          = "Content-Type"
+	JSONContentType      = "application/json"
+	MinRouteCoveragePct  = 30.0
 )
 
 type VulnerabilitiesResponse struct {
@@ -319,6 +320,64 @@ func (c *Client) GetAppInfo(appUIUrl, server string) (*ApplicationInfo, error) {
 	app.Url = appUIUrl
 	app.Server = server
 	return app, nil
+}
+
+// ServersResponse is returned by GET /ng/{orgUuid}/applications/{appId}/servers
+type ServersResponse struct {
+	Count    int64            `json:"count"`
+	Messages []string         `json:"messages"`
+	Servers  []ServerResource `json:"servers"`
+	Success  bool             `json:"success"`
+}
+
+// ServerResource contains per-server detail; LastActivity is a Unix millisecond timestamp
+type ServerResource struct {
+	ServerID     int64  `json:"server_id"`
+	Name         string `json:"name"`
+	Hostname     string `json:"hostname"`
+	LastActivity int64  `json:"last_activity"`
+	Status       string `json:"status"`
+}
+
+// GetServers returns all servers associated with the application.
+// Endpoint: GET /ng/{orgUuid}/applications/{appId}/servers
+func (c *Client) GetServers(appID string) ([]ServerResource, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/applications/%s/servers",
+		c.BaseURL, c.OrgID, appID)
+	httpClient := NewContrastHttpClient(c.ApiKey, c.Auth)
+
+	var resp ServersResponse
+	if err := httpClient.ExecuteRequest(url, nil, &resp); err != nil {
+		return nil, fmt.Errorf("failed to get servers: %w", err)
+	}
+	if !resp.Success {
+		return nil, fmt.Errorf("servers request unsuccessful: %v", resp.Messages)
+	}
+	return resp.Servers, nil
+}
+
+// RouteCoverageResponse is returned by GET /ng/{orgUuid}/applications/{appId}/route
+type RouteCoverageResponse struct {
+	Success         bool `json:"success"`
+	DiscoveredCount int  `json:"discoveredCount"`
+	ExercisedCount  int  `json:"exercisedCount"`
+}
+
+// GetRouteCoverage returns route coverage stats for the application.
+// Endpoint: GET /ng/{orgUuid}/applications/{appId}/route
+func (c *Client) GetRouteCoverage(appID string) (*RouteCoverageResponse, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/applications/%s/route",
+		c.BaseURL, c.OrgID, appID)
+	httpClient := NewContrastHttpClient(c.ApiKey, c.Auth)
+
+	var resp RouteCoverageResponse
+	if err := httpClient.ExecuteRequest(url, nil, &resp); err != nil {
+		return nil, fmt.Errorf("failed to get route coverage: %w", err)
+	}
+	if !resp.Success {
+		return nil, fmt.Errorf("route coverage request unsuccessful")
+	}
+	return &resp, nil
 }
 
 // AsyncReportConfig contains configuration for async report generation
