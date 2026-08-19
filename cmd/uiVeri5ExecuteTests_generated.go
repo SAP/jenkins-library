@@ -277,7 +277,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 				{Name: "uiVeri5", Image: "node:24-bookworm", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
-				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
+				{Name: "selenium", Image: "selenium/standalone-chrome:151.0", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

@@ -27,14 +27,12 @@ type CheckmarxOneReportData struct {
 	GroupID         string     `json:"groupID"`
 	DeepLink        string     `json:"deepLink"`
 	Preset          string     `json:"preset"`
-	IACPreset       string     `json:"iacPreset"`
 	ScanType        string     `json:"scanType"`
 	Findings        *[]Finding `json:"findings"`
 }
 
 type Finding struct {
 	ClassificationName string         `json:"classificationName"`
-	Engine             string         `json:"engine"`
 	Total              int            `json:"total,omitempty"`
 	Audited            *int           `json:"audited,omitempty"`
 	Confirmed          int            `json:"confirmed,omitempty"`
@@ -70,7 +68,7 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 			{Description: "Files scanned", Details: fmt.Sprint((*data)["FilesScanned"])},
 			{Description: "IAC Lines of code scanned", Details: fmt.Sprint((*data)["IacLinesOfCodeScanned"])},
 			{Description: "IAC Files scanned", Details: fmt.Sprint((*data)["IacFilesScanned"])},
-			{Description: "Tool version", Details: fmt.Sprint((*data)["ToolVersion"])},
+			{Description: "Tool version", Details: fmt.Sprintf("%s, %s, %s", (*data)["ToolVersion"], (*data)["SASTVersion"], (*data)["IACVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
 		Overview:   []reporting.OverviewRow{},
@@ -98,42 +96,59 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 		},
 		WithCounter: false,
 	}
+
+	getCount := func(severity, key string) string {
+		count := 0
+
+		if m, ok := (*data)[severity]; ok {
+			if m, ok := m.(map[string]int); ok {
+				count += m[key]
+			}
+		}
+		if m, ok := (*data)["IAC"+severity]; ok {
+			if m, ok := m.(map[string]int); ok {
+				count += m[key]
+			}
+		}
+		return fmt.Sprint(count)
+	}
+
 	detailRows := []reporting.OverviewRow{
-		{Description: "Critical issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["Issues"])},
-		{Description: "Critical not false positive issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["NotFalsePositive"])},
-		{Description: "Critical not exploitable issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["NotExploitable"])},
-		{Description: "Critical confirmed issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["Confirmed"])},
-		{Description: "Critical urgent issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["Urgent"])},
-		{Description: "Critical proposed not exploitable issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["ProposedNotExploitable"])},
-		{Description: "Critical to verify issues", Details: fmt.Sprint((*data)["Critical"].(map[string]int)["ToVerify"])},
-		{Description: "High issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["Issues"])},
-		{Description: "High not false positive issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["NotFalsePositive"])},
-		{Description: "High not exploitable issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["NotExploitable"])},
-		{Description: "High confirmed issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["Confirmed"])},
-		{Description: "High urgent issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["Urgent"])},
-		{Description: "High proposed not exploitable issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["ProposedNotExploitable"])},
-		{Description: "High to verify issues", Details: fmt.Sprint((*data)["High"].(map[string]int)["ToVerify"])},
-		{Description: "Medium issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["Issues"])},
-		{Description: "Medium not false positive issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["NotFalsePositive"])},
-		{Description: "Medium not exploitable issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["NotExploitable"])},
-		{Description: "Medium confirmed issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["Confirmed"])},
-		{Description: "Medium urgent issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["Urgent"])},
-		{Description: "Medium proposed not exploitable issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["ProposedNotExploitable"])},
-		{Description: "Medium to verify issues", Details: fmt.Sprint((*data)["Medium"].(map[string]int)["ToVerify"])},
-		{Description: "Low issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["Issues"])},
-		{Description: "Low not false positive issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["NotFalsePositive"])},
-		{Description: "Low not exploitable issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["NotExploitable"])},
-		{Description: "Low confirmed issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["Confirmed"])},
-		{Description: "Low urgent issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["Urgent"])},
-		{Description: "Low proposed not exploitable issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["ProposedNotExploitable"])},
-		{Description: "Low to verify issues", Details: fmt.Sprint((*data)["Low"].(map[string]int)["ToVerify"])},
-		{Description: "Informational issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["Issues"])},
-		{Description: "Informational not false positive issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["NotFalsePositive"])},
-		{Description: "Informational not exploitable issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["NotExploitable"])},
-		{Description: "Informational confirmed issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["Confirmed"])},
-		{Description: "Informational urgent issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["Urgent"])},
-		{Description: "Informational proposed not exploitable issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["ProposedNotExploitable"])},
-		{Description: "Informational to verify issues", Details: fmt.Sprint((*data)["Information"].(map[string]int)["ToVerify"])},
+		{Description: "Critical issues", Details: getCount("Critical", "Issues")},
+		{Description: "Critical not false positive issues", Details: getCount("Critical", "NotFalsePositive")},
+		{Description: "Critical not exploitable issues", Details: getCount("Critical", "NotExploitable")},
+		{Description: "Critical confirmed issues", Details: getCount("Critical", "Confirmed")},
+		{Description: "Critical urgent issues", Details: getCount("Critical", "Urgent")},
+		{Description: "Critical proposed not exploitable issues", Details: getCount("Critical", "ProposedNotExploitable")},
+		{Description: "Critical to verify issues", Details: getCount("Critical", "ToVerify")},
+		{Description: "High issues", Details: getCount("High", "Issues")},
+		{Description: "High not false positive issues", Details: getCount("High", "NotFalsePositive")},
+		{Description: "High not exploitable issues", Details: getCount("High", "NotExploitable")},
+		{Description: "High confirmed issues", Details: getCount("High", "Confirmed")},
+		{Description: "High urgent issues", Details: getCount("High", "Urgent")},
+		{Description: "High proposed not exploitable issues", Details: getCount("High", "ProposedNotExploitable")},
+		{Description: "High to verify issues", Details: getCount("High", "ToVerify")},
+		{Description: "Medium issues", Details: getCount("Medium", "Issues")},
+		{Description: "Medium not false positive issues", Details: getCount("Medium", "NotFalsePositive")},
+		{Description: "Medium not exploitable issues", Details: getCount("Medium", "NotExploitable")},
+		{Description: "Medium confirmed issues", Details: getCount("Medium", "Confirmed")},
+		{Description: "Medium urgent issues", Details: getCount("Medium", "Urgent")},
+		{Description: "Medium proposed not exploitable issues", Details: getCount("Medium", "ProposedNotExploitable")},
+		{Description: "Medium to verify issues", Details: getCount("Medium", "ToVerify")},
+		{Description: "Low issues", Details: getCount("Low", "Issues")},
+		{Description: "Low not false positive issues", Details: getCount("Low", "NotFalsePositive")},
+		{Description: "Low not exploitable issues", Details: getCount("Low", "NotExploitable")},
+		{Description: "Low confirmed issues", Details: getCount("Low", "Confirmed")},
+		{Description: "Low urgent issues", Details: getCount("Low", "Urgent")},
+		{Description: "Low proposed not exploitable issues", Details: getCount("Low", "ProposedNotExploitable")},
+		{Description: "Low to verify issues", Details: getCount("Low", "ToVerify")},
+		{Description: "Informational issues", Details: getCount("Information", "Issues")},
+		{Description: "Informational not false positive issues", Details: getCount("Information", "NotFalsePositive")},
+		{Description: "Informational not exploitable issues", Details: getCount("Information", "NotExploitable")},
+		{Description: "Informational confirmed issues", Details: getCount("Information", "Confirmed")},
+		{Description: "Informational urgent issues", Details: getCount("Information", "Urgent")},
+		{Description: "Informational proposed not exploitable issues", Details: getCount("Information", "ProposedNotExploitable")},
+		{Description: "Informational to verify issues", Details: getCount("Information", "ToVerify")},
 	}
 	for _, detailRow := range detailRows {
 		row := reporting.ScanRow{}
@@ -147,7 +162,7 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 	return scanReport
 }
 
-func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData {
+func CreateJSONHeaderReport(data *map[string]interface{}, engine string) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
 		ToolName:        `CheckmarxOne`,
 		ProjectName:     fmt.Sprint((*data)["ProjectName"]),
@@ -164,36 +179,57 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 	}
 
 	findings := []Finding{}
+	pre := ""
+	if strings.EqualFold(engine, "iac") {
+		pre = "IAC"
+		checkmarxReportData.Preset = fmt.Sprint((*data)["IacPreset"])
+		checkmarxReportData.ScanType = "Full"
+		checkmarxReportData.ToolVersion += ", " + fmt.Sprint((*data)["IACVersion"])
+	} else {
+		checkmarxReportData.ToolVersion += ", " + fmt.Sprint((*data)["SASTVersion"])
+	}
+	getCount := func(severity, key string) int {
+		count := 0
+
+		if m, ok := (*data)[pre+severity]; ok {
+			if m, ok := m.(map[string]int); ok {
+				count += m[key]
+			}
+		}
+		return count
+	}
+
 	// Critical
 	criticalFindings := Finding{}
 	criticalFindings.ClassificationName = "Critical"
-	criticalFindings.Total = (*data)["Critical"].(map[string]int)["Issues"]
-	criticalAudited := (*data)["Critical"].(map[string]int)["NotExploitable"] + (*data)["Critical"].(map[string]int)["Urgent"] + (*data)["Critical"].(map[string]int)["Confirmed"]
+	criticalFindings.Total = getCount("Critical", "Issues")
+	criticalAudited := getCount("Critical", "NotExploitable") + getCount("Critical", "Urgent") + getCount("Critical", "Confirmed")
 	criticalFindings.Audited = &criticalAudited
-	criticalFindings.Confirmed = (*data)["Critical"].(map[string]int)["Confirmed"] + (*data)["Critical"].(map[string]int)["Urgent"]
+	criticalFindings.Confirmed = getCount("Critical", "Confirmed") + getCount("Critical", "Urgent")
 	findings = append(findings, criticalFindings)
 	// High
 	highFindings := Finding{}
 	highFindings.ClassificationName = "High"
-	highFindings.Total = (*data)["High"].(map[string]int)["Issues"]
-	highAudited := (*data)["High"].(map[string]int)["NotExploitable"] + (*data)["High"].(map[string]int)["Urgent"] + (*data)["High"].(map[string]int)["Confirmed"]
+	highFindings.Total = getCount("High", "Issues")
+	highAudited := getCount("High", "NotExploitable") + getCount("High", "Urgent") + getCount("High", "Confirmed")
 	highFindings.Audited = &highAudited
-	highFindings.Confirmed = (*data)["High"].(map[string]int)["Confirmed"] + (*data)["High"].(map[string]int)["Urgent"]
+	highFindings.Confirmed = getCount("High", "Confirmed") + getCount("High", "Urgent")
 	findings = append(findings, highFindings)
 	// Medium
 	mediumFindings := Finding{}
 	mediumFindings.ClassificationName = "Medium"
-	mediumFindings.Total = (*data)["Medium"].(map[string]int)["Issues"]
-	mediumAudited := (*data)["Medium"].(map[string]int)["NotExploitable"] + (*data)["Medium"].(map[string]int)["Urgent"] + (*data)["Medium"].(map[string]int)["Confirmed"]
+	mediumFindings.Total = getCount("Medium", "Issues")
+	mediumAudited := getCount("Medium", "NotExploitable") + getCount("Medium", "Urgent") + getCount("Medium", "Confirmed")
 	mediumFindings.Audited = &mediumAudited
-	mediumFindings.Confirmed = (*data)["Medium"].(map[string]int)["Confirmed"] + (*data)["Medium"].(map[string]int)["Urgent"]
+	mediumFindings.Confirmed = getCount("Medium", "Confirmed") + getCount("Medium", "Urgent")
 	findings = append(findings, mediumFindings)
 	// Low
 	lowFindings := Finding{}
 	lowFindings.ClassificationName = "Low"
-	if _, ok := (*data)["LowPerQuery"]; ok {
+
+	if _, ok := (*data)[pre+"LowPerQuery"]; ok {
 		lowPerQueryList := []LowPerQuery{}
-		lowPerQueryMap := (*data)["LowPerQuery"].(map[string]map[string]int)
+		lowPerQueryMap := (*data)[pre+"LowPerQuery"].(map[string]map[string]int)
 		for queryName, resultsLowQuery := range lowPerQueryMap {
 			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"] + resultsLowQuery["Urgent"]
 			total := resultsLowQuery["Issues"]
@@ -207,9 +243,9 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 		lowFindings.LowPerQuery = &lowPerQueryList
 		findings = append(findings, lowFindings)
 	} else {
-		lowFindings.Total = (*data)["Low"].(map[string]int)["Issues"]
-		lowAudited := (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["NotExploitable"] + (*data)["Low"].(map[string]int)["Urgent"]
-		lowFindings.Confirmed = (*data)["Low"].(map[string]int)["Confirmed"] + (*data)["Low"].(map[string]int)["Urgent"]
+		lowFindings.Total = getCount("Low", "Issues")
+		lowAudited := getCount("Low", "Confirmed") + getCount("Low", "NotExploitable") + getCount("Low", "Urgent")
+		lowFindings.Confirmed = getCount("Low", "Confirmed") + getCount("Low", "Urgent")
 		lowFindings.Audited = &lowAudited
 		findings = append(findings, lowFindings)
 	}
@@ -219,12 +255,18 @@ func CreateJSONHeaderReport(data *map[string]interface{}) CheckmarxOneReportData
 	return checkmarxReportData
 }
 
-func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path, error) {
+func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData, engine string) ([]piperutils.Path, error) {
 	utils := piperutils.Files{}
 	reportPaths := []piperutils.Path{}
 
+	filename := "piper_checkmarxone_report.json"
+	reportName := "CheckmarxOne JSON compliance report"
+	if strings.EqualFold(engine, "iac") {
+		filename = "piper_checkmarxone_iac_report.json"
+		reportName = "CheckmarxOne IAC JSON compliance report"
+	}
 	// Standard JSON Report
-	jsonComplianceReportPath := filepath.Join(ReportsDirectory, "piper_checkmarxone_report.json")
+	jsonComplianceReportPath := filepath.Join(ReportsDirectory, filename)
 	// Ensure reporting directory exists
 	if err := utils.MkdirAll(ReportsDirectory, 0777); err != nil {
 		return reportPaths, fmt.Errorf("failed to create report directory: %w", err)
@@ -233,9 +275,9 @@ func WriteJSONHeaderReport(jsonReport CheckmarxOneReportData) ([]piperutils.Path
 	file, _ := json.Marshal(jsonReport)
 	if err := utils.FileWrite(jsonComplianceReportPath, file, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, fmt.Errorf("failed to write CheckmarxOne JSON compliance report: %w", err)
+		return reportPaths, fmt.Errorf("failed to write %s: %w", reportName, err)
 	}
-	reportPaths = append(reportPaths, piperutils.Path{Name: "CheckmarxOne JSON Compliance Report", Target: jsonComplianceReportPath})
+	reportPaths = append(reportPaths, piperutils.Path{Name: reportName, Target: jsonComplianceReportPath})
 
 	return reportPaths, nil
 }

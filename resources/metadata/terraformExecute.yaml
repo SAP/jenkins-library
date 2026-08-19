@@ -70,10 +70,10 @@ spec:
           - STEPS
   containers:
     - name: terraform
-      image: hashicorp/terraform:1.0.10
+      image: hashicorp/terraform:1.10.5
       options:
         - name: --entrypoint
-          value: ''
+          value: ""
       env:
         - name: TF_IN_AUTOMATION
           value: piper
@@ -83,4 +83,4 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/terraformOutputs
-            type: 'map[string]interface{}'
+            type: "map[string]interface{}"
