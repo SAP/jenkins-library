@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/stretchr/testify/assert"
@@ -313,7 +313,7 @@ func (c *checkmarxExecuteScanUtilsMock) PathMatch(pattern, name string) (bool, e
 	if c.errorOnPathMatch {
 		return false, fmt.Errorf("error on PathMatch")
 	}
-	return doublestar.PathMatch(pattern, name)
+	return doublestar.Match(pattern, name)
 }
 
 func (c *checkmarxExecuteScanUtilsMock) WriteFile(filename string, data []byte, perm os.FileMode) error {

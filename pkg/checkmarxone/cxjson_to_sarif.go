@@ -65,13 +65,13 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 				log.Entry().Warningf("Error while retrieving IAC finding description for finding [%s] %s: %s", r.Data.QueryID, r.Data.QueryName, err)
 			} else {
 				iacFindingInfo = &findingInfo
-				r.VulnerabilityDetails.CweId = iacFindingInfo.Cwe
+				r.VulnerabilityDetails.CweId = maybeStringInt(iacFindingInfo.Cwe)
 			}
 		}
-		_, haskey := cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
+		_, haskey := cweIdsForTaxonomies[int(r.VulnerabilityDetails.CweId)]
 
 		if !haskey {
-			cweIdsForTaxonomies[r.VulnerabilityDetails.CweId] = cweCounter
+			cweIdsForTaxonomies[int(r.VulnerabilityDetails.CweId)] = cweCounter
 			cweCounter++
 		}
 
@@ -92,7 +92,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 			queryID = fmt.Sprintf("checkmarxOne-%v/%s", r.Data.Platform, r.Data.QueryID.Value.(string))
 		}
 		result.RuleID = queryID
-		result.RuleIndex = cweIdsForTaxonomies[r.VulnerabilityDetails.CweId]
+		result.RuleIndex = cweIdsForTaxonomies[int(r.VulnerabilityDetails.CweId)]
 		result.Level = "none"
 		msg := new(format.Message)
 		if apiDescription != "" {
@@ -295,7 +295,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 
 		switch r.Type {
 		case "sast":
-			rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, r.VulnerabilityDetails.CweId, r.Data.QueryID)
+			rule.HelpURI = fmt.Sprintf("%v/sast/description/%v/%v", baseURL, int(r.VulnerabilityDetails.CweId), r.Data.QueryID)
 		case "kics":
 			if iacFindingInfo == nil {
 				rule.HelpURI = "n/a"
@@ -335,8 +335,8 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 			rule.Properties.SecuritySeverity = "10.0"
 		}
 
-		if r.VulnerabilityDetails.CweId != 0 {
-			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", r.VulnerabilityDetails.CweId))
+		if int(r.VulnerabilityDetails.CweId) != 0 {
+			rule.Properties.Tags = append(rule.Properties.Tags, fmt.Sprintf("external/cwe/cwe-%d", int(r.VulnerabilityDetails.CweId)))
 		}
 
 		match := false
@@ -366,7 +366,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 	//handle automationDetails
 	// This field corresponds to the configuration category in GitHub Security tab, it is meant to be used for monorepos so that each project can have its own findings
 	sarif.Runs[0].AutomationDetails = &format.AutomationDetails{Id: fmt.Sprintf("%s/%s", projectBaseURL, resultType)}
-	// resultType sufix is needed to enable uploading both sarif files (sast and iac)
+	// resultType suffix is needed to enable uploading both sarif files (sast and iac)
 
 	//handle taxonomies
 	//Only one exists apparently: CWE. It is fixed
