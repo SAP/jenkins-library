@@ -299,7 +299,7 @@ spec:
         default: "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz"
       - name: createBuildArtifactsMetadata
         type: bool
-        default: false
+        default: true
         description: metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline
         scope:
           - STEPS

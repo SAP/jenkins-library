@@ -1,17 +1,22 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/python"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 const (
@@ -24,11 +29,13 @@ type pythonBuildUtils interface {
 	command.ExecRunner
 	FileExists(filename string) (bool, error)
 	piperutils.FileUtils
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
 type pythonBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	httpClient *piperhttp.Client
 }
 
 func newPythonBuildUtils() pythonBuildUtils {
@@ -36,12 +43,17 @@ func newPythonBuildUtils() pythonBuildUtils {
 		Command: &command.Command{
 			StepName: stepName,
 		},
-		Files: &piperutils.Files{},
+		Files:      &piperutils.Files{},
+		httpClient: &piperhttp.Client{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
+}
+
+func (u *pythonBuildUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return u.httpClient.DownloadFile(url, filename, header, cookies)
 }
 
 func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) {
@@ -109,6 +121,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		commonPipelineEnvironment.custom.buildSettingsInfo = info
 	}
 
+	if config.CreateBuildArtifactsMetadata {
+		if err := createPythonBuildArtifactsMetadata(config, utils, commonPipelineEnvironment); err != nil {
+			log.Entry().Warnf("unable to create build artifact metadata: %v", err)
+		}
+	}
+
 	if config.Publish {
 		if err := python.PublishPackage(
 			utils.RunExecutable,
@@ -141,6 +159,27 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
 	return buildSettingsInfo, nil
+}
+
+func createPythonBuildArtifactsMetadata(config *pythonBuildOptions, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
+	options := versioning.Options{}
+	artifact, err := versioning.GetArtifact("pip", "", &options, utils)
+	if err != nil {
+		return fmt.Errorf("failed to get artifact: %w", err)
+	}
+	coordinate, err := artifact.GetCoordinates()
+	if err != nil {
+		return fmt.Errorf("failed to get artifact coordinates: %w", err)
+	}
+
+	bomComponent := piperutils.GetComponent(python.BOMFilename)
+	coordinate.PURL = bomComponent.Purl
+
+	var buildArtifacts build.BuildArtifacts
+	buildArtifacts.Coordinates = []versioning.Coordinates{coordinate}
+	jsonResult, _ := json.Marshal(buildArtifacts)
+	commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
+	return nil
 }
 
 func searchDescriptor(supported []string, existsFunc func(string) (bool, error)) (string, error) {

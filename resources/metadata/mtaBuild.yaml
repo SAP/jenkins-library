@@ -253,7 +253,7 @@ spec:
         default: true
       - name: createBuildArtifactsMetadata
         type: bool
-        default: false
+        default: true
         description: metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline
         scope:
           - STEPS

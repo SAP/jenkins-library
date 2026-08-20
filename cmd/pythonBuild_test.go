@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -23,6 +24,10 @@ type pythonBuildMockUtils struct {
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func (f pythonBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return nil
 }
 
 const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
