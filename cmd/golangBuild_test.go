@@ -1763,8 +1763,6 @@ func setVerbose(t *testing.T, v bool) {
 }
 
 func TestRunBOMCreation(t *testing.T) {
-	t.Parallel()
-
 	t.Run("success - verbose disabled", func(t *testing.T) {
 		setVerbose(t, false)
 		utils := newGolangBuildTestsUtils()
@@ -1772,9 +1770,11 @@ func TestRunBOMCreation(t *testing.T) {
 		err := runBOMCreation(utils, "bom-golang.xml")
 
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
-		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, 2, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"install", GolangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=false", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[1].Params)
 	})
 
 	t.Run("success - verbose enabled", func(t *testing.T) {
@@ -1784,9 +1784,11 @@ func TestRunBOMCreation(t *testing.T) {
 		err := runBOMCreation(utils, "bom-golang.xml")
 
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
-		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[0].Exec)
-		assert.Equal(t, []string{"mod", "-licenses", "-verbose=true", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, 2, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"install", GolangCycloneDXPackage}, utils.ExecMockRunner.Calls[0].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"mod", "-licenses", "-verbose=true", "-test", "-output", "bom-golang.xml", "-output-version", GolangCycloneDXSchemaVersion}, utils.ExecMockRunner.Calls[1].Params)
 	})
 
 	t.Run("success - custom output filename", func(t *testing.T) {
@@ -1796,8 +1798,56 @@ func TestRunBOMCreation(t *testing.T) {
 		err := runBOMCreation(utils, "custom-bom.xml")
 
 		assert.NoError(t, err)
+		assert.Equal(t, 2, len(utils.ExecMockRunner.Calls))
+		assert.Contains(t, utils.ExecMockRunner.Calls[1].Params, "custom-bom.xml")
+	})
+
+	t.Run("success - telesiactl preferred when available", func(t *testing.T) {
+		setVerbose(t, false)
+
+		utils := newGolangBuildTestsUtils()
+		utils.AddFile(telesiactlBinaryCandidates()[0], []byte("binary"))
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
 		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
-		assert.Contains(t, utils.ExecMockRunner.Calls[0].Params, "custom-bom.xml")
+		assert.Equal(t, telesiactlBinaryCandidates()[0], utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, []string{"sbom", "generate", "--tech", "golang", "--project-path", ".", "--output", "bom-golang.xml"}, utils.ExecMockRunner.Calls[0].Params)
+	})
+
+	t.Run("success - legacy telesiactl workspace path", func(t *testing.T) {
+		setVerbose(t, false)
+
+		utils := newGolangBuildTestsUtils()
+		legacyPath := telesiactlBinaryCandidates()[1]
+		utils.AddFile(legacyPath, []byte("binary"))
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, legacyPath, utils.ExecMockRunner.Calls[0].Exec)
+	})
+
+	t.Run("success - telesiactl failure falls back to cyclonedx-gomod", func(t *testing.T) {
+		setVerbose(t, false)
+
+		utils := newGolangBuildTestsUtils()
+		telesiactlPath := telesiactlBinaryCandidates()[0]
+		utils.AddFile(telesiactlPath, []byte("binary"))
+		utils.ShouldFailOnCommand = map[string]error{
+			telesiactlPath + " sbom generate --tech golang --project-path . --output bom-golang.xml": fmt.Errorf("telesiactl failure"),
+		}
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
+		assert.Equal(t, telesiactlPath, utils.ExecMockRunner.Calls[0].Exec)
+		assert.Equal(t, "go", utils.ExecMockRunner.Calls[1].Exec)
+		assert.Equal(t, []string{"install", GolangCycloneDXPackage}, utils.ExecMockRunner.Calls[1].Params)
+		assert.Equal(t, "cyclonedx-gomod", utils.ExecMockRunner.Calls[2].Exec)
 	})
 
 	t.Run("failure - cyclonedx-gomod execution fails", func(t *testing.T) {
@@ -1810,5 +1860,17 @@ func TestRunBOMCreation(t *testing.T) {
 		err := runBOMCreation(utils, "bom-golang.xml")
 
 		assert.EqualError(t, err, "BOM creation failed: BOM creation failure")
+	})
+
+	t.Run("failure - cyclonedx-gomod prerequisite installation fails", func(t *testing.T) {
+		setVerbose(t, false)
+		utils := newGolangBuildTestsUtils()
+		utils.ShouldFailOnCommand = map[string]error{
+			"go install " + GolangCycloneDXPackage: fmt.Errorf("install failure"),
+		}
+
+		err := runBOMCreation(utils, "bom-golang.xml")
+
+		assert.EqualError(t, err, "failed to install pre-requisite: install failure")
 	})
 }
