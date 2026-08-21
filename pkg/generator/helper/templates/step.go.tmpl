@@ -20,8 +20,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	{{ if .HasReportsOutput -}}
-	"github.com/bmatcuk/doublestar"
 	"github.com/SAP/jenkins-library/pkg/gcs"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	{{ end -}}
 	{{ if or .HasInfluxOutput .HasPiperEnvOutput -}}
 	"github.com/SAP/jenkins-library/pkg/piperenv"

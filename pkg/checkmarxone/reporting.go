@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -241,6 +242,9 @@ func CreateJSONHeaderReport(data *map[string]interface{}, engine string) Checkma
 			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
 		}
 		lowFindings.LowPerQuery = &lowPerQueryList
+		sort.Slice(lowPerQueryList, func(i, j int) bool {
+			return lowPerQueryList[i].QueryName < lowPerQueryList[j].QueryName
+		})
 		findings = append(findings, lowFindings)
 	} else {
 		lowFindings.Total = getCount("Low", "Issues")
