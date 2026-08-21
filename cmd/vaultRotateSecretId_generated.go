@@ -207,6 +207,11 @@ func vaultRotateSecretIdMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "jenkinsUrlCredentialsId", Description: "Jenkins credential ID containing the Jenkins URL", Type: "jenkins"},
+					{Name: "jenkinsUsernameCredentialsId", Description: "Jenkins credential ID containing the Jenkins user name", Type: "jenkins"},
+					{Name: "jenkinsTokenCredentialsId", Description: "Jenkins credential ID containing the Jenkins API token", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "secretStore",
