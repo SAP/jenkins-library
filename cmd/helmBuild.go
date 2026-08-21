@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -93,12 +95,16 @@ func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, com
 	fileUtils := &piperutils.Files{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
+	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, execRunner, fileUtils, httpClient, artifactInfo); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender, artifact ...versioning.Coordinates) error {
+	var artifactInfo versioning.Coordinates
+	if len(artifact) > 0 {
+		artifactInfo = artifact[0]
+	}
 	if config.RenderValuesTemplate {
 		err := parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
 		if err != nil {
@@ -139,8 +145,13 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
+		if config.CreateBuildArtifactsMetadata {
+			if err := createHelmBuildArtifactsMetadata(artifactInfo, targetURL, commonPipelineEnvironment); err != nil {
+				return err
+			}
+		}
 	default:
-		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
+		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, execRunner, fileUtils, httpClient, artifactInfo); err != nil {
 			return err
 		}
 	}
@@ -167,7 +178,7 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 	return nil
 }
 
-func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender, artifact versioning.Coordinates) error {
 	if len(config.Dependency) > 0 {
 		if err := helmExecutor.RunHelmDependency(); err != nil {
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
@@ -186,6 +197,11 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
+		}
+		if config.CreateBuildArtifactsMetadata {
+			if err := createHelmBuildArtifactsMetadata(artifact, targetURL, commonPipelineEnvironment); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -299,6 +315,30 @@ func injectContainerBOMPurls() error {
 		}
 	}
 
+	return nil
+}
+
+func createHelmBuildArtifactsMetadata(artifact versioning.Coordinates, targetURL string, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) error {
+	// defensive: need chart name + version to build a coordinate
+	if len(artifact.ArtifactID) == 0 || len(artifact.Version) == 0 {
+		log.Entry().Warnf("missing chart name or version, not creating helm build artifact metadata")
+		return nil
+	}
+	coordinate := versioning.Coordinates{
+		ArtifactID: artifact.ArtifactID,
+		Version:    artifact.Version,
+		URL:        targetURL,
+		PURL:       fmt.Sprintf("pkg:helm/%s@%s", artifact.ArtifactID, artifact.Version),
+	}
+	var buildArtifacts build.BuildArtifacts
+	buildArtifacts.Coordinates = []versioning.Coordinates{coordinate}
+	jsonResult, err := json.Marshal(buildArtifacts)
+	if err != nil {
+		log.Entry().Warnf("unable to marshal helm build artifact metadata: %v", err)
+		return nil
+	}
+	commonPipelineEnvironment.custom.helmBuildArtifacts = string(jsonResult)
+	log.Entry().Infof("helm build artifact metadata created for %s@%s", coordinate.ArtifactID, coordinate.Version)
 	return nil
 }
 

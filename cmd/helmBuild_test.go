@@ -14,10 +14,12 @@ import (
 
 	"errors"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -322,6 +324,46 @@ func TestRunHelmPush(t *testing.T) {
 		})
 
 	}
+
+	t.Run("build artifacts metadata - flag on populates CPE", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		config := helmBuildOptions{
+			HelmCommand:                  "publish",
+			CreateBuildArtifactsMetadata: true,
+		}
+		artifact := versioning.Coordinates{ArtifactID: "my-chart", Version: "1.2.3"}
+
+		helmExecute := &mocks.HelmExecutor{}
+		helmExecute.On("RunHelmPublish").Return("https://my.target.repository/charts", nil)
+
+		err := runHelmBuild(config, helmExecute, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), artifact)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, cpe.custom.helmBuildArtifacts)
+
+		var buildArtifacts build.BuildArtifacts
+		require.NoError(t, json.Unmarshal([]byte(cpe.custom.helmBuildArtifacts), &buildArtifacts))
+		require.Len(t, buildArtifacts.Coordinates, 1)
+		assert.Equal(t, "pkg:helm/my-chart@1.2.3", buildArtifacts.Coordinates[0].PURL)
+		assert.Equal(t, "https://my.target.repository/charts", buildArtifacts.Coordinates[0].URL)
+	})
+
+	t.Run("build artifacts metadata - flag off leaves CPE empty", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		config := helmBuildOptions{
+			HelmCommand:                  "publish",
+			CreateBuildArtifactsMetadata: false,
+		}
+		artifact := versioning.Coordinates{ArtifactID: "my-chart", Version: "1.2.3"}
+
+		helmExecute := &mocks.HelmExecutor{}
+		helmExecute.On("RunHelmPublish").Return("https://my.target.repository/charts", nil)
+
+		err := runHelmBuild(config, helmExecute, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), artifact)
+
+		require.NoError(t, err)
+		assert.Empty(t, cpe.custom.helmBuildArtifacts)
+	})
 }
 
 func TestRunHelmPushSBOM(t *testing.T) {
@@ -496,6 +538,49 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 
 		})
 	}
+
+	t.Run("build artifacts metadata - flag on populates CPE", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		config := helmBuildOptions{
+			HelmCommand:                  "",
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: true,
+		}
+		artifact := versioning.Coordinates{ArtifactID: "my-chart", Version: "1.2.3"}
+
+		helmExecute := &mocks.HelmExecutor{}
+		helmExecute.On("RunHelmLint").Return(nil)
+		helmExecute.On("RunHelmPublish").Return("https://my.target.repository/charts", nil)
+
+		err := runHelmBuild(config, helmExecute, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), artifact)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, cpe.custom.helmBuildArtifacts)
+
+		var buildArtifacts build.BuildArtifacts
+		require.NoError(t, json.Unmarshal([]byte(cpe.custom.helmBuildArtifacts), &buildArtifacts))
+		require.Len(t, buildArtifacts.Coordinates, 1)
+		assert.Equal(t, "pkg:helm/my-chart@1.2.3", buildArtifacts.Coordinates[0].PURL)
+	})
+
+	t.Run("build artifacts metadata - flag off leaves CPE empty", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		config := helmBuildOptions{
+			HelmCommand:                  "",
+			Publish:                      true,
+			CreateBuildArtifactsMetadata: false,
+		}
+		artifact := versioning.Coordinates{ArtifactID: "my-chart", Version: "1.2.3"}
+
+		helmExecute := &mocks.HelmExecutor{}
+		helmExecute.On("RunHelmLint").Return(nil)
+		helmExecute.On("RunHelmPublish").Return("https://my.target.repository/charts", nil)
+
+		err := runHelmBuild(config, helmExecute, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), artifact)
+
+		require.NoError(t, err)
+		assert.Empty(t, cpe.custom.helmBuildArtifacts)
+	})
 
 }
 
@@ -1153,6 +1238,61 @@ tag: {{ imageTag "test-image" }}
 			}
 		})
 	}
+}
+
+func TestCreateHelmBuildArtifactsMetadata(t *testing.T) {
+	t.Parallel()
+
+	t.Run("happy path - valid name, version and url produce correct metadata", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		artifact := versioning.Coordinates{
+			ArtifactID: "my-chart",
+			Version:    "1.2.3",
+		}
+		targetURL := "https://my.target.repository/charts"
+
+		err := createHelmBuildArtifactsMetadata(artifact, targetURL, &cpe)
+
+		assert.NoError(t, err)
+		require.NotEmpty(t, cpe.custom.helmBuildArtifacts)
+
+		var buildArtifacts build.BuildArtifacts
+		err = json.Unmarshal([]byte(cpe.custom.helmBuildArtifacts), &buildArtifacts)
+		require.NoError(t, err)
+
+		require.Len(t, buildArtifacts.Coordinates, 1)
+		coordinate := buildArtifacts.Coordinates[0]
+		assert.Equal(t, "my-chart", coordinate.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinate.Version)
+		assert.Equal(t, targetURL, coordinate.URL)
+		assert.Equal(t, "pkg:helm/my-chart@1.2.3", coordinate.PURL)
+	})
+
+	t.Run("empty ArtifactID - nothing written", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		artifact := versioning.Coordinates{
+			ArtifactID: "",
+			Version:    "1.2.3",
+		}
+
+		err := createHelmBuildArtifactsMetadata(artifact, "https://my.target.repository/charts", &cpe)
+
+		assert.NoError(t, err)
+		assert.Empty(t, cpe.custom.helmBuildArtifacts)
+	})
+
+	t.Run("empty Version - nothing written", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		artifact := versioning.Coordinates{
+			ArtifactID: "my-chart",
+			Version:    "",
+		}
+
+		err := createHelmBuildArtifactsMetadata(artifact, "https://my.target.repository/charts", &cpe)
+
+		assert.NoError(t, err)
+		assert.Empty(t, cpe.custom.helmBuildArtifacts)
+	})
 }
 
 type fileHandlerMock struct {
