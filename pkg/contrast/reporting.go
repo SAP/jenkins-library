@@ -28,8 +28,8 @@ type ApplicationInfo struct {
 	Server string
 }
 
-func CreateAndPersistToolRecord(utils piperutils.FileUtils, appInfo *ApplicationInfo, modulePath string) (string, error) {
-	toolRecord, err := createToolRecordContrast(utils, appInfo, modulePath)
+func CreateAndPersistToolRecord(utils piperutils.FileUtils, appInfo *ApplicationInfo, modulePath string, exercisedRoutePercentage *float64) (string, error) {
+	toolRecord, err := createToolRecordContrast(utils, appInfo, modulePath, exercisedRoutePercentage)
 	if err != nil {
 		return "", err
 	}
@@ -42,7 +42,7 @@ func CreateAndPersistToolRecord(utils piperutils.FileUtils, appInfo *Application
 	return toolRecordFileName, nil
 }
 
-func createToolRecordContrast(utils piperutils.FileUtils, appInfo *ApplicationInfo, modulePath string) (*toolrecord.Toolrecord, error) {
+func createToolRecordContrast(utils piperutils.FileUtils, appInfo *ApplicationInfo, modulePath string, exercisedRoutePercentage *float64) (*toolrecord.Toolrecord, error) {
 	record := toolrecord.New(utils, modulePath, "contrast", appInfo.Server)
 
 	record.DisplayName = appInfo.Name
@@ -54,6 +54,10 @@ func createToolRecordContrast(utils piperutils.FileUtils, appInfo *ApplicationIn
 		appInfo.Url)
 	if err != nil {
 		return record, err
+	}
+
+	if exercisedRoutePercentage != nil {
+		record.AddContext("exercisedRoutePercentage", *exercisedRoutePercentage)
 	}
 
 	return record, nil
