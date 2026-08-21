@@ -35,8 +35,8 @@ require (
 	github.com/google/go-github/v68 v68.0.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
-	github.com/hashicorp/vault/api v1.20.0
-	github.com/hashicorp/vault/api/auth/approle v0.8.0
+	github.com/hashicorp/vault/api v1.22.0
+	github.com/hashicorp/vault/api/auth/approle v0.12.0
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jarcoal/httpmock v1.0.8
@@ -219,7 +219,6 @@ require (
 	github.com/go-openapi/spec v0.22.6 // indirect
 	github.com/go-openapi/swag v0.26.1 // indirect
 	github.com/go-openapi/validate v0.26.0 // indirect
-	github.com/go-test/deep v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -229,9 +228,9 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
-	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.7 // indirect
+	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
-	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
+	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
