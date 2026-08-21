@@ -222,10 +222,11 @@ func TestRunHelmLint(t *testing.T) {
 	}{
 		{
 			config: HelmExecuteOptions{
-				ChartPath: ".",
+				ChartPath:            ".",
+				AdditionalParameters: []string{"additional", "parameters"},
 			},
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"lint", "."}},
+				{Exec: "helm", Params: []string{"lint", ".", "additional", "parameters"}},
 			},
 		},
 		{
@@ -379,9 +380,24 @@ func TestRunHelmUninstall(t *testing.T) {
 				DeploymentName:       "testPackage",
 				Namespace:            "test-namespace",
 				TargetRepositoryName: "test",
+				AdditionalParameters: []string{"additional", "parameters"},
 			},
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace"}},
+				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "additional", "parameters"}},
+			},
+		},
+		{
+			config: HelmExecuteOptions{
+				ChartPath:            ".",
+				DeploymentName:       "testPackage",
+				Namespace:            "test-namespace",
+				TargetRepositoryName: "test",
+				AdditionalParameters: []string{"additional", "parameters"},
+			},
+			generalVerbose: true,
+			expectedExecCalls: []mock.ExecCall{
+				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "additional", "parameters", "--debug", "--dry-run"}},
+				{Exec: "helm", Params: []string{"uninstall", "testPackage", "--namespace", "test-namespace", "additional", "parameters", "--debug"}},
 			},
 		},
 		{
@@ -587,11 +603,12 @@ func TestRunHelmTest(t *testing.T) {
 	}{
 		{
 			config: HelmExecuteOptions{
-				ChartPath:      ".",
-				DeploymentName: "testPackage",
+				ChartPath:            ".",
+				DeploymentName:       "testPackage",
+				AdditionalParameters: []string{"additional", "parameters"},
 			},
 			expectedExecCalls: []mock.ExecCall{
-				{Exec: "helm", Params: []string{"test", "."}},
+				{Exec: "helm", Params: []string{"test", ".", "additional", "parameters"}},
 			},
 		},
 		{
