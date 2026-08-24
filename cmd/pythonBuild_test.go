@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	"net/http"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -18,16 +18,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type pythonBuildMockUtils struct {
 	config *pythonBuildOptions
 	*mock.ExecMockRunner
 	*mock.FilesMock
-}
-
-func (f pythonBuildMockUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return nil
 }
 
 const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
@@ -494,5 +491,46 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			assert.NotEqual(t, filepath.Join("dummy", "bin", "twine"), call.Exec,
 				"twine must not be called when tests fail")
 		}
+	})
+}
+
+func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
+	t.Run("success - CPE populated with artifact coordinates", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+
+		cfg := &pythonBuildOptions{}
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		utils := newPythonBuildTestsUtils()
+
+		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		assert.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "1.0.0")
+	})
+
+	t.Run("success - no BOM file means empty PURL", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+
+		cfg := &pythonBuildOptions{}
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		utils := newPythonBuildTestsUtils()
+
+		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		assert.NoError(t, err)
+		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
+	})
+
+	t.Run("failure - no build descriptor", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		cfg := &pythonBuildOptions{}
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		utils := newPythonBuildTestsUtils()
+
+		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		assert.Error(t, err)
+		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
 	})
 }
