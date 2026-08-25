@@ -213,7 +213,7 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 	log.Entry().Infof("Agent check: %d server(s) connected to the application.", len(servers))
 
 	// Check 2: When was the last server active?
-	if contrast.MinAgentInactivityThresholdDays > 0 {
+	if config.AgentInactivityThresholdDays > 0 {
 		latestActivity := int64(0)
 		for _, srv := range servers {
 			if srv.LastActivity > latestActivity {
@@ -223,14 +223,14 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 		if latestActivity > 0 {
 			lastSeen := time.UnixMilli(latestActivity)
 			inactiveSince := time.Since(lastSeen)
-			threshold := time.Duration(contrast.MinAgentInactivityThresholdDays) * 24 * time.Hour
+			threshold := time.Duration(config.AgentInactivityThresholdDays) * 24 * time.Hour
 			if inactiveSince > threshold {
 				log.Entry().Warnf("Agent activity check: most recent server activity was %s ago (%s). "+
 					"No agent has been active in the last %d day(s). "+
 					"Results may be incomplete — consider restarting your agent.",
 					inactiveSince.Round(time.Hour),
 					lastSeen.Format(time.RFC3339),
-					contrast.MinAgentInactivityThresholdDays,
+					config.AgentInactivityThresholdDays,
 				)
 			} else {
 				log.Entry().Infof("Agent activity check: last active %s ago.", inactiveSince.Round(time.Minute))
@@ -253,7 +253,7 @@ func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOpti
 		return nil
 	}
 	exercisedPct := float64(coverage.ExercisedCount) / float64(coverage.DiscoveredCount) * 100
-	if exercisedPct < contrast.MinRouteCoveragePct {
+	if exercisedPct < float64(config.RouteCoverageThreshold) {
 		log.Entry().Warnf("Route coverage check: only %.1f%% of discovered routes have been exercised (%d/%d). "+
 			"Security findings may be incomplete — consider increasing test coverage.",
 			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)

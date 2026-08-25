@@ -13,18 +13,16 @@ import (
 )
 
 const (
-	StatusReported               = "REPORTED"
-	Critical                     = "CRITICAL"
-	High                         = "HIGH"
-	Medium                       = "MEDIUM"
-	AuditAll                     = "Audit All"
-	Optional                     = "Optional"
-	pageSize                     = 100
-	startPage                    = 0
-	ContentType                  = "Content-Type"
-	JSONContentType              = "application/json"
-	MinRouteCoveragePct          = 30.0
-	MinAgentInactivityThresholdDays = 7
+	StatusReported  = "REPORTED"
+	Critical        = "CRITICAL"
+	High            = "HIGH"
+	Medium          = "MEDIUM"
+	AuditAll        = "Audit All"
+	Optional        = "Optional"
+	pageSize        = 100
+	startPage       = 0
+	ContentType     = "Content-Type"
+	JSONContentType = "application/json"
 )
 
 type VulnerabilitiesResponse struct {
