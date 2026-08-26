@@ -495,30 +495,17 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 }
 
 func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
-	t.Run("success - CPE populated with artifact coordinates", func(t *testing.T) {
+	t.Run("success - coordinates populated, no BOM gives empty PURL", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
 
-		cfg := &pythonBuildOptions{}
 		cpe := &pythonBuildCommonPipelineEnvironment{}
 		utils := newPythonBuildTestsUtils()
 
-		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		err := createPythonBuildArtifactsMetadata(utils, cpe)
 		assert.NoError(t, err)
 		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
 		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "1.0.0")
-	})
-
-	t.Run("success - no BOM file means empty PURL", func(t *testing.T) {
-		t.Chdir(t.TempDir())
-		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
-
-		cfg := &pythonBuildOptions{}
-		cpe := &pythonBuildCommonPipelineEnvironment{}
-		utils := newPythonBuildTestsUtils()
-
-		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
-		assert.NoError(t, err)
 		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
 	})
 
@@ -532,13 +519,11 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 		// utils.FileExists uses the mock; piperutils.GetComponent reads the real FS —
 		// both must have the BOM file for the PURL path to work end-to-end.
 		require.NoError(t, os.WriteFile(python.BOMFilename, bomContent, 0644))
-
-		cfg := &pythonBuildOptions{}
-		cpe := &pythonBuildCommonPipelineEnvironment{}
 		utils := newPythonBuildTestsUtils()
 		utils.AddFile(python.BOMFilename, bomContent)
 
-		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		err := createPythonBuildArtifactsMetadata(utils, cpe)
 		assert.NoError(t, err)
 		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "pkg:pypi/mypackagename@1.0.0")
 	})
@@ -546,12 +531,51 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 	t.Run("failure - no build descriptor", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 
-		cfg := &pythonBuildOptions{}
 		cpe := &pythonBuildCommonPipelineEnvironment{}
 		utils := newPythonBuildTestsUtils()
 
-		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		err := createPythonBuildArtifactsMetadata(utils, cpe)
 		assert.Error(t, err)
+		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
+	})
+}
+
+func TestRunPythonBuildArtifactsMetadataFlag(t *testing.T) {
+	SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
+
+	t.Run("createBuildArtifactsMetadata=true - CPE populated via runPythonBuild", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		// versioning.GetArtifact uses real FS; mock handles build commands
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+
+		cfg := pythonBuildOptions{
+			VirtualEnvironmentName:       "dummy",
+			CreateBuildArtifactsMetadata: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
+	})
+
+	t.Run("createBuildArtifactsMetadata=false - CPE not populated", func(t *testing.T) {
+		cfg := pythonBuildOptions{
+			VirtualEnvironmentName:       "dummy",
+			CreateBuildArtifactsMetadata: false,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
+		assert.NoError(t, err)
 		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
 	})
 }

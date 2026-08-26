@@ -123,7 +123,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 
 	if config.CreateBuildArtifactsMetadata {
-		if err := createPythonBuildArtifactsMetadata(config, utils, commonPipelineEnvironment); err != nil {
+		if err := createPythonBuildArtifactsMetadata(utils, commonPipelineEnvironment); err != nil {
 			log.Entry().Warnf("unable to create build artifact metadata: %v", err)
 		}
 	}
@@ -162,7 +162,7 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	return buildSettingsInfo, nil
 }
 
-func createPythonBuildArtifactsMetadata(config *pythonBuildOptions, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
+func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
 	options := versioning.Options{}
 	artifact, err := versioning.GetArtifact("pip", "", &options, &versioningAdapter{utils})
 	if err != nil {
