@@ -52,8 +52,9 @@ type versioningAdapter struct {
 	pythonBuildUtils
 }
 
+// DownloadFile satisfies versioning.Utils; the pip handler never calls it.
 func (v *versioningAdapter) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("not supported")
+	return fmt.Errorf("DownloadFile not supported in pythonBuild")
 }
 
 func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) {

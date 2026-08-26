@@ -522,6 +522,25 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
 	})
 
+	t.Run("success - BOM present populates PURL", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+		bomContent := []byte(`<?xml version="1.0"?>` +
+			`<bom xmlns="http://cyclonedx.org/schema/bom/1.4">` +
+			`<metadata><component><name>MyPackageName</name><version>1.0.0</version>` +
+			`<purl>pkg:pypi/mypackagename@1.0.0</purl></component></metadata></bom>`)
+		require.NoError(t, os.WriteFile(python.BOMFilename, bomContent, 0644))
+
+		cfg := &pythonBuildOptions{}
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile(python.BOMFilename, bomContent)
+
+		err := createPythonBuildArtifactsMetadata(cfg, utils, cpe)
+		assert.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "pkg:pypi/mypackagename@1.0.0")
+	})
+
 	t.Run("failure - no build descriptor", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 
