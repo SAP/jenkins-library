@@ -10,9 +10,11 @@ import (
 )
 
 type ContrastAudit struct {
-	ToolName       string             `json:"toolName"`
-	ApplicationUrl string             `json:"applicationUrl"`
-	ScanResults    []ContrastFindings `json:"findings"`
+	ToolName             string             `json:"toolName"`
+	ApplicationUrl       string             `json:"applicationUrl"`
+	ScanResults          []ContrastFindings `json:"findings"`
+	RouteDiscoveredCount *int               `json:"routeDiscoveredCount,omitempty"`
+	RouteExercisedCount  *int               `json:"routeExercisedCount,omitempty"`
 }
 
 type ContrastFindings struct {

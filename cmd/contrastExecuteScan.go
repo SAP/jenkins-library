@@ -81,7 +81,7 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 	client := contrast.NewClient(config.UserAPIKey, config.ServiceKey, config.Username, config.OrganizationID, config.Server, appAPIUrl)
 
 	// Pre-flight agent setup checks
-	routeCoveragePct, err := checkAgentSetup(client, config)
+	agentSetup, err := checkAgentSetup(client, config)
 	if err != nil {
 		log.Entry().Errorf("Agent setup check failed: %v", err)
 		return nil, err
@@ -119,9 +119,11 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 	}
 
 	contrastAudit := contrast.ContrastAudit{
-		ToolName:       "contrast",
-		ApplicationUrl: appInfo.Url,
-		ScanResults:    findings,
+		ToolName:             "contrast",
+		ApplicationUrl:       appInfo.Url,
+		ScanResults:          findings,
+		RouteDiscoveredCount: agentSetup.RouteDiscoveredCount,
+		RouteExercisedCount:  agentSetup.RouteExercisedCount,
 	}
 	jsonData, err := json.Marshal(contrastAudit)
 	if err != nil {
@@ -146,9 +148,12 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 				}
 			}
 		}
+		if err := enforceComplianceThresholds(config, agentSetup); err != nil {
+			return reports, err
+		}
 	}
 
-	toolRecordFileName, err := contrast.CreateAndPersistToolRecord(utils, appInfo, "./", routeCoveragePct)
+	toolRecordFileName, err := contrast.CreateAndPersistToolRecord(utils, appInfo, "./", agentSetup.RouteCoveragePct)
 	if err != nil {
 		log.Entry().Warning("TR_CONTRAST: Failed to create toolrecord file ...", err)
 	} else {
@@ -193,15 +198,38 @@ func generatePdfReport(config *contrastExecuteScanOptions, utils contrastExecute
 	return contrast.SaveReportFile(utils, "piper_contrast_attestation.pdf", "Contrast PDF Attestation Report", data)
 }
 
+func enforceComplianceThresholds(config *contrastExecuteScanOptions, setup *agentSetupResult) error {
+	if !config.CheckForCompliance {
+		return nil
+	}
+	if setup.InactivityViolation != nil {
+		return setup.InactivityViolation
+	}
+	if setup.RouteCoverageViolation != nil {
+		return setup.RouteCoverageViolation
+	}
+	return nil
+}
+
+type agentSetupResult struct {
+	RouteCoveragePct       *float64
+	RouteDiscoveredCount   *int
+	RouteExercisedCount    *int
+	InactivityViolation    error
+	RouteCoverageViolation error
+}
+
 // checkAgentSetup performs agent pre-flight checks.
 // Hard fails if no agents are connected to the application.
-// Warns if all agents have been inactive beyond the configured threshold.
-func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions) (*float64, error) {
+// Returns violations for inactivity and route coverage without failing — caller decides enforcement.
+func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions) (*agentSetupResult, error) {
+	result := &agentSetupResult{}
+
 	servers, err := client.GetServers(config.ApplicationID)
 	if err != nil {
 		// Non-fatal: don't break the pipeline on a transient API error.
 		log.Entry().Warnf("Could not retrieve server list: %v", err)
-		return nil, nil
+		return result, nil
 	}
 
 	// Check 1: Are there any servers?
@@ -225,41 +253,47 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 			inactiveSince := time.Since(lastSeen)
 			threshold := time.Duration(config.AgentInactivityThresholdDays) * 24 * time.Hour
 			if inactiveSince > threshold {
-				log.Entry().Warnf("Agent activity check: most recent server activity was %s ago (%s). "+
+				msg := fmt.Sprintf("Agent activity check: most recent server activity was %s ago (%s). "+
 					"No agent has been active in the last %d day(s). "+
 					"Results may be incomplete — consider restarting your agent.",
 					inactiveSince.Round(time.Hour),
 					lastSeen.Format(time.RFC3339),
 					config.AgentInactivityThresholdDays,
 				)
+				log.Entry().Warn(msg)
+				result.InactivityViolation = errors.New(msg)
 			} else {
 				log.Entry().Infof("Agent activity check: last active %s ago.", inactiveSince.Round(time.Minute))
 			}
 		}
 	}
 
-	routeCoveragePct := checkRouteCoverage(client, config)
+	checkRouteCoverage(client, config, result)
 
-	return routeCoveragePct, nil
+	return result, nil
 }
 
-func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOptions) *float64 {
+func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOptions, result *agentSetupResult) {
 	coverage, err := client.GetRouteCoverage(config.ApplicationID)
 	if err != nil {
 		log.Entry().Warnf("Could not retrieve route coverage: %v", err)
-		return nil
+		return
 	}
+	result.RouteDiscoveredCount = &coverage.DiscoveredCount
+	result.RouteExercisedCount = &coverage.ExercisedCount
 	if coverage.DiscoveredCount == 0 {
-		return nil
+		return
 	}
 	exercisedPct := float64(coverage.ExercisedCount) / float64(coverage.DiscoveredCount) * 100
+	result.RouteCoveragePct = &exercisedPct
 	if exercisedPct < float64(config.RouteCoverageThreshold) {
-		log.Entry().Warnf("Route coverage check: only %.1f%% of discovered routes have been exercised (%d/%d). "+
+		msg := fmt.Sprintf("Route coverage check: only %.1f%% of discovered routes have been exercised (%d/%d). "+
 			"Security findings may be incomplete — consider increasing test coverage.",
 			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)
+		log.Entry().Warn(msg)
+		result.RouteCoverageViolation = errors.New(msg)
 	} else {
 		log.Entry().Infof("Route coverage check: %.1f%% of routes exercised (%d/%d).",
 			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)
 	}
-	return &exercisedPct
 }
