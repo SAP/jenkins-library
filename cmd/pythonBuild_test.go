@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -688,11 +689,26 @@ func TestSearchDescriptor(t *testing.T) {
 func TestCreateBuildSettingsInfo(t *testing.T) {
 	SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
 
-	// Verifies that createBuildSettingsInfo returns a non-empty settings string and never
-	// returns an error (abort→warn change: GetDockerImageValue and CreateBuildSettingsInfo
-	// failures are logged as warnings, not propagated).
 	t.Run("returns settings string on success", func(t *testing.T) {
 		cfg := &pythonBuildOptions{CreateBOM: true, Publish: false}
+		result := createBuildSettingsInfo(cfg)
+		assert.Contains(t, result, "pythonBuild")
+	})
+
+	t.Run("GetDockerImageValue error is warned, not fatal", func(t *testing.T) {
+		// Make OpenFile return a non-ErrNotExist error so getConfig() inside
+		// GetDockerImageValue fails. createBuildSettingsInfo must warn and continue
+		// (abort→warn change), returning whatever buildsettings produces with
+		// an empty docker image.
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: func(_ string, _ map[string]string) (io.ReadCloser, error) {
+				return nil, fmt.Errorf("simulated config failure")
+			},
+		})
+		t.Cleanup(func() {
+			SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
+		})
+		cfg := &pythonBuildOptions{}
 		result := createBuildSettingsInfo(cfg)
 		assert.Contains(t, result, "pythonBuild")
 	})
