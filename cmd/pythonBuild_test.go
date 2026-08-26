@@ -497,6 +497,8 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 	t.Run("success - coordinates populated, no BOM gives empty PURL", func(t *testing.T) {
 		t.Chdir(t.TempDir())
+		// versioning.GetArtifact uses a package-level fileExists (real FS) and os.ReadFile
+		// internally — the mock FilesMock is not consulted for setup.py discovery.
 		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
 
 		cpe := &pythonBuildCommonPipelineEnvironment{}
@@ -511,6 +513,8 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 
 	t.Run("success - BOM present populates PURL", func(t *testing.T) {
 		t.Chdir(t.TempDir())
+		// versioning.GetArtifact uses real FS for setup.py; BOM is read through
+		// utils.FileRead (mock), so only the mock needs the BOM file.
 		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
 		bomContent := []byte(`<?xml version="1.0"?>` +
 			`<bom xmlns="http://cyclonedx.org/schema/bom/1.4">` +

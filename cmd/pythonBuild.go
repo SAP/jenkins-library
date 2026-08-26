@@ -53,7 +53,9 @@ type versioningAdapter struct {
 	pythonBuildUtils
 }
 
-// DownloadFile satisfies versioning.Utils; the pip handler never calls it.
+// DownloadFile satisfies versioning.Utils. The pip handler never calls it, but
+// if it ever does the non-nil error surfaces as a "failed to get artifact" warning
+// and metadata is skipped — acceptable behaviour, no data loss.
 func (v *versioningAdapter) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	return fmt.Errorf("DownloadFile not supported in pythonBuild")
 }
@@ -177,9 +179,13 @@ func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEn
 	if exists, _ := utils.FileExists(python.BOMFilename); exists {
 		if content, err := utils.FileRead(python.BOMFilename); err == nil {
 			var bom piperutils.Bom
-			if xml.Unmarshal(content, &bom) == nil {
+			if err := xml.Unmarshal(content, &bom); err == nil {
 				coordinate.PURL = bom.Metadata.Component.Purl
+			} else {
+				log.Entry().Debugf("skipping PURL: failed to parse BOM: %v", err)
 			}
+		} else {
+			log.Entry().Debugf("skipping PURL: failed to read BOM file: %v", err)
 		}
 	}
 
