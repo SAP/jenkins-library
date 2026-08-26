@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"os"
@@ -174,7 +175,12 @@ func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEn
 	}
 
 	if exists, _ := utils.FileExists(python.BOMFilename); exists {
-		coordinate.PURL = piperutils.GetComponent(python.BOMFilename).Purl
+		if content, err := utils.FileRead(python.BOMFilename); err == nil {
+			var bom piperutils.Bom
+			if xml.Unmarshal(content, &bom) == nil {
+				coordinate.PURL = bom.Metadata.Component.Purl
+			}
+		}
 	}
 
 	var buildArtifacts build.BuildArtifacts

@@ -516,9 +516,6 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 			`<bom xmlns="http://cyclonedx.org/schema/bom/1.4">` +
 			`<metadata><component><name>MyPackageName</name><version>1.0.0</version>` +
 			`<purl>pkg:pypi/mypackagename@1.0.0</purl></component></metadata></bom>`)
-		// utils.FileExists uses the mock; piperutils.GetComponent reads the real FS —
-		// both must have the BOM file for the PURL path to work end-to-end.
-		require.NoError(t, os.WriteFile(python.BOMFilename, bomContent, 0644))
 		utils := newPythonBuildTestsUtils()
 		utils.AddFile(python.BOMFilename, bomContent)
 
