@@ -119,11 +119,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	info, err := createBuildSettingsInfo(config)
-	if err != nil {
-		return fmt.Errorf("failed to create build settings info: %w", err)
-	}
-	commonPipelineEnvironment.custom.buildSettingsInfo = info
+	commonPipelineEnvironment.custom.buildSettingsInfo = createBuildSettingsInfo(config)
 
 	if config.CreateBuildArtifactsMetadata {
 		if err := createPythonBuildArtifactsMetadata(utils, commonPipelineEnvironment); err != nil {
@@ -146,7 +142,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 // TODO: extract to common place
-func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
+func createBuildSettingsInfo(config *pythonBuildOptions) string {
 	log.Entry().Debugf("creating build settings information...")
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
@@ -163,7 +159,7 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	return buildSettingsInfo, nil
+	return buildSettingsInfo
 }
 
 func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
