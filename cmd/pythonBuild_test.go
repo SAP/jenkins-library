@@ -656,3 +656,44 @@ func TestRunPythonBuildArtifactsMetadataFlag(t *testing.T) {
 		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
 	})
 }
+
+func TestSearchDescriptor(t *testing.T) {
+	t.Run("returns first matching descriptor", func(t *testing.T) {
+		supported := []string{"pyproject.toml", "setup.py"}
+		existsFunc := func(path string) (bool, error) { return path == "setup.py", nil }
+		result, err := searchDescriptor(supported, existsFunc)
+		require.NoError(t, err)
+		assert.Equal(t, "setup.py", result)
+	})
+
+	t.Run("FileExists error is propagated", func(t *testing.T) {
+		supported := []string{"pyproject.toml", "setup.py"}
+		existsFunc := func(path string) (bool, error) {
+			return false, fmt.Errorf("FS error on %s", path)
+		}
+		_, err := searchDescriptor(supported, existsFunc)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "FS error")
+	})
+
+	t.Run("returns error when no descriptor found", func(t *testing.T) {
+		supported := []string{"pyproject.toml", "setup.py"}
+		existsFunc := func(path string) (bool, error) { return false, nil }
+		_, err := searchDescriptor(supported, existsFunc)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no build descriptor available")
+	})
+}
+
+func TestCreateBuildSettingsInfo(t *testing.T) {
+	SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
+
+	// Verifies that createBuildSettingsInfo returns a non-empty settings string and never
+	// returns an error (abort→warn change: GetDockerImageValue and CreateBuildSettingsInfo
+	// failures are logged as warnings, not propagated).
+	t.Run("returns settings string on success", func(t *testing.T) {
+		cfg := &pythonBuildOptions{CreateBOM: true, Publish: false}
+		result := createBuildSettingsInfo(cfg)
+		assert.Contains(t, result, "pythonBuild")
+	})
+}
