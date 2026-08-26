@@ -68,4 +68,4 @@ Without both `--env` and `--build-arg` configured, the `ARG` in your Dockerfile 
 
 **Default changed:** `createBuildArtifactsMetadata` was previously `false` and is now `true` by default. The step now writes artifact coordinates to `commonPipelineEnvironment/custom/dockerBuildArtifacts` on every run. Downstream steps such as OSC CTP scans consume this data.
 
-Set `createBuildArtifactsMetadata: false` in your pipeline configuration to opt out.
+Set `createBuildArtifactsMetadata: false` under the `kanikoExecute` step key in `.pipeline/config.yml` (or the equivalent step-level configuration for your orchestrator) to opt out.

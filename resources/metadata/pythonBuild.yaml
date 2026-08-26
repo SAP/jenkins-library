@@ -43,7 +43,7 @@ spec:
       - name: createBuildArtifactsMetadata
         type: bool
         default: true
-        description: metadata about the artifacts that are built and published, this metadata is generally used by steps downstream in the pipeline
+        description: When true, writes artifact coordinates (name, version, and PURL if a CycloneDX BOM was produced) to commonPipelineEnvironment/custom/pythonBuildArtifacts. This data is consumed by downstream steps such as OSC CTP scans.
         scope:
           - STEPS
           - STAGES

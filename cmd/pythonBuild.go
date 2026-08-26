@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,7 +28,6 @@ const (
 
 type pythonBuildUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
 	piperutils.FileUtils
 }
 
@@ -57,7 +57,7 @@ type versioningAdapter struct {
 // if it ever does the non-nil error surfaces as a "failed to get artifact" warning
 // and metadata is skipped — acceptable behaviour, no data loss.
 func (v *versioningAdapter) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return fmt.Errorf("DownloadFile not supported in pythonBuild")
+	return errors.New("DownloadFile not supported in pythonBuild")
 }
 
 func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) {
@@ -70,12 +70,12 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-	if exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirtualEnvironmentName); err != nil {
+	exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirtualEnvironmentName)
+	if err != nil {
 		return err
-	} else {
-		log.DeferExitHandler(exitHandler)
-		defer exitHandler()
 	}
+	log.DeferExitHandler(exitHandler)
+	defer exitHandler()
 
 	// check project descriptor
 	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
@@ -119,11 +119,11 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	if info, err := createBuildSettingsInfo(config); err != nil {
-		return fmt.Errorf("failed to create build settings info: %v", err)
-	} else {
-		commonPipelineEnvironment.custom.buildSettingsInfo = info
+	info, err := createBuildSettingsInfo(config)
+	if err != nil {
+		return fmt.Errorf("failed to create build settings info: %w", err)
 	}
+	commonPipelineEnvironment.custom.buildSettingsInfo = info
 
 	if config.CreateBuildArtifactsMetadata {
 		if err := createPythonBuildArtifactsMetadata(utils, commonPipelineEnvironment); err != nil {
@@ -150,7 +150,8 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	log.Entry().Debugf("creating build settings information...")
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
-		return "", err
+		log.Entry().Warnf("failed to retrieve docker image value: %v", err)
+		dockerImage = ""
 	}
 	pythonConfig := buildsettings.BuildOptions{
 		CreateBOM:         config.CreateBOM,
@@ -176,7 +177,9 @@ func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEn
 		return fmt.Errorf("failed to get artifact coordinates: %w", err)
 	}
 
-	if exists, _ := utils.FileExists(python.BOMFilename); exists {
+	if exists, err := utils.FileExists(python.BOMFilename); err != nil {
+		log.Entry().Debugf("skipping PURL: failed to check BOM file: %v", err)
+	} else if exists {
 		if content, err := utils.FileRead(python.BOMFilename); err == nil {
 			var bom piperutils.Bom
 			if err := xml.Unmarshal(content, &bom); err == nil {
@@ -202,13 +205,16 @@ func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEn
 func searchDescriptor(supported []string, existsFunc func(string) (bool, error)) (string, error) {
 	var descriptor string
 	for _, f := range supported {
-		exists, _ := existsFunc(f)
+		exists, err := existsFunc(f)
+		if err != nil {
+			return "", fmt.Errorf("checking %s: %w", f, err)
+		}
 		if exists {
 			descriptor = f
 			break
 		}
 	}
-	if len(descriptor) == 0 {
+	if descriptor == "" {
 		return "", fmt.Errorf("no build descriptor available, supported: %v", supported)
 	}
 	return descriptor, nil
