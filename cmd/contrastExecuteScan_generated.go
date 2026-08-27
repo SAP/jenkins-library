@@ -21,16 +21,18 @@ import (
 )
 
 type contrastExecuteScanOptions struct {
-	UserAPIKey                  string `json:"userApiKey,omitempty"`
-	ServiceKey                  string `json:"serviceKey,omitempty"`
-	Username                    string `json:"username,omitempty"`
-	Server                      string `json:"server,omitempty"`
-	OrganizationID              string `json:"organizationId,omitempty"`
-	ApplicationID               string `json:"applicationId,omitempty"`
-	VulnerabilityThresholdTotal int    `json:"vulnerabilityThresholdTotal,omitempty"`
-	CheckForCompliance          bool   `json:"checkForCompliance,omitempty"`
-	GenerateSarif               bool   `json:"generateSarif,omitempty"`
-	GeneratePdf                 bool   `json:"generatePdf,omitempty"`
+	UserAPIKey                   string `json:"userApiKey,omitempty"`
+	ServiceKey                   string `json:"serviceKey,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Server                       string `json:"server,omitempty"`
+	OrganizationID               string `json:"organizationId,omitempty"`
+	ApplicationID                string `json:"applicationId,omitempty"`
+	VulnerabilityThresholdTotal  int    `json:"vulnerabilityThresholdTotal,omitempty"`
+	CheckForCompliance           bool   `json:"checkForCompliance,omitempty"`
+	GenerateSarif                bool   `json:"generateSarif,omitempty"`
+	GeneratePdf                  bool   `json:"generatePdf,omitempty"`
+	RouteCoverageThreshold       int    `json:"routeCoverageThreshold,omitempty"`
+	AgentInactivityThresholdDays int    `json:"agentInactivityThresholdDays,omitempty"`
 }
 
 type contrastExecuteScanReports struct {
@@ -219,6 +221,8 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", true, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateSarif, "generateSarif", true, "Generate SARIF report asynchronously from Contrast API")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdf, "generatePdf", false, "Generate PDF attestation report from Contrast API")
+	cmd.Flags().IntVar(&stepConfig.RouteCoverageThreshold, "routeCoverageThreshold", 30, "Minimum percentage of discovered routes that must have been exercised. If the actual coverage falls below this value, the step logs a warning.\n")
+	cmd.Flags().IntVar(&stepConfig.AgentInactivityThresholdDays, "agentInactivityThresholdDays", 7, "If all servers for this application have been inactive for longer than this many days, the step logs a warning. Set to 0 to disable the check.\n")
 
 	cmd.MarkFlagRequired("userApiKey")
 	cmd.MarkFlagRequired("serviceKey")
@@ -371,6 +375,24 @@ func contrastExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "routeCoverageThreshold",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     30,
+					},
+					{
+						Name:        "agentInactivityThresholdDays",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     7,
 					},
 				},
 			},
