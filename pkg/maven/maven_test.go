@@ -5,6 +5,7 @@ package maven
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -113,6 +114,98 @@ func TestEvaluate(t *testing.T) {
 		if assert.EqualError(t, err, "expression 'project.groupId' in file 'pom.xml' could not be resolved") {
 			assert.Equal(t, "", result)
 		}
+	})
+}
+
+func TestEvaluateMultiple(t *testing.T) {
+	coordinateExpressions := []string{"project.groupId", "project.artifactId", "project.version", "project.packaging"}
+
+	t.Run("should evaluate all expressions with a single call", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.StdoutReturn = map[string]string{"maven-help-plugin:3.1.0:evaluate": "com.awesome|awesome-app|1.2.3|jar"}
+		options := EvaluateOptions{PomPath: "pom.xml"}
+
+		values, err := EvaluateMultiple(&options, coordinateExpressions, &utils)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"com.awesome", "awesome-app", "1.2.3", "jar"}, values)
+		}
+		if assert.Equal(t, 1, len(utils.Calls)) {
+			assert.Equal(t, []string{
+				"--file", "pom.xml",
+				"-Dexpression=piper.evaluate.composite",
+				"-DforceStdout",
+				"-q",
+				"-Dpiper.evaluate.composite=${project.groupId}|${project.artifactId}|${project.version}|${project.packaging}",
+				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+				"--batch-mode",
+				"org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate",
+			}, utils.Calls[0].Params)
+		}
+		assert.Empty(t, options.Defines, "defines of the caller must not be modified")
+	})
+
+	t.Run("should ignore maven log entries on stdout", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.StdoutReturn = map[string]string{"maven-help-plugin:3.1.0:evaluate": "[WARNING] Some problems were encountered\ncom.awesome|awesome-app|1.2.3|jar"}
+
+		values, err := EvaluateMultiple(&EvaluateOptions{PomPath: "pom.xml"}, coordinateExpressions, &utils)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, []string{"com.awesome", "awesome-app", "1.2.3", "jar"}, values)
+		}
+	})
+
+	t.Run("should keep the defines of the caller", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.StdoutReturn = map[string]string{"maven-help-plugin:3.1.0:evaluate": "com.awesome|awesome-app|1.2.3|jar"}
+
+		_, err := EvaluateMultiple(&EvaluateOptions{PomPath: "pom.xml", Defines: []string{"-Drevision=1.2.3"}}, coordinateExpressions, &utils)
+
+		assert.NoError(t, err)
+		if assert.Equal(t, 1, len(utils.Calls)) {
+			assert.Contains(t, utils.Calls[0].Params, "-Drevision=1.2.3")
+		}
+	})
+
+	t.Run("should fail if the result does not match the expressions", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.StdoutReturn = map[string]string{"maven-help-plugin:3.1.0:evaluate": "com.awesome"}
+
+		values, err := EvaluateMultiple(&EvaluateOptions{PomPath: "pom.xml"}, coordinateExpressions, &utils)
+
+		assert.Contains(t, fmt.Sprint(err), "unexpected result")
+		assert.Nil(t, values)
+	})
+
+	t.Run("should fail if an expression could not be resolved", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.StdoutReturn = map[string]string{"maven-help-plugin:3.1.0:evaluate": "com.awesome|${project.artifactId}|1.2.3|jar"}
+
+		values, err := EvaluateMultiple(&EvaluateOptions{PomPath: "pom.xml"}, coordinateExpressions, &utils)
+
+		assert.EqualError(t, err, "expression 'project.artifactId' in file 'pom.xml' could not be resolved")
+		assert.Nil(t, values)
+	})
+
+	t.Run("should fail without expressions", func(t *testing.T) {
+		utils := NewMockUtils(false)
+
+		values, err := EvaluateMultiple(&EvaluateOptions{PomPath: "pom.xml"}, nil, &utils)
+
+		assert.EqualError(t, err, "no expressions provided")
+		assert.Nil(t, values)
+		assert.Equal(t, 0, len(utils.Calls))
+	})
+
+	t.Run("should propagate maven errors", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.ShouldFailOnCommand = map[string]error{"maven-help-plugin:3.1.0:evaluate": fmt.Errorf("maven failed")}
+
+		values, err := EvaluateMultiple(&EvaluateOptions{PomPath: "pom.xml"}, coordinateExpressions, &utils)
+
+		assert.Error(t, err)
+		assert.Nil(t, values)
 	})
 }
 

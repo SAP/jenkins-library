@@ -123,6 +123,81 @@ func Evaluate(options *EvaluateOptions, expression string, utils Utils) (string,
 	return value, nil
 }
 
+const (
+	// evaluateCompositeProperty is a user property which is used to let maven resolve several
+	// expressions within one invocation, see EvaluateMultiple.
+	evaluateCompositeProperty = "piper.evaluate.composite"
+	// evaluateCompositeSeparator separates the values of a composite expression. It must not be
+	// part of any evaluated value, which holds true for maven coordinates.
+	evaluateCompositeSeparator = "|"
+)
+
+// EvaluateMultiple evaluates a list of expressions from a pom file with one single mvn call and
+// returns the values in the order of the given expressions.
+// The maven-help-plugin accepts only one expression per invocation, therefore the expressions are
+// combined into a single user property which maven resolves with its own expression evaluator.
+// The result is thus identical to calling Evaluate() per expression, but only one JVM is started
+// and the maven project model is built only once, which matters a lot on build agents with a cold
+// maven repository.
+func EvaluateMultiple(options *EvaluateOptions, expressions []string, utils Utils) ([]string, error) {
+	if len(expressions) == 0 {
+		return nil, fmt.Errorf("no expressions provided")
+	}
+
+	references := make([]string, len(expressions))
+	for i, expression := range expressions {
+		if strings.Contains(expression, evaluateCompositeSeparator) {
+			return nil, fmt.Errorf("expression '%s' must not contain '%s'", expression, evaluateCompositeSeparator)
+		}
+		references[i] = "${" + expression + "}"
+	}
+
+	compositeOptions := *options
+	compositeOptions.Defines = append(slices.Clone(options.Defines),
+		fmt.Sprintf("-D%s=%s", evaluateCompositeProperty, strings.Join(references, evaluateCompositeSeparator)))
+
+	value, err := Evaluate(&compositeOptions, evaluateCompositeProperty, utils)
+	if err != nil {
+		return nil, err
+	}
+
+	values, err := parseCompositeValue(value, len(expressions))
+	if err != nil {
+		return nil, fmt.Errorf("failed to evaluate expressions %v in file '%s': %w", expressions, options.PomPath, err)
+	}
+
+	for i, expressionValue := range values {
+		if strings.Contains(expressionValue, "${") {
+			return nil, fmt.Errorf("expression '%s' in file '%s' could not be resolved", expressions[i], options.PomPath)
+		}
+	}
+
+	return values, nil
+}
+
+// parseCompositeValue extracts the expected number of values out of the result of a composite
+// evaluation. Maven writes warnings to stdout as well, therefore the last line which has the
+// expected shape is used.
+func parseCompositeValue(value string, expected int) ([]string, error) {
+	lines := strings.Split(strings.ReplaceAll(value, "\r\n", "\n"), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		// maven log entries are prefixed with the log level, e.g. '[WARNING]'
+		if len(line) == 0 || strings.HasPrefix(line, "[") {
+			continue
+		}
+		values := strings.Split(line, evaluateCompositeSeparator)
+		if len(values) != expected {
+			continue
+		}
+		for j := range values {
+			values[j] = strings.TrimSpace(values[j])
+		}
+		return values, nil
+	}
+	return nil, fmt.Errorf("unexpected result '%s', expected %v values separated by '%s'", value, expected, evaluateCompositeSeparator)
+}
+
 func InstallModuleWithReactor(moduleName string, options *EvaluateOptions, utils Utils) error {
 	var defines = options.Defines
 
