@@ -23,47 +23,49 @@ import (
 )
 
 type helmBuildOptions struct {
-	AdditionalParameters      []string `json:"additionalParameters,omitempty"`
-	ChartPath                 string   `json:"chartPath,omitempty"`
-	TargetRepositoryURL       string   `json:"targetRepositoryURL,omitempty"`
-	TargetRepositoryName      string   `json:"targetRepositoryName,omitempty"`
-	TargetRepositoryUser      string   `json:"targetRepositoryUser,omitempty"`
-	TargetRepositoryPassword  string   `json:"targetRepositoryPassword,omitempty"`
-	SourceRepositoryURL       string   `json:"sourceRepositoryURL,omitempty"`
-	SourceRepositoryName      string   `json:"sourceRepositoryName,omitempty"`
-	SourceRepositoryUser      string   `json:"sourceRepositoryUser,omitempty"`
-	SourceRepositoryPassword  string   `json:"sourceRepositoryPassword,omitempty"`
-	HelmDeployWaitSeconds     int      `json:"helmDeployWaitSeconds,omitempty"`
-	HelmValues                []string `json:"helmValues,omitempty"`
-	Image                     string   `json:"image,omitempty"`
-	KeepFailedDeployments     bool     `json:"keepFailedDeployments,omitempty"`
-	KubeConfig                string   `json:"kubeConfig,omitempty"`
-	KubeContext               string   `json:"kubeContext,omitempty"`
-	Namespace                 string   `json:"namespace,omitempty"`
-	DockerConfigJSON          string   `json:"dockerConfigJSON,omitempty"`
-	HelmCommand               string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall dependency publish"`
-	AppVersion                string   `json:"appVersion,omitempty"`
-	Dependency                string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
-	PackageDependencyUpdate   bool     `json:"packageDependencyUpdate,omitempty"`
-	DumpLogs                  bool     `json:"dumpLogs,omitempty"`
-	FilterTest                string   `json:"filterTest,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
-	Publish                   bool     `json:"publish,omitempty"`
-	Version                   string   `json:"version,omitempty"`
-	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
-	TemplateStartDelimiter    string   `json:"templateStartDelimiter,omitempty"`
-	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
-	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
-	CreateBOM                 bool     `json:"createBOM,omitempty"`
-	SyftDownloadURL           string   `json:"syftDownloadUrl,omitempty"`
-	ContainerImageNameTags    []string `json:"containerImageNameTags,omitempty"`
-	BuildSettingsInfo         string   `json:"buildSettingsInfo,omitempty"`
+	AdditionalParameters         []string `json:"additionalParameters,omitempty"`
+	ChartPath                    string   `json:"chartPath,omitempty"`
+	TargetRepositoryURL          string   `json:"targetRepositoryURL,omitempty"`
+	TargetRepositoryName         string   `json:"targetRepositoryName,omitempty"`
+	TargetRepositoryUser         string   `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryPassword     string   `json:"targetRepositoryPassword,omitempty"`
+	SourceRepositoryURL          string   `json:"sourceRepositoryURL,omitempty"`
+	SourceRepositoryName         string   `json:"sourceRepositoryName,omitempty"`
+	SourceRepositoryUser         string   `json:"sourceRepositoryUser,omitempty"`
+	SourceRepositoryPassword     string   `json:"sourceRepositoryPassword,omitempty"`
+	HelmDeployWaitSeconds        int      `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                   []string `json:"helmValues,omitempty"`
+	Image                        string   `json:"image,omitempty"`
+	KeepFailedDeployments        bool     `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                   string   `json:"kubeConfig,omitempty"`
+	KubeContext                  string   `json:"kubeContext,omitempty"`
+	Namespace                    string   `json:"namespace,omitempty"`
+	DockerConfigJSON             string   `json:"dockerConfigJSON,omitempty"`
+	HelmCommand                  string   `json:"helmCommand,omitempty" validate:"possible-values=upgrade lint install test uninstall dependency publish"`
+	AppVersion                   string   `json:"appVersion,omitempty"`
+	Dependency                   string   `json:"dependency,omitempty" validate:"possible-values=build list update"`
+	PackageDependencyUpdate      bool     `json:"packageDependencyUpdate,omitempty"`
+	DumpLogs                     bool     `json:"dumpLogs,omitempty"`
+	FilterTest                   string   `json:"filterTest,omitempty"`
+	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
+	Publish                      bool     `json:"publish,omitempty"`
+	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
+	Version                      string   `json:"version,omitempty"`
+	RenderSubchartNotes          bool     `json:"renderSubchartNotes,omitempty"`
+	TemplateStartDelimiter       string   `json:"templateStartDelimiter,omitempty"`
+	TemplateEndDelimiter         string   `json:"templateEndDelimiter,omitempty"`
+	RenderValuesTemplate         bool     `json:"renderValuesTemplate,omitempty"`
+	CreateBOM                    bool     `json:"createBOM,omitempty"`
+	SyftDownloadURL              string   `json:"syftDownloadUrl,omitempty"`
+	ContainerImageNameTags       []string `json:"containerImageNameTags,omitempty"`
+	BuildSettingsInfo            string   `json:"buildSettingsInfo,omitempty"`
 }
 
 type helmBuildCommonPipelineEnvironment struct {
 	custom struct {
-		helmChartURL      string
-		buildSettingsInfo string
+		helmChartURL       string
+		buildSettingsInfo  string
+		helmBuildArtifacts string
 	}
 }
 
@@ -75,6 +77,7 @@ func (p *helmBuildCommonPipelineEnvironment) persist(path, resourceName string) 
 	}{
 		{category: "custom", name: "helmChartUrl", value: p.custom.helmChartURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "helmBuildArtifacts", value: p.custom.helmBuildArtifacts},
 	}
 
 	errCount := 0
@@ -316,6 +319,7 @@ func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.FilterTest, "filterTest", os.Getenv("PIPER_filterTest"), "specify tests by attribute (currently `name`) using attribute=value syntax or `!attribute=value` to exclude a test (can specify multiple or separate values with commas `name=test1,name=test2`)")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures helm to run the deploy command to publish artifacts to a repository.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the artifact version to use from helm package/publish commands.")
 	cmd.Flags().BoolVar(&stepConfig.RenderSubchartNotes, "renderSubchartNotes", true, "If set, render subchart notes along with the parent.")
 	cmd.Flags().StringVar(&stepConfig.TemplateStartDelimiter, "templateStartDelimiter", `{{`, "When templating value files, use this start delimiter.")
@@ -689,6 +693,15 @@ func helmBuildMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
 						Name:        "version",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -792,6 +805,7 @@ func helmBuildMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"name": "custom/helmChartUrl"},
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/helmBuildArtifacts"},
 						},
 					},
 					{

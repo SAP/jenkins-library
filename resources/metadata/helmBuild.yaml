@@ -337,6 +337,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: false
+        description: metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: version
         type: string
         description: Defines the artifact version to use from helm package/publish commands.
@@ -424,6 +432,7 @@ spec:
         params:
           - name: custom/helmChartUrl
           - name: custom/buildSettingsInfo
+          - name: custom/helmBuildArtifacts
       - name: reports
         type: reports
         params:
