@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 
@@ -15,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MockUtils struct {
@@ -206,6 +209,120 @@ func TestEvaluateMultiple(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Nil(t, values)
+	})
+}
+
+func TestLocalRepositoryFallback(t *testing.T) {
+	knownUser := func(id string) (*user.User, error) { return &user.User{Uid: id, HomeDir: "/home/piper"}, nil }
+	unknownUser := func(id string) (*user.User, error) { return nil, fmt.Errorf("user: unknown userid %s", id) }
+	writable := func(string) bool { return true }
+	notWritable := func(string) bool { return false }
+
+	t.Run("should not be used if the default local repository works", func(t *testing.T) {
+		assert.Equal(t, "", localRepositoryFallbackFor("linux", 1000, knownUser, "/tmp", writable))
+	})
+
+	t.Run("should be used if the user is unknown to the container", func(t *testing.T) {
+		assert.Equal(t, filepath.Join("/tmp", ".m2", "repository"), localRepositoryFallbackFor("linux", 1000, unknownUser, "/tmp", writable))
+	})
+
+	t.Run("should be used if the home directory is not writable", func(t *testing.T) {
+		assert.Equal(t, filepath.Join("/tmp", ".m2", "repository"), localRepositoryFallbackFor("linux", 1000, knownUser, "/tmp", notWritable))
+	})
+
+	t.Run("should be used if the user has no home directory", func(t *testing.T) {
+		noHome := func(id string) (*user.User, error) { return &user.User{Uid: id}, nil }
+		assert.Equal(t, filepath.Join("/tmp", ".m2", "repository"), localRepositoryFallbackFor("linux", 1000, noHome, "/tmp", writable))
+	})
+
+	t.Run("should not be used on windows", func(t *testing.T) {
+		assert.Equal(t, "", localRepositoryFallbackFor("windows", -1, unknownUser, "/tmp", notWritable))
+	})
+}
+
+func TestDirectoryWritable(t *testing.T) {
+	t.Run("should accept a directory which can be created", func(t *testing.T) {
+		assert.True(t, directoryWritable(filepath.Join(t.TempDir(), "not", "there", "yet")))
+	})
+
+	t.Run("should reject a file", func(t *testing.T) {
+		file := filepath.Join(t.TempDir(), "file")
+		require.NoError(t, os.WriteFile(file, []byte("content"), 0o644))
+		assert.False(t, directoryWritable(file))
+	})
+}
+
+func TestSettingsDefineLocalRepository(t *testing.T) {
+	const settingsWithRepository = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"><localRepository>/opt/m2</localRepository></settings>`
+	const settingsWithoutRepository = `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"><servers/></settings>`
+
+	t.Run("should detect a local repository", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.AddFile("settings.xml", []byte(settingsWithRepository))
+		assert.True(t, settingsDefineLocalRepository([]string{"--settings", "settings.xml"}, &utils))
+		assert.True(t, settingsDefineLocalRepository([]string{"--global-settings", "settings.xml"}, &utils))
+	})
+
+	t.Run("should not detect anything without a local repository", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.AddFile("settings.xml", []byte(settingsWithoutRepository))
+		assert.False(t, settingsDefineLocalRepository([]string{"--settings", "settings.xml"}, &utils))
+	})
+
+	t.Run("should ignore unreadable and invalid settings", func(t *testing.T) {
+		utils := NewMockUtils(false)
+		utils.AddFile("broken.xml", []byte("no xml at all"))
+		assert.False(t, settingsDefineLocalRepository([]string{"--settings", "missing.xml"}, &utils))
+		assert.False(t, settingsDefineLocalRepository([]string{"--settings", "broken.xml"}, &utils))
+		assert.False(t, settingsDefineLocalRepository([]string{"--settings"}, &utils))
+	})
+}
+
+func TestGetParametersLocalRepository(t *testing.T) {
+	defaultFallback := localRepositoryFallback
+	defer func() { localRepositoryFallback = defaultFallback }()
+
+	t.Run("should not set the local repository if maven can use its default one", func(t *testing.T) {
+		localRepositoryFallback = func() string { return "" }
+		utils := NewMockUtils(false)
+
+		parameters, err := getParametersFromOptions(&ExecuteOptions{PomPath: "pom.xml"}, &utils)
+
+		assert.NoError(t, err)
+		assert.NotContains(t, strings.Join(parameters, " "), "-Dmaven.repo.local")
+	})
+
+	t.Run("should set the local repository if maven cannot use its default one", func(t *testing.T) {
+		localRepositoryFallback = func() string { return "/tmp/.m2/repository" }
+		utils := NewMockUtils(false)
+
+		parameters, err := getParametersFromOptions(&ExecuteOptions{PomPath: "pom.xml"}, &utils)
+
+		assert.NoError(t, err)
+		assert.Contains(t, parameters, "-Dmaven.repo.local=/tmp/.m2/repository")
+	})
+
+	t.Run("should prefer the configured m2Path", func(t *testing.T) {
+		localRepositoryFallback = func() string { return "/tmp/.m2/repository" }
+		utils := NewMockUtils(false)
+
+		parameters, err := getParametersFromOptions(&ExecuteOptions{PomPath: "pom.xml", M2Path: "my/m2"}, &utils)
+
+		assert.NoError(t, err)
+		assert.Contains(t, parameters, "-Dmaven.repo.local=my/m2")
+		assert.NotContains(t, parameters, "-Dmaven.repo.local=/tmp/.m2/repository")
+	})
+
+	t.Run("should not overrule a local repository from the settings", func(t *testing.T) {
+		localRepositoryFallback = func() string { return "/tmp/.m2/repository" }
+		utils := NewMockUtils(false)
+		workingDirectory, _ := os.Getwd()
+		utils.AddFile(filepath.Join(workingDirectory, "settings.xml"), []byte(`<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"><localRepository>/opt/m2</localRepository></settings>`))
+
+		parameters, err := getParametersFromOptions(&ExecuteOptions{PomPath: "pom.xml", ProjectSettingsFile: "settings.xml"}, &utils)
+
+		assert.NoError(t, err)
+		assert.NotContains(t, strings.Join(parameters, " "), "-Dmaven.repo.local")
 	})
 }
 

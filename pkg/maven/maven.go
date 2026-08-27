@@ -2,13 +2,18 @@ package maven
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/user"
 	"path/filepath"
+	"runtime"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -412,6 +417,85 @@ func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	return stdOutBuf, stdOut
 }
 
+// localRepositoryFallback returns the local repository maven should use in case it is not able to
+// use its default one. The result is determined once, it is a variable in order to be exchangeable
+// in tests.
+var localRepositoryFallback = sync.OnceValue(func() string {
+	repository := localRepositoryFallbackFor(runtime.GOOS, os.Getuid(), user.LookupId, os.TempDir(), directoryWritable)
+	if repository != "" {
+		log.Entry().Infof("The default maven local repository cannot be used, '%s' is used instead. Configure 'm2Path' in order to use a different location.", repository)
+	}
+	return repository
+})
+
+// localRepositoryFallbackFor returns a local repository path if maven would not be able to use its
+// default local repository, otherwise an empty string.
+// Maven derives the default local repository from '${user.home}/.m2/repository' and the JVM reads the
+// home directory from the passwd database. If the user has no entry there - which is the case when a
+// container is started with a numeric user which the image does not know, for example
+// 'docker run --user 1000:1000 maven:3.8.6-jdk-8' as done by the piper GitHub action - the JVM
+// resolves '${user.home}' to '?'. Maven then uses a directory named '?' relative to the current
+// directory, which means that the artifacts are downloaded into the checked out repository instead of
+// a location which other steps can reuse. The same applies if the home directory is not writable.
+func localRepositoryFallbackFor(goos string, uid int, lookupID func(string) (*user.User, error), tempDir string, writable func(string) bool) string {
+	if goos == "windows" {
+		return ""
+	}
+	currentUser, err := lookupID(strconv.Itoa(uid))
+	if err == nil && len(currentUser.HomeDir) > 0 && writable(filepath.Join(currentUser.HomeDir, ".m2")) {
+		return ""
+	}
+	return filepath.Join(tempDir, ".m2", "repository")
+}
+
+// directoryWritable tells whether the given directory can be created and written to. Since the
+// directory itself does not need to exist yet, the check is done on its closest existing parent.
+func directoryWritable(path string) bool {
+	for {
+		info, err := os.Stat(path)
+		if err == nil {
+			if !info.IsDir() {
+				return false
+			}
+			file, err := os.CreateTemp(path, ".piper-*")
+			if err != nil {
+				return false
+			}
+			name := file.Name()
+			file.Close()
+			os.Remove(name)
+			return true
+		}
+		parent := filepath.Dir(path)
+		if parent == path {
+			return false
+		}
+		path = parent
+	}
+}
+
+// settingsDefineLocalRepository tells whether one of the settings files of the given maven command
+// line defines a local repository. Maven does not need a fallback in that case.
+func settingsDefineLocalRepository(parameters []string, utils Utils) bool {
+	for i, parameter := range parameters {
+		if parameter != "--settings" && parameter != "--global-settings" || i+1 >= len(parameters) {
+			continue
+		}
+		content, err := utils.FileRead(parameters[i+1])
+		if err != nil {
+			continue
+		}
+		settings := Settings{}
+		if err := xml.Unmarshal(content, &settings); err != nil {
+			continue
+		}
+		if len(settings.LocalRepository) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, error) {
 	var parameters []string
 
@@ -422,6 +506,8 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 
 	if options.M2Path != "" {
 		parameters = append(parameters, "-Dmaven.repo.local="+options.M2Path)
+	} else if repository := localRepositoryFallback(); repository != "" && !settingsDefineLocalRepository(parameters, utils) {
+		parameters = append(parameters, "-Dmaven.repo.local="+repository)
 	}
 
 	if options.PomPath != "" {
