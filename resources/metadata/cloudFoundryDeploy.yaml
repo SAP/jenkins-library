@@ -337,12 +337,12 @@ spec:
         secret: false
       - name: password
         type: string
-        description: "Password"
+        description: "Password. Not required when clientId and clientSecret are provided."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: cfCredentialsId
@@ -366,17 +366,45 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User name used for deployment
+        description: User name used for deployment. Not required when clientId and clientSecret are provided.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: cfCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            default: cloudfoundry-$(org)-$(space)
+            name: cloudfoundryVaultSecretName
+      - name: clientId
+        type: string
+        description: "Client ID for XSUAA client credentials authentication (`cf auth --client-credentials`).
+          When both clientId and clientSecret are provided, username and password are not required."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        secret: true
+        resourceRef:
+          - type: vaultSecret
+            default: cloudfoundry-$(org)-$(space)
+            name: cloudfoundryVaultSecretName
+      - name: clientSecret
+        type: string
+        description: "Client Secret for XSUAA client credentials authentication.
+          When both clientId and clientSecret are provided, username and password are not required."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        secret: true
+        resourceRef:
           - type: vaultSecret
             default: cloudfoundry-$(org)-$(space)
             name: cloudfoundryVaultSecretName
