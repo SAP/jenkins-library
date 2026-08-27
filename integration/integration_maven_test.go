@@ -135,3 +135,34 @@ func TestMavenIntegrationArtifactPrepareVersionCiFriendly(t *testing.T) {
 	assert.Equal(2, strings.Count(output, "running command: mvn"),
 		"expected one evaluation and one versions:set call, got:\n%s", output)
 }
+
+// TestMavenIntegrationUnknownContainerUser makes sure that maven uses a usable local repository if
+// the container is started with a user which the image does not know - which is what the piper
+// GitHub action does with `docker run --user 1000:1000`. In that case the JVM cannot resolve
+// ${user.home} and maven would otherwise download the artifacts into a directory named '?' within
+// the checked out repository.
+func TestMavenIntegrationUnknownContainerUser(t *testing.T) {
+	t.Parallel()
+	assert := NewContainerAssert(t)
+
+	const workDir = "/tmp/project"
+
+	container := StartPiperContainer(t, ContainerConfig{
+		Image:    DOCKER_IMAGE_MAVEN_JDK8,
+		User:     "1000:1000",
+		TestData: "TestMavenIntegration/multi-module-ci-friendly",
+		WorkDir:  "/multi-module-ci-friendly",
+	})
+
+	// the test data belongs to root, therefore work on a copy which the container user can write
+	ExecCommand(t, container, "/", []string{"sh", "-c",
+		"cp -r /multi-module-ci-friendly " + workDir + " && cd " + workDir +
+			" && git init -q . && git config user.email piper@example.com && git config user.name piper && git add -A && git commit -q -m 'initial commit'"})
+
+	output := RunPiper(t, container, workDir, "artifactPrepareVersion", "--buildTool", "maven", "--versioningType", "library")
+	assert.Contains(output, "Version before automatic versioning: 1.0.0-SNAPSHOT")
+
+	// maven must not create a local repository within the workspace
+	entries := ExecCommand(t, container, workDir, []string{"ls", "-a"})
+	assert.NotContains(entries, "?", "maven created a local repository named '?' in the workspace")
+}
