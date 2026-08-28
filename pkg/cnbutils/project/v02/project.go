@@ -2,8 +2,9 @@
 package v02
 
 import (
-	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project/types"
+
+	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/api"
 )
 

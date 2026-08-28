@@ -6,9 +6,8 @@ import (
 	"maps"
 	"time"
 
-	"uuid"
-
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"uuid"
 )
 
 // newEvent creates a CloudEvent v1.0 with the given type, source, and data payload,

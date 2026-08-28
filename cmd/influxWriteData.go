@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/influx"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 

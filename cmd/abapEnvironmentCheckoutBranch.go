@@ -1,11 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project/types"
 	v01 "github.com/SAP/jenkins-library/pkg/cnbutils/project/v01"
@@ -13,6 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils/registry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/BurntSushi/toml"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 

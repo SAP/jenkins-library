@@ -13,17 +13,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type gctsCloneRepositoryOptions struct {
-	Username            string                 `json:"username,omitempty"`
-	Password            string                 `json:"password,omitempty"`
-	Repository          string                 `json:"repository,omitempty"`
-	Host                string                 `json:"host,omitempty"`
-	Client              string                 `json:"client,omitempty"`
-	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
-	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
+	Username            string         `json:"username,omitempty"`
+	Password            string         `json:"password,omitempty"`
+	Repository          string         `json:"repository,omitempty"`
+	Host                string         `json:"host,omitempty"`
+	Client              string         `json:"client,omitempty"`
+	QueryParameters     map[string]any `json:"queryParameters,omitempty"`
+	SkipSSLVerification bool           `json:"skipSSLVerification,omitempty"`
 }
 
 // GctsCloneRepositoryCommand Clones a Git repository
@@ -108,8 +109,9 @@ func GctsCloneRepositoryCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())

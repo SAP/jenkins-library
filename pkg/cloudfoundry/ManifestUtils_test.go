@@ -4,10 +4,9 @@
 package cloudfoundry
 
 import (
-	"testing"
-
 	"fmt"
 	"os"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -2,20 +2,19 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
-
-	"errors"
-
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"golang.org/x/sync/errgroup"
 )
 
 const (

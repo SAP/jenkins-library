@@ -7,15 +7,16 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"uuid"
 
-	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
 	"go.yaml.in/yaml/v3"
 	"helm.sh/helm/v3/pkg/chart"
+	"uuid"
 )
 
 // cycloneDxSchemaVersion is the CycloneDX schema version the chart SBOM is

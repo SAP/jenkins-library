@@ -4,18 +4,17 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
 	"testing"
 
-	"errors"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const moduleFileContent = `{"variants": [{"name": "apiElements","files": [{"name": "gradle-1.2.3-12234567890-plain.jar"}]}]}`

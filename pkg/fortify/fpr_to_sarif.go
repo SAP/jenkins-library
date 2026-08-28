@@ -11,12 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/piper-validation/fortify-client-go/models"
-
 	"github.com/SAP/jenkins-library/pkg/format"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/piper-validation/fortify-client-go/models"
 )
 
 // FVDL This struct encapsulates everyting in the FVDL document

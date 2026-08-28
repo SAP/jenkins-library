@@ -5,9 +5,8 @@ package npm
 import (
 	"fmt"
 
-	"github.com/SAP/jenkins-library/pkg/versioning"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 // NpmMockUtilsBundle for mocking

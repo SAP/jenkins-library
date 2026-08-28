@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -15,9 +14,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/google/go-github/v68/github"
+	"github.com/stretchr/testify/assert"
 )
 
 type whitesourceUtilsMock struct {

@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"go.yaml.in/yaml/v3"
 )
 

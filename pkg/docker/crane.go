@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // Retry configuration for transient network errors

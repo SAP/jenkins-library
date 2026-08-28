@@ -5,15 +5,15 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"testing"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/tms"
+
 	"github.com/stretchr/testify/assert"
 )
 

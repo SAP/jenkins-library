@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gcts"

@@ -10,6 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+
 	"github.com/magiconair/properties"
 )
 

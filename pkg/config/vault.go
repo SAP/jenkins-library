@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/vault"
+
 	"github.com/hashicorp/vault/api"
 )
 

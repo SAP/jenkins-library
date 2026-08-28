@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/url"
@@ -16,19 +17,11 @@ import (
 	"strings"
 	"time"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-
-	"github.com/bmatcuk/doublestar/v4"
-
-	"uuid"
-
-	"github.com/google/go-github/v68/github"
-
-	"github.com/piper-validation/fortify-client-go/models"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/fortify"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/gradle"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -37,9 +30,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
-
-	"errors"
+	"github.com/bmatcuk/doublestar/v4"
+	"github.com/google/go-github/v68/github"
+	"github.com/piper-validation/fortify-client-go/models"
+	"uuid"
 )
 
 const getClasspathScriptContent = `

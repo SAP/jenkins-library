@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/vault/mocks"
+
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 )

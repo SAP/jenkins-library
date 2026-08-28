@@ -9,10 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/Jeffail/gabs/v2"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 // CommonUtils for CPI

@@ -15,36 +15,37 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type cloudFoundryDeployOptions struct {
-	APIEndpoint              string                 `json:"apiEndpoint,omitempty"`
-	AppName                  string                 `json:"appName,omitempty"`
-	ArtifactVersion          string                 `json:"artifactVersion,omitempty"`
-	CommitHash               string                 `json:"commitHash,omitempty"`
-	CfHome                   string                 `json:"cfHome,omitempty"`
-	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
-	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
-	DeployDockerImage        string                 `json:"deployDockerImage,omitempty"`
-	DeployTool               string                 `json:"deployTool,omitempty"`
-	BuildTool                string                 `json:"buildTool,omitempty"`
-	DeployType               string                 `json:"deployType,omitempty"`
-	DockerPassword           string                 `json:"dockerPassword,omitempty"`
-	DockerUsername           string                 `json:"dockerUsername,omitempty"`
-	KeepOldInstance          bool                   `json:"keepOldInstance,omitempty"`
-	LoginParameters          string                 `json:"loginParameters,omitempty"`
-	Manifest                 string                 `json:"manifest,omitempty"`
-	ManifestVariables        []string               `json:"manifestVariables,omitempty"`
-	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty"`
-	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
-	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
-	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	Org                      string                 `json:"org,omitempty"`
-	Password                 string                 `json:"password,omitempty"`
-	Space                    string                 `json:"space,omitempty"`
-	Username                 string                 `json:"username,omitempty"`
+	APIEndpoint              string         `json:"apiEndpoint,omitempty"`
+	AppName                  string         `json:"appName,omitempty"`
+	ArtifactVersion          string         `json:"artifactVersion,omitempty"`
+	CommitHash               string         `json:"commitHash,omitempty"`
+	CfHome                   string         `json:"cfHome,omitempty"`
+	CfNativeDeployParameters string         `json:"cfNativeDeployParameters,omitempty"`
+	CfPluginHome             string         `json:"cfPluginHome,omitempty"`
+	DeployDockerImage        string         `json:"deployDockerImage,omitempty"`
+	DeployTool               string         `json:"deployTool,omitempty"`
+	BuildTool                string         `json:"buildTool,omitempty"`
+	DeployType               string         `json:"deployType,omitempty"`
+	DockerPassword           string         `json:"dockerPassword,omitempty"`
+	DockerUsername           string         `json:"dockerUsername,omitempty"`
+	KeepOldInstance          bool           `json:"keepOldInstance,omitempty"`
+	LoginParameters          string         `json:"loginParameters,omitempty"`
+	Manifest                 string         `json:"manifest,omitempty"`
+	ManifestVariables        []string       `json:"manifestVariables,omitempty"`
+	ManifestVariablesFiles   []string       `json:"manifestVariablesFiles,omitempty"`
+	MtaDeployParameters      string         `json:"mtaDeployParameters,omitempty"`
+	MtaExtensionDescriptor   string         `json:"mtaExtensionDescriptor,omitempty"`
+	MtaExtensionCredentials  map[string]any `json:"mtaExtensionCredentials,omitempty"`
+	MtaPath                  string         `json:"mtaPath,omitempty"`
+	Org                      string         `json:"org,omitempty"`
+	Password                 string         `json:"password,omitempty"`
+	Space                    string         `json:"space,omitempty"`
+	Username                 string         `json:"username,omitempty"`
 }
 
 type cloudFoundryDeployInflux struct {
@@ -71,7 +72,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "deployment_data", name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "deployTime", value: i.deployment_data.fields.deployTime},
@@ -191,8 +192,9 @@ The step achieves this via following deploy tools
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				config.RemoveVaultSecretFiles()
@@ -606,7 +608,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "deployment_data", "fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}, "tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
 						},
 					},

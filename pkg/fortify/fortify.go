@@ -12,6 +12,11 @@ import (
 	"strings"
 	"time"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
 	"github.com/piper-validation/fortify-client-go/fortify/artifact_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/attribute_of_project_version_controller"
@@ -28,12 +33,6 @@ import (
 	"github.com/piper-validation/fortify-client-go/fortify/project_version_of_project_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/saved_report_controller"
 	"github.com/piper-validation/fortify-client-go/models"
-
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/strfmt"
 	"github.com/sirupsen/logrus"
 )
 

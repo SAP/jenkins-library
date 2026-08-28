@@ -5,13 +5,12 @@ package maven
 
 import (
 	"errors"
+	"net/http"
 	"os"
 	"path/filepath"
+	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
-
-	"net/http"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

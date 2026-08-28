@@ -5,9 +5,9 @@ import (
 	"os"
 	"reflect"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"go.yaml.in/yaml/v3"
 )
 
 const constPropApplications = "applications"

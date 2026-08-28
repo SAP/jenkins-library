@@ -14,6 +14,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+
 	"github.com/package-url/packageurl-go"
 )
 

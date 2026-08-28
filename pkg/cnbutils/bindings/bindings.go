@@ -3,6 +3,7 @@ package bindings
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,13 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"errors"
-
-	k8sjson "sigs.k8s.io/json"
-
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/config"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
+	k8sjson "sigs.k8s.io/json"
 )
 
 type binding struct {

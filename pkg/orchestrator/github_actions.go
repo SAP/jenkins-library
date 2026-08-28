@@ -15,8 +15,8 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/google/go-github/v68/github"
 
+	"github.com/google/go-github/v68/github"
 	"golang.org/x/sync/errgroup"
 )
 

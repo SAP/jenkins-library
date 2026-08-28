@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/jarcoal/httpmock"
 	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 func TestGetTask(t *testing.T) {

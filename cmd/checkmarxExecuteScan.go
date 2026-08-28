@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -16,8 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -26,8 +25,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/bmatcuk/doublestar/v4"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/go-github/v68/github"
 )
 

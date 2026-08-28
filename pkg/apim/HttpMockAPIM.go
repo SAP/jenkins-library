@@ -4,10 +4,9 @@ package apim
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
-
-	"errors"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )

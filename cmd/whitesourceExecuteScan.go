@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,16 +12,12 @@ import (
 	"strings"
 	"time"
 
-	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/format"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/golang"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -28,9 +25,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/xuri/excelize/v2"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
 	"github.com/google/go-github/v68/github"
+	"github.com/xuri/excelize/v2"
 )
 
 // ScanOptions is just used to make the lines less long

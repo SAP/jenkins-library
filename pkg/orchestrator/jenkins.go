@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 type jenkinsConfigProvider struct {

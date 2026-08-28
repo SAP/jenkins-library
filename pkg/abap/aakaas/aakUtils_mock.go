@@ -3,9 +3,8 @@
 package aakaas
 
 import (
-	"time"
-
 	"errors"
+	"time"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"

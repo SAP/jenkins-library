@@ -4,11 +4,10 @@ package cpi
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
-
-	"errors"
 )
 
 // GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions

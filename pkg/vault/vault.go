@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/hashicorp/vault/api"
 )
 

@@ -17,22 +17,23 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand   string                   `json:"installCommand,omitempty"`
-	RunCommand       string                   `json:"runCommand,omitempty"`
-	URLs             []map[string]interface{} `json:"URLs,omitempty"`
-	Username         string                   `json:"username,omitempty"`
-	Password         string                   `json:"password,omitempty"`
-	BaseURL          string                   `json:"baseUrl,omitempty"`
-	UsernameEnvVar   string                   `json:"usernameEnvVar,omitempty"`
-	PasswordEnvVar   string                   `json:"passwordEnvVar,omitempty"`
-	UrlOptionPrefix  string                   `json:"urlOptionPrefix,omitempty"`
-	Envs             []string                 `json:"envs,omitempty"`
-	Paths            []string                 `json:"paths,omitempty"`
-	WorkingDirectory string                   `json:"workingDirectory,omitempty"`
+	InstallCommand   string           `json:"installCommand,omitempty"`
+	RunCommand       string           `json:"runCommand,omitempty"`
+	URLs             []map[string]any `json:"URLs,omitempty"`
+	Username         string           `json:"username,omitempty"`
+	Password         string           `json:"password,omitempty"`
+	BaseURL          string           `json:"baseUrl,omitempty"`
+	UsernameEnvVar   string           `json:"usernameEnvVar,omitempty"`
+	PasswordEnvVar   string           `json:"passwordEnvVar,omitempty"`
+	UrlOptionPrefix  string           `json:"urlOptionPrefix,omitempty"`
+	Envs             []string         `json:"envs,omitempty"`
+	Paths            []string         `json:"paths,omitempty"`
+	WorkingDirectory string           `json:"workingDirectory,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -156,8 +157,9 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
@@ -376,7 +378,7 @@ func npmExecuteTestsMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/e2e-results.xml", "type": "end-to-end-test"},
 						},
 					},

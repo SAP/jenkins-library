@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type checkmarxOneSystemMock struct {

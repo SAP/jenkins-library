@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	github "github.com/google/go-github/v68/github"
 )
 

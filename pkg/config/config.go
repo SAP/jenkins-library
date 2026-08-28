@@ -12,10 +12,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/systemtrust"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/systemtrust"
 
 	"github.com/google/go-cmp/cmp"
 	"go.yaml.in/yaml/v3"

@@ -12,6 +12,7 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )

@@ -3,6 +3,8 @@ package checkmarx
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,12 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"encoding/xml"
-
-	"errors"
-
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/sirupsen/logrus"
 )
 

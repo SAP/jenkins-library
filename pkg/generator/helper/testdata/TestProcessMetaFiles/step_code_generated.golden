@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -81,7 +82,7 @@ func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
@@ -119,7 +120,7 @@ func (i *testStepInfluxTest) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "m1", name: "f1", value: i.m1.fields.f1},
 		{valType: config.InfluxTag, measurement: "m1", name: "t1", value: i.m1.tags.t1},
@@ -222,8 +223,9 @@ func TestStepCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
@@ -356,7 +358,7 @@ func testStepMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "test-report_*.json", "subFolder": "sonarExecuteScan"},
 							{"filePattern": "report1", "type": "general"},
 						},
@@ -364,7 +366,7 @@ func testStepMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "artifactVersion"},
 							{"name": "git/commitId"},
 							{"name": "git/headCommitId"},
@@ -375,7 +377,7 @@ func testStepMetadata() config.StepData {
 					{
 						Name: "influxTest",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "m1", "fields": []map[string]string{{"name": "f1"}}, "tags": []map[string]string{{"name": "t1"}}},
 						},
 					},

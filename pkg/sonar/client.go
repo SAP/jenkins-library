@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	sonargo "github.com/magicsong/sonargo/sonar"
 )
 

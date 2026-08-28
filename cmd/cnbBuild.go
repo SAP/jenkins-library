@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	"dario.cat/mergo"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -23,8 +22,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/mitchellh/mapstructure"
 
+	"dario.cat/mergo"
+	"github.com/mitchellh/mapstructure"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
