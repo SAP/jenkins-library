@@ -172,9 +172,7 @@ func (uploader *GitUploaderInstance) listRemote() ([]reference, error) {
 func (uploader *GitUploaderInstance) initRepo(dir string) (*git.Repository, error) {
 	// git init -b <ref>
 	repo, err := git.PlainInitWithOptions(dir, &git.PlainInitOptions{
-		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.ReferenceName(uploader.ref),
-		},
+		DefaultBranch: plumbing.ReferenceName(uploader.ref),
 	})
 	if err != nil {
 		return nil, err

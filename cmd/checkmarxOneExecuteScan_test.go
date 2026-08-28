@@ -18,7 +18,7 @@ import (
 )
 
 type checkmarxOneSystemMock struct {
-	response interface{}
+	response any
 	influx   *checkmarxOneExecuteScanInflux
 }
 
@@ -476,7 +476,7 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 }
 
 func testRawDetailedResults() map[string]any {
-	return map[string]interface{}{
+	return map[string]any{
 		"Application":                     "80fdd5b7-9269-423e-a483-878ecb3c7ae8",
 		"ApplicationFullPathOnReportDate": "SSBA",
 		"Critical":                        map[string]int{"Issues": 2, "NotExploitable": 2},
@@ -797,7 +797,7 @@ func TestCheckmarxOneInflux(t *testing.T) {
 
 	type measurement struct {
 		Name  string
-		Value interface{}
+		Value any
 	}
 	referenceData := []measurement{
 		{Name: "checkmarxOne", Value: false},

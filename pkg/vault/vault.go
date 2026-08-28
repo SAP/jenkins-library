@@ -36,7 +36,7 @@ func (c *Client) GetKvSecret(path string) (map[string]string, error) {
 		return nil, err
 
 	}
-	var rawData interface{}
+	var rawData any
 	switch version {
 	case 1:
 		rawData = secret.Data
@@ -48,7 +48,7 @@ func (c *Client) GetKvSecret(path string) (map[string]string, error) {
 		}
 	}
 
-	data, ok := rawData.(map[string]interface{})
+	data, ok := rawData.(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf("excpected 'data' field to be a map[string]interface{} but got %T instead", rawData)
 	}
@@ -79,7 +79,7 @@ func (c *Client) WriteKvSecret(path string, newSecret map[string]string) error {
 	if err != nil {
 		return err
 	}
-	secret := make(map[string]interface{}, len(oldSecret))
+	secret := make(map[string]any, len(oldSecret))
 	for k, v := range oldSecret {
 		secret[k] = v
 	}
@@ -93,7 +93,7 @@ func (c *Client) WriteKvSecret(path string, newSecret map[string]string) error {
 	}
 	if version == 2 {
 		path = addPrefixToKvPath(path, mountPath, "data")
-		secret = map[string]interface{}{"data": secret}
+		secret = map[string]any{"data": secret}
 	} else if version != 1 {
 		return fmt.Errorf("KV Engine in version %d is currently not supported", version)
 	}
@@ -118,7 +118,7 @@ func (c *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string,
 		return "", err
 	}
 
-	secret, err := c.logical.Write(reqPath, map[string]interface{}{
+	secret, err := c.logical.Write(reqPath, map[string]any{
 		"metadata": string(jsonBytes),
 	})
 	if err != nil {
@@ -179,7 +179,7 @@ func (c *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 // RevokeToken revokes the token which is currently used.
 // The client can't be used anymore after this function was called.
 func (c *Client) RevokeToken() error {
-	_, err := c.logical.Write("auth/token/revoke-self", map[string]interface{}{})
+	_, err := c.logical.Write("auth/token/revoke-self", map[string]any{})
 	return err
 }
 
@@ -230,7 +230,7 @@ func (c *Client) GetAppRoleName() (string, error) {
 		return "", fmt.Errorf("token info did not contain metadata %s", lookupPath)
 	}
 
-	metaMap, ok := meta.(map[string]interface{})
+	metaMap, ok := meta.(map[string]any)
 
 	if !ok {
 		return "", fmt.Errorf("token info field 'meta' is not a map: %s", lookupPath)
@@ -280,7 +280,7 @@ func (c *Client) getKvInfo(path string) (string, int, error) {
 		return mountPath, 1, nil
 	}
 
-	versionRaw := options.(map[string]interface{})["version"]
+	versionRaw := options.(map[string]any)["version"]
 	if versionRaw == nil {
 		return mountPath, 1, nil
 	}
@@ -298,9 +298,9 @@ func (c *Client) getKvInfo(path string) (string, int, error) {
 	return mountPath, vNumber, nil
 }
 
-func (c *Client) lookupSecretID(secretID, appRolePath string) (map[string]interface{}, error) {
+func (c *Client) lookupSecretID(secretID, appRolePath string) (map[string]any, error) {
 	reqPath := sanitizePath(path.Join(appRolePath, "/secret-id/lookup"))
-	secret, err := c.logical.Write(reqPath, map[string]interface{}{
+	secret, err := c.logical.Write(reqPath, map[string]any{
 		"secret_id": secretID,
 	})
 	if err != nil {

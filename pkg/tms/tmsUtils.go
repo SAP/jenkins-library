@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"strings"
 
 	"errors"
 
@@ -117,7 +118,7 @@ type Options struct {
 	NodeName                 string
 	MtaPath                  string
 	MtaVersion               string
-	NodeExtDescriptorMapping map[string]interface{}
+	NodeExtDescriptorMapping map[string]any
 	Proxy                    string
 	StashContent             []string
 	Verbose                  bool
@@ -158,11 +159,11 @@ func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err erro
 	return
 }
 
-func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDescriptorMapping map[string]interface{}, nodes []Node, mtaYamlMap map[string]interface{}, mtaVersion string) (map[int64]string, error) {
+func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDescriptorMapping map[string]any, nodes []Node, mtaYamlMap map[string]any, mtaVersion string) (map[int64]string, error) {
 	var wrongMtaIdExtDescriptors []string
 	var wrongExtDescriptorPaths []string
 	var wrongNodeNames []string
-	var errorMessage string
+	var errorMessage strings.Builder
 
 	nodeIdExtDescriptorMapping := make(map[int64]string)
 	for nodeName, mappedValue := range nodeNameExtDescriptorMapping {
@@ -176,7 +177,7 @@ func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDes
 				}
 			} else {
 				wrappedErr := fmt.Errorf("tried to parse %v as yaml, but got an error: %w", mappedValueString, errGetYamlAsMap)
-				errorMessage += fmt.Sprintf("%v\n", wrappedErr)
+				errorMessage.WriteString(fmt.Sprintf("%v\n", wrappedErr))
 			}
 		} else {
 			wrongExtDescriptorPaths = append(wrongExtDescriptorPaths, mappedValueString)
@@ -196,33 +197,33 @@ func FormNodeIdExtDescriptorMappingWithValidation(utils TmsUtils, nodeNameExtDes
 	}
 
 	if mtaVersion != "*" && mtaVersion != mtaYamlMap["version"] {
-		errorMessage += "parameter 'mtaVersion' does not match the MTA version in mta.yaml\n"
+		errorMessage.WriteString("parameter 'mtaVersion' does not match the MTA version in mta.yaml\n")
 	}
 
 	if len(wrongMtaIdExtDescriptors) > 0 || len(wrongExtDescriptorPaths) > 0 || len(wrongNodeNames) > 0 {
 		if len(wrongMtaIdExtDescriptors) > 0 {
 			sort.Strings(wrongMtaIdExtDescriptors)
-			errorMessage += fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID or is missing at all\n", wrongMtaIdExtDescriptors)
+			errorMessage.WriteString(fmt.Sprintf("parameter 'extends' in MTA extension descriptor files %v is not the same as MTA ID or is missing at all\n", wrongMtaIdExtDescriptors))
 		}
 		if len(wrongExtDescriptorPaths) > 0 {
 			sort.Strings(wrongExtDescriptorPaths)
-			errorMessage += fmt.Sprintf("MTA extension descriptor files %v do not exist\n", wrongExtDescriptorPaths)
+			errorMessage.WriteString(fmt.Sprintf("MTA extension descriptor files %v do not exist\n", wrongExtDescriptorPaths))
 		}
 		if len(wrongNodeNames) > 0 {
 			sort.Strings(wrongNodeNames)
-			errorMessage += fmt.Sprintf("nodes %v do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n", wrongNodeNames)
+			errorMessage.WriteString(fmt.Sprintf("nodes %v do not exist. Please check node names provided in 'nodeExtDescriptorMapping' parameter or create these nodes\n", wrongNodeNames))
 		}
 	}
 
-	if errorMessage == "" {
+	if errorMessage.String() == "" {
 		return nodeIdExtDescriptorMapping, nil
 	} else {
-		return nil, errors.New(errorMessage)
+		return nil, errors.New(errorMessage.String())
 	}
 }
 
-func GetYamlAsMap(utils TmsUtils, yamlPath string) (map[string]interface{}, error) {
-	var result map[string]interface{}
+func GetYamlAsMap(utils TmsUtils, yamlPath string) (map[string]any, error) {
+	var result map[string]any
 	bytes, err := utils.FileRead(yamlPath)
 	if err != nil {
 		return result, err

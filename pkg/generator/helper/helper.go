@@ -711,7 +711,7 @@ func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error)
 		names := []string{}
 		dest := []config.StepParameters{}
 		var item config.StepParameters
-		for i := 0; i < l; i++ {
+		for i := range l {
 			item = l2.Index(i).Interface().(config.StepParameters)
 			if !slices.Contains(names, item.Name) {
 				names = append(names, item.Name)

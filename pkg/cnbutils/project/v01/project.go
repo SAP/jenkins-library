@@ -8,9 +8,9 @@ import (
 )
 
 type Descriptor struct {
-	Project  types.Project          `toml:"project"`
-	Build    types.Build            `toml:"build"`
-	Metadata map[string]interface{} `toml:"metadata"`
+	Project  types.Project  `toml:"project"`
+	Build    types.Build    `toml:"build"`
+	Metadata map[string]any `toml:"metadata"`
 }
 
 func NewDescriptor(projectTomlContents string) (types.Descriptor, error) {

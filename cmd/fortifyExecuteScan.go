@@ -20,8 +20,9 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 
+	"uuid"
+
 	"github.com/google/go-github/v68/github"
-	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
 
@@ -428,22 +429,22 @@ func verifyFFProjectCompliance(ctx context.Context, config fortifyExecuteScanOpt
 
 func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportData {
 	input := influx.fortify_data.fields
-	output := fortify.FortifyReportData{}
-	output.ProjectID = input.projectID
-	output.ProjectName = input.projectName
-	output.ProjectVersion = input.projectVersion
-	output.AuditAllAudited = input.auditAllAudited
-	output.AuditAllTotal = input.auditAllTotal
-	output.CorporateAudited = input.corporateAudited
-	output.CorporateTotal = input.corporateTotal
-	output.SpotChecksAudited = input.spotChecksAudited
-	output.SpotChecksGap = input.spotChecksGap
-	output.SpotChecksTotal = input.spotChecksTotal
-	output.Exploitable = input.exploitable
-	output.Suppressed = input.suppressed
-	output.Suspicious = input.suspicious
-	output.ProjectVersionID = input.projectVersionID
-	output.Violations = input.violations
+	output := fortify.FortifyReportData{
+		ProjectID:         input.projectID,
+		ProjectName:       input.projectName,
+		ProjectVersion:    input.projectVersion,
+		AuditAllAudited:   input.auditAllAudited,
+		AuditAllTotal:     input.auditAllTotal,
+		CorporateAudited:  input.corporateAudited,
+		CorporateTotal:    input.corporateTotal,
+		SpotChecksAudited: input.spotChecksAudited,
+		SpotChecksGap:     input.spotChecksGap,
+		SpotChecksTotal:   input.spotChecksTotal,
+		Exploitable:       input.exploitable,
+		Suppressed:        input.suppressed,
+		Suspicious:        input.suspicious,
+		ProjectVersionID:  input.projectVersionID,
+		Violations:        input.violations}
 	return output
 }
 
@@ -874,12 +875,12 @@ func readAllClasspathFiles(file string) string {
 		paths, _ = doublestar.FilepathGlob(filepath.Join("**", file))
 		log.Entry().Debugf("Concatenating the class paths from %v", paths)
 	}
-	var contents string
+	var contents strings.Builder
 	const separator = ":"
 	for _, path := range paths {
-		contents += separator + readClasspathFile(path)
+		contents.WriteString(separator + readClasspathFile(path))
 	}
-	return removeDuplicates(contents, separator)
+	return removeDuplicates(contents.String(), separator)
 }
 
 func readClasspathFile(file string) string {
@@ -989,7 +990,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	return scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
-func appendPythonVersionToTranslate(translateOptions map[string]interface{}, pythonVersion string) error {
+func appendPythonVersionToTranslate(translateOptions map[string]any, pythonVersion string) error {
 	if pythonVersion == "python2" {
 		translateOptions["pythonVersion"] = "2"
 	} else if pythonVersion == "python3" {
@@ -1006,8 +1007,8 @@ func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (
 		return config.Translate, nil
 	}
 
-	var translateList []map[string]interface{}
-	translateList = append(translateList, make(map[string]interface{}))
+	var translateList []map[string]any
+	translateList = append(translateList, make(map[string]any))
 	separator := getSeparator()
 
 	err := appendPythonVersionToTranslate(translateList[0], config.PythonVersion)
@@ -1032,8 +1033,8 @@ func populateMavenGradleTranslate(config *fortifyExecuteScanOptions, classpath s
 		return config.Translate, nil
 	}
 
-	var translateList []map[string]interface{}
-	translateList = append(translateList, make(map[string]interface{}))
+	var translateList []map[string]any
+	translateList = append(translateList, make(map[string]any))
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
@@ -1229,7 +1230,7 @@ func getSuppliedOrDefaultListAsString(suppliedList, defaultList []string, separa
 // setTranslateEntryIfNotEmpty builds a string from either the user-supplied list, or the default list,
 // by joining the entries with the given separator. If the resulting string is not empty, it will be
 // placed as an entry in the provided map under the given key.
-func setTranslateEntryIfNotEmpty(translate map[string]interface{}, key, separator string, suppliedList, defaultList []string) {
+func setTranslateEntryIfNotEmpty(translate map[string]any, key, separator string, suppliedList, defaultList []string) {
 	value := getSuppliedOrDefaultListAsString(suppliedList, defaultList, separator)
 	if value != "" {
 		translate[key] = value

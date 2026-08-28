@@ -151,8 +151,8 @@ func runBuilds(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, u
 	} else {
 		// Run several times for each repository in the addonDescriptor
 		var errstrings []string
-		vE := valuesEvaluator{}
-		vE.m = make(map[string]string)
+		vE := valuesEvaluator{
+			m: make(map[string]string)}
 		for _, values := range valuesList {
 			cummulatedValues, err := generateValuesWithAddonDescriptor(config, values)
 			if err != nil {
@@ -214,9 +214,7 @@ func runBuild(conn *abapbuild.Connector, config *abapEnvironmentBuildOptions, ut
 	inputValues.Values = values
 
 	build := myBuild{
-		Build: abapbuild.Build{
-			Connector: *conn,
-		},
+		Connector:                   *conn,
 		abapEnvironmentBuildOptions: config,
 	}
 	if err := build.Start(inputValues); err != nil {

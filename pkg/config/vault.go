@@ -95,7 +95,7 @@ func GlobalVaultClient() VaultClient {
 	return globalVaultClient
 }
 
-func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
+func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]any) {
 	for _, config := range configs {
 		s.mixIn(config, vaultFilter, StepData{})
 		// when an empty filter is returned we skip the mixin call since an empty filter will allow everything
@@ -108,7 +108,7 @@ func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...ma
 // GetVaultClientFromConfig logs in to Vault and returns authorized Vault client.
 // It's important to revoke token provided to this client after usage.
 // Currently, revocation will happen at the end of each step execution (see _generated.go part of the steps)
-func GetVaultClientFromConfig(config map[string]interface{}, creds VaultCredentials) (VaultClient, error) {
+func GetVaultClientFromConfig(config map[string]any, creds VaultCredentials) (VaultClient, error) {
 	address, addressOk := config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
 	if !addressOk || creds.VaultToken == "" && (creds.AppRoleID == "" || creds.AppRoleSecretID == "") {
@@ -214,10 +214,10 @@ func resolveVaultCredentialsWrapperBase(
 	switch config.Config[vaultCredPath].(type) {
 	case string:
 		resolveVaultCredentials(config, client)
-	case []interface{}:
-		vaultCredentialPathCopy := config.Config[vaultCredPath].([]interface{})
-		vaultCredentialKeysCopy, keysOk := config.Config[vaultCredKeys].([]interface{})
-		vaultCredentialEnvPrefixCopy, prefixOk := config.Config[vaultCredEnvPrefix].([]interface{})
+	case []any:
+		vaultCredentialPathCopy := config.Config[vaultCredPath].([]any)
+		vaultCredentialKeysCopy, keysOk := config.Config[vaultCredKeys].([]any)
+		vaultCredentialEnvPrefixCopy, prefixOk := config.Config[vaultCredEnvPrefix].([]any)
 
 		if !keysOk {
 			log.Entry().Debug("Vault credential resolution failed: unknown type of keys")
@@ -234,7 +234,7 @@ func resolveVaultCredentialsWrapperBase(
 			return
 		}
 
-		for i := 0; i < len(vaultCredentialPathCopy); i++ {
+		for i := range vaultCredentialPathCopy {
 			if prefixOk {
 				config.Config[vaultCredEnvPrefix] = vaultCredentialEnvPrefixCopy[i]
 			}
@@ -395,7 +395,7 @@ func populateCredentialsAsEnvs(config *StepConfig, secret map[string]string, key
 }
 
 func getTestCredentialKeys(config *StepConfig) []string {
-	keysRaw, ok := config.Config[vaultTestCredentialKeys].([]interface{})
+	keysRaw, ok := config.Config[vaultTestCredentialKeys].([]any)
 	if !ok {
 		return nil
 	}
@@ -412,7 +412,7 @@ func getTestCredentialKeys(config *StepConfig) []string {
 }
 
 func getCredentialKeys(config *StepConfig) []string {
-	keysRaw, ok := config.Config[vaultCredentialKeys].([]interface{})
+	keysRaw, ok := config.Config[vaultCredentialKeys].([]any)
 	if !ok {
 		log.Entry().Debugf("Not fetching general purpose credentials from vault since they are not (properly) configured")
 		return nil
@@ -502,7 +502,7 @@ func lookupPath(client VaultClient, path string, param *StepParameters) *string 
 	return nil
 }
 
-func getSecretReferencePaths(reference *ResourceReference, config map[string]interface{}) []string {
+func getSecretReferencePaths(reference *ResourceReference, config map[string]any) []string {
 	retPaths := make([]string, 0, len(VaultRootPaths))
 	secretName := reference.Default
 	if providedName, ok := config[reference.Name].(string); ok && providedName != "" {

@@ -340,8 +340,8 @@ func matchPattern(text, pattern string) bool {
 	if len(pattern) == 0 && len(text) != 0 {
 		return false
 	}
-	parts := strings.Split(pattern, "*")
-	for _, part := range parts {
+	parts := strings.SplitSeq(pattern, "*")
+	for part := range parts {
 		if !strings.Contains(text, part) {
 			return false
 		}

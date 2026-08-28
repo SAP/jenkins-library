@@ -3,6 +3,7 @@ package whitesource
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,7 +16,7 @@ import (
 // ConfigOption defines a dedicated WhiteSource config which can be enforced if required
 type ConfigOption struct {
 	Name          string
-	Value         interface{}
+	Value         any
 	OmitIfPresent string
 	Force         bool
 	Append        bool
@@ -50,14 +51,14 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 	newConfig := properties.LoadMap(newConfigMap)
 
 	if verbose {
-		var printLog string
+		var printLog strings.Builder
 		for _, p := range parametersForLog {
 			if val, ok := newConfigMap[p]; ok {
-				printLog += fmt.Sprintf("%s:%s ", p, val)
+				printLog.WriteString(fmt.Sprintf("%s:%s ", p, val))
 			}
 		}
-		if len(printLog) > 0 {
-			log.Entry().Debugf("ScanUA configuration: %s", printLog)
+		if len(printLog.String()) > 0 {
+			log.Entry().Debugf("ScanUA configuration: %s", printLog.String())
 		}
 	}
 
@@ -81,9 +82,7 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string
 
 func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[string]string {
 	newConfig := map[string]string{}
-	for k, v := range *originalConfig {
-		newConfig[k] = v
-	}
+	maps.Copy(newConfig, *originalConfig)
 
 	for _, cOpt := range *c {
 		//omit default if value present

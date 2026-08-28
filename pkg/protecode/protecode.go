@@ -33,7 +33,7 @@ type Product struct {
 
 // ResultData holds the information about the protecode result
 type ResultData struct {
-	Result Result `json:"results,omitempty"`
+	Result Result `json:"results"`
 }
 
 // Result holds the detail information about the protecode result
@@ -52,7 +52,7 @@ type Component struct {
 // Vulnerability the protecode vulnerability information
 type Vulnerability struct {
 	Exact  bool     `json:"exact,omitempty"`
-	Vuln   Vuln     `json:"vuln,omitempty"`
+	Vuln   Vuln     `json:"vuln"`
 	Triage []Triage `json:"triage,omitempty"`
 }
 
@@ -74,7 +74,7 @@ type Triage struct {
 	Modified    string `json:"modified,omitempty"`
 	Scope       string `json:"scope,omitempty"`
 	Description string `json:"description,omitempty"`
-	User        User   `json:"user,omitempty"`
+	User        User   `json:"user"`
 }
 
 // User holds the user information
@@ -173,7 +173,7 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 	return protecodeURL.String()
 }
 
-func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
+func (pc *Protecode) mapResponse(r io.ReadCloser, response any) {
 	defer r.Close()
 
 	buf := new(bytes.Buffer)

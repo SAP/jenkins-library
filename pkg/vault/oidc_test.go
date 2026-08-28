@@ -17,7 +17,7 @@ func TestOIDC(t *testing.T) {
 	mockToken := fmt.Sprintf("hvs.%s", mockPayload)
 
 	mockJwt := &api.Secret{
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"path":  oidcPath,
 			"token": mockToken,
 		},

@@ -455,7 +455,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 		return fmt.Errorf("package.json file does not exist")
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	pContent, err := utils.FileRead("package.json")
 	if err != nil {
 		return err
@@ -523,7 +523,7 @@ func generateMta(id, applicationName, version string) (string, error) {
 }
 
 func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
-	var result map[string]interface{}
+	var result map[string]any
 	p, err := utils.FileRead(mtaYamlFile)
 	if err != nil {
 		return "", err

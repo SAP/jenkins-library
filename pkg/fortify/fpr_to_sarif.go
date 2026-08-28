@@ -892,7 +892,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 						rawCweIds := strings.Split(fvdl.EngineData.RuleInfo[i].MetaInfoGroup[j].Data, ", ")
 						//If not "None", split each string on " " and add its 2nd index
 						if rawCweIds[0] != "None" {
-							for k := 0; k < len(rawCweIds); k++ {
+							for k := range rawCweIds {
 								cweId := strings.Split(rawCweIds[k], " ")[2]
 								//Fill the cweIdsForTaxonomies map if not already in
 								if _, isIn := cweIdsForTaxonomies[cweId]; !isIn {
@@ -1110,7 +1110,7 @@ func Parse(sys System, projectVersion *models.ProjectVersion, data []byte, filte
 					if sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index != 0 {
 						indexes := threadFlowIndexMap[sarif.Runs[0].Results[i].CodeFlows[cf].ThreadFlows[tf].Locations[j].Index]
 						log.Entry().Debug("Indexes found: ", indexes)
-						for rep := 0; rep < len(indexes); rep++ {
+						for rep := range indexes {
 							newLocations = append(newLocations, sarif.Runs[0].ThreadFlowLocations[indexes[rep]-1])
 							newLocations[rep].Index = 0 // void index
 						}
@@ -1197,7 +1197,7 @@ func integrateAuditData(ruleProp *format.SarifProperties, issueInstanceID string
 			return err
 		}
 	} else {
-		for i := 0; i < len(auditData); i++ {
+		for i := range auditData {
 			if issueInstanceID == *auditData[i].IssueInstanceID {
 				data = append(data, auditData[i])
 				break

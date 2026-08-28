@@ -88,7 +88,7 @@ func (b *bindingData) bindingContentType() bindingContentType {
 }
 
 // ProcessBindings creates the given bindings in the platform directory
-func ProcessBindings(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, platformPath string, bindings map[string]interface{}) error {
+func ProcessBindings(utils cnbutils.BuildUtils, httpClient piperhttp.Sender, platformPath string, bindings map[string]any) error {
 	typedBindings, err := toTyped(bindings)
 	if err != nil {
 		return fmt.Errorf("error while reading bindings: %w", err)
@@ -176,7 +176,7 @@ func validateBinding(name string, data bindingData) error {
 	return nil
 }
 
-func toTyped(rawMap map[string]interface{}) (bindings, error) {
+func toTyped(rawMap map[string]any) (bindings, error) {
 	typedBindings := bindings{}
 
 	for name, rawBinding := range rawMap {
@@ -203,7 +203,7 @@ func toTyped(rawMap map[string]interface{}) (bindings, error) {
 	return typedBindings, nil
 }
 
-func fromRaw(rawData interface{}) (binding, error) {
+func fromRaw(rawData any) (binding, error) {
 	var new binding
 
 	jsonValue, err := json.Marshal(rawData)

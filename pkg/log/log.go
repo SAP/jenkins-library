@@ -172,7 +172,7 @@ func RegisterHook(hook logrus.Hook) {
 }
 
 // Notice logs a notice message
-func Notice(args ...interface{}) {
+func Notice(args ...any) {
 	if isGitHubActions() {
 		// Format as GitHub Actions notice
 		message := fmt.Sprint(args...)

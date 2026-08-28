@@ -12,7 +12,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/uuid"
+	"uuid"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 )

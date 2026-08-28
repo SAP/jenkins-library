@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path"
@@ -383,13 +384,13 @@ func executeAnalysis(format, reportPath string, customFlags map[string]string, c
 		return nil, "", err
 	}
 	return []piperutils.Path{
-			{Target: report},
-		}, func() string {
-			if strings.HasPrefix(format, "sarif") {
-				return report
-			}
-			return ""
-		}(), nil
+		{Target: report},
+	}, func() string {
+		if strings.HasPrefix(format, "sarif") {
+			return report
+		}
+		return ""
+	}(), nil
 }
 
 func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) (bool, []string, error) {
@@ -690,8 +691,6 @@ func getLanguageList(config *codeqlExecuteScanOptions) []string {
 
 func cloneFlags(src map[string]string) map[string]string {
 	dst := make(map[string]string, len(src))
-	for k, v := range src {
-		dst[k] = v
-	}
+	maps.Copy(dst, src)
 	return dst
 }

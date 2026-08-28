@@ -13,7 +13,7 @@ import (
 
 type azureDevopsConfigProvider struct {
 	client         piperHttp.Client
-	apiInformation map[string]interface{}
+	apiInformation map[string]any
 }
 
 func newAzureDevopsConfigProvider() *azureDevopsConfigProvider {
@@ -43,18 +43,18 @@ func (a *azureDevopsConfigProvider) fetchAPIInformation() {
 		response, err := a.client.GetRequest(URL, nil, nil)
 		if err != nil {
 			log.Entry().Error("failed to get HTTP response, returning empty API information", err)
-			a.apiInformation = map[string]interface{}{}
+			a.apiInformation = map[string]any{}
 			return
 		} else if response.StatusCode != 200 { //http.StatusNoContent
 			log.Entry().Errorf("response code is %v, could not get API information from AzureDevOps. Returning with empty interface.", response.StatusCode)
-			a.apiInformation = map[string]interface{}{}
+			a.apiInformation = map[string]any{}
 			return
 		}
 
 		err = piperHttp.ParseHTTPResponseBodyJSON(response, &a.apiInformation)
 		if err != nil {
 			log.Entry().Error("failed to parse HTTP response, returning with empty interface", err)
-			a.apiInformation = map[string]interface{}{}
+			a.apiInformation = map[string]any{}
 			return
 		}
 		log.Entry().Debugf("successfully retrieved apiInformation")
@@ -128,7 +128,7 @@ func (a *azureDevopsConfigProvider) FullLogs() ([]byte, error) {
 		log.Entry().Errorf("response-Code is %v, could not get log information from AzureDevOps, returning with empty log.", response.StatusCode)
 		return []byte{}, nil
 	}
-	var responseInterface map[string]interface{}
+	var responseInterface map[string]any
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
 	if err != nil {
 		log.Entry().Error("failed to parse http response: ", err)

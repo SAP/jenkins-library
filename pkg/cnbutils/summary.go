@@ -47,7 +47,7 @@ func (is *ImageSummary) Print() {
 	log.Entry().Infof("    Env: %q", strings.Join(is.EnvVars, ", "))
 }
 
-func (is *ImageSummary) AddEnv(env map[string]interface{}) {
+func (is *ImageSummary) AddEnv(env map[string]any) {
 	for key := range env {
 		is.EnvVars = append(is.EnvVars, key)
 	}

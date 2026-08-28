@@ -698,7 +698,7 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 	return &response, nil
 }
 
-func splitConfigurationToMap(inputConfigMap map[string]interface{}, configMetadataInSystem configurationMetadataBody) ([]repositoryConfiguration, error) {
+func splitConfigurationToMap(inputConfigMap map[string]any, configMetadataInSystem configurationMetadataBody) ([]repositoryConfiguration, error) {
 	log.Entry().Infof("Parsing the configurations from the yml file")
 	var configurations []repositoryConfiguration
 	for key, value := range inputConfigMap {
@@ -760,7 +760,7 @@ func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody,
 	return &errorDump, nil
 }
 
-func addQueryToURL(requestURL string, keyValue map[string]interface{}) (string, error) {
+func addQueryToURL(requestURL string, keyValue map[string]any) (string, error) {
 
 	var formattedURL string
 	formattedURL = requestURL

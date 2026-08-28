@@ -24,7 +24,7 @@ type Sender interface {
 	Send(*http.Request) (*http.Response, error)
 }
 
-func (requester *Requester) create(method, path string, options interface{}) (request *http.Request, err error) {
+func (requester *Requester) create(method, path string, options any) (request *http.Request, err error) {
 	sonarGoClient, err := sonargo.NewClient(requester.Host, requester.Username, requester.Password)
 	if err != nil {
 		return
@@ -45,7 +45,7 @@ func (requester *Requester) send(request *http.Request) (*http.Response, error) 
 	return requester.Client.Send(request)
 }
 
-func (requester *Requester) decode(response *http.Response, result interface{}) error {
+func (requester *Requester) decode(response *http.Response, result any) error {
 	decoder := json.NewDecoder(response.Body)
 	defer response.Body.Close()
 	// sonargo.IssuesSearchObject does not imlement "internal" field organization and thus decoding fails

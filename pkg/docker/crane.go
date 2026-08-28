@@ -133,10 +133,7 @@ func (c *craneUtilsBundle) retryOperation(ctx context.Context, operation string,
 		case <-time.After(backoff):
 		}
 
-		backoff = time.Duration(float64(backoff) * factor)
-		if backoff > defaultMaxBackoff {
-			backoff = defaultMaxBackoff
-		}
+		backoff = min(time.Duration(float64(backoff)*factor), defaultMaxBackoff)
 	}
 	return lastErr
 }

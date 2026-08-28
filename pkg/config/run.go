@@ -28,7 +28,7 @@ type StageConfig struct {
 }
 
 type StepConditions struct {
-	Conditions map[string]map[string]interface{} `json:"stepConditions,omitempty" yaml:"stepConditions,omitempty"`
+	Conditions map[string]map[string]any `json:"stepConditions,omitempty" yaml:"stepConditions,omitempty"`
 }
 
 type PipelineDefinitionV1 struct {
@@ -66,15 +66,15 @@ type Step struct {
 }
 
 type StepCondition struct {
-	Config                    map[string][]interface{} `json:"config,omitempty" yaml:"config,omitempty"`
-	ConfigKey                 string                   `json:"configKey,omitempty" yaml:"configKey,omitempty"`
-	FilePattern               string                   `json:"filePattern,omitempty" yaml:"filePattern,omitempty"`
-	FilePatternFromConfig     string                   `json:"filePatternFromConfig,omitempty" yaml:"filePatternFromConfig,omitempty"`
-	Inactive                  bool                     `json:"inactive,omitempty" yaml:"inactive,omitempty"`
-	OnlyActiveStepInStage     bool                     `json:"onlyActiveStepInStage,omitempty" yaml:"onlyActiveStepInStage,omitempty"`
-	NpmScript                 string                   `json:"npmScript,omitempty" yaml:"npmScript,omitempty"`
-	CommonPipelineEnvironment map[string]interface{}   `json:"commonPipelineEnvironment,omitempty" yaml:"commonPipelineEnvironment,omitempty"`
-	PipelineEnvironmentFilled string                   `json:"pipelineEnvironmentFilled,omitempty" yaml:"pipelineEnvironmentFilled,omitempty"`
+	Config                    map[string][]any `json:"config,omitempty" yaml:"config,omitempty"`
+	ConfigKey                 string           `json:"configKey,omitempty" yaml:"configKey,omitempty"`
+	FilePattern               string           `json:"filePattern,omitempty" yaml:"filePattern,omitempty"`
+	FilePatternFromConfig     string           `json:"filePatternFromConfig,omitempty" yaml:"filePatternFromConfig,omitempty"`
+	Inactive                  bool             `json:"inactive,omitempty" yaml:"inactive,omitempty"`
+	OnlyActiveStepInStage     bool             `json:"onlyActiveStepInStage,omitempty" yaml:"onlyActiveStepInStage,omitempty"`
+	NpmScript                 string           `json:"npmScript,omitempty" yaml:"npmScript,omitempty"`
+	CommonPipelineEnvironment map[string]any   `json:"commonPipelineEnvironment,omitempty" yaml:"commonPipelineEnvironment,omitempty"`
+	PipelineEnvironmentFilled string           `json:"pipelineEnvironmentFilled,omitempty" yaml:"pipelineEnvironmentFilled,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, utils piperutils.FileUtils, envRootPath string) error {
@@ -99,9 +99,9 @@ func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, fi
 	// no support for flag values and envParameters
 	// so far not considered necessary
 
-	flagValues := map[string]interface{}{} // args of step from pipeline_generated.yml
+	flagValues := map[string]any{} // args of step from pipeline_generated.yml
 
-	envParameters := map[string]interface{}{}
+	envParameters := map[string]any{}
 
 	// parameters via paramJSON not supported
 	// not considered releavant for pipeline yaml syntax resolution

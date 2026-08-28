@@ -19,16 +19,16 @@ type Manifest interface {
 	GetFileName() string
 	GetAppName(index int) (string, error)
 	ApplicationHasProperty(index int, name string) (bool, error)
-	GetApplicationProperty(index int, name string) (interface{}, error)
+	GetApplicationProperty(index int, name string) (any, error)
 	Transform() error
 	IsModified() bool
-	GetApplications() ([]map[string]interface{}, error)
+	GetApplications() ([]map[string]any, error)
 	WriteManifest() error
 }
 
 // manifest ...
 type manifest struct {
-	self     map[string]interface{}
+	self     map[string]any
 	modified bool
 	name     string
 }
@@ -41,7 +41,7 @@ func ReadManifest(name string) (Manifest, error) {
 
 	log.Entry().Infof("Reading manifest file  '%s'", name)
 
-	m := &manifest{self: make(map[string]interface{}), name: name, modified: false}
+	m := &manifest{self: make(map[string]any), name: name, modified: false}
 
 	content, err := _readFile(name)
 	if err != nil {
@@ -87,16 +87,16 @@ func (m *manifest) GetFileName() string {
 // GetApplications Returns all applications denoted in the manifest file.
 // The applications are returned as a slice of maps. Each app is represented by
 // a map.
-func (m *manifest) GetApplications() ([]map[string]interface{}, error) {
+func (m *manifest) GetApplications() ([]map[string]any, error) {
 	apps, err := toSlice(m.self["applications"])
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]map[string]interface{}, 0)
+	result := make([]map[string]any, 0)
 
 	for _, app := range apps {
-		if _app, ok := app.(map[string]interface{}); ok {
+		if _app, ok := app.(map[string]any); ok {
 			result = append(result, _app)
 		} else {
 			return nil, fmt.Errorf("Cannot cast applications to map. Manifest file '%s' has invalid format", m.GetFileName())
@@ -128,7 +128,7 @@ func (m *manifest) ApplicationHasProperty(index int, name string) (bool, error) 
 }
 
 // GetApplicationProperty ...
-func (m *manifest) GetApplicationProperty(index int, name string) (interface{}, error) {
+func (m *manifest) GetApplicationProperty(index int, name string) (any, error) {
 
 	sliced, err := toSlice(m.self[constPropApplications])
 	if err != nil {
@@ -192,7 +192,7 @@ func (m *manifest) Transform() error {
 	return nil
 }
 
-func transformApp(app map[string]interface{}, m *manifest) error {
+func transformApp(app map[string]any, m *manifest) error {
 
 	appName := "n/a"
 
@@ -232,17 +232,17 @@ func (m *manifest) IsModified() bool {
 	return m.modified
 }
 
-func toMap(i interface{}) (map[string]interface{}, error) {
+func toMap(i any) (map[string]any, error) {
 
-	if m, ok := i.(map[string]interface{}); ok {
+	if m, ok := i.(map[string]any); ok {
 		return m, nil
 	}
 	return nil, fmt.Errorf("Failed to convert %v to map. Was %v", i, reflect.TypeOf(i))
 }
 
-func toSlice(i interface{}) ([]interface{}, error) {
+func toSlice(i any) ([]any, error) {
 
-	if s, ok := i.([]interface{}); ok {
+	if s, ok := i.([]any); ok {
 		return s, nil
 	}
 	return nil, fmt.Errorf("Failed to convert %v to slice. Was %v", i, reflect.TypeOf(i))

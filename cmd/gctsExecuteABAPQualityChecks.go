@@ -1185,10 +1185,10 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 	path, err = url.PathUnescape(path)
 
-	var fileExtension string
+	var fileExtension strings.Builder
 	fileExtensionLength := 30 - len(objName)
-	for i := 0; i < fileExtensionLength; i++ {
-		fileExtension += "="
+	for range fileExtensionLength {
+		fileExtension.WriteString("=")
 	}
 
 	if err != nil {
@@ -1205,7 +1205,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 			fileName = strings.ToLower(objName) + ".intf.abap"
 		} else {
-			fileName = "REPS " + strings.ToUpper(objName) + fileExtension + "IU.abap"
+			fileName = "REPS " + strings.ToUpper(objName) + fileExtension.String() + "IU.abap"
 		}
 
 	}
@@ -1218,7 +1218,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 			fileName = strings.ToLower(objName) + ".clas.definitions.abap"
 		} else {
-			fileName = "CINC " + objName + fileExtension + "CCDEF.abap"
+			fileName = "CINC " + objName + fileExtension.String() + "CCDEF.abap"
 		}
 
 	}
@@ -1232,7 +1232,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 			fileName = strings.ToLower(objName) + ".clas.implementations.abap"
 		} else {
-			fileName = "CINC " + objName + fileExtension + "CCIMP.abap"
+			fileName = "CINC " + objName + fileExtension.String() + "CCIMP.abap"
 		}
 
 	}
@@ -1246,7 +1246,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 			fileName = strings.ToLower(objName) + ".clas.macros.abap"
 		} else {
-			fileName = "CINC " + objName + fileExtension + "CCMAC.abap"
+			fileName = "CINC " + objName + fileExtension.String() + "CCMAC.abap"
 		}
 
 	}
@@ -1260,7 +1260,7 @@ func getFileName(config *gctsExecuteABAPQualityChecksOptions, client piperhttp.S
 
 			fileName = strings.ToLower(objName) + ".clas.testclasses.abap"
 		} else {
-			fileName = "CINC " + objName + fileExtension + "CCAU.abap"
+			fileName = "CINC " + objName + fileExtension.String() + "CCAU.abap"
 		}
 
 	}
