@@ -2,10 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"encoding/xml"
-	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,17 +44,6 @@ func newPythonBuildUtils() pythonBuildUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
-}
-
-type versioningAdapter struct {
-	pythonBuildUtils
-}
-
-// DownloadFile satisfies versioning.Utils. The pip handler never calls it, but
-// if it ever does the non-nil error surfaces as a "failed to get artifact" warning
-// and metadata is skipped — acceptable behaviour, no data loss.
-func (v *versioningAdapter) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return errors.New("DownloadFile not supported in pythonBuild")
 }
 
 func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) {
@@ -122,7 +108,7 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	commonPipelineEnvironment.custom.buildSettingsInfo = createBuildSettingsInfo(config)
 
 	if config.CreateBuildArtifactsMetadata {
-		if err := createPythonBuildArtifactsMetadata(utils, commonPipelineEnvironment); err != nil {
+		if err := createPythonBuildArtifactsMetadata(commonPipelineEnvironment); err != nil {
 			log.Entry().Warnf("unable to create build artifact metadata: %v", err)
 		}
 	}
@@ -142,6 +128,9 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 // TODO: extract to common place
+// GetDockerImageValue failure is intentionally non-fatal: the docker image is only metadata
+// used for build-settings tracking. A missing or unresolvable image does not affect the build
+// output, so we warn and continue rather than aborting an otherwise successful build.
 func createBuildSettingsInfo(config *pythonBuildOptions) string {
 	log.Entry().Debugf("creating build settings information...")
 	dockerImage, err := GetDockerImageValue(stepName)
@@ -162,9 +151,9 @@ func createBuildSettingsInfo(config *pythonBuildOptions) string {
 	return buildSettingsInfo
 }
 
-func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
+func createPythonBuildArtifactsMetadata(commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
 	options := versioning.Options{}
-	artifact, err := versioning.GetArtifact("pip", "", &options, &versioningAdapter{utils})
+	artifact, err := versioning.GetArtifact("pip", "", &options, nil)
 	if err != nil {
 		return fmt.Errorf("failed to get artifact: %w", err)
 	}
@@ -173,20 +162,8 @@ func createPythonBuildArtifactsMetadata(utils pythonBuildUtils, commonPipelineEn
 		return fmt.Errorf("failed to get artifact coordinates: %w", err)
 	}
 
-	if exists, err := utils.FileExists(python.BOMFilename); err != nil {
-		log.Entry().Debugf("skipping PURL: failed to check BOM file: %v", err)
-	} else if exists {
-		if content, err := utils.FileRead(python.BOMFilename); err == nil {
-			var bom piperutils.Bom
-			if err := xml.Unmarshal(content, &bom); err == nil {
-				coordinate.PURL = bom.Metadata.Component.Purl
-			} else {
-				log.Entry().Debugf("skipping PURL: failed to parse BOM: %v", err)
-			}
-		} else {
-			log.Entry().Debugf("skipping PURL: failed to read BOM file: %v", err)
-		}
-	}
+	component := piperutils.GetComponent(python.BOMFilename)
+	coordinate.PURL = component.Purl
 
 	var buildArtifacts build.BuildArtifacts
 	buildArtifacts.Coordinates = []versioning.Coordinates{coordinate}

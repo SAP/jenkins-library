@@ -503,14 +503,11 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 	t.Run("success - coordinates populated, no BOM gives empty PURL", func(t *testing.T) {
 		t.Chdir(t.TempDir())
-		// versioning.GetArtifact uses a package-level fileExists (real FS) and os.ReadFile
-		// internally — the mock FilesMock is not consulted for setup.py discovery.
+		// versioning.GetArtifact and piperutils.GetComponent both use the real FS.
 		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
 
 		cpe := &pythonBuildCommonPipelineEnvironment{}
-		utils := newPythonBuildTestsUtils()
-
-		err := createPythonBuildArtifactsMetadata(utils, cpe)
+		err := createPythonBuildArtifactsMetadata(cpe)
 		require.NoError(t, err)
 		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
 		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "1.0.0")
@@ -519,46 +516,26 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 
 	t.Run("success - BOM present populates PURL", func(t *testing.T) {
 		t.Chdir(t.TempDir())
-		// versioning.GetArtifact uses real FS for setup.py; BOM is read through
-		// utils.FileRead (mock), so only the mock needs the BOM file.
 		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
 		bomContent := []byte(`<?xml version="1.0"?>` +
 			`<bom xmlns="http://cyclonedx.org/schema/bom/1.4">` +
 			`<metadata><component><name>MyPackageName</name><version>1.0.0</version>` +
 			`<purl>pkg:pypi/mypackagename@1.0.0</purl></component></metadata></bom>`)
-		utils := newPythonBuildTestsUtils()
-		utils.AddFile(python.BOMFilename, bomContent)
+		require.NoError(t, os.WriteFile(python.BOMFilename, bomContent, 0644))
 
 		cpe := &pythonBuildCommonPipelineEnvironment{}
-		err := createPythonBuildArtifactsMetadata(utils, cpe)
+		err := createPythonBuildArtifactsMetadata(cpe)
 		require.NoError(t, err)
 		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "pkg:pypi/mypackagename@1.0.0")
 	})
 
-	t.Run("success - BOM FileRead error skips PURL", func(t *testing.T) {
+	t.Run("success - BOM with invalid XML skips PURL", func(t *testing.T) {
 		t.Chdir(t.TempDir())
 		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
-
-		utils := newPythonBuildTestsUtils()
-		// File must exist so FileExists passes, but FileRead returns an error.
-		utils.AddFile(python.BOMFilename, []byte("irrelevant"))
-		utils.FileReadErrors = map[string]error{python.BOMFilename: fmt.Errorf("simulated read error")}
+		require.NoError(t, os.WriteFile(python.BOMFilename, []byte("not valid xml <<<"), 0644))
 
 		cpe := &pythonBuildCommonPipelineEnvironment{}
-		err := createPythonBuildArtifactsMetadata(utils, cpe)
-		require.NoError(t, err)
-		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
-	})
-
-	t.Run("success - BOM XML parse error skips PURL", func(t *testing.T) {
-		t.Chdir(t.TempDir())
-		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
-
-		utils := newPythonBuildTestsUtils()
-		utils.AddFile(python.BOMFilename, []byte("not valid xml <<<"))
-
-		cpe := &pythonBuildCommonPipelineEnvironment{}
-		err := createPythonBuildArtifactsMetadata(utils, cpe)
+		err := createPythonBuildArtifactsMetadata(cpe)
 		require.NoError(t, err)
 		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
 	})
@@ -567,9 +544,7 @@ func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
 		t.Chdir(t.TempDir())
 
 		cpe := &pythonBuildCommonPipelineEnvironment{}
-		utils := newPythonBuildTestsUtils()
-
-		err := createPythonBuildArtifactsMetadata(utils, cpe)
+		err := createPythonBuildArtifactsMetadata(cpe)
 		assert.Error(t, err)
 		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
 	})
