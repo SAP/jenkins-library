@@ -517,7 +517,6 @@ func convertValueFromInt(config map[string]any, optionsField *reflect.StructFiel
 
 func findStructFieldByJSONTag(tagName string, optionsType reflect.Type) *reflect.StructField {
 	for field := range optionsType.Fields() {
-		field := field
 		tag := field.Tag.Get("json")
 		if tagName == tag || tagName+",omitempty" == tag {
 			return &field
