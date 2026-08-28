@@ -1176,8 +1176,51 @@ func (f *fileHandlerMock) FileExists(name string) (bool, error) {
 	return true, nil
 }
 
-func TestRunHelmBuildSettingsInfo(t *testing.T) {
-	t.Parallel()
+func TestRunHelmBuildSigning(t *testing.T) {
+	setupConfigOpenFileMock(t)
+	// Verifies that when signingKey and signingKeyRing are configured the publish
+	// path is entered and RunHelmPublish is called (signing logic itself is tested
+	// at the pkg/kubernetes layer).
+	tests := []struct {
+		name   string
+		config helmBuildOptions
+	}{
+		{
+			name: "explicit publish command with signing",
+			config: helmBuildOptions{
+				HelmCommand:    "publish",
+				SigningKey:     "My Key <key@example.com>",
+				SigningKeyRing: "/vault/secrets/keyring.gpg",
+			},
+		},
+		{
+			name: "default flow with publish=true and signing",
+			config: helmBuildOptions{
+				HelmCommand:    "",
+				Publish:        true,
+				SigningKey:     "My Key <key@example.com>",
+				SigningKeyRing: "/vault/secrets/keyring.gpg",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			utils := newHelmMockUtilsBundle()
+			cpe := helmBuildCommonPipelineEnvironment{}
+			helmExecutor := &mocks.HelmExecutor{}
+			helmExecutor.On("RunHelmLint").Return(nil)
+			helmExecutor.On("RunHelmPublish").Return("https://repo.example.com/chart-1.0.0.tgz", nil)
+
+			err := runHelmBuild(test.config, helmExecutor, utils, &cpe, utils.ExecMockRunner, utils.FilesMock, utils.HttpClientMock)
+
+			assert.NoError(t, err)
+			helmExecutor.AssertCalled(t, "RunHelmPublish")
+		})
+	}
+}
+
+func TestRunHelmBuildSettingsInfo(t *testing.T) {	t.Parallel()
 	setupConfigOpenFileMock(t)
 
 	t.Run("buildSettingsInfo written to CPE after successful run", func(t *testing.T) {

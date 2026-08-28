@@ -66,6 +66,8 @@ type HelmExecuteOptions struct {
 	HelmCommand               string   `json:"helmCommand,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	RenderSubchartNotes       bool     `json:"renderSubchartNotes,omitempty"`
+	SigningKey                string   `json:"signingKey,omitempty"`
+	SigningKeyRing            string   `json:"signingKeyRing,omitempty"`
 }
 
 // NewHelmExecutor creates HelmExecute instance
@@ -341,6 +343,15 @@ func (h *HelmExecute) runHelmPackage() error {
 	if len(h.config.AppVersion) > 0 {
 		helmParams = append(helmParams, "--app-version", h.config.AppVersion)
 	}
+	if h.config.SigningKey != "" && h.config.SigningKeyRing == "" {
+		return fmt.Errorf("signingKey is set but signingKeyRing is missing: both are required for chart signing")
+	}
+	if h.config.SigningKeyRing != "" && h.config.SigningKey == "" {
+		return fmt.Errorf("signingKeyRing is set but signingKey is missing: both are required for chart signing")
+	}
+	if h.config.SigningKey != "" {
+		helmParams = append(helmParams, "--sign", "--key", h.config.SigningKey, "--keyring", h.config.SigningKeyRing)
+	}
 	if h.verbose {
 		helmParams = append(helmParams, "--debug")
 	}
@@ -503,6 +514,19 @@ func (h *HelmExecute) RunHelmPublish() (string, error) {
 
 	if !(response.StatusCode == 200 || response.StatusCode == 201) {
 		return "", fmt.Errorf("couldn't upload artifact, received status code %d", response.StatusCode)
+	}
+
+	if h.config.SigningKey != "" {
+		provFile := binary + ".prov"
+		provURL := fmt.Sprintf("%s%s%s", h.config.TargetRepositoryURL, separator, provFile)
+		log.Entry().Infof("publishing provenance file: %s", provURL)
+		provResponse, err := h.utils.UploadRequest(http.MethodPut, provURL, provFile, "", nil, nil, "binary")
+		if err != nil {
+			return "", fmt.Errorf("couldn't upload provenance file: %w", err)
+		}
+		if !(provResponse.StatusCode == 200 || provResponse.StatusCode == 201) {
+			return "", fmt.Errorf("couldn't upload provenance file, received status code %d", provResponse.StatusCode)
+		}
 	}
 
 	return targetURL, nil

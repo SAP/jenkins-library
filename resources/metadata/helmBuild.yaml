@@ -411,6 +411,29 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: signingKey
+        type: string
+        description: PGP key identifier (e.g. key name or email) used to sign the Helm chart with `helm package --sign`. Retrieved from Vault when signingKeyVaultSecretName is configured.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - type: vaultSecret
+            name: signingKeyVaultSecretName
+            default: helm-signing
+      - name: signingKeyRing
+        type: string
+        description: Path to the PGP keyring file used together with signingKey to sign the Helm chart. Retrieved as a Vault secret file when signingKeyRingVaultSecretName is configured.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - type: vaultSecretFile
+            name: signingKeyRingVaultSecretName
+            default: helm-signing-keyring
   containers:
     - image: alpine/k8s:1.33.13
       workingDir: /config

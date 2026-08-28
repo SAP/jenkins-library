@@ -768,3 +768,168 @@ func TestRunHelmCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestRunHelmPackageSigning(t *testing.T) {
+	t.Run("signing flags are passed when both signingKey and signingKeyRing are set", func(t *testing.T) {
+		utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				ChartPath:      ".",
+				SigningKey:     "My Signing Key <key@example.com>",
+				SigningKeyRing: "/tmp/keyring.gpg",
+			},
+			stdout: log.Writer(),
+		}
+
+		err := helmExecute.runHelmPackage()
+
+		require.NoError(t, err)
+		require.Len(t, utils.Calls, 1)
+		assert.Equal(t, "helm", utils.Calls[0].Exec)
+		assert.Contains(t, utils.Calls[0].Params, "--sign")
+		assert.Contains(t, utils.Calls[0].Params, "--key")
+		assert.Contains(t, utils.Calls[0].Params, "My Signing Key <key@example.com>")
+		assert.Contains(t, utils.Calls[0].Params, "--keyring")
+		assert.Contains(t, utils.Calls[0].Params, "/tmp/keyring.gpg")
+	})
+
+	t.Run("no signing flags when both signingKey and signingKeyRing are empty", func(t *testing.T) {
+		utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
+		helmExecute := HelmExecute{
+			utils:  utils,
+			config: HelmExecuteOptions{ChartPath: "."},
+			stdout: log.Writer(),
+		}
+
+		err := helmExecute.runHelmPackage()
+
+		require.NoError(t, err)
+		assert.NotContains(t, utils.Calls[0].Params, "--sign")
+	})
+
+	t.Run("error when signingKey is set but signingKeyRing is missing", func(t *testing.T) {
+		utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				ChartPath:  ".",
+				SigningKey: "My Signing Key",
+			},
+			stdout: log.Writer(),
+		}
+
+		err := helmExecute.runHelmPackage()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "signingKey is set but signingKeyRing is missing")
+		assert.Empty(t, utils.Calls, "helm must not be invoked when signing config is incomplete")
+	})
+
+	t.Run("error when signingKeyRing is set but signingKey is missing", func(t *testing.T) {
+		utils := helmMockUtilsBundle{ExecMockRunner: &mock.ExecMockRunner{}}
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				ChartPath:      ".",
+				SigningKeyRing: "/tmp/keyring.gpg",
+			},
+			stdout: log.Writer(),
+		}
+
+		err := helmExecute.runHelmPackage()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "signingKeyRing is set but signingKey is missing")
+		assert.Empty(t, utils.Calls, "helm must not be invoked when signing config is incomplete")
+	})
+}
+
+func TestRunHelmPublishSigning(t *testing.T) {
+	t.Run("uploads both .tgz and .prov when signing is enabled", func(t *testing.T) {
+		utils := helmMockUtilsBundle{
+			ExecMockRunner: &mock.ExecMockRunner{},
+			HttpClientMock: &mock.HttpClientMock{FileUploads: map[string]string{}},
+		}
+		utils.ReturnFileUploadStatus = 200
+
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				TargetRepositoryURL:      "https://repo.example.com/",
+				TargetRepositoryUser:     "user",
+				TargetRepositoryPassword: "pass",
+				PublishVersion:           "1.0.0",
+				DeploymentName:           "mychart",
+				ChartPath:                ".",
+				SigningKey:               "My Key",
+				SigningKeyRing:           "/tmp/keyring.gpg",
+			},
+			stdout: log.Writer(),
+		}
+
+		targetURL, err := helmExecute.RunHelmPublish()
+
+		require.NoError(t, err)
+		assert.Equal(t, "https://repo.example.com/mychart-1.0.0.tgz", targetURL)
+		assert.Len(t, utils.FileUploads, 2)
+		assert.Equal(t, "https://repo.example.com/mychart-1.0.0.tgz", utils.FileUploads["mychart-1.0.0.tgz"])
+		assert.Equal(t, "https://repo.example.com/mychart-1.0.0.tgz.prov", utils.FileUploads["mychart-1.0.0.tgz.prov"])
+	})
+
+	t.Run("uploads only .tgz when signing is disabled", func(t *testing.T) {
+		utils := helmMockUtilsBundle{
+			ExecMockRunner: &mock.ExecMockRunner{},
+			HttpClientMock: &mock.HttpClientMock{FileUploads: map[string]string{}},
+		}
+		utils.ReturnFileUploadStatus = 200
+
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				TargetRepositoryURL:      "https://repo.example.com/",
+				TargetRepositoryUser:     "user",
+				TargetRepositoryPassword: "pass",
+				PublishVersion:           "1.0.0",
+				DeploymentName:           "mychart",
+				ChartPath:                ".",
+			},
+			stdout: log.Writer(),
+		}
+
+		targetURL, err := helmExecute.RunHelmPublish()
+
+		require.NoError(t, err)
+		assert.Equal(t, "https://repo.example.com/mychart-1.0.0.tgz", targetURL)
+		assert.Len(t, utils.FileUploads, 1)
+		_, hasProv := utils.FileUploads["mychart-1.0.0.tgz.prov"]
+		assert.False(t, hasProv, ".prov must not be uploaded when signing is disabled")
+	})
+
+	t.Run("error when .prov upload fails", func(t *testing.T) {
+		utils := helmMockUtilsBundle{
+			ExecMockRunner: &mock.ExecMockRunner{},
+			HttpClientMock: &mock.HttpClientMock{
+				FileUploads:           map[string]string{},
+				ReturnFileUploadError: errors.New("connection reset"),
+			},
+		}
+
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				TargetRepositoryURL: "https://repo.example.com/",
+				PublishVersion:      "1.0.0",
+				DeploymentName:      "mychart",
+				ChartPath:           ".",
+				SigningKey:          "My Key",
+				SigningKeyRing:      "/tmp/keyring.gpg",
+			},
+			stdout: log.Writer(),
+		}
+
+		_, err := helmExecute.RunHelmPublish()
+
+		require.Error(t, err)
+	})
+}

@@ -58,6 +58,8 @@ type helmBuildOptions struct {
 	SyftDownloadURL           string   `json:"syftDownloadUrl,omitempty"`
 	ContainerImageNameTags    []string `json:"containerImageNameTags,omitempty"`
 	BuildSettingsInfo         string   `json:"buildSettingsInfo,omitempty"`
+	SigningKey                string   `json:"signingKey,omitempty"`
+	SigningKeyRing            string   `json:"signingKeyRing,omitempty"`
 }
 
 type helmBuildCommonPipelineEnvironment struct {
@@ -199,6 +201,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			log.RegisterSecret(stepConfig.SourceRepositoryPassword)
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
+			log.RegisterSecret(stepConfig.SigningKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -325,6 +328,8 @@ func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 	cmd.Flags().StringSliceVar(&stepConfig.ContainerImageNameTags, "containerImageNameTags", []string{}, "List of full names (registry and tag) of the container images referenced by the chart. Used as a fallback source when image discovery via `helm template` yields no results. Typically populated by an upstream kanikoExecute step.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the helm build. This information is typically used for compliance related processes.")
+	cmd.Flags().StringVar(&stepConfig.SigningKey, "signingKey", os.Getenv("PIPER_signingKey"), "PGP key identifier (e.g. key name or email) used to sign the Helm chart with `helm package --sign`. Retrieved from Vault when signingKeyVaultSecretName is configured.")
+	cmd.Flags().StringVar(&stepConfig.SigningKeyRing, "signingKeyRing", os.Getenv("PIPER_signingKeyRing"), "Path to the PGP keyring file used together with signingKey to sign the Helm chart. Retrieved as a Vault secret file when signingKeyRingVaultSecretName is configured.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -778,6 +783,36 @@ func helmBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name: "signingKey",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "signingKeyVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "helm-signing",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_signingKey"),
+					},
+					{
+						Name: "signingKeyRing",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "signingKeyRingVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "helm-signing-keyring",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_signingKeyRing"),
 					},
 				},
 			},

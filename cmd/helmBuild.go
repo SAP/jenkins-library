@@ -54,6 +54,8 @@ func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, com
 		Version:                   config.Version,
 		PublishVersion:            config.Version,
 		RenderSubchartNotes:       config.RenderSubchartNotes,
+		SigningKey:                config.SigningKey,
+		SigningKeyRing:            config.SigningKeyRing,
 	}
 
 	utils := kubernetes.NewDeployUtilsBundle(helmConfig.CustomTLSCertificateLinks)
