@@ -1,0 +1,18 @@
+general:
+  buildTool: 'helm'
+
+steps:
+  artifactPrepareVersion:
+    versioningType: cloud_noTag
+
+  helmExecute:
+    chartPath: '.'
+    helmCommand: 'publish'
+    publish: true
+    packageDependencyUpdate: false
+    targetRepositoryName: 'helm-int-hello'
+    targetRepositoryURL: 'http://chartrepo:80'
+    targetRepositoryUser: 'repouser'
+    targetRepositoryPassword: 'repopass'
+    signingKey: 'Test Helm Signer'
+    signingKeyRing: '/chart/signing-keyring.gpg'

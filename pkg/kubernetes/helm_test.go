@@ -906,12 +906,15 @@ func TestRunHelmPublishSigning(t *testing.T) {
 		assert.False(t, hasProv, ".prov must not be uploaded when signing is disabled")
 	})
 
-	t.Run("error when .prov upload fails", func(t *testing.T) {
+	t.Run("error when .prov upload fails with connection error", func(t *testing.T) {
 		utils := helmMockUtilsBundle{
 			ExecMockRunner: &mock.ExecMockRunner{},
 			HttpClientMock: &mock.HttpClientMock{
-				FileUploads:           map[string]string{},
-				ReturnFileUploadError: errors.New("connection reset"),
+				FileUploads: map[string]string{},
+				FileUploadResponseSequence: []mock.UploadResponse{
+					{Status: 200, Err: nil},
+					{Status: 0, Err: errors.New("connection reset")},
+				},
 			},
 		}
 
@@ -931,5 +934,38 @@ func TestRunHelmPublishSigning(t *testing.T) {
 		_, err := helmExecute.RunHelmPublish()
 
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "couldn't upload provenance file")
+		assert.Contains(t, err.Error(), "connection reset")
+	})
+
+	t.Run("error when .prov upload returns non-200 status", func(t *testing.T) {
+		utils := helmMockUtilsBundle{
+			ExecMockRunner: &mock.ExecMockRunner{},
+			HttpClientMock: &mock.HttpClientMock{
+				FileUploads: map[string]string{},
+				FileUploadResponseSequence: []mock.UploadResponse{
+					{Status: 200, Err: nil},
+					{Status: 404, Err: nil},
+				},
+			},
+		}
+
+		helmExecute := HelmExecute{
+			utils: utils,
+			config: HelmExecuteOptions{
+				TargetRepositoryURL: "https://repo.example.com/",
+				PublishVersion:      "1.0.0",
+				DeploymentName:      "mychart",
+				ChartPath:           ".",
+				SigningKey:          "My Key",
+				SigningKeyRing:      "/tmp/keyring.gpg",
+			},
+			stdout: log.Writer(),
+		}
+
+		_, err := helmExecute.RunHelmPublish()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "couldn't upload provenance file, received status code 404")
 	})
 }

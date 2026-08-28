@@ -430,6 +430,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
         resourceRef:
           - type: vaultSecretFile
             name: signingKeyRingVaultSecretName

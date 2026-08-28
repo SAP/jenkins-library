@@ -11,14 +11,21 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
+// UploadResponse describes a single response entry used by FileUploadResponseSequence.
+type UploadResponse struct {
+	Status int
+	Err    error
+}
+
 // HttpClientMock mock struct
 type HttpClientMock struct {
-	ClientOptions          []piperhttp.ClientOptions // set by mock
-	HTTPFileUtils          *FilesMock
-	FileUploads            map[string]string // set by mock
-	ReturnFileUploadStatus int               // expected to be set upfront
-	ReturnFileUploadError  error             // expected to be set upfront
-	ReturnDownloadError    error             // expected to be set upfront
+	ClientOptions               []piperhttp.ClientOptions // set by mock
+	HTTPFileUtils               *FilesMock
+	FileUploads                 map[string]string // set by mock
+	ReturnFileUploadStatus      int               // expected to be set upfront
+	ReturnFileUploadError       error             // expected to be set upfront
+	ReturnDownloadError         error             // expected to be set upfront
+	FileUploadResponseSequence  []UploadResponse  // per-call responses consumed in order; overrides ReturnFileUpload* when non-empty
 }
 
 // SendRequest mock
@@ -39,6 +46,12 @@ func (utils *HttpClientMock) Upload(data piperhttp.UploadRequestData) (*http.Res
 // UploadRequest mock
 func (utils *HttpClientMock) UploadRequest(method, url, file, fieldName string, header http.Header, cookies []*http.Cookie, uploadType string) (*http.Response, error) {
 	utils.FileUploads[file] = url
+
+	if len(utils.FileUploadResponseSequence) > 0 {
+		entry := utils.FileUploadResponseSequence[0]
+		utils.FileUploadResponseSequence = utils.FileUploadResponseSequence[1:]
+		return &http.Response{StatusCode: entry.Status}, entry.Err
+	}
 
 	response := http.Response{
 		StatusCode: utils.ReturnFileUploadStatus,

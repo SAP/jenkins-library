@@ -202,6 +202,7 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 			log.RegisterSecret(stepConfig.KubeConfig)
 			log.RegisterSecret(stepConfig.DockerConfigJSON)
 			log.RegisterSecret(stepConfig.SigningKey)
+			log.RegisterSecret(stepConfig.SigningKeyRing)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)

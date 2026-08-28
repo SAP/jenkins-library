@@ -1220,6 +1220,26 @@ func TestRunHelmBuildSigning(t *testing.T) {
 	}
 }
 
+func TestHelmBuildCommandSigningFlags(t *testing.T) {
+	t.Parallel()
+
+	testCmd := HelmBuildCommand()
+
+	signingKeyFlag := testCmd.Flags().Lookup("signingKey")
+	assert.NotNil(t, signingKeyFlag, "cobra flag 'signingKey' must be registered")
+	if signingKeyFlag != nil {
+		assert.Equal(t, "string", signingKeyFlag.Value.Type(), "signingKey flag must be of type string")
+		assert.Equal(t, "", signingKeyFlag.DefValue, "signingKey flag default must be empty string")
+	}
+
+	signingKeyRingFlag := testCmd.Flags().Lookup("signingKeyRing")
+	assert.NotNil(t, signingKeyRingFlag, "cobra flag 'signingKeyRing' must be registered")
+	if signingKeyRingFlag != nil {
+		assert.Equal(t, "string", signingKeyRingFlag.Value.Type(), "signingKeyRing flag must be of type string")
+		assert.Equal(t, "", signingKeyRingFlag.DefValue, "signingKeyRing flag default must be empty string")
+	}
+}
+
 func TestRunHelmBuildSettingsInfo(t *testing.T) {	t.Parallel()
 	setupConfigOpenFileMock(t)
 
