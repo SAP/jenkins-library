@@ -12,7 +12,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
 	"github.com/jarcoal/httpmock"
-	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -30,7 +29,7 @@ func TestGetTask(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
-		result, response, err := serviceUnderTest.GetTask(&sonargo.CeTaskOption{Id: mock.Anything})
+		result, response, err := serviceUnderTest.GetTask(&CeTaskOption{Id: mock.Anything})
 		// assert
 		assert.NoError(t, err)
 		assert.NotEmpty(t, result)
@@ -48,7 +47,7 @@ func TestGetTask(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
-		result, response, err := serviceUnderTest.GetTask(&sonargo.CeTaskOption{Id: mock.Anything})
+		result, response, err := serviceUnderTest.GetTask(&CeTaskOption{Id: mock.Anything})
 		// assert
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "internal server error")
@@ -67,7 +66,7 @@ func TestGetTask(t *testing.T) {
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
-		result, response, err := serviceUnderTest.GetTask(&sonargo.CeTaskOption{Id: mock.Anything})
+		result, response, err := serviceUnderTest.GetTask(&CeTaskOption{Id: mock.Anything})
 		// assert
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "No activity found for task ")
