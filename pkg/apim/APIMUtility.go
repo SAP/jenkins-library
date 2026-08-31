@@ -9,7 +9,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
 
-	"github.com/pasztorpisti/qs"
+	"github.com/google/go-querystring/query"
 )
 
 // Utils for apim
@@ -25,9 +25,13 @@ type OdataUtils interface {
 
 // OdataParameters struct
 type OdataParameters struct {
-	Filter, Search          string
-	Top, Skip               int
-	Orderby, Select, Expand string
+	Filter  string `url:"filter,omitempty"`
+	Search  string `url:"search,omitempty"`
+	Top     int    `url:"top,omitempty"`
+	Skip    int    `url:"skip,omitempty"`
+	Orderby string `url:"orderby,omitempty"`
+	Select  string `url:"select,omitempty"`
+	Expand  string `url:"expand,omitempty"`
 }
 
 // Bundle struct
@@ -68,12 +72,13 @@ func (apim *Bundle) IsPayloadJSON() bool {
 
 func (odataFilters *OdataParameters) MakeOdataQuery() (string, error) {
 
-	customMarshaler := qs.NewMarshaler(&qs.MarshalOptions{
-		DefaultMarshalPresence: qs.OmitEmpty,
-	})
-	values, encodeErr := customMarshaler.Marshal(odataFilters)
-	if encodeErr == nil && len(values) > 0 {
-		values = "?" + strings.ReplaceAll(values, "&", "&$")
+	values, encodeErr := query.Values(odataFilters)
+	if encodeErr != nil {
+		return "", encodeErr
 	}
-	return values, encodeErr
+	encoded := values.Encode()
+	if len(encoded) > 0 {
+		encoded = "?" + strings.ReplaceAll(encoded, "&", "&$")
+	}
+	return encoded, nil
 }
