@@ -1023,22 +1023,13 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 }
 
 func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.StreamWriter, styleID int) error {
-	rows := []struct {
-		axis  string
-		title string
-	}{
-		{"A1", "Severity"},
-		{"B1", "Library"},
-		{"C1", "Vulnerability Id"},
-		{"D1", "CVSS 3"},
-		{"E1", "Project"},
-		{"F1", "Resolution"},
+	titles := []string{"Severity", "Library", "Vulnerability Id", "CVSS 3", "Project", "Resolution"}
+	headerRow := make([]any, len(titles))
+	for i, title := range titles {
+		headerRow[i] = excelize.Cell{StyleID: styleID, Value: title}
 	}
-	for _, row := range rows {
-		err := streamWriter.SetRow(row.axis, []any{excelize.Cell{StyleID: styleID, Value: row.title}})
-		if err != nil {
-			return err
-		}
+	if err := streamWriter.SetRow("A1", headerRow); err != nil {
+		return err
 	}
 
 	for i, alert := range alerts {
