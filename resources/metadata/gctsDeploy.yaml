@@ -132,7 +132,7 @@ spec:
           - STAGES
           - STEPS
       - name: configuration
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: "Configuration parameters for the repository. Provide the parameters as a key-value pair map in the following format: `<configuration parameter>`:`<Value>`. For a list of available configuration parameters, see [Configuration Parameters for Repositories](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/99e471efcbee4a0faec82f9dd15897e1.html)."
         scope:
           - PARAMETERS
@@ -143,7 +143,7 @@ spec:
         aliases:
           - name: gctsRepositoryConfigurations
       - name: queryParameters
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: Add query parameters (for API requests) that apply to all endpoints of the step. Provide the parameters as key-value pair map in the format `<query parameter>:<value>`.
         scope:
           - PARAMETERS

@@ -62,7 +62,7 @@ spec:
           - STEPS
         mandatory: true
       - name: queryParameters
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: Add query parameters (for API requests) that apply to all endpoints of the step. Provide the parameters as key-value pair map in the format `<query parameter>:<value>`.
         scope:
           - PARAMETERS

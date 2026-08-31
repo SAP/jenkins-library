@@ -31,7 +31,7 @@ spec:
         mandatory: true
         default: "npm run wdi5"
       - name: URLs
-        type: "[]map[string]interface{}"
+        type: "[]map[string]any"
         description: |
           An array of objects, each representing an application URL with associated credentials.
           Each object must have the following properties:

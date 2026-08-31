@@ -80,7 +80,7 @@ spec:
           - STAGES
           - STEPS
       - name: tags
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: Optional key-value pairs describing the event in details
         scope:
           - PARAMETERS
@@ -110,7 +110,7 @@ spec:
           - STAGES
           - STEPS
       - name: resourceTags
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: Optional key-value pairs describing the resource in details
         scope:
           - PARAMETERS

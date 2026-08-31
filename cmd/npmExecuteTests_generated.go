@@ -268,7 +268,7 @@ func npmExecuteTestsMetadata() config.StepData {
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]map[string]interface{}",
+						Type:      "[]map[string]any",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 					},
