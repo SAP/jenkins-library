@@ -7,12 +7,12 @@ import (
 )
 
 // ExecuteTemplate parses the provided template, substitutes values and returns the output
-func ExecuteTemplate(txtTemplate string, context interface{}) (string, error) {
+func ExecuteTemplate(txtTemplate string, context any) (string, error) {
 	return ExecuteTemplateFunctions(txtTemplate, nil, context)
 }
 
 // ExecuteTemplateFunctions parses the provided template, applies the transformation functions, substitutes values and returns the output
-func ExecuteTemplateFunctions(txtTemplate string, functionMap template.FuncMap, context interface{}) (string, error) {
+func ExecuteTemplateFunctions(txtTemplate string, functionMap template.FuncMap, context any) (string, error) {
 	template := template.New("tmp")
 	if functionMap != nil {
 		template = template.Funcs(functionMap)
