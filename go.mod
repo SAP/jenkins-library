@@ -47,7 +47,6 @@ require (
 	github.com/moby/moby/api v1.55.0
 	github.com/motemen/go-nuts v0.0.0-20251105153347-936c09797748
 	github.com/package-url/packageurl-go v0.1.6
-	github.com/pasztorpisti/qs v0.0.0-20171216220353-8d6c33ee906c
 	github.com/piper-validation/fortify-client-go v0.0.0-20220126145513-7b3e9a72af01
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sirupsen/logrus v1.9.4
