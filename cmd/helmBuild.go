@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -93,12 +95,12 @@ func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, com
 	fileUtils := &piperutils.Files{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
+	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, artifactInfo, execRunner, fileUtils, httpClient); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
 	}
 }
 
-func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, artifactInfo versioning.Coordinates, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	if config.RenderValuesTemplate {
 		err := parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
 		if err != nil {
@@ -136,11 +138,12 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
+		writeHelmBuildArtifacts(artifactInfo, targetURL, commonPipelineEnvironment)
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
 	default:
-		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
+		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, artifactInfo, execRunner, fileUtils, httpClient); err != nil {
 			return err
 		}
 	}
@@ -167,7 +170,7 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 	return nil
 }
 
-func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, artifactInfo versioning.Coordinates, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	if len(config.Dependency) > 0 {
 		if err := helmExecutor.RunHelmDependency(); err != nil {
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
@@ -184,6 +187,7 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
+		writeHelmBuildArtifacts(artifactInfo, targetURL, commonPipelineEnvironment)
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
@@ -192,7 +196,23 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 	return nil
 }
 
-// generateSBOMs produces both SBOMs for the published chart, sharing a single
+// writeHelmBuildArtifacts serialises the chart coordinates (name, version, published URL)
+// into JSON and stores them in the CPE under custom/helmBuildArtifacts.
+// This mirrors the pattern used by mavenBuild for custom/mavenBuildArtifacts and
+// is consumed by sapCallStagingService to populate the Cumulus promote event.
+func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL string, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
+	artifactInfo.URL = targetURL
+	var buildArtifacts build.BuildArtifacts
+	buildArtifacts.Coordinates = []versioning.Coordinates{artifactInfo}
+	jsonResult, err := json.Marshal(buildArtifacts)
+	if err != nil {
+		log.Entry().Warnf("failed to marshal helm build artifacts: %v", err)
+		return
+	}
+	commonPipelineEnvironment.custom.helmBuildArtifacts = string(jsonResult)
+}
+
+// generateSBOMs produces both SBOMs for the published chart
 // discovered image set so the chart BOM and the container BOMs describe the
 // same images. Both are best-effort: a failure is logged but never fails the
 // step.

@@ -17,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -77,7 +78,7 @@ func TestRunHelmUpgrade(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmUpgrade").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -117,7 +118,7 @@ func TestRunHelmLint(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmLint").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -157,7 +158,7 @@ func TestRunHelmInstall(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmInstall").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -196,7 +197,7 @@ func TestRunHelmTest(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmTest").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -235,7 +236,7 @@ func TestRunHelmUninstall(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmUninstall").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -274,7 +275,7 @@ func TestRunHelmDependency(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmDependency").Return(testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -315,7 +316,7 @@ func TestRunHelmPush(t *testing.T) {
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -372,7 +373,7 @@ func TestRunHelmPushSBOM(t *testing.T) {
 			defer os.Remove("bom-docker-0.xml")
 
 			// Act
-			err := runHelmBuild(config, helmExecutor, utils, &cpe, execRunner, &mock.FilesMock{}, client)
+			err := runHelmBuild(config, helmExecutor, utils, &cpe, versioning.Coordinates{}, execRunner, &mock.FilesMock{}, client)
 
 			// Assert
 			assert.NoError(t, err)
@@ -486,7 +487,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 			helmExecutor.On("RunHelmLint").Return(testCase.methodLintError)
 			helmExecutor.On("RunHelmPublish").Return(testCase.methodPublishError)
 
-			err := runHelmBuild(testCase.config, helmExecutor, &testCase.fileUtils, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+			err := runHelmBuild(testCase.config, helmExecutor, &testCase.fileUtils, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 			if err != nil {
 				assert.Equal(t, testCase.expectedErrStr, err.Error())
 			}
@@ -548,7 +549,7 @@ func TestRunHelmDefaultCommandSBOM(t *testing.T) {
 			defer os.Remove("bom-docker-0.xml")
 
 			// Act
-			err := runHelmBuild(config, helmExecutor, utils, &cpe, execRunner, &mock.FilesMock{}, client)
+			err := runHelmBuild(config, helmExecutor, utils, &cpe, versioning.Coordinates{}, execRunner, &mock.FilesMock{}, client)
 
 			// Assert
 			assert.NoError(t, err)
@@ -928,7 +929,7 @@ func TestRunHelmSBOMFailureIsBestEffort(t *testing.T) {
 			// helm template yields no images → SBOM falls back to the (bad) CPE list.
 			helmExecutor.On("RunHelmTemplate").Return([]byte(nil), nil)
 
-			err := runHelmBuild(test.config, helmExecutor, utils, &cpe, execRunner, &mock.FilesMock{}, &mock.HttpClientMock{})
+			err := runHelmBuild(test.config, helmExecutor, utils, &cpe, versioning.Coordinates{}, execRunner, &mock.FilesMock{}, &mock.HttpClientMock{})
 
 			assert.NoError(t, err, "SBOM generation failure must not fail the publish step")
 			assert.False(t, syftScanInvoked(execRunner), "syft must not run when the registry cannot be derived")
@@ -978,7 +979,7 @@ func TestRunHelmChartSBOM(t *testing.T) {
 			helmExecutor.On("RunHelmPublish").Return("https://my.target.repository/foo-1.0.0.tgz", nil)
 			helmExecutor.On("RunHelmTemplate").Return([]byte(nil), nil)
 
-			err := runHelmBuild(test.config, helmExecutor, utils, &cpe, execRunner, utils.FilesMock, utils.HttpClientMock)
+			err := runHelmBuild(test.config, helmExecutor, utils, &cpe, versioning.Coordinates{}, execRunner, utils.FilesMock, utils.HttpClientMock)
 
 			require.NoError(t, err)
 			content, err := utils.FileRead("bom-helm.xml")
@@ -1003,7 +1004,7 @@ func TestRunHelmPopulatesBuildSettingsInfo(t *testing.T) {
 		helmExecutor := &mocks.HelmExecutor{}
 		helmExecutor.On("RunHelmLint").Return(nil)
 
-		err := runHelmBuild(cfg, helmExecutor, utils, &cpe, utils.ExecMockRunner, utils.FilesMock, utils.HttpClientMock)
+		err := runHelmBuild(cfg, helmExecutor, utils, &cpe, versioning.Coordinates{}, utils.ExecMockRunner, utils.FilesMock, utils.HttpClientMock)
 
 		require.NoError(t, err)
 		require.NotEmpty(t, cpe.custom.buildSettingsInfo, "buildSettingsInfo must be populated")
@@ -1025,7 +1026,7 @@ func TestRunHelmPopulatesBuildSettingsInfo(t *testing.T) {
 		helmExecutor := &mocks.HelmExecutor{}
 		helmExecutor.On("RunHelmLint").Return(nil)
 
-		err := runHelmBuild(cfg, helmExecutor, utils, &cpe, utils.ExecMockRunner, utils.FilesMock, utils.HttpClientMock)
+		err := runHelmBuild(cfg, helmExecutor, utils, &cpe, versioning.Coordinates{}, utils.ExecMockRunner, utils.FilesMock, utils.HttpClientMock)
 
 		assert.NoError(t, err, "a build-settings failure must not fail the step")
 		assert.Empty(t, cpe.custom.buildSettingsInfo, "buildSettingsInfo must stay empty on failure")
@@ -1191,7 +1192,7 @@ func TestRunHelmBuildSettingsInfo(t *testing.T) {
 			Publish:     true,
 		}
 
-		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 		require.NoError(t, err)
 		assert.NotEmpty(t, cpe.custom.buildSettingsInfo)
 		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
@@ -1208,7 +1209,7 @@ func TestRunHelmBuildSettingsInfo(t *testing.T) {
 			BuildSettingsInfo: `{"mavenBuild":[{"dockerImage":"maven:3.8"}]}`,
 		}
 
-		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 		require.NoError(t, err)
 		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
 		assert.Contains(t, cpe.custom.buildSettingsInfo, "mavenBuild")
@@ -1223,7 +1224,7 @@ func TestRunHelmBuildSettingsInfo(t *testing.T) {
 			HelmCommand: "lint",
 		}
 
-		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, versioning.Coordinates{}, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 		require.NoError(t, err)
 		assert.NotEmpty(t, cpe.custom.buildSettingsInfo)
 		assert.Contains(t, cpe.custom.buildSettingsInfo, "helmBuild")
