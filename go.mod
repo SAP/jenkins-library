@@ -42,7 +42,7 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.10
-	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
+	github.com/microsoft/azure-devops-go-api/azuredevops/v7 v7.1.0
 	github.com/moby/buildkit v0.32.2
 	github.com/moby/moby/api v1.55.0
 	github.com/motemen/go-nuts v0.0.0-20251105153347-936c09797748
