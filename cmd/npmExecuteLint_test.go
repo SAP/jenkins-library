@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,7 +6,9 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -89,7 +91,7 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 		message = string(formattedMessage)
 	}
 
-	for _, secret := range secrets {
+	for _, secret := range registeredSecrets() {
 		message = strings.Replace(message, secret, "****", -1)
 	}
 
@@ -100,6 +102,10 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 var LibraryRepository string
 var LibraryName string
 var logger *logrus.Entry
+
+// secretsMu guards secrets, which is appended to while log entries are being
+// formatted (potentially from several goroutines).
+var secretsMu sync.RWMutex
 var secrets []string
 var stepErrors []StepError
 var lastPatternMatch string
@@ -172,7 +178,7 @@ func RegisterHook(hook logrus.Hook) {
 }
 
 // Notice logs a notice message
-func Notice(args ...interface{}) {
+func Notice(args ...any) {
 	if isGitHubActions() {
 		// Format as GitHub Actions notice
 		message := fmt.Sprint(args...)
@@ -185,12 +191,21 @@ func Notice(args ...interface{}) {
 // RegisterSecret registers a value which should be masked in every log message
 func RegisterSecret(secret string) {
 	if len(secret) > 0 {
+		secretsMu.Lock()
+		defer secretsMu.Unlock()
 		secrets = append(secrets, secret)
 		encoded := url.QueryEscape(secret)
 		if secret != encoded {
 			secrets = append(secrets, encoded)
 		}
 	}
+}
+
+// registeredSecrets returns a snapshot of the secrets registered so far.
+func registeredSecrets() []string {
+	secretsMu.RLock()
+	defer secretsMu.RUnlock()
+	return slices.Clone(secrets)
 }
 
 // SetStepErrors sets the error patterns for the current step

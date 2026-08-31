@@ -1,13 +1,11 @@
 //go:build !release
-// +build !release
 
 package whitesource
 
 import (
+	"errors"
 	"net/http"
 	"os"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"

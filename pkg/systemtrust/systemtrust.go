@@ -3,18 +3,17 @@ package systemtrust
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"errors"
-
-	"github.com/sirupsen/logrus"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Secret struct {

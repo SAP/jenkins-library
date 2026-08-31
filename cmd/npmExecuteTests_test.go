@@ -18,13 +18,13 @@ func TestRunNpmExecuteTests(t *testing.T) {
 func TestParseURLs(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    []map[string]interface{}
+		input    []map[string]any
 		expected []vaultUrl
 		wantErr  bool
 	}{
 		{
 			name: "Valid URLs",
-			input: []map[string]interface{}{
+			input: []map[string]any{
 				{
 					"url":      "http://example.com",
 					"username": "user1",
@@ -48,7 +48,7 @@ func TestParseURLs(t *testing.T) {
 		},
 		{
 			name: "Invalid URL entry",
-			input: []map[string]interface{}{
+			input: []map[string]any{
 				{
 					"username": "user1",
 				},
@@ -58,7 +58,7 @@ func TestParseURLs(t *testing.T) {
 		},
 		{
 			name: "Invalid URL field type",
-			input: []map[string]interface{}{
+			input: []map[string]any{
 				{
 					"url": 123,
 				},
@@ -68,7 +68,7 @@ func TestParseURLs(t *testing.T) {
 		},
 		{
 			name:     "Empty URLs",
-			input:    []map[string]interface{}{},
+			input:    []map[string]any{},
 			expected: []vaultUrl{},
 			wantErr:  false,
 		},

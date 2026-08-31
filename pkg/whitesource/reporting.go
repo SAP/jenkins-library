@@ -13,13 +13,13 @@ import (
 	"strings"
 	"time"
 
-	cdx "github.com/CycloneDX/cyclonedx-go"
-	"github.com/package-url/packageurl-go"
-
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
+	"github.com/package-url/packageurl-go"
 )
 
 // CreateCustomVulnerabilityReport creates a vulnerability ScanReport to be used for uploading into various sinks

@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +35,7 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "integrationFlowMplStatus", value: p.custom.integrationFlowMplStatus},
 		{category: "custom", name: "integrationFlowMplError", value: p.custom.integrationFlowMplError},
@@ -135,8 +136,9 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
@@ -242,7 +244,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "custom/integrationFlowMplStatus"},
 							{"name": "custom/integrationFlowMplError"},
 						},

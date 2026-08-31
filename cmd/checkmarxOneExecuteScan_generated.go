@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -149,7 +150,7 @@ func (i *checkmarxOneExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "checkmarxOne", value: i.step_data.fields.checkmarxOne},
 		{valType: config.InfluxField, measurement: "checkmarxOne_data", name: "critical_issues", value: i.checkmarxOne_data.fields.critical_issues},
@@ -353,8 +354,9 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -1041,7 +1043,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "step_data", "fields": []map[string]string{{"name": "checkmarxOne"}}},
 							{"name": "checkmarxOne_data", "fields": []map[string]string{{"name": "critical_issues"}, {"name": "critical_not_false_postive"}, {"name": "critical_not_exploitable"}, {"name": "critical_confirmed"}, {"name": "critical_urgent"}, {"name": "critical_proposed_not_exploitable"}, {"name": "critical_to_verify"}, {"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "group"}, {"name": "group_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "tool_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "iac_preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
 						},
@@ -1049,7 +1051,7 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/piper_checkmarxone_report.html", "type": "checkmarxone"},
 							{"filePattern": "**/Cx1_SASTResults_*.xml", "type": "checkmarxone"},
 							{"filePattern": "**/ScanReport.*", "type": "checkmarxone"},

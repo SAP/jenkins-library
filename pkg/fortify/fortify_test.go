@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
 	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, *httptest.Server) {

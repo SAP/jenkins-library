@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	sonargo "github.com/magicsong/sonargo/sonar"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
 // EndpointCeTask API endpoint for https://sonarcloud.io/web_api/api/ce/task

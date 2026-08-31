@@ -14,7 +14,7 @@ type contrastHttpClientMock struct {
 	page *int
 }
 
-func (c *contrastHttpClientMock) ExecuteRequest(url string, params map[string]string, dest interface{}) error {
+func (c *contrastHttpClientMock) ExecuteRequest(url string, params map[string]string, dest any) error {
 	switch url {
 	case appUrl:
 		app, ok := dest.(*ApplicationResponse)
@@ -56,7 +56,7 @@ func (c *contrastHttpClientMock) ExecuteRequest(url string, params map[string]st
 			vulns.Last = true
 			return nil
 		}
-		for i := 0; i < 20; i++ {
+		for range 20 {
 			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "HIGH", Status: "FIXED"})
 			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "NOTE", Status: "FIXED"})
 			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "MEDIUM", Status: "REPORTED"})
@@ -516,13 +516,9 @@ func testMaxIntervalCapping(t *testing.T, config pollConfig) {
 	pollInterval := config.pollInterval
 
 	// Simulate multiple backoff iterations
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		nextInterval := time.Duration(float64(pollInterval) * config.backoffFactor)
-		if nextInterval > config.maxPollInterval {
-			pollInterval = config.maxPollInterval
-		} else {
-			pollInterval = nextInterval
-		}
+		pollInterval = min(nextInterval, config.maxPollInterval)
 
 		if pollInterval > config.maxPollInterval {
 			t.Errorf("Poll interval exceeded max at iteration %d: %v > %v", i, pollInterval, config.maxPollInterval)

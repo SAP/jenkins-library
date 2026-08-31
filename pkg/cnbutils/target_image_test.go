@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
+
 	"github.com/stretchr/testify/assert"
 )
 

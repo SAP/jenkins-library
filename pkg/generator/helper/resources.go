@@ -45,7 +45,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	content := []struct{
 		category string
 		name string
-		value interface{}
+		value any
 	}{
 		{{- range $notused, $param := .Parameters }}
 		{{- if not $param.Category}}
@@ -150,7 +150,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{{- range $notused, $measurement := .Measurements }}
 		{{- range $notused, $field := $measurement.Fields }}

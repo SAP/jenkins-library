@@ -7,17 +7,15 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"path/filepath"
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/google/go-containerregistry/pkg/v1/random"
-
-	"github.com/SAP/jenkins-library/pkg/mock"
-
 	"github.com/stretchr/testify/assert"
 )
 

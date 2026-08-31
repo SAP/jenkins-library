@@ -8,14 +8,15 @@ import (
 	"strings"
 	"time"
 
-	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/google/uuid"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
 	"go.yaml.in/yaml/v3"
 	"helm.sh/helm/v3/pkg/chart"
+	"uuid"
 )
 
 // cycloneDxSchemaVersion is the CycloneDX schema version the chart SBOM is
@@ -54,7 +55,7 @@ func newChartBOM(meta *versioning.Metadata, chartPath string, images []string, f
 	// The SBOM gateway requires a BOM serialNumber, a metadata timestamp, and a
 	// bom-ref on the root component. cdx.NewBOM sets none of these (Syft-produced
 	// BOMs carry them, which is why only this hand-built BOM was rejected).
-	bom.SerialNumber = "urn:uuid:" + uuid.NewString()
+	bom.SerialNumber = "urn:uuid:" + uuid.NewV4().String()
 	bom.Metadata = &cdx.Metadata{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Component: &cdx.Component{

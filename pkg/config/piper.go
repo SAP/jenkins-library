@@ -34,11 +34,11 @@ type GeneralConfigOptions struct {
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
-	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub,omitempty"`
-	SentryConfig      SentryConfiguration      `json:"sentry,omitempty"`
-	SplunkConfig      SplunkConfiguration      `json:"splunk,omitempty"`
-	OIDCConfig        OIDCConfiguration        `json:"oidc,omitempty"`
-	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust,omitempty"`
+	GCPPubSubConfig   GCPPubSubConfiguration   `json:"gcpPubSub"`
+	SentryConfig      SentryConfiguration      `json:"sentry"`
+	SplunkConfig      SplunkConfiguration      `json:"splunk"`
+	OIDCConfig        OIDCConfiguration        `json:"oidc"`
+	SystemTrustConfig SystemTrustConfiguration `json:"systemtrust"`
 }
 
 type GCPPubSubConfiguration struct {

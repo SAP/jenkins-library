@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -65,7 +66,7 @@ func (p *golangBuildCommonPipelineEnvironment) persist(path, resourceName string
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
 		{category: "custom", name: "goBuildArtifacts", value: p.custom.goBuildArtifacts},
@@ -211,8 +212,9 @@ If the build is successful the resulting artifact can be uploaded to e.g. a bina
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -627,7 +629,7 @@ func golangBuildMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "custom/buildSettingsInfo"},
 							{"name": "custom/goBuildArtifacts"},
 							{"name": "custom/artifacts", "type": "piperenv.Artifacts"},
@@ -636,7 +638,7 @@ func golangBuildMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/bom-golang.xml", "type": "sbom"},
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},

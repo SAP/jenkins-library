@@ -5,14 +5,10 @@ package mocks
 import (
 	context "context"
 
-	api "github.com/influxdata/influxdb-client-go/v2/api"
-
-	domain "github.com/influxdata/influxdb-client-go/v2/domain"
-
-	http "github.com/influxdata/influxdb-client-go/v2/api/http"
-
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-
+	api "github.com/influxdata/influxdb-client-go/v2/api"
+	http "github.com/influxdata/influxdb-client-go/v2/api/http"
+	domain "github.com/influxdata/influxdb-client-go/v2/domain"
 	mock "github.com/stretchr/testify/mock"
 )
 

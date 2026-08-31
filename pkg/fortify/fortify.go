@@ -12,6 +12,11 @@ import (
 	"strings"
 	"time"
 
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
 	"github.com/piper-validation/fortify-client-go/fortify/artifact_of_project_version_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/attribute_of_project_version_controller"
@@ -28,12 +33,6 @@ import (
 	"github.com/piper-validation/fortify-client-go/fortify/project_version_of_project_controller"
 	"github.com/piper-validation/fortify-client-go/fortify/saved_report_controller"
 	"github.com/piper-validation/fortify-client-go/models"
-
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/strfmt"
 	"github.com/sirupsen/logrus"
 )
 
@@ -121,10 +120,10 @@ func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
 }
 
 func splitSchemeAndHost(url string) (scheme, host string) {
-	schemeEnd := strings.Index(url, "://")
-	if schemeEnd >= 0 {
-		scheme = url[0:schemeEnd]
-		host = url[schemeEnd+3:]
+	before, after, ok := strings.Cut(url, "://")
+	if ok {
+		scheme = before
+		host = after
 	} else {
 		scheme = "https"
 		host = url
@@ -133,10 +132,10 @@ func splitSchemeAndHost(url string) (scheme, host string) {
 }
 
 func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
-	hostEnd := strings.Index(urlWithoutScheme, "/")
-	if hostEnd >= 0 {
-		host = urlWithoutScheme[0:hostEnd]
-		endpoint = urlWithoutScheme[hostEnd+1:]
+	before, after, ok := strings.Cut(urlWithoutScheme, "/")
+	if ok {
+		host = before
+		endpoint = after
 	} else {
 		host = urlWithoutScheme
 		endpoint = ""

@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -28,8 +29,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-
-	"errors"
 
 	"github.com/google/go-github/v68/github"
 )
@@ -1202,10 +1201,8 @@ func handleExcludedDirectories(args *[]string, config *detectExecuteScanOptions)
 
 func excludeConfigDirectory(directories []string) []string {
 	configDirectory := configPath
-	for i := range directories {
-		if directories[i] == configDirectory {
-			return directories
-		}
+	if slices.Contains(directories, configDirectory) {
+		return directories
 	}
 	directories = append(directories, configDirectory)
 	return directories

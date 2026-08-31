@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	gogitconfig "github.com/go-git/go-git/v5/plumbing/format/config"

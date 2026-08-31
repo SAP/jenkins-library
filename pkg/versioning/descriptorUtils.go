@@ -1,10 +1,10 @@
 package versioning
 
 import (
-	"github.com/Masterminds/sprig"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/Masterminds/sprig"
 )
 
 // DetermineProjectCoordinatesWithCustomVersion resolves the coordinates of the project for use in 3rd party scan tools

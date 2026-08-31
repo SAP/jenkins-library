@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/jarcoal/httpmock"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 

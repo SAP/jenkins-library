@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 

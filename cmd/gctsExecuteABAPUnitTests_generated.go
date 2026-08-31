@@ -13,26 +13,27 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type gctsExecuteABAPUnitTestsOptions struct {
-	Username             string                 `json:"username,omitempty"`
-	Password             string                 `json:"password,omitempty"`
-	Host                 string                 `json:"host,omitempty"`
-	Repository           string                 `json:"repository,omitempty"`
-	Client               string                 `json:"client,omitempty"`
-	AUnitTest            bool                   `json:"aUnitTest,omitempty"`
-	AtcCheck             bool                   `json:"atcCheck,omitempty"`
-	AtcVariant           string                 `json:"atcVariant,omitempty"`
-	Scope                string                 `json:"scope,omitempty"`
-	Commit               string                 `json:"commit,omitempty"`
-	Workspace            string                 `json:"workspace,omitempty"`
-	AtcResultsFileName   string                 `json:"atcResultsFileName,omitempty"`
-	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
-	QueryParameters      map[string]interface{} `json:"queryParameters,omitempty"`
-	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
-	Proxy                string                 `json:"proxy,omitempty"`
+	Username             string         `json:"username,omitempty"`
+	Password             string         `json:"password,omitempty"`
+	Host                 string         `json:"host,omitempty"`
+	Repository           string         `json:"repository,omitempty"`
+	Client               string         `json:"client,omitempty"`
+	AUnitTest            bool           `json:"aUnitTest,omitempty"`
+	AtcCheck             bool           `json:"atcCheck,omitempty"`
+	AtcVariant           string         `json:"atcVariant,omitempty"`
+	Scope                string         `json:"scope,omitempty"`
+	Commit               string         `json:"commit,omitempty"`
+	Workspace            string         `json:"workspace,omitempty"`
+	AtcResultsFileName   string         `json:"atcResultsFileName,omitempty"`
+	AUnitResultsFileName string         `json:"aUnitResultsFileName,omitempty"`
+	QueryParameters      map[string]any `json:"queryParameters,omitempty"`
+	SkipSSLVerification  bool           `json:"skipSSLVerification,omitempty"`
+	Proxy                string         `json:"proxy,omitempty"`
 }
 
 // GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -117,8 +118,9 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())

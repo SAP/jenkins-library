@@ -8,6 +8,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
+
 	"github.com/pasztorpisti/qs"
 )
 

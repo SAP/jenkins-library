@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v68/github"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	"github.com/google/go-github/v68/github"
 )
 
 var errOwnerOrRepositoryEmpty = errors.New("'owner' or 'repository' is empty")

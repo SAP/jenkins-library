@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/fake"
 	"github.com/stretchr/testify/assert"

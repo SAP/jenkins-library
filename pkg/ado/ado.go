@@ -2,9 +2,8 @@ package ado
 
 import (
 	"context"
-	"fmt"
-
 	"errors"
+	"fmt"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/build"

@@ -14,9 +14,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/Masterminds/sprig"
 )
 
 type stepInfo struct {
@@ -550,7 +551,8 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 }
 
 func isCLIParam(myType string) bool {
-	return myType != "map[string]interface{}" && myType != "[]map[string]interface{}" && myType != "[]map[string]string"
+	return myType != "map[string]interface{}" && myType != "[]map[string]interface{}" &&
+		myType != "map[string]any" && myType != "[]map[string]any" && myType != "[]map[string]string"
 }
 
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
@@ -563,6 +565,7 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap["isCLIParam"] = isCLIParam
 	funcMap["configPrefix"] = configPrefix
 	funcMap["structTag"] = structTag
+	funcMap["goType"] = goType
 
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
@@ -651,7 +654,15 @@ func resourceFieldType(fieldType string) string {
 	if len(fieldType) == 0 || fieldType == "<nil>" {
 		return "string"
 	}
-	return fieldType
+	return goType(fieldType)
+}
+
+// goType renders a metadata type as the equivalent Go type. The metadata still
+// spells the empty interface as `interface{}`, while generated code uses the
+// `any` alias so that it matches the rest of the code base (and `go fix`, which
+// skips generated files, would produce the same result).
+func goType(metadataType string) string {
+	return strings.ReplaceAll(metadataType, "interface{}", "any")
 }
 
 func golangName(name string) string {
@@ -711,7 +722,7 @@ func mustUniqName(list []config.StepParameters) ([]config.StepParameters, error)
 		names := []string{}
 		dest := []config.StepParameters{}
 		var item config.StepParameters
-		for i := 0; i < l; i++ {
+		for i := range l {
 			item = l2.Index(i).Interface().(config.StepParameters)
 			if !slices.Contains(names, item.Name) {
 				names = append(names, item.Name)

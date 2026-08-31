@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/encryption"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+
 	"github.com/spf13/cobra"
 )
 

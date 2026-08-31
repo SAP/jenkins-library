@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // Retry configuration for transient network errors
@@ -133,10 +133,7 @@ func (c *craneUtilsBundle) retryOperation(ctx context.Context, operation string,
 		case <-time.After(backoff):
 		}
 
-		backoff = time.Duration(float64(backoff) * factor)
-		if backoff > defaultMaxBackoff {
-			backoff = defaultMaxBackoff
-		}
+		backoff = min(time.Duration(float64(backoff)*factor), defaultMaxBackoff)
 	}
 	return lastErr
 }

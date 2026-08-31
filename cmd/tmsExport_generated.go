@@ -15,19 +15,20 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type tmsExportOptions struct {
-	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
-	ServiceKey               string                 `json:"serviceKey,omitempty"`
-	CustomDescription        string                 `json:"customDescription,omitempty"`
-	NamedUser                string                 `json:"namedUser,omitempty"`
-	NodeName                 string                 `json:"nodeName,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	MtaVersion               string                 `json:"mtaVersion,omitempty"`
-	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
-	Proxy                    string                 `json:"proxy,omitempty"`
+	TmsServiceKey            string         `json:"tmsServiceKey,omitempty"`
+	ServiceKey               string         `json:"serviceKey,omitempty"`
+	CustomDescription        string         `json:"customDescription,omitempty"`
+	NamedUser                string         `json:"namedUser,omitempty"`
+	NodeName                 string         `json:"nodeName,omitempty"`
+	MtaPath                  string         `json:"mtaPath,omitempty"`
+	MtaVersion               string         `json:"mtaVersion,omitempty"`
+	NodeExtDescriptorMapping map[string]any `json:"nodeExtDescriptorMapping,omitempty"`
+	Proxy                    string         `json:"proxy,omitempty"`
 }
 
 type tmsExportInflux struct {
@@ -45,7 +46,7 @@ func (i *tmsExportInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "tms", value: i.step_data.fields.tms},
 	}
@@ -153,8 +154,9 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				config.RemoveVaultSecretFiles()
@@ -342,7 +344,7 @@ func tmsExportMetadata() config.StepData {
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "step_data", "fields": []map[string]string{{"name": "tms"}}},
 						},
 					},

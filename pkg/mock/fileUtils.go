@@ -1,5 +1,4 @@
 //go:build !release
-// +build !release
 
 package mock
 
@@ -40,7 +39,7 @@ func (fInfo fileInfoMock) Size() int64        { return fInfo.size }
 func (fInfo fileInfoMock) Mode() os.FileMode  { return fInfo.mode }
 func (fInfo fileInfoMock) ModTime() time.Time { return time.Time{} }
 func (fInfo fileInfoMock) IsDir() bool        { return fInfo.isDir }
-func (fInfo fileInfoMock) Sys() interface{}   { return nil }
+func (fInfo fileInfoMock) Sys() any           { return nil }
 
 type fileProperties struct {
 	content *[]byte

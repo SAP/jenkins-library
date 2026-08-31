@@ -16,7 +16,7 @@ const (
 const noRetryError = "is under active Temporary hold and cannot be deleted, overwritten or archived until hold is removed"
 
 type debugLogger interface {
-	Debugf(format string, args ...interface{})
+	Debugf(format string, args ...any)
 }
 
 func retryWithLogging(

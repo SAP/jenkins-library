@@ -47,7 +47,7 @@ type LowPerQuery struct {
 	Confirmed int    `json:"confirmed"`
 }
 
-func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
+func CreateCustomReport(data *map[string]any, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX1 UI</a>`, (*data)["DeepLink"])
 
 	scanReport := reporting.ScanReport{
@@ -77,15 +77,15 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 	}
 
 	for _, issue := range insecure {
-		row := reporting.OverviewRow{}
-		row.Description = fmt.Sprint(issue)
-		row.Style = reporting.Red
+		row := reporting.OverviewRow{
+			Description: fmt.Sprint(issue),
+			Style:       reporting.Red}
 
 		scanReport.Overview = append(scanReport.Overview, row)
 	}
 	for _, issue := range neutral {
-		row := reporting.OverviewRow{}
-		row.Description = fmt.Sprint(issue)
+		row := reporting.OverviewRow{
+			Description: fmt.Sprint(issue)}
 
 		scanReport.Overview = append(scanReport.Overview, row)
 	}
@@ -163,7 +163,7 @@ func CreateCustomReport(data *map[string]interface{}, insecure, neutral []string
 	return scanReport
 }
 
-func CreateJSONHeaderReport(data *map[string]interface{}, engine string) CheckmarxOneReportData {
+func CreateJSONHeaderReport(data *map[string]any, engine string) CheckmarxOneReportData {
 	checkmarxReportData := CheckmarxOneReportData{
 		ToolName:        `CheckmarxOne`,
 		ProjectName:     fmt.Sprint((*data)["ProjectName"]),
@@ -201,32 +201,32 @@ func CreateJSONHeaderReport(data *map[string]interface{}, engine string) Checkma
 	}
 
 	// Critical
-	criticalFindings := Finding{}
-	criticalFindings.ClassificationName = "Critical"
-	criticalFindings.Total = getCount("Critical", "Issues")
+	criticalFindings := Finding{
+		ClassificationName: "Critical",
+		Total:              getCount("Critical", "Issues")}
 	criticalAudited := getCount("Critical", "NotExploitable") + getCount("Critical", "Urgent") + getCount("Critical", "Confirmed")
 	criticalFindings.Audited = &criticalAudited
 	criticalFindings.Confirmed = getCount("Critical", "Confirmed") + getCount("Critical", "Urgent")
 	findings = append(findings, criticalFindings)
 	// High
-	highFindings := Finding{}
-	highFindings.ClassificationName = "High"
-	highFindings.Total = getCount("High", "Issues")
+	highFindings := Finding{
+		ClassificationName: "High",
+		Total:              getCount("High", "Issues")}
 	highAudited := getCount("High", "NotExploitable") + getCount("High", "Urgent") + getCount("High", "Confirmed")
 	highFindings.Audited = &highAudited
 	highFindings.Confirmed = getCount("High", "Confirmed") + getCount("High", "Urgent")
 	findings = append(findings, highFindings)
 	// Medium
-	mediumFindings := Finding{}
-	mediumFindings.ClassificationName = "Medium"
-	mediumFindings.Total = getCount("Medium", "Issues")
+	mediumFindings := Finding{
+		ClassificationName: "Medium",
+		Total:              getCount("Medium", "Issues")}
 	mediumAudited := getCount("Medium", "NotExploitable") + getCount("Medium", "Urgent") + getCount("Medium", "Confirmed")
 	mediumFindings.Audited = &mediumAudited
 	mediumFindings.Confirmed = getCount("Medium", "Confirmed") + getCount("Medium", "Urgent")
 	findings = append(findings, mediumFindings)
 	// Low
-	lowFindings := Finding{}
-	lowFindings.ClassificationName = "Low"
+	lowFindings := Finding{
+		ClassificationName: "Low"}
 
 	if _, ok := (*data)[pre+"LowPerQuery"]; ok {
 		lowPerQueryList := []LowPerQuery{}
@@ -234,11 +234,11 @@ func CreateJSONHeaderReport(data *map[string]interface{}, engine string) Checkma
 		for queryName, resultsLowQuery := range lowPerQueryMap {
 			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"] + resultsLowQuery["Urgent"]
 			total := resultsLowQuery["Issues"]
-			lowPerQuery := LowPerQuery{}
-			lowPerQuery.QueryName = queryName
-			lowPerQuery.Audited = audited
-			lowPerQuery.Confirmed = resultsLowQuery["Confirmed"] + resultsLowQuery["Urgent"]
-			lowPerQuery.Total = total
+			lowPerQuery := LowPerQuery{
+				QueryName: queryName,
+				Audited:   audited,
+				Confirmed: resultsLowQuery["Confirmed"] + resultsLowQuery["Urgent"],
+				Total:     total}
 			lowPerQueryList = append(lowPerQueryList, lowPerQuery)
 		}
 		lowFindings.LowPerQuery = &lowPerQueryList

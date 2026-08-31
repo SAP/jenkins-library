@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/encryption"
+
 	"github.com/stretchr/testify/assert"
 )
 

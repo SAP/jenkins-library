@@ -1,14 +1,14 @@
 package sonar
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
@@ -195,9 +195,9 @@ func parseMeasureValueInt(measure sonargo.SonarMeasure) (int, error) {
 func parseMeasureLanguageDistribution(measure sonargo.SonarMeasure) ([]SonarLanguageDistribution, error) {
 	str := measure.Value // example: js=589;ts=16544;web=1377
 	var ld []SonarLanguageDistribution
-	entries := strings.Split(str, ";")
+	entries := strings.SplitSeq(str, ";")
 
-	for _, entry := range entries {
+	for entry := range entries {
 
 		dist := strings.Split(entry, "=")
 

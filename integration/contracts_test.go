@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
+
 	"github.com/stretchr/testify/assert"
 )
 

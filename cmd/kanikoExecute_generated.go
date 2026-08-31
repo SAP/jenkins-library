@@ -19,32 +19,33 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type kanikoExecuteOptions struct {
-	BuildOptions                     []string                 `json:"buildOptions,omitempty"`
-	BuildSettingsInfo                string                   `json:"buildSettingsInfo,omitempty"`
-	ContainerBuildOptions            string                   `json:"containerBuildOptions,omitempty"`
-	ContainerImage                   string                   `json:"containerImage,omitempty"`
-	ContainerImageName               string                   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
-	ContainerImageTag                string                   `json:"containerImageTag,omitempty"`
-	MultipleImages                   []map[string]interface{} `json:"multipleImages,omitempty"`
-	ContainerMultiImageBuild         bool                     `json:"containerMultiImageBuild,omitempty"`
-	ContainerMultiImageBuildExcludes []string                 `json:"containerMultiImageBuildExcludes,omitempty"`
-	ContainerMultiImageBuildTrimDir  string                   `json:"containerMultiImageBuildTrimDir,omitempty"`
-	ContainerPreparationCommand      string                   `json:"containerPreparationCommand,omitempty"`
-	ContainerRegistryURL             string                   `json:"containerRegistryUrl,omitempty"`
-	ContainerRegistryUser            string                   `json:"containerRegistryUser,omitempty"`
-	ContainerRegistryPassword        string                   `json:"containerRegistryPassword,omitempty"`
-	CustomTLSCertificateLinks        []string                 `json:"customTlsCertificateLinks,omitempty"`
-	DockerConfigJSON                 string                   `json:"dockerConfigJSON,omitempty"`
-	DockerfilePath                   string                   `json:"dockerfilePath,omitempty"`
-	ReadImageDigest                  bool                     `json:"readImageDigest,omitempty"`
-	CreateBOM                        bool                     `json:"createBOM,omitempty"`
-	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
-	CreateBuildArtifactsMetadata     bool                     `json:"createBuildArtifactsMetadata,omitempty"`
-	RegistryMirrors                  []string                 `json:"registryMirrors,omitempty"`
+	BuildOptions                     []string         `json:"buildOptions,omitempty"`
+	BuildSettingsInfo                string           `json:"buildSettingsInfo,omitempty"`
+	ContainerBuildOptions            string           `json:"containerBuildOptions,omitempty"`
+	ContainerImage                   string           `json:"containerImage,omitempty"`
+	ContainerImageName               string           `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
+	ContainerImageTag                string           `json:"containerImageTag,omitempty"`
+	MultipleImages                   []map[string]any `json:"multipleImages,omitempty"`
+	ContainerMultiImageBuild         bool             `json:"containerMultiImageBuild,omitempty"`
+	ContainerMultiImageBuildExcludes []string         `json:"containerMultiImageBuildExcludes,omitempty"`
+	ContainerMultiImageBuildTrimDir  string           `json:"containerMultiImageBuildTrimDir,omitempty"`
+	ContainerPreparationCommand      string           `json:"containerPreparationCommand,omitempty"`
+	ContainerRegistryURL             string           `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser            string           `json:"containerRegistryUser,omitempty"`
+	ContainerRegistryPassword        string           `json:"containerRegistryPassword,omitempty"`
+	CustomTLSCertificateLinks        []string         `json:"customTlsCertificateLinks,omitempty"`
+	DockerConfigJSON                 string           `json:"dockerConfigJSON,omitempty"`
+	DockerfilePath                   string           `json:"dockerfilePath,omitempty"`
+	ReadImageDigest                  bool             `json:"readImageDigest,omitempty"`
+	CreateBOM                        bool             `json:"createBOM,omitempty"`
+	SyftDownloadURL                  string           `json:"syftDownloadUrl,omitempty"`
+	CreateBuildArtifactsMetadata     bool             `json:"createBuildArtifactsMetadata,omitempty"`
+	RegistryMirrors                  []string         `json:"registryMirrors,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -66,7 +67,7 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
@@ -275,8 +276,9 @@ Following final image names will be built:
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -613,7 +615,7 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
 							{"name": "container/imageDigest"},
@@ -627,7 +629,7 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/bom-*.xml", "type": "sbom"},
 						},
 					},

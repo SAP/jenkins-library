@@ -4,10 +4,9 @@
 package abaputils
 
 import (
+	"errors"
 	"testing"
 	"time"
-
-	"errors"
 
 	"github.com/stretchr/testify/assert"
 )

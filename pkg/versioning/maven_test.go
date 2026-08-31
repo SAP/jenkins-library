@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/maven"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/stretchr/testify/assert"
 )
 
