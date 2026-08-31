@@ -30,6 +30,7 @@ require (
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
 	github.com/go-playground/validator/v10 v10.30.3
+	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/go-containerregistry v0.21.7
 	github.com/google/go-github/v68 v68.0.0
@@ -42,7 +43,6 @@ require (
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.10
 	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/moby/buildkit v0.32.2
 	github.com/moby/moby/api v1.55.0
 	github.com/motemen/go-nuts v0.0.0-20251105153347-936c09797748
@@ -161,7 +161,6 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.26.1 // indirect
 	github.com/go-openapi/validate v0.26.0 // indirect
 	github.com/go-test/deep v1.1.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
@@ -194,6 +193,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.1 // indirect
