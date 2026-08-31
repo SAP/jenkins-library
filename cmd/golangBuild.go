@@ -21,6 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/telesiactl"
 
 	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -139,12 +140,6 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 	// install test pre-requisites only in case testing should be performed
 	if config.RunTests || config.RunIntegrationTests {
 		if err := utils.RunExecutable("go", "install", golangTestsumPackage); err != nil {
-			return fmt.Errorf("failed to install pre-requisite: %w", err)
-		}
-	}
-
-	if config.CreateBOM {
-		if err := utils.RunExecutable("go", "install", GolangCycloneDXPackage); err != nil {
 			return fmt.Errorf("failed to install pre-requisite: %w", err)
 		}
 	}
@@ -620,9 +615,38 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 }
 
 func runBOMCreation(utils golangBuildUtils, outputFilename string) error {
+	telesiactlBinary, canRunTelesiactl, err := telesiactl.ResolveBinary(utils)
+	if err != nil {
+		log.Entry().Warnf("telesiactl availability check failed, falling back to legacy implementation: %v", err)
+	}
+	if canRunTelesiactl {
+		if err := runTelesiactlBOMCreation(utils, telesiactlBinary, outputFilename); err == nil {
+			return nil
+		} else {
+			log.Entry().Warnf("telesiactl BOM creation failed, falling back to legacy implementation: %v", err)
+		}
+	}
+
+	if err := utils.RunExecutable("go", "install", GolangCycloneDXPackage); err != nil {
+		return fmt.Errorf("failed to install pre-requisite: %w", err)
+	}
+
 	if err := utils.RunExecutable("cyclonedx-gomod", "mod", "-licenses", fmt.Sprintf("-verbose=%t", GeneralConfig.Verbose), "-test", "-output", outputFilename, "-output-version", GolangCycloneDXSchemaVersion); err != nil {
 		return fmt.Errorf("BOM creation failed: %w", err)
 	}
+	return nil
+}
+
+func runTelesiactlBOMCreation(utils golangBuildUtils, telesiactlBinary, outputFilename string) error {
+	args := []string{"sbom", "generate", "--tech", "golang", "--project-path", ".", "--output", outputFilename}
+	if GeneralConfig.Verbose {
+		args = append(args, "--verbose")
+	}
+
+	if err := utils.RunExecutable(telesiactlBinary, args...); err != nil {
+		return fmt.Errorf("telesiactl BOM creation failed: %w", err)
+	}
+
 	return nil
 }
 
