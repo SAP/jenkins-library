@@ -298,7 +298,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

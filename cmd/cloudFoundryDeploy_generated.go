@@ -520,7 +520,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Name:        "mtaExtensionCredentials",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials", Deprecated: true}},
 					},

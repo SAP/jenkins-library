@@ -85,7 +85,7 @@ spec:
           - name: githubPersonalAccessTokenId
             type: secret
       - name: queryParameters
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: Specifies pairs of key and value query parameters for the api requests
         scope:
           - PARAMETERS

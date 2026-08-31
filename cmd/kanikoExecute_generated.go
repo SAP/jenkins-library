@@ -440,7 +440,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Name:        "multipleImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "[]map[string]interface{}",
+						Type:        "[]map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "images"}},
 					},

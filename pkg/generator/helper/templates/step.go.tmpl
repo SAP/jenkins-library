@@ -289,7 +289,7 @@ func {{ .StepName }}Metadata() config.StepData {
 						Name:      {{ $value.Name | quote }},
 						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ template "resourceRefs" $ref }}{{ end }}{{ "}" }},
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}{{ $scope | quote }},{{ end }}{{ "}" }},
-						Type:      {{ $value.Type | quote }},
+						Type:      {{ $value.Type | goType | quote }},
 						Mandatory: {{ $value.Mandatory }},
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: {{ $alias.Name | quote }}{{ if $alias.Deprecated }}, Deprecated: {{$alias.Deprecated}}{{ end }}{{ "}" }},{{ end }}{{ "}" }},
 						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
@@ -324,7 +324,7 @@ func {{ .StepName }}Metadata() config.StepData {
 							{{ if $p.fields}}"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} },{{ end -}}
 							{{ if $p.tags}}"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} },{{ end -}}
 							{{ if $p.filePattern}}"filePattern": {{ $p.filePattern | quote }},{{ end -}}
-							{{ if $p.type}}"type": {{ $p.type | quote }},{{ end -}}
+							{{ if $p.type}}"type": {{ $p.type | goType | quote }},{{ end -}}
 							{{ if $p.subFolder}}"subFolder": {{ $p.subFolder | quote }},{{ end -}}
 							{{ if $p }}}, {{- end -}}
 						{{ end }}

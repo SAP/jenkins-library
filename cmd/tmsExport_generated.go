@@ -324,7 +324,7 @@ func tmsExportMetadata() config.StepData {
 						Name:        "nodeExtDescriptorMapping",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STEPS", "STAGES"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
