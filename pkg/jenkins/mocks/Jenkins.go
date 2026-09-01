@@ -6,7 +6,6 @@ import (
 	context "context"
 
 	gojenkins "github.com/bndr/gojenkins"
-
 	mock "github.com/stretchr/testify/mock"
 )
 

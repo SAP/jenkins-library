@@ -1,14 +1,13 @@
 package abaputils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"

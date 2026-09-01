@@ -147,7 +147,7 @@ spec:
       - name: multipleImages
         aliases:
           - name: images
-        type: "[]map[string]interface{}"
+        type: "[]map[string]any"
         description: |
           This parameter is only needed if `kanikoExecute` should create multiple images using the same root Dockerfile, but with different sub-contexts.
           Otherwise it can be ignored!!!

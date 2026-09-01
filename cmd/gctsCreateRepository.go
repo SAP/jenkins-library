@@ -8,11 +8,12 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	gabs "github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	gabs "github.com/Jeffail/gabs/v2"
 )
 
 func gctsCreateRepository(config gctsCreateRepositoryOptions, telemetryData *telemetry.CustomData) {

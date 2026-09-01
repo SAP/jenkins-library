@@ -18,7 +18,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
-
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
 )

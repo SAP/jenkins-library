@@ -5,11 +5,11 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -7,8 +7,9 @@ import (
 	"os"
 	"strings"
 
-	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	cdx "github.com/CycloneDX/cyclonedx-go"
 	"github.com/moby/buildkit/util/purl"
 	purlParser "github.com/package-url/packageurl-go"
 )

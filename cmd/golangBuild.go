@@ -18,11 +18,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/goget"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-
-	"github.com/SAP/jenkins-library/pkg/multiarch"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"golang.org/x/mod/modfile"
@@ -748,8 +747,8 @@ func isMainPackage(utils golangBuildUtils, pkg string, buildFlags []string) (boo
 func gitConfigurationForPrivateModules(privateMod string, token string, utils golangBuildUtils) error {
 	privateMod = strings.ReplaceAll(privateMod, "/*", "")
 	privateMod = strings.ReplaceAll(privateMod, "*.", "")
-	modules := strings.Split(privateMod, ",")
-	for _, v := range modules {
+	modules := strings.SplitSeq(privateMod, ",")
+	for v := range modules {
 		authenticatedRepoURL := fmt.Sprintf("https://%s@%s", token, v)
 		repoBaseURL := fmt.Sprintf("https://%s", v)
 		err := utils.RunExecutable("git", "config", "--global", fmt.Sprintf("url.%s.insteadOf", authenticatedRepoURL), repoBaseURL)

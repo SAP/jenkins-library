@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"cloud.google.com/go/pubsub/v2"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"cloud.google.com/go/pubsub/v2"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )

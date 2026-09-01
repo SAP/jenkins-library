@@ -3,11 +3,11 @@ package cmd
 import (
 	"fmt"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	github "github.com/google/go-github/v68/github"
 )
 
@@ -84,10 +84,7 @@ func getChunks(value []rune, chunkSize int) []string {
 		return []string{""}
 	}
 	for i := 0; i < length; i += chunkSize {
-		to := length
-		if to > i+chunkSize {
-			to = i + chunkSize
-		}
+		to := min(length, i+chunkSize)
 		chunks = append(chunks, string(value[i:to]))
 	}
 	return chunks

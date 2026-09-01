@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"reflect"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"go.yaml.in/yaml/v3"
 )
 
@@ -25,7 +27,7 @@ var _stat = os.Stat
 var _traverse = traverse
 
 // Substitute ...
-func Substitute(ymlFile string, replacements map[string]interface{}, replacementsFiles []string) (bool, error) {
+func Substitute(ymlFile string, replacements map[string]any, replacementsFiles []string) (bool, error) {
 
 	if _fileUtils == nil {
 		_fileUtils = piperutils.Files{}
@@ -50,7 +52,7 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 
 	for {
 
-		mIn := make(map[string]interface{})
+		mIn := make(map[string]any)
 
 		decodeErr := inDecoder.Decode(&mIn)
 
@@ -91,7 +93,7 @@ func Substitute(ymlFile string, replacements map[string]interface{}, replacement
 	return updated, nil
 }
 
-func traverse(node interface{}, replacements map[string]interface{}) (interface{}, bool, error) {
+func traverse(node any, replacements map[string]any) (any, bool, error) {
 	switch t := node.(type) {
 	case string:
 		return handleString(t, replacements)
@@ -99,23 +101,23 @@ func traverse(node interface{}, replacements map[string]interface{}) (interface{
 		return t, false, nil
 	case int:
 		return t, false, nil
-	case map[string]interface{}:
+	case map[string]any:
 		return handleMap(t, replacements)
-	case map[interface{}]interface{}:
+	case map[any]any:
 		m, err := keysToString(t)
 		if err != nil {
 			return nil, false, err
 		}
 		return handleMap(m, replacements)
-	case []interface{}:
+	case []any:
 		return handleSlice(t, replacements)
 	default:
 		return nil, false, fmt.Errorf("Unknown type received: '%v' (%v)", reflect.TypeOf(node), node)
 	}
 }
 
-func keysToString(m map[interface{}]interface{}) (map[string]interface{}, error) {
-	result := map[string]interface{}{}
+func keysToString(m map[any]any) (map[string]any, error) {
+	result := map[string]any{}
 	for key, val := range m {
 		if k, ok := key.(string); ok {
 			result[k] = val
@@ -126,7 +128,7 @@ func keysToString(m map[interface{}]interface{}) (map[string]interface{}, error)
 	return result, nil
 }
 
-func handleString(value string, replacements map[string]interface{}) (interface{}, bool, error) {
+func handleString(value string, replacements map[string]any) (any, bool, error) {
 
 	trimmed := strings.TrimSpace(value)
 	re := regexp.MustCompile(`\(\(.*?\)\)`)
@@ -182,7 +184,7 @@ func getParameterName(b []byte) string {
 	return strings.Replace(strings.Replace(string(b), "((", "", 1), "))", "", 1)
 }
 
-func getParameterValue(name string, replacements map[string]interface{}) interface{} {
+func getParameterValue(name string, replacements map[string]any) any {
 
 	r := replacements[name]
 	log.Entry().Infof("Value '%v' resolved for parameter '%s'", r, name)
@@ -193,8 +195,8 @@ func isFullMatch(value string, matches [][][]byte) bool {
 	return strings.HasPrefix(value, "((") && strings.HasSuffix(value, "))") && len(matches) == 1 && len(matches[0]) == 1
 }
 
-func handleSlice(t []interface{}, replacements map[string]interface{}) ([]interface{}, bool, error) {
-	tNode := make([]interface{}, 0)
+func handleSlice(t []any, replacements map[string]any) ([]any, bool, error) {
+	tNode := make([]any, 0)
 	updated := false
 	for _, e := range t {
 		if val, _updated, err := traverse(e, replacements); err == nil {
@@ -208,8 +210,8 @@ func handleSlice(t []interface{}, replacements map[string]interface{}) ([]interf
 	return tNode, updated, nil
 }
 
-func handleMap(t map[string]interface{}, replacements map[string]interface{}) (map[string]interface{}, bool, error) {
-	tNode := make(map[string]interface{})
+func handleMap(t map[string]any, replacements map[string]any) (map[string]any, bool, error) {
+	tNode := make(map[string]any)
 	updated := false
 	for key, value := range t {
 		if val, _updated, err := traverse(value, replacements); err == nil {
@@ -222,9 +224,9 @@ func handleMap(t map[string]interface{}, replacements map[string]interface{}) (m
 	return tNode, updated, nil
 }
 
-func getReplacements(replacements map[string]interface{}, replacementsFiles []string) (map[string]interface{}, error) {
+func getReplacements(replacements map[string]any, replacementsFiles []string) (map[string]any, error) {
 
-	mReplacements := make(map[string]interface{})
+	mReplacements := make(map[string]any)
 
 	for _, replacementsFile := range replacementsFiles {
 		bReplacements, err := _fileUtils.FileRead(replacementsFile)
@@ -248,8 +250,6 @@ func getReplacements(replacements map[string]interface{}, replacementsFiles []st
 
 	// the parameters from the map has a higher precedence,
 	// hence we merge after resolving parameters from the files
-	for k, v := range replacements {
-		mReplacements[k] = v
-	}
+	maps.Copy(mReplacements, replacements)
 	return mReplacements, nil
 }

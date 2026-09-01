@@ -7,14 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Jeffail/gabs/v2"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 type jenkinsConfigProvider struct {
 	client         piperHttp.Client
-	apiInformation map[string]interface{}
+	apiInformation map[string]any
 }
 
 func newJenkinsConfigProvider() *jenkinsConfigProvider {
@@ -52,19 +53,19 @@ func (j *jenkinsConfigProvider) fetchAPIInformation() {
 		response, err := j.client.GetRequest(URL, nil, nil)
 		if err != nil {
 			log.Entry().WithError(err).Error("could not get API information from Jenkins")
-			j.apiInformation = map[string]interface{}{}
+			j.apiInformation = map[string]any{}
 			return
 		}
 
 		if response.StatusCode != 200 { //http.StatusNoContent
 			log.Entry().Errorf("Response-Code is %v, could not get timestamp from Jenkins. Setting timestamp to 1970.", response.StatusCode)
-			j.apiInformation = map[string]interface{}{}
+			j.apiInformation = map[string]any{}
 			return
 		}
 		err = piperHttp.ParseHTTPResponseBodyJSON(response, &j.apiInformation)
 		if err != nil {
 			log.Entry().WithError(err).Errorf("could not parse HTTP response body")
-			j.apiInformation = map[string]interface{}{}
+			j.apiInformation = map[string]any{}
 			return
 		}
 		log.Entry().Debugf("successfully retrieved apiInformation")

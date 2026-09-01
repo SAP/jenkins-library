@@ -15,8 +15,8 @@ const (
 )
 
 type latest struct {
-	Version string                 `json:"version"`
-	Misc    map[string]interface{} `json:"-"`
+	Version string         `json:"version"`
+	Misc    map[string]any `json:"-"`
 }
 
 type version struct {
@@ -30,8 +30,8 @@ type response struct {
 }
 
 type versionResponse struct {
-	Addr string                 `json:"addr"`
-	Misc map[string]interface{} `json:"-"`
+	Addr string         `json:"addr"`
+	Misc map[string]any `json:"-"`
 }
 
 func SearchBuildpack(id, version string, httpClient piperhttp.Sender, baseApiURL string) (string, error) {

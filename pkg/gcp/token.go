@@ -2,16 +2,15 @@ package gcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"google.golang.org/api/option"
-
-	"errors"
-
 	"google.golang.org/api/sts/v1"
 )
 

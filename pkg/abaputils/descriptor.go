@@ -2,12 +2,11 @@ package abaputils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
-
-	"errors"
 )
 
 /*

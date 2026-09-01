@@ -7,8 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
-
 	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -20,6 +18,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
@@ -541,7 +541,7 @@ type multipleImageConf struct {
 	ContainerImage     string `json:"containerImage,omitempty"`
 }
 
-func parseMultipleImages(src []map[string]interface{}) ([]multipleImageConf, error) {
+func parseMultipleImages(src []map[string]any) ([]multipleImageConf, error) {
 	var result []multipleImageConf
 
 	for _, conf := range src {

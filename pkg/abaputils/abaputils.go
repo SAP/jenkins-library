@@ -3,6 +3,7 @@ package abaputils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"

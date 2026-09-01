@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,16 +12,12 @@ import (
 	"strings"
 	"time"
 
-	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/format"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/golang"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -28,9 +25,10 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/xuri/excelize/v2"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
 	"github.com/google/go-github/v68/github"
+	"github.com/xuri/excelize/v2"
 )
 
 // ScanOptions is just used to make the lines less long
@@ -936,7 +934,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 	versionWideLibraries := map[string][]ws.Library{} // maps project name to slice of libraries
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
-		projectName := strings.Split(project.Name, " - ")[0]
+		projectName, _, _ := strings.Cut(project.Name, " - ")
 		if projectVersion == config.Version {
 			libs, err := sys.GetProjectLibraryLocations(project.Token)
 			if err != nil {
@@ -961,11 +959,11 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	var versionWideAlerts []ws.Alert // all alerts for a given project version
-	projectNames := ``               // holds all project tokens considered a part of the report for debugging
+	var projectNames strings.Builder // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.Version {
-			projectNames += project.Name + "\n"
+			projectNames.WriteString(project.Name + "\n")
 			alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 			if err != nil {
 				return fmt.Errorf("failed to get project alerts by type: %w", err)
@@ -977,7 +975,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	reportPath := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
-	if err := utils.FileWrite(reportPath, []byte(projectNames), 0o666); err != nil {
+	if err := utils.FileWrite(reportPath, []byte(projectNames.String()), 0o666); err != nil {
 		return fmt.Errorf("failed to write report: %s: %w", reportPath, err)
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -995,7 +993,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	if err != nil {
 		return err
 	}
-	styleID, err := file.NewStyle(`{"font":{"color":"#777777"}}`)
+	styleID, err := file.NewStyle(&excelize.Style{Font: &excelize.Font{Color: "777777"}})
 	if err != nil {
 		return err
 	}
@@ -1025,26 +1023,17 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 }
 
 func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.StreamWriter, styleID int) error {
-	rows := []struct {
-		axis  string
-		title string
-	}{
-		{"A1", "Severity"},
-		{"B1", "Library"},
-		{"C1", "Vulnerability Id"},
-		{"D1", "CVSS 3"},
-		{"E1", "Project"},
-		{"F1", "Resolution"},
+	titles := []string{"Severity", "Library", "Vulnerability Id", "CVSS 3", "Project", "Resolution"}
+	headerRow := make([]any, len(titles))
+	for i, title := range titles {
+		headerRow[i] = excelize.Cell{StyleID: styleID, Value: title}
 	}
-	for _, row := range rows {
-		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
-		if err != nil {
-			return err
-		}
+	if err := streamWriter.SetRow("A1", headerRow); err != nil {
+		return err
 	}
 
 	for i, alert := range alerts {
-		row := make([]interface{}, 6)
+		row := make([]any, 6)
 		vuln := alert.Vulnerability
 		row[0] = vuln.CVSS3Severity
 		row[1] = alert.Library.Filename
@@ -1062,11 +1051,12 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 
 // outputs an slice of libraries to an excel file based on projects with version == config.Version
 func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
-	output := "Library Name, Project Name\n"
+	var output strings.Builder
+	output.WriteString("Library Name, Project Name\n")
 	for projectName, libraries := range libraries {
 		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)
 		for _, library := range libraries {
-			output += library.Name + ", " + projectName + "\n"
+			output.WriteString(library.Name + ", " + projectName + "\n")
 		}
 	}
 
@@ -1078,7 +1068,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", ws.ReportsDirectory,
 		utils.Now().Format(wsReportTimeStampLayout))
-	if err := utils.FileWrite(fileName, []byte(output), 0o666); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output.String()), 0o666); err != nil {
 		return fmt.Errorf("failed to write file: %s: %w", fileName, err)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
@@ -1210,8 +1200,8 @@ func renameTarfilePath(tarFilepath string) error {
 		return fmt.Errorf("file %s does not exist", tarFilepath)
 	}
 	newFileName := ""
-	if index := strings.Index(tarFilepath, ":"); index != -1 {
-		newFileName = tarFilepath[:index]
+	if before, _, ok := strings.Cut(tarFilepath, ":"); ok {
+		newFileName = before
 		newFileName += ".tar"
 	}
 	if err := os.Rename(tarFilepath, newFileName); err != nil {

@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 
-	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 func gctsCloneRepository(config gctsCloneRepositoryOptions, telemetryData *telemetry.CustomData) {

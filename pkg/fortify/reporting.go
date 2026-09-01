@@ -16,7 +16,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
-	"github.com/piper-validation/fortify-client-go/models"
+
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 )
 
 type FortifyReportData struct {

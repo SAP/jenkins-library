@@ -70,7 +70,7 @@ func FilterBuildpacks(buildpacks []string) []string {
 	return result
 }
 
-var allowedEnvKeys = map[string]interface{}{
+var allowedEnvKeys = map[string]any{
 	// Java
 	// https://github.com/paketo-buildpacks/sap-machine and https://github.com/paketo-buildpacks/bellsoft-liberica
 	"BP_JVM_VERSION": nil,
@@ -84,8 +84,8 @@ var allowedEnvKeys = map[string]interface{}{
 }
 
 // FilterEnv filters a map of environment variables to redact Personally Identifiable Information (PII)
-func FilterEnv(in map[string]interface{}) map[string]interface{} {
-	out := map[string]interface{}{}
+func FilterEnv(in map[string]any) map[string]any {
+	out := map[string]any{}
 	for key, value := range in {
 		_, allowed := allowedEnvKeys[key]
 		if allowed {

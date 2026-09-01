@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/apim"
 	apimhttp "github.com/SAP/jenkins-library/pkg/apim"
+
 	"github.com/stretchr/testify/assert"
 )
 

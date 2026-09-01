@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/config/types"
 )

@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"cloud.google.com/go/storage"
 	"github.com/SAP/jenkins-library/pkg/log"
 
+	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )

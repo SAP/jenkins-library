@@ -4,14 +4,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"testing"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"github.com/stretchr/testify/assert"
 )
 
