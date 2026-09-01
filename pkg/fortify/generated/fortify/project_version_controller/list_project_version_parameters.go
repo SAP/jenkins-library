@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 
 	strfmt "github.com/go-openapi/strfmt"
 )
@@ -329,7 +329,7 @@ func (o *ListProjectVersionParams) WriteToRequest(r runtime.ClientRequest, reg s
 		if o.Fulltextsearch != nil {
 			qrFulltextsearch = *o.Fulltextsearch
 		}
-		qFulltextsearch := swag.FormatBool(qrFulltextsearch)
+		qFulltextsearch := conv.FormatBool(qrFulltextsearch)
 		if qFulltextsearch != "" {
 			if err := r.SetQueryParam("fulltextsearch", qFulltextsearch); err != nil {
 				return err
@@ -345,7 +345,7 @@ func (o *ListProjectVersionParams) WriteToRequest(r runtime.ClientRequest, reg s
 		if o.IncludeInactive != nil {
 			qrIncludeInactive = *o.IncludeInactive
 		}
-		qIncludeInactive := swag.FormatBool(qrIncludeInactive)
+		qIncludeInactive := conv.FormatBool(qrIncludeInactive)
 		if qIncludeInactive != "" {
 			if err := r.SetQueryParam("includeInactive", qIncludeInactive); err != nil {
 				return err
@@ -361,7 +361,7 @@ func (o *ListProjectVersionParams) WriteToRequest(r runtime.ClientRequest, reg s
 		if o.Limit != nil {
 			qrLimit = *o.Limit
 		}
-		qLimit := swag.FormatInt32(qrLimit)
+		qLimit := conv.FormatInteger(qrLimit)
 		if qLimit != "" {
 			if err := r.SetQueryParam("limit", qLimit); err != nil {
 				return err
@@ -377,7 +377,7 @@ func (o *ListProjectVersionParams) WriteToRequest(r runtime.ClientRequest, reg s
 		if o.MyAssignedIssues != nil {
 			qrMyAssignedIssues = *o.MyAssignedIssues
 		}
-		qMyAssignedIssues := swag.FormatBool(qrMyAssignedIssues)
+		qMyAssignedIssues := conv.FormatBool(qrMyAssignedIssues)
 		if qMyAssignedIssues != "" {
 			if err := r.SetQueryParam("myAssignedIssues", qMyAssignedIssues); err != nil {
 				return err
@@ -393,7 +393,7 @@ func (o *ListProjectVersionParams) WriteToRequest(r runtime.ClientRequest, reg s
 		if o.OnlyIfHasIssues != nil {
 			qrOnlyIfHasIssues = *o.OnlyIfHasIssues
 		}
-		qOnlyIfHasIssues := swag.FormatBool(qrOnlyIfHasIssues)
+		qOnlyIfHasIssues := conv.FormatBool(qrOnlyIfHasIssues)
 		if qOnlyIfHasIssues != "" {
 			if err := r.SetQueryParam("onlyIfHasIssues", qOnlyIfHasIssues); err != nil {
 				return err
@@ -441,7 +441,7 @@ func (o *ListProjectVersionParams) WriteToRequest(r runtime.ClientRequest, reg s
 		if o.Start != nil {
 			qrStart = *o.Start
 		}
-		qStart := swag.FormatInt32(qrStart)
+		qStart := conv.FormatInteger(qrStart)
 		if qStart != "" {
 			if err := r.SetQueryParam("start", qStart); err != nil {
 				return err

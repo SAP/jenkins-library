@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 
 	strfmt "github.com/go-openapi/strfmt"
 )
@@ -289,7 +289,7 @@ func (o *ListSavedReportParams) WriteToRequest(r runtime.ClientRequest, reg strf
 		if o.Fulltextsearch != nil {
 			qrFulltextsearch = *o.Fulltextsearch
 		}
-		qFulltextsearch := swag.FormatBool(qrFulltextsearch)
+		qFulltextsearch := conv.FormatBool(qrFulltextsearch)
 		if qFulltextsearch != "" {
 			if err := r.SetQueryParam("fulltextsearch", qFulltextsearch); err != nil {
 				return err
@@ -305,7 +305,7 @@ func (o *ListSavedReportParams) WriteToRequest(r runtime.ClientRequest, reg strf
 		if o.Limit != nil {
 			qrLimit = *o.Limit
 		}
-		qLimit := swag.FormatInt32(qrLimit)
+		qLimit := conv.FormatInteger(qrLimit)
 		if qLimit != "" {
 			if err := r.SetQueryParam("limit", qLimit); err != nil {
 				return err
@@ -353,7 +353,7 @@ func (o *ListSavedReportParams) WriteToRequest(r runtime.ClientRequest, reg strf
 		if o.Start != nil {
 			qrStart = *o.Start
 		}
-		qStart := swag.FormatInt32(qrStart)
+		qStart := conv.FormatInteger(qrStart)
 		if qStart != "" {
 			if err := r.SetQueryParam("start", qStart); err != nil {
 				return err

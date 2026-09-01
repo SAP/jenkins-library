@@ -10,7 +10,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 )
 
 // EmbeddedScans embedded scans
@@ -37,12 +38,12 @@ func (m *EmbeddedScans) Validate(formats strfmt.Registry) error {
 
 func (m *EmbeddedScans) validateScans(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Scans) { // not required
+	if typeutils.IsZero(m.Scans) { // not required
 		return nil
 	}
 
 	for i := 0; i < len(m.Scans); i++ {
-		if swag.IsZero(m.Scans[i]) { // not required
+		if typeutils.IsZero(m.Scans[i]) { // not required
 			continue
 		}
 
@@ -65,13 +66,13 @@ func (m *EmbeddedScans) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *EmbeddedScans) UnmarshalBinary(b []byte) error {
 	var res EmbeddedScans
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

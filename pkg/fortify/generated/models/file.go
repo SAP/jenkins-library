@@ -8,7 +8,8 @@ package models
 import (
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 )
 
 // File file
@@ -97,7 +98,7 @@ func (m *File) Validate(formats strfmt.Registry) error {
 
 func (m *File) validateAbsoluteFile(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.AbsoluteFile) { // not required
+	if typeutils.IsZero(m.AbsoluteFile) { // not required
 		return nil
 	}
 
@@ -115,7 +116,7 @@ func (m *File) validateAbsoluteFile(formats strfmt.Registry) error {
 
 func (m *File) validateCanonicalFile(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.CanonicalFile) { // not required
+	if typeutils.IsZero(m.CanonicalFile) { // not required
 		return nil
 	}
 
@@ -133,7 +134,7 @@ func (m *File) validateCanonicalFile(formats strfmt.Registry) error {
 
 func (m *File) validateParentFile(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ParentFile) { // not required
+	if typeutils.IsZero(m.ParentFile) { // not required
 		return nil
 	}
 
@@ -154,13 +155,13 @@ func (m *File) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *File) UnmarshalBinary(b []byte) error {
 	var res File
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

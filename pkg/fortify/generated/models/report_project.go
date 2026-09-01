@@ -10,7 +10,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 )
 
 // ReportProject Report application DTO object
@@ -46,12 +47,12 @@ func (m *ReportProject) Validate(formats strfmt.Registry) error {
 
 func (m *ReportProject) validateVersions(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Versions) { // not required
+	if typeutils.IsZero(m.Versions) { // not required
 		return nil
 	}
 
 	for i := 0; i < len(m.Versions); i++ {
-		if swag.IsZero(m.Versions[i]) { // not required
+		if typeutils.IsZero(m.Versions[i]) { // not required
 			continue
 		}
 
@@ -74,13 +75,13 @@ func (m *ReportProject) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *ReportProject) UnmarshalBinary(b []byte) error {
 	var res ReportProject
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

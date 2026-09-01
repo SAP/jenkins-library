@@ -8,7 +8,8 @@ package models
 import (
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 )
 
 // EmbeddedReportDefinition embedded report definition
@@ -38,7 +39,7 @@ func (m *EmbeddedReportDefinition) Validate(formats strfmt.Registry) error {
 
 func (m *EmbeddedReportDefinition) validateReportDefinition(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ReportDefinition) { // not required
+	if typeutils.IsZero(m.ReportDefinition) { // not required
 		return nil
 	}
 
@@ -59,13 +60,13 @@ func (m *EmbeddedReportDefinition) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *EmbeddedReportDefinition) UnmarshalBinary(b []byte) error {
 	var res EmbeddedReportDefinition
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

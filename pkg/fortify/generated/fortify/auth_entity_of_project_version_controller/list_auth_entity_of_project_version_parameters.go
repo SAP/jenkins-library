@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 
 	strfmt "github.com/go-openapi/strfmt"
 )
@@ -245,7 +245,7 @@ func (o *ListAuthEntityOfProjectVersionParams) WriteToRequest(r runtime.ClientRe
 		if o.Extractusersfromgroups != nil {
 			qrExtractusersfromgroups = *o.Extractusersfromgroups
 		}
-		qExtractusersfromgroups := swag.FormatBool(qrExtractusersfromgroups)
+		qExtractusersfromgroups := conv.FormatBool(qrExtractusersfromgroups)
 		if qExtractusersfromgroups != "" {
 			if err := r.SetQueryParam("extractusersfromgroups", qExtractusersfromgroups); err != nil {
 				return err
@@ -277,7 +277,7 @@ func (o *ListAuthEntityOfProjectVersionParams) WriteToRequest(r runtime.ClientRe
 		if o.Includeuniversalaccessentities != nil {
 			qrIncludeuniversalaccessentities = *o.Includeuniversalaccessentities
 		}
-		qIncludeuniversalaccessentities := swag.FormatBool(qrIncludeuniversalaccessentities)
+		qIncludeuniversalaccessentities := conv.FormatBool(qrIncludeuniversalaccessentities)
 		if qIncludeuniversalaccessentities != "" {
 			if err := r.SetQueryParam("includeuniversalaccessentities", qIncludeuniversalaccessentities); err != nil {
 				return err
@@ -287,7 +287,7 @@ func (o *ListAuthEntityOfProjectVersionParams) WriteToRequest(r runtime.ClientRe
 	}
 
 	// path param parentId
-	if err := r.SetPathParam("parentId", swag.FormatInt64(o.ParentID)); err != nil {
+	if err := r.SetPathParam("parentId", conv.FormatInteger(o.ParentID)); err != nil {
 		return err
 	}
 

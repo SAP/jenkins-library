@@ -11,7 +11,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 	"github.com/go-openapi/validate"
 )
 
@@ -268,7 +269,7 @@ func (m *CustomTag) validateRestrictionTypeEnum(path, location string, value str
 
 func (m *CustomTag) validateRestrictionType(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.RestrictionType) { // not required
+	if typeutils.IsZero(m.RestrictionType) { // not required
 		return nil
 	}
 
@@ -282,12 +283,12 @@ func (m *CustomTag) validateRestrictionType(formats strfmt.Registry) error {
 
 func (m *CustomTag) validateValueList(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ValueList) { // not required
+	if typeutils.IsZero(m.ValueList) { // not required
 		return nil
 	}
 
 	for i := 0; i < len(m.ValueList); i++ {
-		if swag.IsZero(m.ValueList[i]) { // not required
+		if typeutils.IsZero(m.ValueList[i]) { // not required
 			continue
 		}
 
@@ -359,13 +360,13 @@ func (m *CustomTag) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *CustomTag) UnmarshalBinary(b []byte) error {
 	var res CustomTag
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

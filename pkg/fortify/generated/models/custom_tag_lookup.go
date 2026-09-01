@@ -10,7 +10,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 	"github.com/go-openapi/validate"
 )
 
@@ -100,12 +101,12 @@ func (m *CustomTagLookup) validateLookupValue(formats strfmt.Registry) error {
 
 func (m *CustomTagLookup) validateRelyingCustomTags(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.RelyingCustomTags) { // not required
+	if typeutils.IsZero(m.RelyingCustomTags) { // not required
 		return nil
 	}
 
 	for i := 0; i < len(m.RelyingCustomTags); i++ {
-		if swag.IsZero(m.RelyingCustomTags[i]) { // not required
+		if typeutils.IsZero(m.RelyingCustomTags[i]) { // not required
 			continue
 		}
 
@@ -137,13 +138,13 @@ func (m *CustomTagLookup) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *CustomTagLookup) UnmarshalBinary(b []byte) error {
 	var res CustomTagLookup
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

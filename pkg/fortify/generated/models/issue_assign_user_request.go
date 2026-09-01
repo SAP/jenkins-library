@@ -10,7 +10,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 	"github.com/go-openapi/validate"
 )
 
@@ -52,7 +53,7 @@ func (m *IssueAssignUserRequest) validateIssues(formats strfmt.Registry) error {
 	}
 
 	for i := 0; i < len(m.Issues); i++ {
-		if swag.IsZero(m.Issues[i]) { // not required
+		if typeutils.IsZero(m.Issues[i]) { // not required
 			continue
 		}
 
@@ -84,13 +85,13 @@ func (m *IssueAssignUserRequest) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *IssueAssignUserRequest) UnmarshalBinary(b []byte) error {
 	var res IssueAssignUserRequest
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

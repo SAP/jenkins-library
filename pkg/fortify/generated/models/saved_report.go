@@ -11,7 +11,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 	"github.com/go-openapi/validate"
 )
 
@@ -131,7 +132,7 @@ func (m *SavedReport) Validate(formats strfmt.Registry) error {
 
 func (m *SavedReport) validateEmbed(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Embed) { // not required
+	if typeutils.IsZero(m.Embed) { // not required
 		return nil
 	}
 
@@ -149,7 +150,7 @@ func (m *SavedReport) validateEmbed(formats strfmt.Registry) error {
 
 func (m *SavedReport) validateAuthEntity(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.AuthEntity) { // not required
+	if typeutils.IsZero(m.AuthEntity) { // not required
 		return nil
 	}
 
@@ -213,7 +214,7 @@ func (m *SavedReport) validateFormat(formats strfmt.Registry) error {
 
 func (m *SavedReport) validateGenerationDate(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.GenerationDate) { // not required
+	if typeutils.IsZero(m.GenerationDate) { // not required
 		return nil
 	}
 
@@ -226,12 +227,12 @@ func (m *SavedReport) validateGenerationDate(formats strfmt.Registry) error {
 
 func (m *SavedReport) validateInputReportParameters(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.InputReportParameters) { // not required
+	if typeutils.IsZero(m.InputReportParameters) { // not required
 		return nil
 	}
 
 	for i := 0; i < len(m.InputReportParameters); i++ {
-		if swag.IsZero(m.InputReportParameters[i]) { // not required
+		if typeutils.IsZero(m.InputReportParameters[i]) { // not required
 			continue
 		}
 
@@ -256,7 +257,7 @@ func (m *SavedReport) validateProjects(formats strfmt.Registry) error {
 	}
 
 	for i := 0; i < len(m.Projects); i++ {
-		if swag.IsZero(m.Projects[i]) { // not required
+		if typeutils.IsZero(m.Projects[i]) { // not required
 			continue
 		}
 
@@ -320,7 +321,7 @@ func (m *SavedReport) validateStatusEnum(path, location string, value string) er
 
 func (m *SavedReport) validateStatus(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Status) { // not required
+	if typeutils.IsZero(m.Status) { // not required
 		return nil
 	}
 
@@ -395,13 +396,13 @@ func (m *SavedReport) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *SavedReport) UnmarshalBinary(b []byte) error {
 	var res SavedReport
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

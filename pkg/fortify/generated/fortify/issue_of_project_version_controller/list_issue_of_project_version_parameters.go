@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 
 	strfmt "github.com/go-openapi/strfmt"
 )
@@ -489,7 +489,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 		if o.Limit != nil {
 			qrLimit = *o.Limit
 		}
-		qLimit := swag.FormatInt32(qrLimit)
+		qLimit := conv.FormatInteger(qrLimit)
 		if qLimit != "" {
 			if err := r.SetQueryParam("limit", qLimit); err != nil {
 				return err
@@ -515,7 +515,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 	}
 
 	// path param parentId
-	if err := r.SetPathParam("parentId", swag.FormatInt64(o.ParentID)); err != nil {
+	if err := r.SetPathParam("parentId", conv.FormatInteger(o.ParentID)); err != nil {
 		return err
 	}
 
@@ -558,7 +558,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 		if o.Showhidden != nil {
 			qrShowhidden = *o.Showhidden
 		}
-		qShowhidden := swag.FormatBool(qrShowhidden)
+		qShowhidden := conv.FormatBool(qrShowhidden)
 		if qShowhidden != "" {
 			if err := r.SetQueryParam("showhidden", qShowhidden); err != nil {
 				return err
@@ -574,7 +574,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 		if o.Showremoved != nil {
 			qrShowremoved = *o.Showremoved
 		}
-		qShowremoved := swag.FormatBool(qrShowremoved)
+		qShowremoved := conv.FormatBool(qrShowremoved)
 		if qShowremoved != "" {
 			if err := r.SetQueryParam("showremoved", qShowremoved); err != nil {
 				return err
@@ -590,7 +590,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 		if o.Showshortfilenames != nil {
 			qrShowshortfilenames = *o.Showshortfilenames
 		}
-		qShowshortfilenames := swag.FormatBool(qrShowshortfilenames)
+		qShowshortfilenames := conv.FormatBool(qrShowshortfilenames)
 		if qShowshortfilenames != "" {
 			if err := r.SetQueryParam("showshortfilenames", qShowshortfilenames); err != nil {
 				return err
@@ -606,7 +606,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 		if o.Showsuppressed != nil {
 			qrShowsuppressed = *o.Showsuppressed
 		}
-		qShowsuppressed := swag.FormatBool(qrShowsuppressed)
+		qShowsuppressed := conv.FormatBool(qrShowsuppressed)
 		if qShowsuppressed != "" {
 			if err := r.SetQueryParam("showsuppressed", qShowsuppressed); err != nil {
 				return err
@@ -622,7 +622,7 @@ func (o *ListIssueOfProjectVersionParams) WriteToRequest(r runtime.ClientRequest
 		if o.Start != nil {
 			qrStart = *o.Start
 		}
-		qStart := swag.FormatInt32(qrStart)
+		qStart := conv.FormatInteger(qrStart)
 		if qStart != "" {
 			if err := r.SetQueryParam("start", qStart); err != nil {
 				return err

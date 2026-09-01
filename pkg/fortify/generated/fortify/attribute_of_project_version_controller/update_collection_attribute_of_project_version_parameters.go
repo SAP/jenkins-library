@@ -13,7 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/conv"
 
 	strfmt "github.com/go-openapi/strfmt"
 
@@ -151,7 +151,7 @@ func (o *UpdateCollectionAttributeOfProjectVersionParams) WriteToRequest(r runti
 	}
 
 	// path param parentId
-	if err := r.SetPathParam("parentId", swag.FormatInt64(o.ParentID)); err != nil {
+	if err := r.SetPathParam("parentId", conv.FormatInteger(o.ParentID)); err != nil {
 		return err
 	}
 

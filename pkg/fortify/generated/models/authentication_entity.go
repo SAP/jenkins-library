@@ -8,7 +8,8 @@ package models
 import (
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 )
 
 // AuthenticationEntity A user account that can be used to authenticate in SSC. There are currently two types of user accounts that fall into this category: SSC users and LDAP users registered with SSC.
@@ -70,7 +71,7 @@ func (m *AuthenticationEntity) Validate(formats strfmt.Registry) error {
 
 func (m *AuthenticationEntity) validateEmbed(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Embed) { // not required
+	if typeutils.IsZero(m.Embed) { // not required
 		return nil
 	}
 
@@ -88,7 +89,7 @@ func (m *AuthenticationEntity) validateEmbed(formats strfmt.Registry) error {
 
 func (m *AuthenticationEntity) validateUserPhoto(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.UserPhoto) { // not required
+	if typeutils.IsZero(m.UserPhoto) { // not required
 		return nil
 	}
 
@@ -109,13 +110,13 @@ func (m *AuthenticationEntity) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *AuthenticationEntity) UnmarshalBinary(b []byte) error {
 	var res AuthenticationEntity
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res

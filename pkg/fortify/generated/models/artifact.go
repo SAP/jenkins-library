@@ -10,7 +10,8 @@ import (
 
 	"github.com/go-openapi/errors"
 	strfmt "github.com/go-openapi/strfmt"
-	"github.com/go-openapi/swag"
+	"github.com/go-openapi/swag/jsonutils"
+	"github.com/go-openapi/swag/typeutils"
 	"github.com/go-openapi/validate"
 )
 
@@ -171,7 +172,7 @@ func (m *Artifact) Validate(formats strfmt.Registry) error {
 
 func (m *Artifact) validateEmbed(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Embed) { // not required
+	if typeutils.IsZero(m.Embed) { // not required
 		return nil
 	}
 
@@ -189,7 +190,7 @@ func (m *Artifact) validateEmbed(formats strfmt.Registry) error {
 
 func (m *Artifact) validateApprovalDate(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ApprovalDate) { // not required
+	if typeutils.IsZero(m.ApprovalDate) { // not required
 		return nil
 	}
 
@@ -243,7 +244,7 @@ func (m *Artifact) validateArtifactTypeEnum(path, location string, value string)
 
 func (m *Artifact) validateArtifactType(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ArtifactType) { // not required
+	if typeutils.IsZero(m.ArtifactType) { // not required
 		return nil
 	}
 
@@ -257,7 +258,7 @@ func (m *Artifact) validateArtifactType(formats strfmt.Registry) error {
 
 func (m *Artifact) validateLastScanDate(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.LastScanDate) { // not required
+	if typeutils.IsZero(m.LastScanDate) { // not required
 		return nil
 	}
 
@@ -305,7 +306,7 @@ func (m *Artifact) validateOtherStatusEnum(path, location string, value string) 
 
 func (m *Artifact) validateOtherStatus(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.OtherStatus) { // not required
+	if typeutils.IsZero(m.OtherStatus) { // not required
 		return nil
 	}
 
@@ -354,7 +355,7 @@ func (m *Artifact) validateRuntimeStatusEnum(path, location string, value string
 
 func (m *Artifact) validateRuntimeStatus(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.RuntimeStatus) { // not required
+	if typeutils.IsZero(m.RuntimeStatus) { // not required
 		return nil
 	}
 
@@ -403,7 +404,7 @@ func (m *Artifact) validateScaStatusEnum(path, location string, value string) er
 
 func (m *Artifact) validateScaStatus(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.ScaStatus) { // not required
+	if typeutils.IsZero(m.ScaStatus) { // not required
 		return nil
 	}
 
@@ -506,7 +507,7 @@ func (m *Artifact) validateStatusEnum(path, location string, value string) error
 
 func (m *Artifact) validateStatus(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.Status) { // not required
+	if typeutils.IsZero(m.Status) { // not required
 		return nil
 	}
 
@@ -520,7 +521,7 @@ func (m *Artifact) validateStatus(formats strfmt.Registry) error {
 
 func (m *Artifact) validateUploadDate(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.UploadDate) { // not required
+	if typeutils.IsZero(m.UploadDate) { // not required
 		return nil
 	}
 
@@ -568,7 +569,7 @@ func (m *Artifact) validateWebInspectStatusEnum(path, location string, value str
 
 func (m *Artifact) validateWebInspectStatus(formats strfmt.Registry) error {
 
-	if swag.IsZero(m.WebInspectStatus) { // not required
+	if typeutils.IsZero(m.WebInspectStatus) { // not required
 		return nil
 	}
 
@@ -585,13 +586,13 @@ func (m *Artifact) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
-	return swag.WriteJSON(m)
+	return jsonutils.WriteJSON(m)
 }
 
 // UnmarshalBinary interface implementation
 func (m *Artifact) UnmarshalBinary(b []byte) error {
 	var res Artifact
-	if err := swag.ReadJSON(b, &res); err != nil {
+	if err := jsonutils.ReadJSON(b, &res); err != nil {
 		return err
 	}
 	*m = res
