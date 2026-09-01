@@ -6,8 +6,8 @@ import (
 	context "context"
 	io "io"
 
-	build "github.com/microsoft/azure-devops-go-api/azuredevops/build"
-	webapi "github.com/microsoft/azure-devops-go-api/azuredevops/webapi"
+	build "github.com/microsoft/azure-devops-go-api/azuredevops/v7/build"
+	webapi "github.com/microsoft/azure-devops-go-api/azuredevops/v7/webapi"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -1763,4 +1763,400 @@ func (_m *Client) UpdateFolder(_a0 context.Context, _a1 build.UpdateFolderArgs) 
 	}
 
 	return r0, r1
+}
+
+// AddRetentionLeases provides a mock function with given fields: _a0, _a1
+func (_m *Client) AddRetentionLeases(_a0 context.Context, _a1 build.AddRetentionLeasesArgs) (*[]build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.AddRetentionLeasesArgs) *[]build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.AddRetentionLeasesArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// DeleteRetentionLeasesById provides a mock function with given fields: _a0, _a1
+func (_m *Client) DeleteRetentionLeasesById(_a0 context.Context, _a1 build.DeleteRetentionLeasesByIdArgs) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, build.DeleteRetentionLeasesByIdArgs) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeleteTag provides a mock function with given fields: _a0, _a1
+func (_m *Client) DeleteTag(_a0 context.Context, _a1 build.DeleteTagArgs) (*[]string, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]string
+	if rf, ok := ret.Get(0).(func(context.Context, build.DeleteTagArgs) *[]string); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.DeleteTagArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetBuildGeneralSettings provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetBuildGeneralSettings(_a0 context.Context, _a1 build.GetBuildGeneralSettingsArgs) (*build.PipelineGeneralSettings, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.PipelineGeneralSettings
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetBuildGeneralSettingsArgs) *build.PipelineGeneralSettings); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.PipelineGeneralSettings)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetBuildGeneralSettingsArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetDefinitionYaml provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetDefinitionYaml(_a0 context.Context, _a1 build.GetDefinitionYamlArgs) (*build.YamlBuild, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.YamlBuild
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetDefinitionYamlArgs) *build.YamlBuild); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.YamlBuild)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetDefinitionYamlArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionHistory provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionHistory(_a0 context.Context, _a1 build.GetRetentionHistoryArgs) (*build.BuildRetentionHistory, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.BuildRetentionHistory
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionHistoryArgs) *build.BuildRetentionHistory); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.BuildRetentionHistory)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionHistoryArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionLease provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionLease(_a0 context.Context, _a1 build.GetRetentionLeaseArgs) (*build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionLeaseArgs) *build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionLeaseArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionLeasesByMinimalRetentionLeases provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionLeasesByMinimalRetentionLeases(_a0 context.Context, _a1 build.GetRetentionLeasesByMinimalRetentionLeasesArgs) (*[]build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionLeasesByMinimalRetentionLeasesArgs) *[]build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionLeasesByMinimalRetentionLeasesArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionLeasesByOwnerId provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionLeasesByOwnerId(_a0 context.Context, _a1 build.GetRetentionLeasesByOwnerIdArgs) (*[]build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionLeasesByOwnerIdArgs) *[]build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionLeasesByOwnerIdArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionLeasesByUserId provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionLeasesByUserId(_a0 context.Context, _a1 build.GetRetentionLeasesByUserIdArgs) (*[]build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionLeasesByUserIdArgs) *[]build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionLeasesByUserIdArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionLeasesForBuild provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionLeasesForBuild(_a0 context.Context, _a1 build.GetRetentionLeasesForBuildArgs) (*[]build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionLeasesForBuildArgs) *[]build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionLeasesForBuildArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetRetentionSettings provides a mock function with given fields: _a0, _a1
+func (_m *Client) GetRetentionSettings(_a0 context.Context, _a1 build.GetRetentionSettingsArgs) (*build.ProjectRetentionSetting, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.ProjectRetentionSetting
+	if rf, ok := ret.Get(0).(func(context.Context, build.GetRetentionSettingsArgs) *build.ProjectRetentionSetting); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.ProjectRetentionSetting)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.GetRetentionSettingsArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateBuildGeneralSettings provides a mock function with given fields: _a0, _a1
+func (_m *Client) UpdateBuildGeneralSettings(_a0 context.Context, _a1 build.UpdateBuildGeneralSettingsArgs) (*build.PipelineGeneralSettings, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.PipelineGeneralSettings
+	if rf, ok := ret.Get(0).(func(context.Context, build.UpdateBuildGeneralSettingsArgs) *build.PipelineGeneralSettings); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.PipelineGeneralSettings)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.UpdateBuildGeneralSettingsArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateBuildTags provides a mock function with given fields: _a0, _a1
+func (_m *Client) UpdateBuildTags(_a0 context.Context, _a1 build.UpdateBuildTagsArgs) (*[]string, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]string
+	if rf, ok := ret.Get(0).(func(context.Context, build.UpdateBuildTagsArgs) *[]string); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.UpdateBuildTagsArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateDefinitionTags provides a mock function with given fields: _a0, _a1
+func (_m *Client) UpdateDefinitionTags(_a0 context.Context, _a1 build.UpdateDefinitionTagsArgs) (*[]string, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *[]string
+	if rf, ok := ret.Get(0).(func(context.Context, build.UpdateDefinitionTagsArgs) *[]string); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*[]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.UpdateDefinitionTagsArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateRetentionLease provides a mock function with given fields: _a0, _a1
+func (_m *Client) UpdateRetentionLease(_a0 context.Context, _a1 build.UpdateRetentionLeaseArgs) (*build.RetentionLease, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.RetentionLease
+	if rf, ok := ret.Get(0).(func(context.Context, build.UpdateRetentionLeaseArgs) *build.RetentionLease); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.RetentionLease)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.UpdateRetentionLeaseArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateRetentionSettings provides a mock function with given fields: _a0, _a1
+func (_m *Client) UpdateRetentionSettings(_a0 context.Context, _a1 build.UpdateRetentionSettingsArgs) (*build.ProjectRetentionSetting, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *build.ProjectRetentionSetting
+	if rf, ok := ret.Get(0).(func(context.Context, build.UpdateRetentionSettingsArgs) *build.ProjectRetentionSetting); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*build.ProjectRetentionSetting)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, build.UpdateRetentionSettingsArgs) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// UpdateStage provides a mock function with given fields: _a0, _a1
+func (_m *Client) UpdateStage(_a0 context.Context, _a1 build.UpdateStageArgs) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, build.UpdateStageArgs) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
