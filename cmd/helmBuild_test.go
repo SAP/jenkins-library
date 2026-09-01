@@ -520,6 +520,7 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 }
 
 func TestWriteHelmBuildArtifacts(t *testing.T) {
+	t.Parallel()
 	setupConfigOpenFileMock(t)
 
 	t.Run("default publish=true path sets helmBuildArtifacts in CPE", func(t *testing.T) {
