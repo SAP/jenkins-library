@@ -15,7 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
-	"github.com/SAP/jenkins-library/pkg/fortify/generated/models"
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 )
 
 // FVDL This struct encapsulates everyting in the FVDL document

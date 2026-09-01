@@ -15,9 +15,7 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 
-	ff "github.com/SAP/jenkins-library/pkg/fortify/generated/fortify"
-	"github.com/SAP/jenkins-library/pkg/fortify/generated/models"
-	"github.com/go-openapi/strfmt"
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,52 +23,37 @@ import (
 func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, *httptest.Server) {
 	server := httptest.NewServer(http.HandlerFunc(f))
 
-	parts := strings.Split(server.URL, "://")
-	client := ff.NewHTTPClientWithConfig(strfmt.Default, &ff.TransportConfig{
-		Host:     parts[1],
-		Schemes:  []string{parts[0]},
-		BasePath: ""},
-	)
-
 	httpClient := &piperHttp.Client{}
 	httpClientOptions := piperHttp.ClientOptions{Token: "test2456", TransportTimeout: 60 * time.Second}
 	httpClient.SetOptions(httpClientOptions)
 
-	sys := NewSystemInstanceForClient(client, httpClient, server.URL, "test2456", 60*time.Second)
+	sys := NewSystemInstanceForClient(httpClient, server.URL, server.URL, "test2456", 60*time.Second)
 	return sys, server
 }
 
-func TestCreateTransportConfig(t *testing.T) {
+func TestCreateAPIBaseURL(t *testing.T) {
 	t.Run("Valid URL", func(t *testing.T) {
-		config := createTransportConfig("http://some.fortify.host.com/ssc", "/api/v2")
-		assert.Equal(t, []string{"http"}, config.Schemes)
-		assert.Equal(t, "some.fortify.host.com", config.Host)
-		assert.Equal(t, "ssc/api/v2", config.BasePath)
+		baseURL := createAPIBaseURL("http://some.fortify.host.com/ssc", "/api/v2")
+		assert.Equal(t, "http://some.fortify.host.com/ssc/api/v2", baseURL)
 	})
 	t.Run("Slashes are trimmed", func(t *testing.T) {
-		config := createTransportConfig("http://some.fortify.host.com/ssc//", "//api/v2/")
-		assert.Equal(t, []string{"http"}, config.Schemes)
-		assert.Equal(t, "some.fortify.host.com", config.Host)
-		assert.Equal(t, "ssc/api/v2", config.BasePath)
+		baseURL := createAPIBaseURL("http://some.fortify.host.com/ssc//", "//api/v2/")
+		assert.Equal(t, "http://some.fortify.host.com/ssc/api/v2", baseURL)
 	})
 	t.Run("URL missing scheme results in no error", func(t *testing.T) {
-		config := createTransportConfig("some.fortify.host.com/ssc", "api/v1")
-		assert.Equal(t, []string{"https"}, config.Schemes)
-		assert.Equal(t, "some.fortify.host.com", config.Host)
-		assert.Equal(t, "ssc/api/v1", config.BasePath)
+		baseURL := createAPIBaseURL("some.fortify.host.com/ssc", "api/v1")
+		assert.Equal(t, "https://some.fortify.host.com/ssc/api/v1", baseURL)
 	})
 	t.Run("URL with more than one slash is accepted", func(t *testing.T) {
-		config := createTransportConfig("https://some.fortify.host.com/some/path/ssc", "api/v1")
-		assert.Equal(t, []string{"https"}, config.Schemes)
-		assert.Equal(t, "some.fortify.host.com", config.Host)
-		assert.Equal(t, "some/path/ssc/api/v1", config.BasePath)
+		baseURL := createAPIBaseURL("https://some.fortify.host.com/some/path/ssc", "api/v1")
+		assert.Equal(t, "https://some.fortify.host.com/some/path/ssc/api/v1", baseURL)
 	})
 }
 
 func TestNewSystemInstance(t *testing.T) {
 	t.Run("fields are initialized", func(t *testing.T) {
 		sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", "", 10*time.Second)
-		assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
+		assert.Equal(t, "https://some.fortify.host.com/ssc/api/v1", sys.apiBaseURL, "Expected different API base URL")
 		assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
 		assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
 		assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")

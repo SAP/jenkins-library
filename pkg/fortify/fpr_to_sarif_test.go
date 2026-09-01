@@ -10,7 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/format"
 
-	"github.com/SAP/jenkins-library/pkg/fortify/generated/models"
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 	"github.com/stretchr/testify/assert"
 )
 

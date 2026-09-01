@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	strfmt "github.com/go-openapi/strfmt"
 )
 
 // IsDateTime returns true when the string is a valid date-time
@@ -17,7 +15,7 @@ func IsDateTime(str string) bool {
 		return false
 	}
 	s := strings.Split(strings.ToLower(str), "t")
-	if len(s) < 2 || !strfmt.IsDate(s[0]) {
+	if len(s) < 2 || !isDate(s[0]) {
 		return false
 	}
 
@@ -28,6 +26,12 @@ func IsDateTime(str string) bool {
 	m := matches[0]
 	res := m[1] <= "23" && m[2] <= "59" && m[3] <= "59"
 	return res
+}
+
+// isDate returns true when the string is a valid RFC3339 full-date
+func isDate(str string) bool {
+	_, err := time.Parse("2006-01-02", str)
+	return err == nil
 }
 
 const (
@@ -65,8 +69,6 @@ func ParseIso8601MilliDateTime(data string) (Iso8601MilliDateTime, error) {
 // It knows how to read 3 different variations of a RFC3339 date time.
 // Most APIs we encounter want either millisecond or second precision times.
 // This just tries to make it worry-free.
-//
-// swagger:strfmt date-time
 type Iso8601MilliDateTime time.Time
 
 // NewIso8601MilliDateTime is a representation of zero value for Iso8601MilliDateTime type
@@ -96,7 +98,6 @@ func (t *Iso8601MilliDateTime) UnmarshalText(text []byte) error {
 
 // Scan scans a Iso8601MilliDateTime value from database driver type.
 func (t *Iso8601MilliDateTime) Scan(raw interface{}) error {
-	// TODO: case int64: and case float64: ?
 	switch v := raw.(type) {
 	case []byte:
 		return t.UnmarshalText(v)
@@ -107,7 +108,7 @@ func (t *Iso8601MilliDateTime) Scan(raw interface{}) error {
 	case nil:
 		*t = Iso8601MilliDateTime{}
 	default:
-		return fmt.Errorf("cannot sql.Scan() strfmt.Iso8601MilliDateTime from: %#v", v)
+		return fmt.Errorf("cannot sql.Scan() models.Iso8601MilliDateTime from: %#v", v)
 	}
 
 	return nil
@@ -128,30 +129,14 @@ func (t *Iso8601MilliDateTime) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		return nil
 	}
-
-	var tstr string
-	if err := json.Unmarshal(data, &tstr); err != nil {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
 		return err
 	}
-	tt, err := ParseIso8601MilliDateTime(tstr)
+	tt, err := ParseIso8601MilliDateTime(str)
 	if err != nil {
 		return err
 	}
 	*t = tt
 	return nil
-}
-
-// DeepCopyInto copies the receiver and writes its value into out.
-func (t *Iso8601MilliDateTime) DeepCopyInto(out *Iso8601MilliDateTime) {
-	*out = *t
-}
-
-// DeepCopy copies the receiver into a new Iso8601MilliDateTime.
-func (t *Iso8601MilliDateTime) DeepCopy() *Iso8601MilliDateTime {
-	if t == nil {
-		return nil
-	}
-	out := new(Iso8601MilliDateTime)
-	t.DeepCopyInto(out)
-	return out
 }
