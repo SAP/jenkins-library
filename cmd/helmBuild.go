@@ -201,9 +201,16 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 // This mirrors the pattern used by mavenBuild for custom/mavenBuildArtifacts and
 // is consumed by sapCallStagingService to populate the Cumulus promote event.
 func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL string, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
-	artifactInfo.URL = targetURL
-	var buildArtifacts build.BuildArtifacts
-	buildArtifacts.Coordinates = []versioning.Coordinates{artifactInfo}
+	buildArtifacts := build.BuildArtifacts{
+		Coordinates: []versioning.Coordinates{{
+			GroupID:    artifactInfo.GroupID,
+			ArtifactID: artifactInfo.ArtifactID,
+			Version:    artifactInfo.Version,
+			Packaging:  artifactInfo.Packaging,
+			BuildPath:  artifactInfo.BuildPath,
+			URL:        targetURL,
+		}},
+	}
 	jsonResult, err := json.Marshal(buildArtifacts)
 	if err != nil {
 		log.Entry().Warnf("failed to marshal helm build artifacts: %v", err)
