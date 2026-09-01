@@ -213,10 +213,10 @@ func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL stri
 	commonPipelineEnvironment.custom.helmBuildArtifacts = string(jsonResult)
 }
 
-// generateSBOMs produces both SBOMs for the published chart
-// discovered image set so the chart BOM and the container BOMs describe the
-// same images. Both are best-effort: a failure is logged but never fails the
-// step.
+// generateSBOMs produces both SBOMs for the published chart: a chart-level
+// bom-helm.xml and per-image bom-docker-*.xml files. Both use the same
+// discovered image set so the chart BOM and container BOMs describe the same
+// images. Both are best-effort: a failure is logged but never fails the step.
 func generateSBOMs(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) {
 	images := discoverImages(config, helmExecutor)
 
