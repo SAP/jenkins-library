@@ -15,9 +15,9 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 
+	ff "github.com/SAP/jenkins-library/pkg/fortify/generated/fortify"
+	"github.com/SAP/jenkins-library/pkg/fortify/generated/models"
 	"github.com/go-openapi/strfmt"
-	ff "github.com/piper-validation/fortify-client-go/fortify"
-	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
