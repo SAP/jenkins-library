@@ -24,7 +24,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"dario.cat/mergo"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 

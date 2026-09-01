@@ -30,9 +30,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/go-github/v68/github"
-	"github.com/piper-validation/fortify-client-go/models"
 	"uuid"
 )
 

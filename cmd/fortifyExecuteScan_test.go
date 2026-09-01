@@ -23,8 +23,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 	"github.com/google/go-github/v68/github"
-	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/stretchr/testify/assert"
 )
 
