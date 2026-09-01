@@ -270,8 +270,12 @@ func runGolangBuild(config *golangBuildOptions, telemetryData *telemetry.CustomD
 		if len(buildCoordinates) > 0 {
 			var buildArtifacts build.BuildArtifacts
 			buildArtifacts.Coordinates = buildCoordinates
-			jsonResult, _ := json.Marshal(buildArtifacts)
-			commonPipelineEnvironment.custom.goBuildArtifacts = string(jsonResult)
+			jsonResult, err := json.Marshal(buildArtifacts)
+			if err != nil {
+				log.Entry().Warnf("unable to marshal build artifacts metadata: %v", err)
+			} else {
+				commonPipelineEnvironment.custom.goBuildArtifacts = string(jsonResult)
+			}
 		} else {
 			log.Entry().Warnf("unable to identify artifact coordinates for the go binary(s)")
 		}
