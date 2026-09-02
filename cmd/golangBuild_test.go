@@ -1454,33 +1454,22 @@ func TestRunGolangciLint(t *testing.T) {
 }
 
 func TestGoCreateBuildArtifactMetadata(t *testing.T) {
-	config := golangBuildOptions{
-		TargetArchitectures:      []string{"linux,amd64"},
-		Output:                   "testBin",
-		Publish:                  true,
-		TargetRepositoryURL:      "https://my.target.repository.local",
-		TargetRepositoryUser:     "user",
-		TargetRepositoryPassword: "password",
-	}
 	utils := newGolangBuildTestsUtils()
 	versionFile, err := os.Create("VERSION")
 
 	assert.Equal(t, err, nil)
-	// Ensure file is closed and deleted after function finishes
 	defer versionFile.Close()
-	defer os.Remove("VERSION") // Delete the file when the function exits
+	defer os.Remove("VERSION")
 
-	// Write something to the file
 	_, err = versionFile.WriteString("1.0.0")
 
-	// Create a new file
 	binaryFile, err := os.Create("testBin")
 	assert.Equal(t, err, nil)
 
 	defer binaryFile.Close()
-	defer os.Remove("testBin") // Delete the file when the function exits
+	defer os.Remove("testBin")
 
-	err, version := createGoBuildArtifactsMetadata("testBin", config.TargetRepositoryURL, "1.0.0", utils)
+	version, err := createGoBuildArtifactsMetadata("testBin", utils)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, version.ArtifactID, "testBin")
 }

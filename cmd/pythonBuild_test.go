@@ -5,6 +5,8 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type pythonBuildMockUtils struct {
@@ -26,6 +29,7 @@ type pythonBuildMockUtils struct {
 }
 
 const minimalSetupPyFileContent = "from setuptools import setup\n\nsetup(name='MyPackageName',version='1.0.0')"
+const minimalPyprojectTomlFileContent = "[project]\nname = \"MyPackageName\"\nversion = \"1.0.0\"\n"
 
 func newPythonBuildTestsUtils() pythonBuildMockUtils {
 	utils := pythonBuildMockUtils{
@@ -40,7 +44,6 @@ func (f *pythonBuildMockUtils) GetConfig() *pythonBuildOptions {
 }
 
 func TestRunPythonBuild(t *testing.T) {
-	cpe := pythonBuildCommonPipelineEnvironment{}
 	// utils := newPythonBuildTestsUtils()
 
 	SetConfigOptions(ConfigCommandOptions{
@@ -56,9 +59,9 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
-
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		// assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
@@ -70,7 +73,7 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.ShouldFailOnCommand = map[string]error{"python setup.py sdist bdist_wheel": fmt.Errorf("build failure")}
 		telemetryData := telemetry.CustomData{}
-
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
 		assert.EqualError(t, err, "failed to build python project: build failure")
 	})
@@ -87,9 +90,9 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
-
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
@@ -118,9 +121,9 @@ func TestRunPythonBuild(t *testing.T) {
 		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
 		telemetryData := telemetry.CustomData{}
-
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
@@ -141,11 +144,7 @@ func TestRunPythonBuild(t *testing.T) {
 }
 
 func TestRunPythonBuildWithToml(t *testing.T) {
-	cpe := pythonBuildCommonPipelineEnvironment{}
-	// utils := newPythonBuildTestsUtils()
-
 	SetConfigOptions(ConfigCommandOptions{
-		// OpenFile: utils.FilesMock.OpenFile,
 		OpenFile: config.OpenPiperFile,
 	})
 
@@ -156,10 +155,11 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		// assert.Equal(t, 3, len(utils.ExecMockRunner.Calls))
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", "dummy"}, utils.ExecMockRunner.Calls[0].Params)
@@ -176,10 +176,11 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
@@ -213,10 +214,11 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		utils.AddFile("pyproject.toml", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&config, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "python3", utils.ExecMockRunner.Calls[0].Exec)
 		assert.Equal(t, []string{"-m", "venv", config.VirtualEnvironmentName}, utils.ExecMockRunner.Calls[0].Params)
 		assert.Equal(t, "bash", utils.ExecMockRunner.Calls[1].Exec)
@@ -243,8 +245,6 @@ func TestRunPythonBuildWithToml(t *testing.T) {
 }
 
 func TestRunPythonBuildWithTests(t *testing.T) {
-	cpe := pythonBuildCommonPipelineEnvironment{}
-
 	SetConfigOptions(ConfigCommandOptions{
 		OpenFile: config.OpenPiperFile,
 	})
@@ -272,10 +272,11 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils := newPythonBuildTestsUtils()
 			utils.AddFile(descriptor.file, []byte(minimalSetupPyFileContent))
 			utils.AddDir("dummy")
+			cpe := pythonBuildCommonPipelineEnvironment{}
 			telemetryData := telemetry.CustomData{}
 
 			err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			for _, call := range utils.ExecMockRunner.Calls {
 				assert.NotEqual(t, filepath.Join("dummy", "bin", "pytest"), call.Exec)
 				assert.NotContains(t, call.Params, "pytest")
@@ -291,10 +292,11 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils := newPythonBuildTestsUtils()
 			utils.AddFile(descriptor.file, []byte(minimalSetupPyFileContent))
 			utils.AddDir("dummy")
+			cpe := pythonBuildCommonPipelineEnvironment{}
 			telemetryData := telemetry.CustomData{}
 
 			err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			pipExec := filepath.Join("dummy", "bin", "pip")
 			pytestExec := filepath.Join("dummy", "bin", "pytest")
@@ -333,10 +335,11 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils := newPythonBuildTestsUtils()
 			utils.AddFile(descriptor.file, []byte(minimalSetupPyFileContent))
 			utils.AddDir("dummy")
+			cpe := pythonBuildCommonPipelineEnvironment{}
 			telemetryData := telemetry.CustomData{}
 
 			err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			var pytestCall *mock.ExecCall
 			for i := range utils.ExecMockRunner.Calls {
@@ -368,6 +371,7 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{
 				filepath.Join("dummy", "bin", "pytest"): fmt.Errorf("exit status 1"),
 			}
+			cpe := pythonBuildCommonPipelineEnvironment{}
 			telemetryData := telemetry.CustomData{}
 
 			err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
@@ -389,6 +393,7 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{
 				filepath.Join("dummy", "bin", "pip") + " " + strings.Join(append(python.PipInstallFlags, "pytest"), " "): fmt.Errorf("pip install failed"),
 			}
+			cpe := pythonBuildCommonPipelineEnvironment{}
 			telemetryData := telemetry.CustomData{}
 
 			err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
@@ -406,10 +411,11 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			utils := newPythonBuildTestsUtils()
 			utils.AddFile(descriptor.file, []byte(minimalSetupPyFileContent))
 			utils.AddDir("dummy")
+			cpe := pythonBuildCommonPipelineEnvironment{}
 			telemetryData := telemetry.CustomData{}
 
 			err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			pytestIdx := -1
 			cyclonedxIdx := -1
@@ -441,10 +447,11 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 		utils := newPythonBuildTestsUtils()
 		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
 		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		pytestIdx, cyclonedxIdx, twineIdx := -1, -1, -1
 		for i, call := range utils.ExecMockRunner.Calls {
@@ -479,6 +486,7 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 		utils.ExecMockRunner.ShouldFailOnCommand = map[string]error{
 			filepath.Join("dummy", "bin", "pytest"): fmt.Errorf("exit status 1"),
 		}
+		cpe := pythonBuildCommonPipelineEnvironment{}
 		telemetryData := telemetry.CustomData{}
 
 		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
@@ -489,5 +497,194 @@ func TestRunPythonBuildWithTests(t *testing.T) {
 			assert.NotEqual(t, filepath.Join("dummy", "bin", "twine"), call.Exec,
 				"twine must not be called when tests fail")
 		}
+	})
+}
+
+func TestCreatePythonBuildArtifactsMetadata(t *testing.T) {
+	t.Run("success - coordinates populated, no BOM gives empty PURL", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		// versioning.GetArtifact and piperutils.GetComponent both use the real FS.
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		err := createPythonBuildArtifactsMetadata(cpe)
+		require.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "1.0.0")
+		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
+	})
+
+	t.Run("success - BOM present populates PURL", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+		bomContent := []byte(`<?xml version="1.0"?>` +
+			`<bom xmlns="http://cyclonedx.org/schema/bom/1.4">` +
+			`<metadata><component><name>MyPackageName</name><version>1.0.0</version>` +
+			`<purl>pkg:pypi/mypackagename@1.0.0</purl></component></metadata></bom>`)
+		require.NoError(t, os.WriteFile(python.BOMFilename, bomContent, 0644))
+
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		err := createPythonBuildArtifactsMetadata(cpe)
+		require.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "pkg:pypi/mypackagename@1.0.0")
+	})
+
+	t.Run("success - BOM with invalid XML skips PURL", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+		require.NoError(t, os.WriteFile(python.BOMFilename, []byte("not valid xml <<<"), 0644))
+
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		err := createPythonBuildArtifactsMetadata(cpe)
+		require.NoError(t, err)
+		assert.NotContains(t, cpe.custom.pythonBuildArtifacts, "pkg:")
+	})
+
+	t.Run("failure - no build descriptor", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+
+		cpe := &pythonBuildCommonPipelineEnvironment{}
+		err := createPythonBuildArtifactsMetadata(cpe)
+		assert.Error(t, err)
+		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
+	})
+}
+
+func TestRunPythonBuildArtifactsMetadataFlag(t *testing.T) {
+	SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
+
+	t.Run("createBuildArtifactsMetadata=true - CPE populated via runPythonBuild", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		// os.WriteFile: needed by versioning.GetArtifact (uses real os.Stat).
+		// utils.AddFile: needed by searchDescriptor (uses mock.FileExists).
+		require.NoError(t, os.WriteFile("setup.py", []byte(minimalSetupPyFileContent), 0644))
+
+		cfg := pythonBuildOptions{
+			VirtualEnvironmentName:       "dummy",
+			CreateBuildArtifactsMetadata: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
+		require.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
+	})
+
+	t.Run("createBuildArtifactsMetadata=true with pyproject.toml - CPE populated via runPythonBuild", func(t *testing.T) {
+		t.Chdir(t.TempDir())
+		// versioning.GetArtifact uses the package-level fileExists (real FS) for pyproject.toml
+		// discovery; the mock FilesMock is used by runPythonBuild's searchDescriptor.
+		require.NoError(t, os.WriteFile("pyproject.toml", []byte(minimalPyprojectTomlFileContent), 0644))
+
+		cfg := pythonBuildOptions{
+			VirtualEnvironmentName:       "dummy",
+			CreateBuildArtifactsMetadata: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("pyproject.toml", []byte(minimalPyprojectTomlFileContent))
+		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
+		require.NoError(t, err)
+		assert.Contains(t, cpe.custom.pythonBuildArtifacts, "MyPackageName")
+	})
+
+	t.Run("createBuildArtifactsMetadata=false - CPE not populated", func(t *testing.T) {
+		cfg := pythonBuildOptions{
+			VirtualEnvironmentName:       "dummy",
+			CreateBuildArtifactsMetadata: false,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
+		require.NoError(t, err)
+		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
+	})
+
+	t.Run("createBuildArtifactsMetadata=true - metadata error is warned and build succeeds", func(t *testing.T) {
+		// Real FS (t.TempDir) has no build descriptor, so versioning.GetArtifact fails inside
+		// createPythonBuildArtifactsMetadata. The mock has setup.py so searchDescriptor passes.
+		// The build must return nil and pythonBuildArtifacts must remain empty (warn-and-continue).
+		t.Chdir(t.TempDir())
+
+		cfg := pythonBuildOptions{
+			VirtualEnvironmentName:       "dummy",
+			CreateBuildArtifactsMetadata: true,
+		}
+		utils := newPythonBuildTestsUtils()
+		utils.AddFile("setup.py", []byte(minimalSetupPyFileContent))
+		utils.AddDir("dummy")
+		cpe := pythonBuildCommonPipelineEnvironment{}
+		telemetryData := telemetry.CustomData{}
+
+		err := runPythonBuild(&cfg, &telemetryData, utils, &cpe)
+		require.NoError(t, err)
+		assert.Empty(t, cpe.custom.pythonBuildArtifacts)
+	})
+}
+
+func TestSearchDescriptor(t *testing.T) {
+	t.Run("returns first matching descriptor", func(t *testing.T) {
+		supported := []string{"pyproject.toml", "setup.py"}
+		existsFunc := func(path string) (bool, error) { return path == "setup.py", nil }
+		result, err := searchDescriptor(supported, existsFunc)
+		require.NoError(t, err)
+		assert.Equal(t, "setup.py", result)
+	})
+
+	t.Run("FileExists error is propagated", func(t *testing.T) {
+		supported := []string{"pyproject.toml", "setup.py"}
+		existsFunc := func(path string) (bool, error) {
+			return false, fmt.Errorf("FS error on %s", path)
+		}
+		_, err := searchDescriptor(supported, existsFunc)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "FS error")
+	})
+
+	t.Run("returns error when no descriptor found", func(t *testing.T) {
+		supported := []string{"pyproject.toml", "setup.py"}
+		existsFunc := func(path string) (bool, error) { return false, nil }
+		_, err := searchDescriptor(supported, existsFunc)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no build descriptor available")
+	})
+}
+
+func TestCreateBuildSettingsInfo(t *testing.T) {
+	SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
+
+	t.Run("returns settings string on success", func(t *testing.T) {
+		cfg := &pythonBuildOptions{CreateBOM: true, Publish: false}
+		result := createBuildSettingsInfo(cfg)
+		assert.Contains(t, result, "pythonBuild")
+	})
+
+	t.Run("GetDockerImageValue error is warned, not fatal", func(t *testing.T) {
+		// Make OpenFile return a non-ErrNotExist error so getConfig() inside
+		// GetDockerImageValue fails. createBuildSettingsInfo must warn and continue
+		// (abort→warn change), returning whatever buildsettings produces with
+		// an empty docker image.
+		SetConfigOptions(ConfigCommandOptions{
+			OpenFile: func(_ string, _ map[string]string) (io.ReadCloser, error) {
+				return nil, fmt.Errorf("simulated config failure")
+			},
+		})
+		t.Cleanup(func() {
+			SetConfigOptions(ConfigCommandOptions{OpenFile: config.OpenPiperFile})
+		})
+		cfg := &pythonBuildOptions{}
+		result := createBuildSettingsInfo(cfg)
+		assert.Contains(t, result, "pythonBuild")
 	})
 }
