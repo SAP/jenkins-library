@@ -10,7 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/format"
 
-	"github.com/piper-validation/fortify-client-go/models"
+	"github.com/SAP/jenkins-library/pkg/fortify/models"
 	"github.com/stretchr/testify/assert"
 )
 
