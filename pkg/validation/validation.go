@@ -8,21 +8,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-playground/locales/en"
-	ut "github.com/go-playground/universal-translator"
 	valid "github.com/go-playground/validator/v10"
-	en_translations "github.com/go-playground/validator/v10/translations/en"
 )
 
 type Translation struct {
 	Tag           string
-	RegisterFn    valid.RegisterTranslationsFunc
-	TranslationFn valid.TranslationFunc
+	TranslationFn func(valid.FieldError) string
 }
 
 type validation struct {
-	Validator  *valid.Validate
-	Translator ut.Translator
+	Validator    *valid.Validate
+	translations map[string]func(valid.FieldError) string
 }
 
 type validationOption func(*validation) error
@@ -30,25 +26,19 @@ type validationOption func(*validation) error
 func New(opts ...validationOption) (*validation, error) {
 	validator := valid.New()
 	validator.RegisterValidation("possible-values", isPossibleValues)
-	enTranslator := en.New()
-	universalTranslator := ut.New(enTranslator, enTranslator)
-	translator, found := universalTranslator.GetTranslator("en")
-	if !found {
-		return nil, errors.New("translator for en locale is not found")
-	}
 
-	validation := &validation{
-		Validator:  validator,
-		Translator: translator,
+	v := &validation{
+		Validator:    validator,
+		translations: map[string]func(valid.FieldError) string{},
 	}
 
 	for _, opt := range opts {
-		if err := opt(validation); err != nil {
+		if err := opt(v); err != nil {
 			return nil, err
 		}
 	}
 
-	return validation, nil
+	return v, nil
 }
 
 func WithJSONNamesForStructFields() validationOption {
@@ -65,68 +55,49 @@ func WithPredefinedErrorMessages() validationOption {
 	translations := []Translation{
 		{
 			Tag: "possible-values",
-			RegisterFn: func(ut ut.Translator) error {
-				return ut.Add("possible-values", "The {0} must use the following values: {1}", true)
+			TranslationFn: func(fe valid.FieldError) string {
+				return fmt.Sprintf("The %s must use the following values: %s", fe.Field(), fe.Param())
 			},
-			TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-				t, _ := ut.T("possible-values", fe.Field(), fe.Param())
-				return t
-			},
-		}, {
+		},
+		{
 			Tag: "required_if",
-			RegisterFn: func(ut ut.Translator) error {
-				// TODO: Improve the message for condition required_if for several fields
-				return ut.Add("required_if", "The {0} is required since the {1} is {2}", true)
-			},
-			TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-				params := []string{fe.Field()}
-				params = append(params, strings.Split(fe.Param(), " ")...)
-				t, _ := ut.T("required_if", params...)
-				return t
+			// TODO: Improve the message for condition required_if for several fields
+			TranslationFn: func(fe valid.FieldError) string {
+				params := strings.Split(fe.Param(), " ")
+				if len(params) >= 2 {
+					return fmt.Sprintf("The %s is required since the %s is %s", fe.Field(), params[0], params[1])
+				}
+				return fmt.Sprintf("The %s is required", fe.Field())
 			},
 		},
 	}
-	return func(v *validation) error {
-		if err := registerTranslations(translations, v.Validator, v.Translator); err != nil {
-			return err
-		}
-		return nil
-	}
+	return WithCustomErrorMessages(translations)
 }
 
 func WithCustomErrorMessages(translations []Translation) validationOption {
 	return func(v *validation) error {
-		if err := registerTranslations(translations, v.Validator, v.Translator); err != nil {
-			return err
+		for _, t := range translations {
+			v.translations[t.Tag] = t.TranslationFn
 		}
 		return nil
 	}
 }
 
 func (v *validation) ValidateStruct(s any) error {
-	var errStr strings.Builder
 	errs := v.Validator.Struct(s)
 	if errs != nil {
 		if err, ok := errs.(*valid.InvalidValidationError); ok {
 			return err
 		}
-		for _, err := range errs.(valid.ValidationErrors) {
-			errStr.WriteString(err.Translate(v.Translator) + ". ")
+		var errStr strings.Builder
+		for _, fe := range errs.(valid.ValidationErrors) {
+			if fn, ok := v.translations[fe.Tag()]; ok {
+				errStr.WriteString(fn(fe) + ". ")
+			} else {
+				errStr.WriteString(fe.Error() + ". ")
+			}
 		}
 		return errors.New(errStr.String())
-	}
-	return nil
-}
-
-func registerTranslations(translations []Translation, validator *valid.Validate, translator ut.Translator) error {
-	if err := en_translations.RegisterDefaultTranslations(validator, translator); err != nil {
-		return err
-	}
-
-	for _, t := range translations {
-		if err := validator.RegisterTranslation(t.Tag, translator, t.RegisterFn, t.TranslationFn); err != nil {
-			return err
-		}
 	}
 	return nil
 }
