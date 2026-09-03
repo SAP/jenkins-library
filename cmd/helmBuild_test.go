@@ -300,6 +300,7 @@ func TestRunHelmPush(t *testing.T) {
 		{
 			config: helmBuildOptions{
 				HelmCommand: "publish",
+				ChartPath:   "helm/charts/my-chart",
 			},
 			artifactInfo:       versioning.Coordinates{ArtifactID: "my-chart", Version: "1.2.3"},
 			methodString:       "https://my.target.repository/my-chart-1.2.3.tgz",
@@ -337,6 +338,8 @@ func TestRunHelmPush(t *testing.T) {
 				assert.Equal(t, testCase.artifactInfo.ArtifactID, artifacts.Coordinates[0].ArtifactID)
 				assert.Equal(t, testCase.artifactInfo.Version, artifacts.Coordinates[0].Version)
 				assert.Equal(t, testCase.methodString, artifacts.Coordinates[0].URL)
+				assert.Equal(t, fmt.Sprintf("pkg:helm/%s@%s", testCase.artifactInfo.ArtifactID, testCase.artifactInfo.Version), artifacts.Coordinates[0].PURL)
+				assert.Equal(t, testCase.config.ChartPath, artifacts.Coordinates[0].BuildPath)
 			} else {
 				assert.Empty(t, cpe.custom.helmBuildArtifacts, "helmBuildArtifacts must not be set on publish failure")
 			}
@@ -531,7 +534,7 @@ func TestWriteHelmBuildArtifacts(t *testing.T) {
 		helmExecutor.On("RunHelmLint").Return(nil)
 		helmExecutor.On("RunHelmPublish").Return(publishURL, nil)
 
-		config := helmBuildOptions{Publish: true}
+		config := helmBuildOptions{Publish: true, ChartPath: "my-chart-path"}
 		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, artifactInfo, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
 
 		assert.NoError(t, err)
@@ -542,6 +545,8 @@ func TestWriteHelmBuildArtifacts(t *testing.T) {
 		assert.Equal(t, "my-chart", artifacts.Coordinates[0].ArtifactID)
 		assert.Equal(t, "0.5.0", artifacts.Coordinates[0].Version)
 		assert.Equal(t, publishURL, artifacts.Coordinates[0].URL)
+		assert.Equal(t, "pkg:helm/my-chart@0.5.0", artifacts.Coordinates[0].PURL)
+		assert.Equal(t, "my-chart-path", artifacts.Coordinates[0].BuildPath)
 	})
 
 	t.Run("publish=false does not set helmBuildArtifacts", func(t *testing.T) {

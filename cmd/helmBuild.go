@@ -138,7 +138,7 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
-		writeHelmBuildArtifacts(artifactInfo, targetURL, commonPipelineEnvironment)
+		writeHelmBuildArtifacts(artifactInfo, targetURL, config.ChartPath, commonPipelineEnvironment)
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
@@ -187,7 +187,7 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
-		writeHelmBuildArtifacts(artifactInfo, targetURL, commonPipelineEnvironment)
+		writeHelmBuildArtifacts(artifactInfo, targetURL, config.ChartPath, commonPipelineEnvironment)
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
@@ -200,8 +200,10 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 // into JSON and stores them in the CPE under custom/helmBuildArtifacts.
 // This mirrors the pattern used by mavenBuild for custom/mavenBuildArtifacts and
 // is consumed by sapCallStagingService to populate the Cumulus promote event.
-func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL string, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
+func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL string, chartPath string, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
 	artifactInfo.URL = targetURL
+	artifactInfo.BuildPath = chartPath
+	artifactInfo.PURL = fmt.Sprintf("pkg:helm/%s@%s", artifactInfo.ArtifactID, artifactInfo.Version)
 	buildArtifacts := build.BuildArtifacts{
 		Coordinates: []versioning.Coordinates{artifactInfo},
 	}
