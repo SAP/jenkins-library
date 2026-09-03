@@ -36,7 +36,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/hashicorp/vault/api/auth/approle v0.12.0
-	github.com/iancoleman/orderedmap v0.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.18.11
