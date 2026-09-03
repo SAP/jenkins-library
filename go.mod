@@ -19,7 +19,6 @@ require (
 	github.com/bndr/gojenkins v1.2.0
 	github.com/buildpacks/lifecycle v0.21.18
 	github.com/cdevents/sdk-go v0.5.1
-	github.com/cloudevents/sdk-go/v2 v2.16.2
 	github.com/docker/cli v29.7.2+incompatible
 	github.com/evanphx/json-patch v5.9.11+incompatible
 	github.com/getsentry/sentry-go v0.49.0
@@ -105,6 +104,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chai2010/gettext-go v1.0.3 // indirect
+	github.com/cloudevents/sdk-go/v2 v2.16.2 // indirect
 	github.com/cloudflare/circl v1.6.5 // indirect
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
