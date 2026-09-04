@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -36,13 +37,16 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 }
 
 func runGcpPublishEvent(publisher gcp.PubsubClient, cfg *gcpPublishEventOptions) error {
-	data, err := eventing.NewEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
+	eventData, err := eventing.NewEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
-	log.Entry().Debugf("CloudEvent created: %s", string(data))
 
-	if err = publisher.Publish(cfg.Topic, data); err != nil {
+	prettyJSON, _ := json.MarshalIndent(json.RawMessage(eventData), "", "  ")
+
+	log.Entry().Debugf("CloudEvent event created: %s", prettyJSON)
+
+	if err = publisher.Publish(cfg.Topic, eventData); err != nil {
 		return fmt.Errorf("failed to publish event: %w", err)
 	}
 
