@@ -183,10 +183,11 @@ Refer to [Software Assembly Integration (SAP_COM_0582)](https://help.sap.com/vie
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:   STEP_NAME,
-							StageName:  telemetryClient.GetData().StageName,
-							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineID: telemetryClient.GetBuildURL(),
+							StepName:         STEP_NAME,
+							StageName:        telemetryClient.GetData().StageName,
+							ErrorCode:        stepTelemetryData.ErrorCode,
+							PipelineID:       telemetryClient.GetBuildURL(),
+							CPEEventDataPath: GeneralConfig.EnvRootPath,
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

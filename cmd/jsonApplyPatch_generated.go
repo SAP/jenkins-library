@@ -135,10 +135,11 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:   STEP_NAME,
-							StageName:  telemetryClient.GetData().StageName,
-							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineID: telemetryClient.GetBuildURL(),
+							StepName:         STEP_NAME,
+							StageName:        telemetryClient.GetData().StageName,
+							ErrorCode:        stepTelemetryData.ErrorCode,
+							PipelineID:       telemetryClient.GetBuildURL(),
+							CPEEventDataPath: GeneralConfig.EnvRootPath,
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
