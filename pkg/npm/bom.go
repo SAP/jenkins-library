@@ -143,8 +143,8 @@ func (exec *Execute) generatePnpmBOMFiles(packageJSONFiles []string, cliPath str
 // createNpmBOM generates a BOM for npm/yarn projects using cyclonedx-npm
 func (exec *Execute) createNpmBOM(packageJSONFiles []string) error {
 	// Primary attempt with cyclonedx-npm
-	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", tmpInstallFolder}
-	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", CycloneDxSchemaVersion, "--omit", "dev", "--output-file"}
+	cycloneDxNpmInstallParams := []string{"install", "--no-save", cycloneDxNpmPackageVersion, "--prefix", tmpInstallFolder, "--no-workspaces"}
+	cycloneDxNpmRunParams := []string{"--output-format", "XML", "--spec-version", CycloneDxSchemaVersion, "--omit", "dev", "--ignore-npm-errors", "--output-file"}
 
 	err := exec.createBOMWithParams(cycloneDxNpmInstallParams, cycloneDxNpmRunParams, packageJSONFiles)
 	if err != nil {
