@@ -45,7 +45,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	content := []struct{
 		category string
 		name string
-		value interface{}
+		value any
 	}{
 		{{- range $notused, $param := .Parameters }}
 		{{- if not $param.Category}}
@@ -150,7 +150,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{{- range $notused, $measurement := .Measurements }}
 		{{- range $notused, $field := $measurement.Fields }}
@@ -250,7 +250,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(stepConfig {{ .StepName }}Op
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }`

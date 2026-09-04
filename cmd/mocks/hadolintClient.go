@@ -6,6 +6,7 @@ import (
 	http "net/http"
 
 	pkghttp "github.com/SAP/jenkins-library/pkg/http"
+
 	mock "github.com/stretchr/testify/mock"
 )
 

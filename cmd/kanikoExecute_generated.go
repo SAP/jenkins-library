@@ -15,36 +15,37 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
 type kanikoExecuteOptions struct {
-	BuildOptions                     []string                 `json:"buildOptions,omitempty"`
-	BuildSettingsInfo                string                   `json:"buildSettingsInfo,omitempty"`
-	ContainerBuildOptions            string                   `json:"containerBuildOptions,omitempty"`
-	ContainerImage                   string                   `json:"containerImage,omitempty"`
-	ContainerImageName               string                   `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
-	ContainerImageTag                string                   `json:"containerImageTag,omitempty"`
-	MultipleImages                   []map[string]interface{} `json:"multipleImages,omitempty"`
-	ContainerMultiImageBuild         bool                     `json:"containerMultiImageBuild,omitempty"`
-	ContainerMultiImageBuildExcludes []string                 `json:"containerMultiImageBuildExcludes,omitempty"`
-	ContainerMultiImageBuildTrimDir  string                   `json:"containerMultiImageBuildTrimDir,omitempty"`
-	ContainerPreparationCommand      string                   `json:"containerPreparationCommand,omitempty"`
-	ContainerRegistryURL             string                   `json:"containerRegistryUrl,omitempty"`
-	ContainerRegistryUser            string                   `json:"containerRegistryUser,omitempty"`
-	ContainerRegistryPassword        string                   `json:"containerRegistryPassword,omitempty"`
-	CustomTLSCertificateLinks        []string                 `json:"customTlsCertificateLinks,omitempty"`
-	DockerConfigJSON                 string                   `json:"dockerConfigJSON,omitempty"`
-	DockerfilePath                   string                   `json:"dockerfilePath,omitempty"`
-	ReadImageDigest                  bool                     `json:"readImageDigest,omitempty"`
-	CreateBOM                        bool                     `json:"createBOM,omitempty"`
-	SyftDownloadURL                  string                   `json:"syftDownloadUrl,omitempty"`
-	CreateBuildArtifactsMetadata     bool                     `json:"createBuildArtifactsMetadata,omitempty"`
-	RegistryMirrors                  []string                 `json:"registryMirrors,omitempty"`
+	BuildOptions                     []string         `json:"buildOptions,omitempty"`
+	BuildSettingsInfo                string           `json:"buildSettingsInfo,omitempty"`
+	ContainerBuildOptions            string           `json:"containerBuildOptions,omitempty"`
+	ContainerImage                   string           `json:"containerImage,omitempty"`
+	ContainerImageName               string           `json:"containerImageName,omitempty" validate:"required_if=ContainerMultiImageBuild true"`
+	ContainerImageTag                string           `json:"containerImageTag,omitempty"`
+	MultipleImages                   []map[string]any `json:"multipleImages,omitempty"`
+	ContainerMultiImageBuild         bool             `json:"containerMultiImageBuild,omitempty"`
+	ContainerMultiImageBuildExcludes []string         `json:"containerMultiImageBuildExcludes,omitempty"`
+	ContainerMultiImageBuildTrimDir  string           `json:"containerMultiImageBuildTrimDir,omitempty"`
+	ContainerPreparationCommand      string           `json:"containerPreparationCommand,omitempty"`
+	ContainerRegistryURL             string           `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser            string           `json:"containerRegistryUser,omitempty"`
+	ContainerRegistryPassword        string           `json:"containerRegistryPassword,omitempty"`
+	CustomTLSCertificateLinks        []string         `json:"customTlsCertificateLinks,omitempty"`
+	DockerConfigJSON                 string           `json:"dockerConfigJSON,omitempty"`
+	DockerfilePath                   string           `json:"dockerfilePath,omitempty"`
+	ReadImageDigest                  bool             `json:"readImageDigest,omitempty"`
+	CreateBOM                        bool             `json:"createBOM,omitempty"`
+	SyftDownloadURL                  string           `json:"syftDownloadUrl,omitempty"`
+	CreateBuildArtifactsMetadata     bool             `json:"createBuildArtifactsMetadata,omitempty"`
+	RegistryMirrors                  []string         `json:"registryMirrors,omitempty"`
 }
 
 type kanikoExecuteCommonPipelineEnvironment struct {
@@ -66,7 +67,7 @@ func (p *kanikoExecuteCommonPipelineEnvironment) persist(path, resourceName stri
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
@@ -120,7 +121,7 @@ func (p *kanikoExecuteReports) persist(stepConfig kanikoExecuteOptions, gcpJsonK
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -275,8 +276,9 @@ Following final image names will be built:
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -351,7 +353,7 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 	cmd.Flags().BoolVar(&stepConfig.ReadImageDigest, "readImageDigest", false, "")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft and stores it in a file in CycloneDX 1.4 format.")
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
-	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", true, "metadata about the artifacts that are built and published, this metadata is generally used by steps downstream in the pipeline")
 	cmd.Flags().StringSliceVar(&stepConfig.RegistryMirrors, "registryMirrors", []string{}, "List of registry mirrors to use instead of default index.docker.io. Format examples, mirror.gcr.io, 127.0.0.1, 192.168.0.1:5000, mycompany-docker-virtual.jfrog.io")
 
 }
@@ -438,7 +440,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Name:        "multipleImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STEPS"},
-						Type:        "[]map[string]interface{}",
+						Type:        "[]map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "images"}},
 					},
@@ -592,7 +594,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     true,
 					},
 					{
 						Name:        "registryMirrors",
@@ -613,7 +615,7 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageNameTag"},
 							{"name": "container/imageDigest"},
@@ -627,7 +629,7 @@ func kanikoExecuteMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/bom-*.xml", "type": "sbom"},
 						},
 					},

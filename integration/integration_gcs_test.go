@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/gcs"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"

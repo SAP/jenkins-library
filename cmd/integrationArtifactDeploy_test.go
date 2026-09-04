@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 

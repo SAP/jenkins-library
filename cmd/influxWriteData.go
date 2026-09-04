@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/influx"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 )
 
@@ -24,7 +25,7 @@ func writeData(config *influxWriteDataOptions, influxClient influxdb2.Client) er
 	log.Entry().Info("influxWriteData step")
 
 	client := influx.NewClient(influxClient, config.Organization, config.Bucket)
-	var dataMap map[string]map[string]interface{}
+	var dataMap map[string]map[string]any
 	if err := json.Unmarshal([]byte(config.DataMap), &dataMap); err != nil {
 		return fmt.Errorf("Failed to unmarshal dataMap: %v", err)
 	}

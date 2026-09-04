@@ -11,10 +11,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/stretchr/testify/assert"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/fake"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRunContainerSaveImage(t *testing.T) {

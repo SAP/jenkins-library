@@ -4,17 +4,16 @@
 package orchestrator
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"errors"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/jarcoal/httpmock"
 
+	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
 

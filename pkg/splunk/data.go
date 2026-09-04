@@ -3,15 +3,15 @@ package splunk
 import "github.com/SAP/jenkins-library/pkg/log"
 
 type Event struct {
-	Messages  []log.Message  `json:"messages,omitempty"`  // messages
-	Telemetry MonitoringData `json:"telemetry,omitempty"` // telemetryData
+	Messages  []log.Message  `json:"messages,omitempty"` // messages
+	Telemetry MonitoringData `json:"telemetry"`          // telemetryData
 }
 type Details struct {
 	Host       string `json:"host"`                 // hostname
 	Source     string `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
 	Index      string `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      Event  `json:"event,omitempty"`      // throw any useful key/val pairs here}
+	Event      Event  `json:"event"`                // throw any useful key/val pairs here}
 }
 
 // MonitoringData definition for monitoring
@@ -48,9 +48,9 @@ type LogFileEvent struct {
 }
 
 type DetailsTelemetry struct {
-	Host       string                 `json:"host"`                 // hostname
-	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      map[string]interface{} `json:"event,omitempty"`      // throw any useful key/val pairs here}
+	Host       string         `json:"host"`                 // hostname
+	Source     string         `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string         `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string         `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      map[string]any `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }

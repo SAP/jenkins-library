@@ -15,37 +15,38 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
 type cnbBuildOptions struct {
-	ContainerImageName        string                   `json:"containerImageName,omitempty"`
-	ContainerImageAlias       string                   `json:"containerImageAlias,omitempty"`
-	ContainerImageTag         string                   `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL      string                   `json:"containerRegistryUrl,omitempty"`
-	Buildpacks                []string                 `json:"buildpacks,omitempty"`
-	PreBuildpacks             []string                 `json:"preBuildpacks,omitempty"`
-	PostBuildpacks            []string                 `json:"postBuildpacks,omitempty"`
-	BuildEnvVars              map[string]interface{}   `json:"buildEnvVars,omitempty"`
-	ExpandBuildEnvVars        bool                     `json:"expandBuildEnvVars,omitempty"`
-	Path                      string                   `json:"path,omitempty"`
-	ProjectDescriptor         string                   `json:"projectDescriptor,omitempty"`
-	DockerConfigJSON          string                   `json:"dockerConfigJSON,omitempty"`
-	DockerConfigJSONCPE       string                   `json:"dockerConfigJSONCPE,omitempty"`
-	CustomTLSCertificateLinks []string                 `json:"customTlsCertificateLinks,omitempty"`
-	AdditionalTags            []string                 `json:"additionalTags,omitempty"`
-	Bindings                  map[string]interface{}   `json:"bindings,omitempty"`
-	MultipleImages            []map[string]interface{} `json:"multipleImages,omitempty"`
-	PreserveFiles             []string                 `json:"preserveFiles,omitempty"`
-	BuildSettingsInfo         string                   `json:"buildSettingsInfo,omitempty"`
-	CreateBOM                 bool                     `json:"createBOM,omitempty"`
-	SyftDownloadURL           string                   `json:"syftDownloadUrl,omitempty"`
-	RunImage                  string                   `json:"runImage,omitempty"`
-	DefaultProcess            string                   `json:"defaultProcess,omitempty"`
+	ContainerImageName        string           `json:"containerImageName,omitempty"`
+	ContainerImageAlias       string           `json:"containerImageAlias,omitempty"`
+	ContainerImageTag         string           `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL      string           `json:"containerRegistryUrl,omitempty"`
+	Buildpacks                []string         `json:"buildpacks,omitempty"`
+	PreBuildpacks             []string         `json:"preBuildpacks,omitempty"`
+	PostBuildpacks            []string         `json:"postBuildpacks,omitempty"`
+	BuildEnvVars              map[string]any   `json:"buildEnvVars,omitempty"`
+	ExpandBuildEnvVars        bool             `json:"expandBuildEnvVars,omitempty"`
+	Path                      string           `json:"path,omitempty"`
+	ProjectDescriptor         string           `json:"projectDescriptor,omitempty"`
+	DockerConfigJSON          string           `json:"dockerConfigJSON,omitempty"`
+	DockerConfigJSONCPE       string           `json:"dockerConfigJSONCPE,omitempty"`
+	CustomTLSCertificateLinks []string         `json:"customTlsCertificateLinks,omitempty"`
+	AdditionalTags            []string         `json:"additionalTags,omitempty"`
+	Bindings                  map[string]any   `json:"bindings,omitempty"`
+	MultipleImages            []map[string]any `json:"multipleImages,omitempty"`
+	PreserveFiles             []string         `json:"preserveFiles,omitempty"`
+	BuildSettingsInfo         string           `json:"buildSettingsInfo,omitempty"`
+	CreateBOM                 bool             `json:"createBOM,omitempty"`
+	SyftDownloadURL           string           `json:"syftDownloadUrl,omitempty"`
+	RunImage                  string           `json:"runImage,omitempty"`
+	DefaultProcess            string           `json:"defaultProcess,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -66,7 +67,7 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "container", name: "registryUrl", value: p.container.registryURL},
 		{category: "container", name: "imageDigest", value: p.container.imageDigest},
@@ -119,7 +120,7 @@ func (p *cnbBuildReports) persist(stepConfig cnbBuildOptions, gcpJsonKeyFilePath
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -208,8 +209,9 @@ func CnbBuildCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -402,7 +404,7 @@ func cnbBuildMetadata() config.StepData {
 						Name:        "buildEnvVars",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -489,7 +491,7 @@ func cnbBuildMetadata() config.StepData {
 						Name:        "bindings",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -497,7 +499,7 @@ func cnbBuildMetadata() config.StepData {
 						Name:        "multipleImages",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]map[string]interface{}",
+						Type:        "[]map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "images"}},
 					},
@@ -570,7 +572,7 @@ func cnbBuildMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "container/registryUrl"},
 							{"name": "container/imageDigest"},
 							{"name": "container/imageNameTag"},
@@ -583,7 +585,7 @@ func cnbBuildMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/bom-*.xml", "type": "sbom"},
 						},
 					},

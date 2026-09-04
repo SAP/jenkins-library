@@ -5,10 +5,11 @@ import (
 	"bytes"
 	"path/filepath"
 
-	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+
+	"github.com/BurntSushi/toml"
 	"github.com/buildpacks/lifecycle/platform/files"
 )
 
@@ -35,10 +36,10 @@ func extractMetadataFromCPE(piperEnvRoot string, utils cnbutils.BuildUtils) file
 	return files.ProjectMetadata{
 		Source: &files.ProjectSource{
 			Type: "git",
-			Version: map[string]interface{}{
+			Version: map[string]any{
 				"commit": piperenv.GetResourceParameter(cpePath, "git", "headCommitId"),
 			},
-			Metadata: map[string]interface{}{
+			Metadata: map[string]any{
 				"refs": []string{
 					piperenv.GetResourceParameter(cpePath, "git", "branch"),
 				},

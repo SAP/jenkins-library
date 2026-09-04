@@ -9,6 +9,7 @@ import (
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -59,7 +59,7 @@ func (i *TestStepTestInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "m1", name: "field1_1", value: i.m1.fields.field1_1},
 		{valType: config.InfluxField, measurement: "m1", name: "field1_2", value: i.m1.fields.field1_2},
@@ -149,7 +149,7 @@ func (p *testStepReports) persist(stepConfig testStepOptions, gcpJsonKeyFilePath
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }`,

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,17 +18,15 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
-	"github.com/SAP/jenkins-library/pkg/npm"
-	"github.com/SAP/jenkins-library/pkg/versioning"
-
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
+
 	"go.yaml.in/yaml/v3"
 )
 
@@ -263,6 +262,13 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		}
 	}
 
+	if config.CreateBuildArtifactsMetadata {
+		mtarPath := getMtarFilePath(config, mtarName)
+		if err := buildArtifactsMetadata(config, commonPipelineEnvironment, mtarPath); err != nil {
+			log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
+		}
+	}
+
 	if config.Publish {
 		if err = handlePublish(config, commonPipelineEnvironment, utils, mtarName, isMtarNativelySuffixed); err != nil {
 			return err
@@ -311,13 +317,6 @@ func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCo
 
 	if _, httpErr := utils.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil); httpErr != nil {
 		return fmt.Errorf("failed to upload mtar to repository: %w", httpErr)
-	}
-
-	if config.CreateBuildArtifactsMetadata {
-		if err := buildArtifactsMetadata(config, commonPipelineEnvironment, mtarPath); err != nil {
-			log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
-			return nil
-		}
 	}
 
 	return nil
@@ -455,7 +454,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 		return fmt.Errorf("package.json file does not exist")
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	pContent, err := utils.FileRead("package.json")
 	if err != nil {
 		return err
@@ -523,7 +522,7 @@ func generateMta(id, applicationName, version string) (string, error) {
 }
 
 func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
-	var result map[string]interface{}
+	var result map[string]any
 	p, err := utils.FileRead(mtaYamlFile)
 	if err != nil {
 		return "", err

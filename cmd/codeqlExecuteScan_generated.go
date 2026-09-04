@@ -15,10 +15,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
@@ -81,7 +82,7 @@ func (i *codeqlExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "codeql", value: i.step_data.fields.codeql},
 		{valType: config.InfluxField, measurement: "codeql_data", name: "repositoryUrl", value: i.codeql_data.fields.repositoryURL},
@@ -139,7 +140,7 @@ func (p *codeqlExecuteScanReports) persist(stepConfig codeqlExecuteScanOptions, 
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -230,8 +231,9 @@ and Java plus Maven.`,
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -615,7 +617,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "step_data", "fields": []map[string]string{{"name": "codeql"}}},
 							{"name": "codeql_data", "fields": []map[string]string{{"name": "repositoryUrl"}, {"name": "repositoryReferenceUrl"}, {"name": "codeScanningLink"}, {"name": "querySuite"}, {"name": "optionalTotal"}, {"name": "optionalAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}}},
 						},
@@ -623,7 +625,7 @@ func codeqlExecuteScanMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/*.csv", "type": "codeql"},
 							{"filePattern": "**/*.sarif", "type": "codeql"},
 							{"filePattern": "**/toolrun_codeql_*.json", "type": "codeql"},

@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -200,8 +201,9 @@ kubectl set image deployment/<deploymentName> <containerNames[0]>=<imageNameTags
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -829,7 +831,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Image: "alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}

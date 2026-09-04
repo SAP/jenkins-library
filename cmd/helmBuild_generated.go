@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/eventing"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -50,6 +55,9 @@ type helmBuildOptions struct {
 	TemplateStartDelimiter    string   `json:"templateStartDelimiter,omitempty"`
 	TemplateEndDelimiter      string   `json:"templateEndDelimiter,omitempty"`
 	RenderValuesTemplate      bool     `json:"renderValuesTemplate,omitempty"`
+	CreateBOM                 bool     `json:"createBOM,omitempty"`
+	SyftDownloadURL           string   `json:"syftDownloadUrl,omitempty"`
+	ContainerImageNameTags    []string `json:"containerImageNameTags,omitempty"`
 	BuildSettingsInfo         string   `json:"buildSettingsInfo,omitempty"`
 }
 
@@ -64,7 +72,7 @@ func (p *helmBuildCommonPipelineEnvironment) persist(path, resourceName string) 
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "helmChartUrl", value: p.custom.helmChartURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
@@ -83,6 +91,40 @@ func (p *helmBuildCommonPipelineEnvironment) persist(path, resourceName string) 
 	}
 }
 
+type helmBuildReports struct {
+}
+
+func (p *helmBuildReports) persist(stepConfig helmBuildOptions, gcpJsonKeyFilePath string, gcsBucketId string, gcsFolderPath string, gcsSubFolder string) {
+	if gcsBucketId == "" {
+		log.Entry().Info("persisting reports to GCS is disabled, because gcsBucketId is empty")
+		return
+	}
+	log.Entry().Info("Uploading reports to Google Cloud Storage...")
+	content := []gcs.ReportOutputParam{
+		{FilePattern: "**/bom-*.xml", ParamRef: "", StepResultType: "sbom"},
+	}
+
+	gcsClient, err := gcs.NewClient(gcpJsonKeyFilePath, "")
+	if err != nil {
+		log.Entry().Errorf("creation of GCS client failed: %v", err)
+		return
+	}
+	defer gcsClient.Close()
+	structVal := reflect.ValueOf(&stepConfig).Elem()
+	inputParameters := map[string]string{}
+	for i := 0; i < structVal.NumField(); i++ {
+		field := structVal.Type().Field(i)
+		if field.Type.String() == "string" {
+			paramName := strings.Split(field.Tag.Get("json"), ",")
+			paramValue, _ := structVal.Field(i).Interface().(string)
+			inputParameters[paramName[0]] = paramValue
+		}
+	}
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
+		log.Entry().Errorf("failed to persist reports: %v", err)
+	}
+}
+
 // HelmBuildCommand Executes helm3 functionality as the package manager for Kubernetes.
 func HelmBuildCommand() *cobra.Command {
 	const STEP_NAME = "helmBuild"
@@ -91,6 +133,7 @@ func HelmBuildCommand() *cobra.Command {
 	var stepConfig helmBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment helmBuildCommonPipelineEnvironment
+	var reports helmBuildReports
 	var logCollector *log.CollectorHook
 	var splunkClient *splunk.Splunk
 	telemetryClient := &telemetry.Telemetry{}
@@ -192,10 +235,12 @@ Note: piper supports only helm3 version, since helm2 is deprecated.`,
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				stepTelemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -278,6 +323,9 @@ func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.TemplateStartDelimiter, "templateStartDelimiter", `{{`, "When templating value files, use this start delimiter.")
 	cmd.Flags().StringVar(&stepConfig.TemplateEndDelimiter, "templateEndDelimiter", `}}`, "When templating value files, use this end delimiter.")
 	cmd.Flags().BoolVar(&stepConfig.RenderValuesTemplate, "renderValuesTemplate", true, "A flag to turn templating value files on or off.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using Syft for referenced container images and a chart-level BOM (bom-helm.xml) in CycloneDX 1.4 format.")
+	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
+	cmd.Flags().StringSliceVar(&stepConfig.ContainerImageNameTags, "containerImageNameTags", []string{}, "List of full names (registry and tag) of the container images referenced by the chart. Used as a fallback source when image discovery via `helm template` yields no results. Typically populated by an upstream kanikoExecute step.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the helm build. This information is typically used for compliance related processes.")
 
 	cmd.MarkFlagRequired("image")
@@ -688,6 +736,38 @@ func helmBuildMetadata() config.StepData {
 						Default:     true,
 					},
 					{
+						Name:        "createBOM",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name:        "syftDownloadUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz`,
+					},
+					{
+						Name: "containerImageNameTags",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTags",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "[]string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   []string{},
+					},
+					{
 						Name: "buildSettingsInfo",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -711,9 +791,16 @@ func helmBuildMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "custom/helmChartUrl"},
 							{"name": "custom/buildSettingsInfo"},
+						},
+					},
+					{
+						Name: "reports",
+						Type: "reports",
+						Parameters: []map[string]any{
+							{"filePattern": "**/bom-*.xml", "type": "sbom"},
 						},
 					},
 				},

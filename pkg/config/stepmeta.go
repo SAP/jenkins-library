@@ -3,13 +3,12 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
-
-	"errors"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -35,8 +34,8 @@ type StepMetadata struct {
 
 // StepSpec defines the spec details for a step, like step inputs, containers, sidecars, ...
 type StepSpec struct {
-	Inputs     StepInputs  `json:"inputs,omitempty" yaml:"inputs,omitempty"`
-	Outputs    StepOutputs `json:"outputs,omitempty" yaml:"outputs,omitempty"`
+	Inputs     StepInputs  `json:"inputs" yaml:"inputs,omitempty"`
+	Outputs    StepOutputs `json:"outputs" yaml:"outputs,omitempty"`
 	Containers []Container `json:"containers,omitempty" yaml:"containers,omitempty"`
 	Sidecars   []Container `json:"sidecars,omitempty" yaml:"sidecars,omitempty"`
 }
@@ -57,8 +56,8 @@ type StepParameters struct {
 	Scope              []string              `json:"scope" yaml:"scope"`
 	Type               string                `json:"type" yaml:"type"`
 	Mandatory          bool                  `json:"mandatory,omitempty" yaml:"mandatory,omitempty"`
-	Default            interface{}           `json:"default,omitempty" yaml:"default,omitempty"`
-	PossibleValues     []interface{}         `json:"possibleValues,omitempty" yaml:"possibleValues,omitempty"`
+	Default            any                   `json:"default,omitempty" yaml:"default,omitempty"`
+	PossibleValues     []any                 `json:"possibleValues,omitempty" yaml:"possibleValues,omitempty"`
 	Aliases            []Alias               `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	Conditions         []Condition           `json:"conditions,omitempty" yaml:"conditions,omitempty"`
 	Secret             bool                  `json:"secret,omitempty" yaml:"secret,omitempty"`
@@ -89,11 +88,11 @@ type Alias struct {
 
 // StepResources defines the resources to be provided by the step context, e.g. Jenkins pipeline
 type StepResources struct {
-	Name        string                   `json:"name" yaml:"name"`
-	Description string                   `json:"description,omitempty" yaml:"description,omitempty"`
-	Type        string                   `json:"type,omitempty" yaml:"type,omitempty"`
-	Parameters  []map[string]interface{} `json:"params,omitempty" yaml:"params,omitempty"`
-	Conditions  []Condition              `json:"conditions,omitempty" yaml:"conditions,omitempty"`
+	Name        string           `json:"name" yaml:"name"`
+	Description string           `json:"description,omitempty" yaml:"description,omitempty"`
+	Type        string           `json:"type,omitempty" yaml:"type,omitempty"`
+	Parameters  []map[string]any `json:"params,omitempty" yaml:"params,omitempty"`
+	Conditions  []Condition      `json:"conditions,omitempty" yaml:"conditions,omitempty"`
 }
 
 // StepSecrets defines the secrets to be provided by the step context, e.g. Jenkins pipeline
@@ -286,7 +285,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
 	//ToDo error handling empty Containers/Sidecars
 	//ToDo handle empty Command
-	root := map[string]interface{}{}
+	root := map[string]any{}
 	if len(m.Spec.Containers) > 0 {
 		for _, container := range m.Spec.Containers {
 			key := ""
@@ -295,7 +294,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 				key = container.Conditions[0].Params[0].Value
 				conditionParam = container.Conditions[0].Params[0].Name
 			}
-			p := map[string]interface{}{}
+			p := map[string]any{}
 			if key != "" {
 				root[key] = p
 				//add default for condition parameter if available
@@ -338,7 +337,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 					key = sideCar.Conditions[0].Params[0].Value
 					conditionParam = sideCar.Conditions[0].Params[0].Name
 				}
-				p := map[string]interface{}{}
+				p := map[string]any{}
 				if key != "" {
 					root[key] = p
 					//add default for condition parameter if available
@@ -385,11 +384,11 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 				root["stashContent"] = resources[""]
 			} else {
 				if root[key] == nil {
-					root[key] = map[string]interface{}{
+					root[key] = map[string]any{
 						"stashContent": resources[key],
 					}
 				} else {
-					p := root[key].(map[string]interface{})
+					p := root[key].(map[string]any)
 					p["stashContent"] = resources[key]
 				}
 			}
@@ -397,7 +396,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	}
 
 	c := Config{
-		Steps: map[string]map[string]interface{}{
+		Steps: map[string]map[string]any{
 			stepName: root,
 		},
 	}
@@ -412,8 +411,8 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 }
 
 // GetResourceParameters retrieves parameters from a named pipeline resource with a defined path
-func (m *StepData) GetResourceParameters(path, name string) map[string]interface{} {
-	resourceParams := map[string]interface{}{}
+func (m *StepData) GetResourceParameters(path, name string) map[string]any {
+	resourceParams := map[string]any{}
 
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
@@ -429,7 +428,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func (container *Container) commonConfiguration(keyPrefix string, config *map[string]interface{}) {
+func (container *Container) commonConfiguration(keyPrefix string, config *map[string]any) {
 	putMapIfNotEmpty(*config, keyPrefix+"EnvVars", EnvVarsAsMap(container.EnvVars))
 	putStringIfNotEmpty(*config, keyPrefix+"Image", container.Image)
 	putStringIfNotEmpty(*config, keyPrefix+"Name", container.Name)
@@ -442,14 +441,14 @@ func (container *Container) commonConfiguration(keyPrefix string, config *map[st
 
 }
 
-func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
+func getParameterValue(path string, res ResourceReference, param StepParameters) any {
 	paramName := res.Param
 	if param.Type != "string" {
 		paramName += ".json"
 	}
 	if val := piperenv.GetResourceParameter(path, res.Name, paramName); len(val) > 0 {
 		if param.Type != "string" {
-			var unmarshalledValue interface{}
+			var unmarshalledValue any
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
 			if err != nil {
 				log.Entry().Debugf("Failed to unmarshal: %v", val)
@@ -521,19 +520,19 @@ func OptionsAsStringSlice(options []Option) []string {
 	return e
 }
 
-func putStringIfNotEmpty(config map[string]interface{}, key, value string) {
+func putStringIfNotEmpty(config map[string]any, key, value string) {
 	if value != "" {
 		config[key] = value
 	}
 }
 
-func putMapIfNotEmpty(config map[string]interface{}, key string, value map[string]string) {
+func putMapIfNotEmpty(config map[string]any, key string, value map[string]string) {
 	if len(value) > 0 {
 		config[key] = value
 	}
 }
 
-func putSliceIfNotEmpty(config map[string]interface{}, key string, value []string) {
+func putSliceIfNotEmpty(config map[string]any, key string, value []string) {
 	if len(value) > 0 {
 		config[key] = value
 	}

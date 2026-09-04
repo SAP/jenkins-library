@@ -15,10 +15,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +45,7 @@ func (i *gaugeExecuteTestsInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "gauge", value: i.step_data.fields.gauge},
 	}
@@ -93,7 +94,7 @@ func (p *gaugeExecuteTestsReports) persist(stepConfig gaugeExecuteTestsOptions, 
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -190,8 +191,9 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -314,21 +316,21 @@ func gaugeExecuteTestsMetadata() config.StepData {
 				{Name: "gauge", Image: "node:24-bookworm", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
-				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
+				{Name: "selenium", Image: "selenium/standalone-chrome:151.0", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "step_data", "fields": []map[string]string{{"name": "gauge"}}},
 						},
 					},
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/TEST-*.xml", "type": "acceptance-test"},
 							{"filePattern": "**/requirement.mapping", "type": "requirement-mapping"},
 							{"filePattern": "**/delivery.mapping", "type": "delivery-mapping"},

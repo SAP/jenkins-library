@@ -15,10 +15,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
@@ -62,7 +63,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
 		{category: "custom", name: "mtaBuildToolDesc", value: p.custom.mtaBuildToolDesc},
@@ -115,7 +116,7 @@ func (p *mtaBuildReports) persist(stepConfig mtaBuildOptions, gcpJsonKeyFilePath
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -208,8 +209,9 @@ func MtaBuildCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -286,7 +288,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the mta build . This information is typically used for compliance related processes.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
 	cmd.Flags().BoolVar(&stepConfig.EnableSetTimestamp, "enableSetTimestamp", true, "Enables setting the timestamp in the `mta.yaml` when it contains `${timestamp}`. Disable this when you want the MTA Deploy Service to do this instead.")
-	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published, this metadata is generally used by steps downstream in the pipeline")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", true, "metadata about the artifacts that are built and published, this metadata is generally used by steps downstream in the pipeline")
 
 }
 
@@ -564,7 +566,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     false,
+						Default:     true,
 					},
 				},
 			},
@@ -576,7 +578,7 @@ func mtaBuildMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "mtarFilePath"},
 							{"name": "custom/mtaBuildToolDesc"},
 							{"name": "custom/mtarPublishedUrl"},
@@ -587,7 +589,7 @@ func mtaBuildMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/TEST-*.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 							{"filePattern": "**/jacoco.xml", "type": "jacoco-coverage"},

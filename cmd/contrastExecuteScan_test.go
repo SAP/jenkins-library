@@ -2,15 +2,19 @@ package cmd
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/contrast"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -247,6 +251,205 @@ func TestGeneratePdfReportMockSuccess(t *testing.T) {
 	assert.NotEmpty(t, reports, "Expected reports to be generated")
 	assert.Equal(t, 1, len(reports))
 	assert.Equal(t, "Contrast PDF Attestation Report", reports[0].Name)
+}
+
+func newMockContrastClient(server *httptest.Server) *contrast.Client {
+	return contrast.NewClient(
+		mockContrastAPIKey,
+		mockContrastServiceKey,
+		mockContrastUsername,
+		mockContrastOrgID,
+		server.URL,
+		server.URL+"/api/v4/organizations/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
+	)
+}
+
+func newMockConfig(serverURL string) *contrastExecuteScanOptions {
+	return &contrastExecuteScanOptions{
+		UserAPIKey:     mockContrastAPIKey,
+		ServiceKey:     mockContrastServiceKey,
+		Username:       mockContrastUsername,
+		OrganizationID: mockContrastOrgID,
+		Server:         serverURL,
+		ApplicationID:  mockContrastAppID,
+	}
+}
+
+func TestCheckAgentSetup(t *testing.T) {
+	t.Run("No servers connected returns hard error", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"success":true,"count":0,"servers":[]}`))
+		}))
+		defer server.Close()
+
+		result, err := checkAgentSetup(newMockContrastClient(server), newMockConfig(server.URL))
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no agents connected")
+		assert.Nil(t, result)
+	})
+
+	t.Run("Active server within threshold sets no inactivity violation", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.Contains(r.URL.Path, "/servers") {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"success":true,"count":1,"servers":[{"server_id":1,"last_activity":` +
+					strings.TrimSpace(fmt.Sprintf("%d", (func() int64 { return time.Now().UnixMilli() })())) +
+					`}]}`))
+			} else if strings.Contains(r.URL.Path, "/route") {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"success":true,"discovered_count":0,"exercised_count":0}`))
+			}
+		}))
+		defer server.Close()
+
+		config := newMockConfig(server.URL)
+		config.AgentInactivityThresholdDays = 7
+		result, err := checkAgentSetup(newMockContrastClient(server), config)
+		assert.NoError(t, err)
+		assert.Nil(t, result.InactivityViolation)
+	})
+
+	t.Run("Inactive server beyond threshold sets inactivity violation", func(t *testing.T) {
+		oldActivity := time.Now().Add(-10 * 24 * time.Hour).UnixMilli()
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.Contains(r.URL.Path, "/servers") {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(fmt.Sprintf(`{"success":true,"count":1,"servers":[{"server_id":1,"last_activity":%d}]}`, oldActivity)))
+			} else if strings.Contains(r.URL.Path, "/route") {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"success":true,"discovered_count":0,"exercised_count":0}`))
+			}
+		}))
+		defer server.Close()
+
+		config := newMockConfig(server.URL)
+		config.AgentInactivityThresholdDays = 7
+		result, err := checkAgentSetup(newMockContrastClient(server), config)
+		assert.NoError(t, err)
+		assert.NotNil(t, result.InactivityViolation)
+		assert.Contains(t, result.InactivityViolation.Error(), "No agent has been active")
+	})
+}
+
+func TestCheckRouteCoverage(t *testing.T) {
+	t.Run("Coverage below threshold sets violation and warns", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"success":true,"discovered_count":100,"exercised_count":20}`))
+		}))
+		defer server.Close()
+
+		config := newMockConfig(server.URL)
+		config.RouteCoverageThreshold = 30
+		result := &agentSetupResult{}
+		checkRouteCoverage(newMockContrastClient(server), config, result)
+
+		assert.NotNil(t, result.RouteCoverageViolation)
+		assert.NotNil(t, result.RouteCoveragePct)
+		assert.InDelta(t, 20.0, *result.RouteCoveragePct, 0.1)
+		assert.Equal(t, 100, *result.RouteDiscoveredCount)
+		assert.Equal(t, 20, *result.RouteExercisedCount)
+	})
+
+	t.Run("Coverage above threshold sets no violation", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"success":true,"discovered_count":100,"exercised_count":80}`))
+		}))
+		defer server.Close()
+
+		config := newMockConfig(server.URL)
+		config.RouteCoverageThreshold = 30
+		result := &agentSetupResult{}
+		checkRouteCoverage(newMockContrastClient(server), config, result)
+
+		assert.Nil(t, result.RouteCoverageViolation)
+		assert.NotNil(t, result.RouteCoveragePct)
+		assert.InDelta(t, 80.0, *result.RouteCoveragePct, 0.1)
+	})
+
+	t.Run("No routes discovered sets no violation and nil coverage", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"success":true,"discovered_count":0,"exercised_count":0}`))
+		}))
+		defer server.Close()
+
+		result := &agentSetupResult{}
+		checkRouteCoverage(newMockContrastClient(server), newMockConfig(server.URL), result)
+
+		assert.Nil(t, result.RouteCoverageViolation)
+		assert.Nil(t, result.RouteCoveragePct)
+	})
+}
+
+func TestCheckForComplianceWithNewThresholds(t *testing.T) {
+	inactivityErr := fmt.Errorf("No agent has been active in the last 7 day(s)")
+	routeErr := fmt.Errorf("Route coverage check: only 10.0%% of discovered routes have been exercised")
+
+	t.Run("CheckForCompliance false: violations do not fail build", func(t *testing.T) {
+		setup := &agentSetupResult{
+			InactivityViolation:    inactivityErr,
+			RouteCoverageViolation: routeErr,
+		}
+		config := &contrastExecuteScanOptions{CheckForCompliance: false}
+		err := enforceComplianceThresholds(config, setup)
+		assert.NoError(t, err)
+	})
+
+	t.Run("CheckForCompliance true: inactivity violation fails build", func(t *testing.T) {
+		setup := &agentSetupResult{InactivityViolation: inactivityErr}
+		config := &contrastExecuteScanOptions{CheckForCompliance: true}
+		err := enforceComplianceThresholds(config, setup)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "No agent has been active")
+	})
+
+	t.Run("CheckForCompliance true: route coverage violation fails build", func(t *testing.T) {
+		setup := &agentSetupResult{RouteCoverageViolation: routeErr}
+		config := &contrastExecuteScanOptions{CheckForCompliance: true}
+		err := enforceComplianceThresholds(config, setup)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Route coverage check")
+	})
+
+	t.Run("CheckForCompliance true: no violations passes", func(t *testing.T) {
+		setup := &agentSetupResult{}
+		config := &contrastExecuteScanOptions{CheckForCompliance: true}
+		err := enforceComplianceThresholds(config, setup)
+		assert.NoError(t, err)
+	})
+}
+
+func TestContrastAuditJSONReport(t *testing.T) {
+	t.Run("Route counts included in JSON when present", func(t *testing.T) {
+		discovered := 100
+		exercised := 80
+		audit := contrast.ContrastAudit{
+			ToolName:             "contrast",
+			ApplicationUrl:       "https://example.com",
+			ScanResults:          []contrast.ContrastFindings{},
+			RouteDiscoveredCount: &discovered,
+			RouteExercisedCount:  &exercised,
+		}
+		data, err := json.Marshal(audit)
+		assert.NoError(t, err)
+		assert.Contains(t, string(data), `"routeDiscoveredCount":100`)
+		assert.Contains(t, string(data), `"routeExercisedCount":80`)
+	})
+
+	t.Run("Route counts omitted from JSON when nil", func(t *testing.T) {
+		audit := contrast.ContrastAudit{
+			ToolName:       "contrast",
+			ApplicationUrl: "https://example.com",
+			ScanResults:    []contrast.ContrastFindings{},
+		}
+		data, err := json.Marshal(audit)
+		assert.NoError(t, err)
+		assert.NotContains(t, string(data), "routeDiscoveredCount")
+		assert.NotContains(t, string(data), "routeExercisedCount")
+	})
 }
 
 // TestContrastExecuteScanEndToEnd performs an end-to-end test of the runContrastExecuteScan function.

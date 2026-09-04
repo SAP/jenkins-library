@@ -1,13 +1,12 @@
 package cnbutils
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 )

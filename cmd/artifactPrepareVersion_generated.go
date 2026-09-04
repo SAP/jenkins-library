@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},
@@ -242,8 +243,9 @@ If the file additionally contains a top-level ` + "`" + `ID` + "`" + ` field, it
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
@@ -608,7 +610,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "artifactVersion"},
 							{"name": "originalArtifactVersion"},
 							{"name": "artifactId"},

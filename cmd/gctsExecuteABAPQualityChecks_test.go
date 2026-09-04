@@ -6,13 +6,13 @@ package cmd
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"io"
 	"net/http"
 	"testing"
 
-	"errors"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/stretchr/testify/assert"
 )
 

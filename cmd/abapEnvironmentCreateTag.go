@@ -1,11 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -165,24 +164,24 @@ func addTagToList(backlog []abaputils.CreateTagBacklog, tag string, description 
 }
 
 func convertTagConfig(config *abapEnvironmentCreateTagOptions) abaputils.AbapEnvironmentOptions {
-	subOptions := abaputils.AbapEnvironmentOptions{}
+	subOptions := abaputils.AbapEnvironmentOptions{
 
-	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
-	subOptions.CfServiceInstance = config.CfServiceInstance
-	subOptions.CfServiceKeyName = config.CfServiceKeyName
-	subOptions.CfOrg = config.CfOrg
-	subOptions.CfSpace = config.CfSpace
-	subOptions.Host = config.Host
-	subOptions.Password = config.Password
-	subOptions.Username = config.Username
+		CfAPIEndpoint:     config.CfAPIEndpoint,
+		CfServiceInstance: config.CfServiceInstance,
+		CfServiceKeyName:  config.CfServiceKeyName,
+		CfOrg:             config.CfOrg,
+		CfSpace:           config.CfSpace,
+		Host:              config.Host,
+		Password:          config.Password,
+		Username:          config.Username,
 
-	// BTP configuration
-	subOptions.URL = config.BtpAPIEndpoint
-	subOptions.Subdomain = config.BtpSubdomain
-	subOptions.Subaccount = config.BtpSubaccount
-	subOptions.Idp = config.BtpIDp
-	subOptions.ServiceInstanceName = config.BtpServiceInstanceName
-	subOptions.ServiceBindingName = config.BtpServiceBindingName
+		// BTP configuration
+		URL:                 config.BtpAPIEndpoint,
+		Subdomain:           config.BtpSubdomain,
+		Subaccount:          config.BtpSubaccount,
+		Idp:                 config.BtpIDp,
+		ServiceInstanceName: config.BtpServiceInstanceName,
+		ServiceBindingName:  config.BtpServiceBindingName}
 
 	return subOptions
 }

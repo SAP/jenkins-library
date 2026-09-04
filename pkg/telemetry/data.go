@@ -55,20 +55,20 @@ type CustomData struct {
 
 // StepTelemetryData definition for telemetry reporting and monitoring
 type StepTelemetryData struct {
-	StepStartTime   string                 `json:"StepStartTime"`
-	PipelineURLHash string                 `json:"PipelineURLHash"`
-	BuildURLHash    string                 `json:"BuildURLHash"`
-	StageName       string                 `json:"StageName"`
-	StepName        string                 `json:"StepName"`
-	ErrorCode       string                 `json:"ErrorCode"`
-	StepDuration    string                 `json:"StepDuration"`
-	ErrorCategory   string                 `json:"ErrorCategory"`
-	CorrelationID   string                 `json:"CorrelationID"`
-	PiperCommitHash string                 `json:"PiperCommitHash"`
-	ErrorDetail     map[string]interface{} `json:"ErrorDetail"`
-	BinaryVersion   string                 `json:"BinaryVersion"`
-	ActionVersion   string                 `json:"ActionVersion,omitempty"`
-	TemplateVersion string                 `json:"TemplateVersion,omitempty"`
+	StepStartTime   string         `json:"StepStartTime"`
+	PipelineURLHash string         `json:"PipelineURLHash"`
+	BuildURLHash    string         `json:"BuildURLHash"`
+	StageName       string         `json:"StageName"`
+	StepName        string         `json:"StepName"`
+	ErrorCode       string         `json:"ErrorCode"`
+	StepDuration    string         `json:"StepDuration"`
+	ErrorCategory   string         `json:"ErrorCategory"`
+	CorrelationID   string         `json:"CorrelationID"`
+	PiperCommitHash string         `json:"PiperCommitHash"`
+	ErrorDetail     map[string]any `json:"ErrorDetail"`
+	BinaryVersion   string         `json:"BinaryVersion"`
+	ActionVersion   string         `json:"ActionVersion,omitempty"`
+	TemplateVersion string         `json:"TemplateVersion,omitempty"`
 }
 
 // Data object definition containing all telemetry data

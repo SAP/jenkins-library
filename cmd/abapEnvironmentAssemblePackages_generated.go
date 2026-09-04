@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +45,7 @@ func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path,
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -150,8 +151,9 @@ Refer to [Software Assembly Integration (SAP_COM_0582)](https://help.sap.com/vie
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
@@ -372,7 +374,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "abap/addonDescriptor"},
 						},
 					},

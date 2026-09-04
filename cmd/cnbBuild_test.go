@@ -14,6 +14,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/fake"
 	"github.com/jarcoal/httpmock"
@@ -504,7 +505,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := callCnbBuild(&config, &telemetry.CustomData{}, &utils, &cnbBuildCommonPipelineEnvironment{}, &piperhttp.Client{})
-		assert.EqualError(t, err, "failed to parse dockerConfigJSON: json: cannot unmarshal string into Go struct field ConfigFile.auths of type types.AuthConfig")
+		assert.EqualError(t, err, "failed to parse dockerConfigJSON: json: cannot unmarshal string into Go struct field ConfigFile.auths.my-registry of type types.AuthConfig")
 	})
 
 	t.Run("error case: DockerConfigJSON file not there (config.json)", func(t *testing.T) {

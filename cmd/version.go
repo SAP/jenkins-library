@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/spf13/cobra"
 )
 
 // GitCommit ...

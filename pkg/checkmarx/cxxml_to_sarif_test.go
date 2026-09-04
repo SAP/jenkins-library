@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/format"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/stretchr/testify/assert"
 )
 

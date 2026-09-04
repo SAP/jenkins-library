@@ -15,10 +15,11 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
@@ -122,7 +123,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectID", value: i.fortify_data.fields.projectID},
@@ -189,7 +190,7 @@ func (p *fortifyExecuteScanReports) persist(stepConfig fortifyExecuteScanOptions
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -289,8 +290,9 @@ Besides triggering a scan the step verifies the results after they have been upl
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -1067,7 +1069,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "step_data", "fields": []map[string]string{{"name": "fortify"}}},
 							{"name": "fortify_data", "fields": []map[string]string{{"name": "projectID"}, {"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
@@ -1075,7 +1077,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/*.PDF", "type": "fortify"},
 							{"filePattern": "**/*.fpr", "type": "fortify"},
 							{"filePattern": "**/fortify-scan.*", "type": "fortify"},

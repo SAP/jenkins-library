@@ -46,7 +46,7 @@ type LowPerQuery struct {
 	Total     int    `json:"total"`
 }
 
-func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
+func CreateCustomReport(data map[string]any, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
 
 	scanReport := reporting.ScanReport{
@@ -73,15 +73,15 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	}
 
 	for _, issue := range insecure {
-		row := reporting.OverviewRow{}
-		row.Description = fmt.Sprint(issue)
-		row.Style = reporting.Red
+		row := reporting.OverviewRow{
+			Description: fmt.Sprint(issue),
+			Style:       reporting.Red}
 
 		scanReport.Overview = append(scanReport.Overview, row)
 	}
 	for _, issue := range neutral {
-		row := reporting.OverviewRow{}
-		row.Description = fmt.Sprint(issue)
+		row := reporting.OverviewRow{
+			Description: fmt.Sprint(issue)}
 
 		scanReport.Overview = append(scanReport.Overview, row)
 	}
@@ -135,7 +135,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 	return scanReport
 }
 
-func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
+func CreateJSONReport(data map[string]any) CheckmarxReportData {
 	checkmarxReportData := CheckmarxReportData{
 		ToolName:         `checkmarx`,
 		ProjectName:      fmt.Sprint(data["ProjectName"]),
@@ -174,10 +174,10 @@ func CreateJSONReport(data map[string]interface{}) CheckmarxReportData {
 		for queryName, resultsLowQuery := range lowPerQueryMap {
 			audited := resultsLowQuery["Confirmed"] + resultsLowQuery["NotExploitable"]
 			total := resultsLowQuery["Issues"]
-			lowPerQuery := LowPerQuery{}
-			lowPerQuery.QueryName = queryName
-			lowPerQuery.Audited = audited
-			lowPerQuery.Total = total
+			lowPerQuery := LowPerQuery{
+				QueryName: queryName,
+				Audited:   audited,
+				Total:     total}
 			lowAuditedRequiredPerQuery := int(math.Ceil(0.10 * float64(total)))
 			if audited < lowAuditedRequiredPerQuery && audited < 10 {
 				checkmarxReportData.IsLowPerQueryAudited = false

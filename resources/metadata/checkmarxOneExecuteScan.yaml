@@ -400,6 +400,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: iacVulnerabilityThresholdEnabled
+        type: bool
+        description: Whether the thresholds are enabled or not for IAC. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: vulnerabilityThresholdCritical
         type: int
         description: The specific threshold for Critical severity findings

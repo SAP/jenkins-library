@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
+	"uuid"
 )
 
 func TestKarmaIntegration(t *testing.T) {

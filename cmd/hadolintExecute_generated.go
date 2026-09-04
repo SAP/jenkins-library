@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -109,8 +110,9 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -277,7 +279,7 @@ func hadolintExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "hadolint", Image: "hadolint/hadolint:latest-alpine"},
+				{Name: "hadolint", Image: "hadolint/hadolint:v2.15.1-alpine"},
 			},
 		},
 	}

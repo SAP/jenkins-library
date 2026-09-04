@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,7 @@ type HelmExecutor interface {
 	RunHelmTest() error
 	RunHelmPublish() (string, error)
 	RunHelmDependency() error
+	RunHelmTemplate() ([]byte, error)
 }
 
 // HelmExecute struct
@@ -78,7 +80,7 @@ func NewHelmExecutor(config HelmExecuteOptions, utils DeployUtils, verbose bool,
 
 // runHelmInit is used to set up env for executing helm command
 func (h *HelmExecute) runHelmInit() error {
-	helmLogFields := map[string]interface{}{}
+	helmLogFields := map[string]any{}
 	helmLogFields["Chart Path"] = h.config.ChartPath
 	helmLogFields["Namespace"] = h.config.Namespace
 	helmLogFields["Deployment Name"] = h.config.DeploymentName
@@ -348,6 +350,45 @@ func (h *HelmExecute) runHelmPackage() error {
 	}
 
 	return nil
+}
+
+// RunHelmTemplate renders the chart locally (`helm template`) and returns the
+// rendered multi-document manifest YAML captured from stdout. Used for SBOM
+// image discovery. Stdout is temporarily redirected to a buffer for the
+// duration of the call, then restored.
+func (h *HelmExecute) RunHelmTemplate() ([]byte, error) {
+	if len(h.config.ChartPath) == 0 {
+		return nil, fmt.Errorf("there is no ChartPath value. The chartPath value is mandatory")
+	}
+
+	if err := h.runHelmInit(); err != nil {
+		return nil, fmt.Errorf("failed to execute deployments: %v", err)
+	}
+
+	helmParams := []string{
+		"template",
+		h.config.DeploymentName,
+		h.config.ChartPath,
+	}
+	for _, value := range h.config.HelmValues {
+		helmParams = append(helmParams, "--values", value)
+	}
+	if len(h.config.Namespace) > 0 {
+		helmParams = append(helmParams, "--namespace", h.config.Namespace)
+	}
+	if h.verbose {
+		helmParams = append(helmParams, "--debug")
+	}
+
+	var buf bytes.Buffer
+	h.utils.Stdout(&buf)
+	defer h.utils.Stdout(h.stdout)
+
+	if err := h.utils.RunExecutable("helm", helmParams...); err != nil {
+		return nil, fmt.Errorf("failed to execute helm template: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 // RunHelmTest is used to run tests for a release

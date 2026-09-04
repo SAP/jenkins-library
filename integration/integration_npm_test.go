@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/npm"
+
 	"github.com/stretchr/testify/assert"
 )
 

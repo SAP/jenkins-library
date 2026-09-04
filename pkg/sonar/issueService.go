@@ -6,7 +6,6 @@ import (
 	"net/http/httputil"
 
 	"github.com/SAP/jenkins-library/pkg/log"
-	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
 // EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/issues/search
@@ -22,7 +21,7 @@ type IssueService struct {
 }
 
 // SearchIssues ...
-func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
+func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*IssuesSearchObject, *http.Response, error) {
 	request, err := service.apiClient.create("GET", EndpointIssuesSearch, options)
 	if err != nil {
 		return nil, nil, err
@@ -32,8 +31,8 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 	if err != nil {
 		return nil, nil, err
 	}
-	// reuse response verrification from sonargo
-	err = sonargo.CheckResponse(response)
+	// verify the response status
+	err = CheckResponse(response)
 	if err != nil {
 		return nil, response, err
 	}
@@ -42,7 +41,7 @@ func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo
 	log.Entry().Debugf("HTTP Response: %v", func() string { rsp, _ := httputil.DumpResponse(response, true); return string(rsp) }())
 
 	// decode JSON response
-	result := new(sonargo.IssuesSearchObject)
+	result := new(IssuesSearchObject)
 	err = service.apiClient.decode(response, result)
 	if err != nil {
 		return nil, response, err
@@ -82,7 +81,7 @@ func (service *IssueService) getIssueCount(severity issueSeverity, categories *[
 	return result.Total, nil
 }
 
-func (service *IssueService) updateIssueTypesTable(issues []*sonargo.Issue, table map[string]int) {
+func (service *IssueService) updateIssueTypesTable(issues []*Issue, table map[string]int) {
 	for _, issue := range issues {
 		table[issue.Type]++
 	}

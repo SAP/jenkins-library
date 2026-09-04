@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/ado/mocks"
-	"github.com/microsoft/azure-devops-go-api/azuredevops/build"
+
+	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/build"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

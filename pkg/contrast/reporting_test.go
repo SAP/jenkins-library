@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +30,7 @@ func TestCreateToolRecordContrast(t *testing.T) {
 			Name:   "app name",
 			Server: "https://server.com",
 		}
-		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "contrast", toolRecord.ToolName)
 		assert.Equal(t, appInfo.Server, toolRecord.ToolInstance)
@@ -48,7 +49,7 @@ func TestCreateToolRecordContrast(t *testing.T) {
 			Id:   "application-id",
 			Name: "app name",
 		}
-		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "contrast", toolRecord.ToolName)
 		assert.Equal(t, "", toolRecord.ToolInstance)
@@ -67,7 +68,7 @@ func TestCreateToolRecordContrast(t *testing.T) {
 			Name:   "app name",
 			Server: "https://server.com",
 		}
-		_, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		_, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath, nil)
 		assert.Error(t, err)
 	})
 
@@ -77,7 +78,7 @@ func TestCreateToolRecordContrast(t *testing.T) {
 			Id:     "application-id",
 			Server: "https://server.com",
 		}
-		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "contrast", toolRecord.ToolName)
 		assert.Equal(t, appInfo.Server, toolRecord.ToolInstance)
@@ -96,7 +97,7 @@ func TestCreateToolRecordContrast(t *testing.T) {
 			Id:     "application-id",
 			Server: "https://server.com",
 		}
-		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath)
+		toolRecord, err := createToolRecordContrast(newContrastExecuteScanTestsUtils(), appInfo, modulePath, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "contrast", toolRecord.ToolName)
 		assert.Equal(t, appInfo.Server, toolRecord.ToolInstance)

@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/mock"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var cpe mavenBuildCommonPipelineEnvironment
