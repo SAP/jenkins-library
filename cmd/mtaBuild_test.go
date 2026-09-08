@@ -411,7 +411,7 @@ func TestMtaBuild(t *testing.T) {
 			}
 			err := runMtaBuild(options, &cpe, utilsMock)
 			assert.Nil(t, err)
-			assert.Equal(t, cpe.custom.mtaBuildArtifacts, `{"Coordinates":[{"groupId":"dummy","artifactId":"test","version":"dummy","packaging":"mtar","buildPath":"./","url":"dummydummy/test/dummy/test-dummy.mtar","purl":""}]}`)
+			assert.Equal(t, cpe.custom.mtaBuildArtifacts, `{"Coordinates":[{"groupId":"dummy","artifactId":"test","version":"dummy","packaging":"mtar","buildPath":"./","url":"dummy","purl":""}]}`)
 		})
 	})
 }

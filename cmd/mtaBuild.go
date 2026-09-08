@@ -262,6 +262,13 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		}
 	}
 
+	if config.CreateBuildArtifactsMetadata {
+		mtarPath := getMtarFilePath(config, mtarName)
+		if err := buildArtifactsMetadata(config, commonPipelineEnvironment, mtarPath); err != nil {
+			log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
+		}
+	}
+
 	if config.Publish {
 		if err = handlePublish(config, commonPipelineEnvironment, utils, mtarName, isMtarNativelySuffixed); err != nil {
 			return err
@@ -310,13 +317,6 @@ func handlePublish(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildCo
 
 	if _, httpErr := utils.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil); httpErr != nil {
 		return fmt.Errorf("failed to upload mtar to repository: %w", httpErr)
-	}
-
-	if config.CreateBuildArtifactsMetadata {
-		if err := buildArtifactsMetadata(config, commonPipelineEnvironment, mtarPath); err != nil {
-			log.Entry().Warnf("unable to create build artifacts metadata: %v", err)
-			return nil
-		}
 	}
 
 	return nil

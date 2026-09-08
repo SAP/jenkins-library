@@ -40,6 +40,14 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: createBuildArtifactsMetadata
+        type: bool
+        default: true
+        description: When true, writes artifact coordinates (name, version, and PURL if a CycloneDX BOM was produced) to commonPipelineEnvironment/custom/pythonBuildArtifacts. This data is consumed by downstream steps such as OSC CTP scans.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
       - name: publish
         type: bool
         description: Configures the build to publish artifacts to a repository.
@@ -135,6 +143,7 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/buildSettingsInfo
+          - name: custom/pythonBuildArtifacts
       - name: reports
         type: reports
         params:
