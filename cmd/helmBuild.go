@@ -95,12 +95,16 @@ func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, com
 	fileUtils := &piperutils.Files{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, artifactInfo, execRunner, fileUtils, httpClient); err != nil {
+	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
+	}
+
+	if commonPipelineEnvironment.custom.helmChartURL != "" {
+		writeHelmBuildArtifacts(artifactInfo, commonPipelineEnvironment.custom.helmChartURL, config.ChartPath, commonPipelineEnvironment)
 	}
 }
 
-func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, artifactInfo versioning.Coordinates, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, utils fileHandler, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	if config.RenderValuesTemplate {
 		err := parseAndRenderCPETemplate(config, GeneralConfig.EnvRootPath, utils)
 		if err != nil {
@@ -138,12 +142,11 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
-		writeHelmBuildArtifacts(artifactInfo, targetURL, config.ChartPath, commonPipelineEnvironment)
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
 	default:
-		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, artifactInfo, execRunner, fileUtils, httpClient); err != nil {
+		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
 			return err
 		}
 	}
@@ -170,7 +173,7 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 	return nil
 }
 
-func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, artifactInfo versioning.Coordinates, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	if len(config.Dependency) > 0 {
 		if err := helmExecutor.RunHelmDependency(); err != nil {
 			return fmt.Errorf("failed to execute helm dependency: %v", err)
@@ -187,7 +190,6 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 			return fmt.Errorf("failed to execute helm publish: %v", err)
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
-		writeHelmBuildArtifacts(artifactInfo, targetURL, config.ChartPath, commonPipelineEnvironment)
 		if config.CreateBOM {
 			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
 		}
