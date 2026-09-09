@@ -6,21 +6,32 @@ import (
 	"maps"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"uuid"
 )
+
+type cloudEvent struct {
+	SpecVersion     string `json:"specversion"`
+	ID              string `json:"id"`
+	Type            string `json:"type"`
+	Source          string `json:"source"`
+	Time            string `json:"time"`
+	DataContentType string `json:"datacontenttype,omitempty"`
+	Data            any    `json:"data,omitempty"`
+}
 
 // newEvent creates a CloudEvent v1.0 with the given type, source, and data payload,
 // and returns its JSON-serialized bytes.
 func newEvent(eventType, source string, data any) ([]byte, error) {
-	event := cloudevents.NewEvent("1.0")
-	event.SetID(uuid.New().String())
-	event.SetType(eventType)
-	event.SetSource(source)
-	event.SetTime(time.Now())
-
-	if err := event.SetData(cloudevents.ApplicationJSON, data); err != nil {
-		return nil, fmt.Errorf("failed to set event data: %w", err)
+	event := cloudEvent{
+		SpecVersion: "1.0",
+		ID:          uuid.New().String(),
+		Type:        eventType,
+		Source:      source,
+		Time:        time.Now().UTC().Format(time.RFC3339Nano),
+	}
+	if data != nil {
+		event.DataContentType = "application/json"
+		event.Data = data
 	}
 
 	bytes, err := json.Marshal(event)

@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
-	"github.com/go-playground/locales/en"
-	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
-	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 var (
-	uni      *ut.UniversalTranslator
 	validate *validator.Validate
 )
 
@@ -65,11 +65,10 @@ func (event *Event) Validate() (err error) {
 	validate = validator.New()
 
 	if err = validate.Struct(event); err != nil {
-		translator := newTranslator(validate)
 		errs := err.(validator.ValidationErrors)
 		err = fmt.Errorf("event JSON failed the validation")
-		for _, fieldError := range errs.Translate(translator) {
-			err = fmt.Errorf("%s: %w", fieldError, err)
+		for _, fe := range errs {
+			err = fmt.Errorf("%s: %w", translateFieldError(fe), err)
 		}
 	}
 	return
@@ -115,12 +114,28 @@ func strictUnmarshal(data []byte, v any) error {
 	return dec.Decode(v)
 }
 
-func newTranslator(validate *validator.Validate) ut.Translator {
-	eng := en.New()
-	uni = ut.New(eng, eng)
+var enPrinter = message.NewPrinter(language.English)
 
-	translator, _ := uni.GetTranslator("en")
-	en_translations.RegisterDefaultTranslations(validate, translator)
-
-	return translator
+func translateFieldError(fe validator.FieldError) string {
+	field := fe.Field()
+	param := fe.Param()
+	switch fe.Tag() {
+	case "oneof":
+		values := strings.ReplaceAll(param, " ", " ")
+		return fmt.Sprintf("%s must be one of [%s]", field, values)
+	case "min":
+		n, err := strconv.ParseInt(param, 10, 64)
+		if err != nil {
+			return fmt.Sprintf("%s must be %s or greater", field, param)
+		}
+		return fmt.Sprintf("%s must be %s or greater", field, enPrinter.Sprintf("%d", n))
+	case "max":
+		n, err := strconv.ParseInt(param, 10, 64)
+		if err != nil {
+			return fmt.Sprintf("%s must be %s or less", field, param)
+		}
+		return fmt.Sprintf("%s must be %s or less", field, enPrinter.Sprintf("%d", n))
+	default:
+		return fe.Error()
+	}
 }

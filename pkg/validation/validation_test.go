@@ -4,9 +4,9 @@
 package validation
 
 import (
+	"fmt"
 	"testing"
 
-	ut "github.com/go-playground/universal-translator"
 	valid "github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 )
@@ -98,21 +98,14 @@ func TestValidateStruct(t *testing.T) {
 		translations := []Translation{
 			{
 				Tag: "possible-values",
-				RegisterFn: func(ut ut.Translator) error {
-					return ut.Add("possible-values", "Custom error message for {0}", true)
+				TranslationFn: func(fe valid.FieldError) string {
+					return fmt.Sprintf("Custom error message for %s", fe.Field())
 				},
-				TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-					t, _ := ut.T("possible-values", fe.Field())
-					return t
-				},
-			}, {
+			},
+			{
 				Tag: "required_if",
-				RegisterFn: func(ut ut.Translator) error {
-					return ut.Add("required_if", "Custom error message for {0}", true)
-				},
-				TranslationFn: func(ut ut.Translator, fe valid.FieldError) string {
-					t, _ := ut.T("required_if", fe.Field())
-					return t
+				TranslationFn: func(fe valid.FieldError) string {
+					return fmt.Sprintf("Custom error message for %s", fe.Field())
 				},
 			},
 		}
