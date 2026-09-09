@@ -63,8 +63,9 @@ type helmBuildOptions struct {
 
 type helmBuildCommonPipelineEnvironment struct {
 	custom struct {
-		helmChartURL      string
-		buildSettingsInfo string
+		helmChartURL       string
+		buildSettingsInfo  string
+		helmBuildArtifacts string
 	}
 }
 
@@ -76,6 +77,7 @@ func (p *helmBuildCommonPipelineEnvironment) persist(path, resourceName string) 
 	}{
 		{category: "custom", name: "helmChartUrl", value: p.custom.helmChartURL},
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "helmBuildArtifacts", value: p.custom.helmBuildArtifacts},
 	}
 
 	errCount := 0
@@ -794,6 +796,7 @@ func helmBuildMetadata() config.StepData {
 						Parameters: []map[string]any{
 							{"name": "custom/helmChartUrl"},
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/helmBuildArtifacts"},
 						},
 					},
 					{

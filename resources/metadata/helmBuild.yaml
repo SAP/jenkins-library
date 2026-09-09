@@ -424,6 +424,7 @@ spec:
         params:
           - name: custom/helmChartUrl
           - name: custom/buildSettingsInfo
+          - name: custom/helmBuildArtifacts
       - name: reports
         type: reports
         params:
