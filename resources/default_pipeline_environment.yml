@@ -380,7 +380,7 @@ steps:
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
     stashExcludes:
-      buildResult: ''
+      buildResult: '**/node_modules/**, **/*.mockserver.js, **/*-preload.js, **/target/coverage/**'
       checkmarx: '**/*.mockserver.js, node_modules/**/*.js'
       checkmarxOne: '**/*.mockserver.js, node_modules/**/*.js'
       classFiles: ''
