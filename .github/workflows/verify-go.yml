@@ -63,7 +63,7 @@ jobs:
           go-version-file: 'go.mod'
           cache-dependency-path: 'go.sum'
       - name: staticcheck
-        uses: dominikh/staticcheck-action@v1.3.0
+        uses: dominikh/staticcheck-action@v1.4.1
         with:
           cache-key: ${{ runner.os }}-golang-staticcheck
           install-go: false
