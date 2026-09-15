@@ -3,10 +3,10 @@ package cmd
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	dockermock "github.com/SAP/jenkins-library/pkg/docker/mock"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (

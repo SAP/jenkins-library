@@ -12,7 +12,7 @@ type ObjectSet struct {
 	SoftwareComponents []SoftwareComponents `json:"softwarecomponents,omitempty"`
 	PackageTrees       []PackageTree        `json:"packagetrees,omitempty"`
 	Type               string               `json:"type,omitempty"`
-	MultiPropertySet   MultiPropertySet     `json:"multipropertyset,omitempty"`
+	MultiPropertySet   MultiPropertySet     `json:"multipropertyset"`
 	Set                []Set                `json:"set,omitempty"`
 }
 

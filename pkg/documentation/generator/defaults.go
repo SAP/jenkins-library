@@ -50,7 +50,7 @@ func consolidateContextDefaults(stepData *config.StepData) {
 		}
 	}
 
-	stashes := []interface{}{}
+	stashes := []any{}
 	conditionalStashes := []conditionDefault{}
 	for _, res := range stepData.Spec.Inputs.Resources {
 		//consider only resources of type stash, others not relevant for conditions yet
@@ -141,5 +141,5 @@ type conditionDefaults struct {
 type conditionDefault struct {
 	key   string
 	value string
-	def   interface{}
+	def   any
 }

@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/exp/slices" //in 1.21 will be a standard package "slices"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices" //in 1.21 will be a standard package "slices"
 )
 
 type HeaderVerifyingMockClient struct {

@@ -3,6 +3,7 @@ package asc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,10 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/sirupsen/logrus"
 )
 

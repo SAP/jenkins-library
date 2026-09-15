@@ -28,7 +28,7 @@ func NewClient(influxClient influxdb2.Client, organization string, bucket string
 }
 
 // WriteMetrics writes metrics to InfluxDB
-func (c *Client) WriteMetrics(dataMap map[string]map[string]interface{}, dataMapTags map[string]map[string]string) error {
+func (c *Client) WriteMetrics(dataMap map[string]map[string]any, dataMapTags map[string]map[string]string) error {
 	writeAPI := c.client.WriteAPIBlocking(c.organization, c.bucket)
 
 	for measurement, fields := range dataMap {

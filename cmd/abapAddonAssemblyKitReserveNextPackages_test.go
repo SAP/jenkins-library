@@ -5,14 +5,14 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,10 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
+	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/google/go-github/v68/github"
 	"golang.org/x/crypto/nacl/box"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // CreateEncryptedSecret creates an encrypted secret using a public key from a GitHub repository, which can be sent through the GitHub API

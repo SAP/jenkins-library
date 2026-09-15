@@ -12,6 +12,7 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/stretchr/testify/assert"
 )
 

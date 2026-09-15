@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -53,7 +54,7 @@ func New(opts ...validationOption) (*validation, error) {
 func WithJSONNamesForStructFields() validationOption {
 	return func(v *validation) error {
 		v.Validator.RegisterTagNameFunc(func(fld reflect.StructField) string {
-			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+			name, _, _ := strings.Cut(fld.Tag.Get("json"), ",")
 			return name
 		})
 		return nil
@@ -102,17 +103,17 @@ func WithCustomErrorMessages(translations []Translation) validationOption {
 	}
 }
 
-func (v *validation) ValidateStruct(s interface{}) error {
-	var errStr string
+func (v *validation) ValidateStruct(s any) error {
+	var errStr strings.Builder
 	errs := v.Validator.Struct(s)
 	if errs != nil {
 		if err, ok := errs.(*valid.InvalidValidationError); ok {
 			return err
 		}
 		for _, err := range errs.(valid.ValidationErrors) {
-			errStr += err.Translate(v.Translator) + ". "
+			errStr.WriteString(err.Translate(v.Translator) + ". ")
 		}
-		return errors.New(errStr)
+		return errors.New(errStr.String())
 	}
 	return nil
 }
@@ -160,10 +161,5 @@ func isPossibleValues(fl valid.FieldLevel) bool {
 }
 
 func contains(slice []string, str string) bool {
-	for _, v := range slice {
-		if v == str {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, str)
 }

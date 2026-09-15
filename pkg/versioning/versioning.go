@@ -180,10 +180,8 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 		switch buildDescriptorFilePath {
 		case TomlBuildDescriptor:
 			artifact = &Toml{
-				Pip: Pip{
-					path:       buildDescriptorFilePath,
-					fileExists: fileExists,
-				},
+				path:       buildDescriptorFilePath,
+				fileExists: fileExists,
 			}
 		default:
 			artifact = &Pip{

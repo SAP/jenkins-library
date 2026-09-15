@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/BurntSushi/toml"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils/project/types"
 	v01 "github.com/SAP/jenkins-library/pkg/cnbutils/project/v01"
@@ -13,6 +12,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils/registry"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/BurntSushi/toml"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -32,7 +33,7 @@ var parsers = map[string]func(string) (types.Descriptor, error){
 type Descriptor struct {
 	Exclude        *ignore.GitIgnore
 	Include        *ignore.GitIgnore
-	EnvVars        map[string]interface{}
+	EnvVars        map[string]any
 	Buildpacks     []string
 	PreBuildpacks  []string
 	PostBuildpacks []string
@@ -107,8 +108,8 @@ func ParseDescriptor(descriptorPath string, utils cnbutils.BuildUtils, httpClien
 	return descriptor, nil
 }
 
-func envToMap(env []types.EnvVar) map[string]interface{} {
-	envMap := map[string]interface{}{}
+func envToMap(env []types.EnvVar) map[string]any {
+	envMap := map[string]any{}
 
 	for _, e := range env {
 		if len(e.Name) == 0 {

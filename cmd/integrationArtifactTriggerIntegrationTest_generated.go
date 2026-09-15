@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,7 @@ func (p *integrationArtifactTriggerIntegrationTestCommonPipelineEnvironment) per
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "integrationFlowTriggerIntegrationTestResponseBody", value: p.custom.integrationFlowTriggerIntegrationTestResponseBody},
 		{category: "custom", name: "integrationFlowTriggerIntegrationTestResponseHeaders", value: p.custom.integrationFlowTriggerIntegrationTestResponseHeaders},
@@ -138,8 +139,9 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
@@ -281,7 +283,7 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "custom/integrationFlowTriggerIntegrationTestResponseBody"},
 							{"name": "custom/integrationFlowTriggerIntegrationTestResponseHeaders"},
 						},

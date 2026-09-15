@@ -156,7 +156,7 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) ([]string,
 	collectionDisplayName := defineCollectionDisplayName(collection)
 
 	type TemplateConfig struct {
-		Config                interface{}
+		Config                any
 		CollectionDisplayName string
 		NewmanCollection      string
 	}

@@ -7,6 +7,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -18,12 +19,10 @@ import (
 	"testing"
 	"time"
 
-	"errors"
-
-	"github.com/magiconair/properties/assert"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"github.com/magiconair/properties/assert"
 )
 
 // The functions in this file provide a convenient way to integration test the piper binary in docker containers.

@@ -26,6 +26,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
+
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/go-github/v68/github"
 )
@@ -642,10 +643,10 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 
 	if c.ScanSAST {
 		sastConfigString := "SAST: "
-		sastConfig := checkmarxOne.ScanConfiguration{}
-		sastConfig.ScanType = "sast"
+		sastConfig := checkmarxOne.ScanConfiguration{
+			ScanType: "sast",
 
-		sastConfig.Values = make(map[string]string, 0)
+			Values: make(map[string]string, 0)}
 		sastConfig.Values["incremental"] = strconv.FormatBool(incremental)
 		sastConfig.Values["presetName"] = c.config.SastPreset // always set, either coming from config or coming from Cx1 configuration
 		if incremental && len(baseBranch) > 0 {               // base the incremental scan on the specified base branch
@@ -671,10 +672,10 @@ func (c *checkmarxOneExecuteScanHelper) CreateScanRequest(incremental bool, uplo
 
 	if c.ScanIAC {
 		iacConfigString := "IAC: "
-		iacConfig := checkmarxOne.ScanConfiguration{}
-		iacConfig.ScanType = "kics"
+		iacConfig := checkmarxOne.ScanConfiguration{
+			ScanType: "kics",
 
-		iacConfig.Values = make(map[string]string, 0)
+			Values: make(map[string]string, 0)}
 		presetId, err := c.sys.GetIACPresetIDByName(c.config.IacPreset)
 		if err != nil {
 			return nil, err
@@ -868,7 +869,7 @@ func (g *gitComment) Parse(findings *[]checkmarxOne.Finding, config *checkmarxOn
 	}
 }
 
-func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]interface{}, insecure bool) error {
+func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedResults *map[string]any, insecure bool) error {
 	cicdOrch := orchestrator.GetOrchestratorConfigProvider(nil)
 	isPullRequest := cicdOrch.IsPullRequest()
 	pullRequestId := cicdOrch.PullRequestConfig().Key
@@ -946,7 +947,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 			scanIcon = ":white_check_mark:"
 		}
 		comment := &github.IssueComment{
-			Body: github.Ptr(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
+			Body: new(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
 # %s CheckmarxOne scan completed 
 **Project**: %s
 **ScanId**: %s
@@ -1000,7 +1001,7 @@ func (c *checkmarxOneExecuteScanHelper) CheckScanCompliance(scan *checkmarxOne.S
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]interface{}) error {
+func (c *checkmarxOneExecuteScanHelper) CheckCompliance(scan *checkmarxOne.Scan, detailedResults *map[string]any) error {
 	links := []piperutils.Path{{Target: (*detailedResults)["DeepLink"].(string), Name: "Checkmarx One Web UI"}}
 	insecure := false
 	var insecureResults []string
@@ -1126,7 +1127,7 @@ func (c *checkmarxOneExecuteScanHelper) GetReportJSON(scan *checkmarxOne.Scan, e
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map[string]interface{}) error {
+func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map[string]any) error {
 	// This is for the SAP-piper-format short-form JSON report
 	if c.ScanSAST {
 		jsonReport := checkmarxOne.CreateJSONHeaderReport(detailedResults, "sast")
@@ -1152,8 +1153,8 @@ func (c *checkmarxOneExecuteScanHelper) GetHeaderReportJSON(detailedResults *map
 	return nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (map[string]interface{}, error) {
-	var detailedResults map[string]interface{}
+func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (map[string]any, error) {
+	var detailedResults map[string]any
 
 	scanmeta, err := c.sys.GetScanMetadata(scan)
 	if err != nil {
@@ -1281,10 +1282,10 @@ func (c *checkmarxOneExecuteScanHelper) getNumCoherentIncrementalScans(scans []c
 	return count
 }
 
-func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) (map[string]interface{}, error) {
+func (c *checkmarxOneExecuteScanHelper) getDetailedResults(scan *checkmarxOne.Scan, scanmeta *checkmarxOne.ScanMetadata, results *[]checkmarxOne.ScanResult) (map[string]any, error) {
 	// this converts the JSON format results from Cx1 into the "resultMap" structure used in other parts of this step (influx etc)
 
-	resultMap := map[string]interface{}{}
+	resultMap := map[string]any{}
 	resultMap["InitiatorName"] = scan.Initiator
 	resultMap["Owner"] = "Cx1 Gap: no project owner" // TODO: check for functionality
 	resultMap["ScanId"] = scan.ScanID
@@ -1667,7 +1668,7 @@ func (c *checkmarxOneExecuteScanHelper) isFileNotMatchingPattern(patterns []stri
 	return false, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]interface{}) (string, error) {
+func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]any) (string, error) {
 	workspace := c.utils.GetWorkspace()
 	record := toolrecord.New(c.utils, workspace, "checkmarxOne", c.config.ServerURL)
 
@@ -1694,7 +1695,7 @@ func (c *checkmarxOneExecuteScanHelper) createToolRecordCx(results *map[string]i
 	return record.GetFileName(), nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]interface{}) (bool, []string, []string) {
+func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]any) (bool, []string, []string) {
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
@@ -1718,7 +1719,7 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholds(results *map[string]in
 	return insecure, neutralResults, insecureResults
 }
 
-func (c *checkmarxOneExecuteScanHelper) enforceThresholdsPerEngine(engine string, results *map[string]interface{}) (bool, []string, []string) {
+func (c *checkmarxOneExecuteScanHelper) enforceThresholdsPerEngine(engine string, results *map[string]any) (bool, []string, []string) {
 	pre := ""
 	if strings.EqualFold(engine, "iac") {
 		pre = "IAC"
@@ -1887,7 +1888,7 @@ func (c *checkmarxOneExecuteScanHelper) enforceThresholdsPerEngine(engine string
 	return insecure, insecureResults, neutralResults
 }
 
-func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]interface{}) {
+func (c *checkmarxOneExecuteScanHelper) reportToInflux(results *map[string]any) {
 	getCount := func(severity, key string) int {
 		count := 0
 

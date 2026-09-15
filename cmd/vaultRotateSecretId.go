@@ -6,15 +6,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/hashicorp/vault/api"
-
 	"github.com/SAP/jenkins-library/pkg/ado"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/jenkins"
-	"github.com/SAP/jenkins-library/pkg/vault"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/vault"
+
+	"github.com/hashicorp/vault/api"
 )
 
 const automaticdTTLThreshold = 18 * 24 * time.Hour // Threshold for automaticd service to rotate secrets

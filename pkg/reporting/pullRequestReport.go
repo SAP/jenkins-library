@@ -390,13 +390,13 @@ func createMarkdownReport(components *Components) (*bytes.Buffer, error) {
 
 // getScore extracts score or severity from error message
 func getScore(message, key string) string {
-	indx := strings.Index(message, key)
-	if indx == -1 {
+	_, after, ok := strings.Cut(message, key)
+	if !ok {
 		return ""
 	}
 	var result string
 	var notFirstSpace bool
-	for _, s := range message[indx+len(key):] {
+	for _, s := range after {
 		if s == ' ' && notFirstSpace {
 			break
 		}

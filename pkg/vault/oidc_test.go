@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/vault/mocks"
+
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,7 +18,7 @@ func TestOIDC(t *testing.T) {
 	mockToken := fmt.Sprintf("hvs.%s", mockPayload)
 
 	mockJwt := &api.Secret{
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"path":  oidcPath,
 			"token": mockToken,
 		},

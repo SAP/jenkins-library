@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+
 	"github.com/stretchr/testify/assert"
 )
 

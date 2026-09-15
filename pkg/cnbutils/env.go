@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 )
 
-func CreateEnvFiles(utils BuildUtils, platformPath string, env map[string]interface{}) error {
+func CreateEnvFiles(utils BuildUtils, platformPath string, env map[string]any) error {
 	envDir := filepath.Join(platformPath, "env")
 	err := utils.MkdirAll(envDir, 0755)
 	if err != nil {

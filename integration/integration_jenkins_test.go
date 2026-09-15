@@ -12,10 +12,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/jenkins"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/SAP/jenkins-library/pkg/jenkins"
 )
 
 func TestJenkinsIntegrationTriggerJob(t *testing.T) {

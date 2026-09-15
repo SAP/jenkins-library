@@ -114,7 +114,7 @@ func registerANSHookIfConfigured(correlationID string, util registrationUtil) er
 func setupEventTemplate(customerEventTemplate, correlationID string) (ans.Event, error) {
 	event := ans.Event{
 		EventType: "Piper",
-		Tags:      map[string]interface{}{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
+		Tags:      map[string]any{"ans:correlationId": correlationID, "ans:sourceEventId": correlationID},
 		Resource: &ans.Resource{
 			ResourceType: "Pipeline",
 			ResourceName: "Pipeline",

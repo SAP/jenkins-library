@@ -1,10 +1,9 @@
 package cnbutils
 
 import (
+	"errors"
 	"os"
 	"strconv"
-
-	"errors"
 )
 
 func CnbUserInfo() (int, int, error) {

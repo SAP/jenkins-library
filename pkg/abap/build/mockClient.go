@@ -26,8 +26,8 @@ type MockData struct {
 
 // NewMockClient : Constructs a new Mock Client implementing piperhttp.Sender
 func NewMockClient() MockClient {
-	var ret = MockClient{}
-	ret.Data = make(map[string][]http.Response)
+	var ret = MockClient{
+		Data: make(map[string][]http.Response)}
 	return ret
 }
 

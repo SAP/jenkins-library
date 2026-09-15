@@ -5,12 +5,12 @@ import (
 )
 
 type TerraformOutput struct {
-	Sensitive bool        `json:"sensitive"`
-	ObjType   interface{} `json:"type"`
-	Value     interface{} `json:"value"`
+	Sensitive bool `json:"sensitive"`
+	ObjType   any  `json:"type"`
+	Value     any  `json:"value"`
 }
 
-func ReadOutputs(tfOutputJson string) (map[string]interface{}, error) {
+func ReadOutputs(tfOutputJson string) (map[string]any, error) {
 	var objmap map[string]TerraformOutput
 	err := json.Unmarshal([]byte(tfOutputJson), &objmap)
 
@@ -18,7 +18,7 @@ func ReadOutputs(tfOutputJson string) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	retmap := make(map[string]interface{})
+	retmap := make(map[string]any)
 
 	for tfoutvarname, tfoutvar := range objmap {
 		retmap[tfoutvarname] = tfoutvar.Value

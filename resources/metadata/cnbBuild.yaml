@@ -125,7 +125,7 @@ spec:
           - name: commonPipelineEnvironment
             param: container/postBuildpacks
       - name: buildEnvVars
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: |
           Map of custom environment variables used during a build.
           Example:
@@ -211,7 +211,7 @@ spec:
           - STAGES
           - STEPS
       - name: bindings
-        type: "map[string]interface{}"
+        type: "map[string]any"
         description: |
           Map of bindings that should be offered to the buildpack. The type of bindings depend on the buildpack. For documentation about bindings in general see [the paketo documentation](https://paketo.io/docs/howto/configuration/#bindings).
 
@@ -275,7 +275,7 @@ spec:
       - name: multipleImages
         aliases:
           - name: images
-        type: "[]map[string]interface{}"
+        type: "[]map[string]any"
         description: |
           This parameter is only needed if `cnbBuild` should create multiple images.
           Otherwise it can be ignored!!!

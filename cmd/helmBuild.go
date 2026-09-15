@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -95,6 +97,10 @@ func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, com
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	if err := runHelmBuild(config, helmExecutor, utils, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %v", err)
+	}
+
+	if commonPipelineEnvironment.custom.helmChartURL != "" {
+		writeHelmBuildArtifacts(artifactInfo, commonPipelineEnvironment.custom.helmChartURL, config.ChartPath, commonPipelineEnvironment)
 	}
 }
 
@@ -192,10 +198,29 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 	return nil
 }
 
-// generateSBOMs produces both SBOMs for the published chart, sharing a single
-// discovered image set so the chart BOM and the container BOMs describe the
-// same images. Both are best-effort: a failure is logged but never fails the
-// step.
+// writeHelmBuildArtifacts serialises the chart coordinates (name, version, published URL)
+// into JSON and stores them in the CPE under custom/helmBuildArtifacts.
+// This mirrors the pattern used by mavenBuild for custom/mavenBuildArtifacts and
+// is consumed by sapCallStagingService to populate the Cumulus promote event.
+func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL string, chartPath string, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
+	artifactInfo.URL = targetURL
+	artifactInfo.BuildPath = chartPath
+	artifactInfo.PURL = fmt.Sprintf("pkg:helm/%s@%s", artifactInfo.ArtifactID, artifactInfo.Version)
+	buildArtifacts := build.BuildArtifacts{
+		Coordinates: []versioning.Coordinates{artifactInfo},
+	}
+	jsonResult, err := json.Marshal(buildArtifacts)
+	if err != nil {
+		log.Entry().Warnf("failed to marshal helm build artifacts: %v", err)
+		return
+	}
+	commonPipelineEnvironment.custom.helmBuildArtifacts = string(jsonResult)
+}
+
+// generateSBOMs produces both SBOMs for the published chart: a chart-level
+// bom-helm.xml and per-image bom-docker-*.xml files. Both use the same
+// discovered image set so the chart BOM and container BOMs describe the same
+// images. Both are best-effort: a failure is logged but never fails the step.
 func generateSBOMs(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) {
 	images := discoverImages(config, helmExecutor)
 

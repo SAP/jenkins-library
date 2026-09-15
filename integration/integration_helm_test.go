@@ -12,8 +12,9 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/google/uuid"
+
 	"github.com/testcontainers/testcontainers-go"
+	"uuid"
 )
 
 // TestHelmIntegrationPublishWithSBOM exercises the full helmExecute publish path

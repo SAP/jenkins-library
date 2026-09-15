@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"gopkg.in/ini.v1"
 )
 

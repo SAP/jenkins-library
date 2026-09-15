@@ -3,10 +3,11 @@ package eventing
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // newEvent creates a CloudEvent v1.0 with the given type, source, and data payload,
@@ -47,9 +48,7 @@ func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byt
 		if dataMap == nil {
 			dataMap = make(map[string]any)
 		}
-		for k, v := range additional {
-			dataMap[k] = v
-		}
+		maps.Copy(dataMap, additional)
 	}
 
 	return newEvent(eventType, source, dataMap)

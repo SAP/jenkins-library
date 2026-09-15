@@ -7,11 +7,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 func apiKeyValueMapUpload(config apiKeyValueMapUploadOptions, telemetryData *telemetry.CustomData) {

@@ -4,12 +4,12 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/assert"
 )

@@ -288,7 +288,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 
 		rule.ID = queryID
 		words := strings.Split(r.Data.QueryName, "_")
-		for w := 0; w < len(words); w++ {
+		for w := range words {
 			words[w] = piperutils.Title(strings.ToLower(words[w]))
 		}
 		rule.Name = strings.Join(words, "")

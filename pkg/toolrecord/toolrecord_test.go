@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -7,10 +7,10 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"go.yaml.in/yaml/v3"
-
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // DeployUtils interface
@@ -75,7 +75,7 @@ func NewDeployUtilsBundle(customTLSCertificateLinks []string) DeployUtils {
 // GetChartInfo is used to get name and version of helm chart
 func GetChartInfo(chartYamlFile string, utils DeployUtils) (string, string, error) {
 
-	var result map[string]interface{}
+	var result map[string]any
 	p, err := utils.FileRead(chartYamlFile)
 	if err != nil {
 		return "", "", fmt.Errorf("file couldn't read: %w", err)

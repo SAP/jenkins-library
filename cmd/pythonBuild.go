@@ -1,17 +1,20 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/python"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 const (
@@ -22,7 +25,6 @@ const (
 
 type pythonBuildUtils interface {
 	command.ExecRunner
-	FileExists(filename string) (bool, error)
 	piperutils.FileUtils
 }
 
@@ -54,12 +56,12 @@ func pythonBuild(config pythonBuildOptions, telemetryData *telemetry.CustomData,
 }
 
 func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomData, utils pythonBuildUtils, commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
-	if exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirtualEnvironmentName); err != nil {
+	exitHandler, err := python.CreateVirtualEnvironment(utils.RunExecutable, utils.RemoveAll, config.VirtualEnvironmentName)
+	if err != nil {
 		return err
-	} else {
-		log.DeferExitHandler(exitHandler)
-		defer exitHandler()
 	}
+	log.DeferExitHandler(exitHandler)
+	defer exitHandler()
 
 	// check project descriptor
 	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
@@ -103,10 +105,12 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		}
 	}
 
-	if info, err := createBuildSettingsInfo(config); err != nil {
-		return fmt.Errorf("failed to create build settings info: %v", err)
-	} else {
-		commonPipelineEnvironment.custom.buildSettingsInfo = info
+	commonPipelineEnvironment.custom.buildSettingsInfo = createBuildSettingsInfo(config)
+
+	if config.CreateBuildArtifactsMetadata {
+		if err := createPythonBuildArtifactsMetadata(commonPipelineEnvironment); err != nil {
+			log.Entry().Warnf("unable to create build artifact metadata: %v", err)
+		}
 	}
 
 	if config.Publish {
@@ -124,11 +128,15 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 }
 
 // TODO: extract to common place
-func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
+// GetDockerImageValue failure is intentionally non-fatal: the docker image is only metadata
+// used for build-settings tracking. A missing or unresolvable image does not affect the build
+// output, so we warn and continue rather than aborting an otherwise successful build.
+func createBuildSettingsInfo(config *pythonBuildOptions) string {
 	log.Entry().Debugf("creating build settings information...")
 	dockerImage, err := GetDockerImageValue(stepName)
 	if err != nil {
-		return "", err
+		log.Entry().Warnf("failed to retrieve docker image value: %v", err)
+		dockerImage = ""
 	}
 	pythonConfig := buildsettings.BuildOptions{
 		CreateBOM:         config.CreateBOM,
@@ -140,19 +148,46 @@ func createBuildSettingsInfo(config *pythonBuildOptions) (string, error) {
 	if err != nil {
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
-	return buildSettingsInfo, nil
+	return buildSettingsInfo
+}
+
+func createPythonBuildArtifactsMetadata(commonPipelineEnvironment *pythonBuildCommonPipelineEnvironment) error {
+	options := versioning.Options{}
+	artifact, err := versioning.GetArtifact("pip", "", &options, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get artifact: %w", err)
+	}
+	coordinate, err := artifact.GetCoordinates()
+	if err != nil {
+		return fmt.Errorf("failed to get artifact coordinates: %w", err)
+	}
+
+	component := piperutils.GetComponent(python.BOMFilename)
+	coordinate.PURL = component.Purl
+
+	var buildArtifacts build.BuildArtifacts
+	buildArtifacts.Coordinates = []versioning.Coordinates{coordinate}
+	jsonResult, err := json.Marshal(buildArtifacts)
+	if err != nil {
+		return fmt.Errorf("failed to marshal build artifacts: %w", err)
+	}
+	commonPipelineEnvironment.custom.pythonBuildArtifacts = string(jsonResult)
+	return nil
 }
 
 func searchDescriptor(supported []string, existsFunc func(string) (bool, error)) (string, error) {
 	var descriptor string
 	for _, f := range supported {
-		exists, _ := existsFunc(f)
+		exists, err := existsFunc(f)
+		if err != nil {
+			return "", fmt.Errorf("checking %s: %w", f, err)
+		}
 		if exists {
 			descriptor = f
 			break
 		}
 	}
-	if len(descriptor) == 0 {
+	if descriptor == "" {
 		return "", fmt.Errorf("no build descriptor available, supported: %v", supported)
 	}
 	return descriptor, nil
