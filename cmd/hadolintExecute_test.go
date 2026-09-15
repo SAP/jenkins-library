@@ -135,6 +135,82 @@ func TestRunHadolintExecute(t *testing.T) {
 		clientMock.AssertExpectations(t)
 	})
 
+	t.Run("with file directory and glob exclusions", func(t *testing.T) {
+		// init
+		fileMock := &mocks.HadolintPiperFileUtils{}
+		clientMock := &mocks.HadolintClient{}
+		runnerMock := &piperMocks.ExecMockRunner{}
+		config := hadolintExecuteOptions{
+			DockerFile:        "**/Dockerfile*",
+			DockerFileExclude: []string{"src/tests/endToEnd", "docs/Dockerfile", "**/Dockerfile.base"},
+			ConfigurationFile: ".hadolint.yaml",
+		}
+		matchedFiles := []string{
+			"Dockerfile",
+			"ai_eligibility/Dockerfile",
+			"src/tests/endToEnd/Dockerfile",
+			"init_containers/hana/Dockerfile",
+			"src/tests/endToEnd/Dockerfile.base",
+			"docs/Dockerfile",
+		}
+
+		fileMock.
+			On("FileExists", config.ConfigurationFile).Return(false, nil).
+			On("Glob", config.DockerFile).Return(matchedFiles, nil).
+			On("WriteFile", "hadolintExecute_reports.json", mock.Anything, mock.Anything).Return(nil).
+			On("WriteFile", "hadolintExecute_links.json", mock.Anything, mock.Anything).Return(nil)
+
+		// test
+		err := runHadolint(config, hadolintUtils{
+			HadolintPiperFileUtils: fileMock,
+			HadolintClient:         clientMock,
+			hadolintRunner:         runnerMock,
+		})
+
+		// assert
+		assert.NoError(t, err)
+		if assert.Len(t, runnerMock.Calls, 1) {
+			assert.Contains(t, runnerMock.Calls[0].Params, "Dockerfile")
+			assert.Contains(t, runnerMock.Calls[0].Params, "ai_eligibility/Dockerfile")
+			assert.Contains(t, runnerMock.Calls[0].Params, "init_containers/hana/Dockerfile")
+			assert.NotContains(t, runnerMock.Calls[0].Params, "src/tests/endToEnd/Dockerfile")
+			assert.NotContains(t, runnerMock.Calls[0].Params, "src/tests/endToEnd/Dockerfile.base")
+			assert.NotContains(t, runnerMock.Calls[0].Params, "docs/Dockerfile")
+		}
+		fileMock.AssertExpectations(t)
+		clientMock.AssertExpectations(t)
+	})
+
+	t.Run("all files excluded", func(t *testing.T) {
+		// init
+		fileMock := &mocks.HadolintPiperFileUtils{}
+		clientMock := &mocks.HadolintClient{}
+		runnerMock := &piperMocks.ExecMockRunner{}
+		config := hadolintExecuteOptions{
+			DockerFile:        "**/Dockerfile",
+			DockerFileExclude: []string{"**"},
+			ConfigurationFile: ".hadolint.yaml",
+		}
+
+		fileMock.
+			On("FileExists", config.ConfigurationFile).Return(false, nil).
+			On("Glob", config.DockerFile).Return([]string{"Dockerfile"}, nil)
+
+		// test
+		err := runHadolint(config, hadolintUtils{
+			HadolintPiperFileUtils: fileMock,
+			HadolintClient:         clientMock,
+			hadolintRunner:         runnerMock,
+		})
+
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "after applying dockerFileExclude")
+		assert.Empty(t, runnerMock.Calls)
+		fileMock.AssertExpectations(t)
+		clientMock.AssertExpectations(t)
+	})
+
 	t.Run("no matching files", func(t *testing.T) {
 		// init
 		fileMock := &mocks.HadolintPiperFileUtils{}
