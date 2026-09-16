@@ -28,32 +28,43 @@ docker pull "${JENKINSFILE_RUNNER_IMAGE}" > /tmp/jenkinsfile-runner-pull.log 2>&
 DOCKER_PULL_PID=$!
 
 export CLASSPATH_FILE='target/cp.txt'
+TRACKED_CALLS_FILE='target/trackedCalls.json'
 
-# Quality gates that only the "Groovy" workflow (mvn verify) needs are switched off here:
-# this run exists solely to produce target/trackedCalls.json and the classpath file.
-#  - jacoco: coverage instrumentation slows down the whole unit test suite. argLine is
-#    re-supplied explicitly because jacoco:prepare-agent normally sets it, and surefire
-#    inherits the value from the Jenkins plugin parent POM (-Djava.awt.headless=true).
-#  - javadoc: the parent POM binds maven-javadoc-plugin:javadoc to process-sources.
-#  - enforcer: its requirePluginVersions rule resolves metadata for every plugin.
-#  - animal-sniffer: JDK signature check, irrelevant for documentation.
-mvn --batch-mode --show-version clean test dependency:build-classpath \
-    -Dmdep.outputFile=${CLASSPATH_FILE} \
-    -Djacoco.skip=true \
-    -DargLine=-Djava.awt.headless=true \
-    -Dmaven.javadoc.skip=true \
-    -Denforcer.skip=true \
-    -Danimal.sniffer.skip=true
+# Both inputs below are by-products of the Groovy unit tests: target/trackedCalls.json is
+# written by test/groovy/util/StepTracker.groovy, target/cp.txt by dependency:build-classpath.
+# In CI the "Groovy" workflow already runs that build once, so it sets PIPER_SKIP_MAVEN and
+# hands the results over instead of paying for a second full test run.
+if [ "${PIPER_SKIP_MAVEN}" = "true" ];then
+    echo "[INFO] PIPER_SKIP_MAVEN is set, reusing the existing Maven output."
+else
+    # Quality gates are the job of a plain "mvn verify"; this build exists solely to produce
+    # the two files above, so the ones that cost real time are switched off:
+    #  - jacoco: coverage instrumentation over the whole unit test suite. argLine has to be
+    #    re-supplied because jacoco:prepare-agent normally sets it and surefire inherits the
+    #    value from the Jenkins plugin parent POM (-Djava.awt.headless=true).
+    #  - enforcer: its requirePluginVersions rule resolves metadata for every plugin.
+    #  - animal-sniffer: JDK signature check, irrelevant for documentation.
+    mvn --batch-mode --show-version clean test dependency:build-classpath \
+        -Dmdep.outputFile=${CLASSPATH_FILE} \
+        -Djacoco.skip=true \
+        -DargLine=-Djava.awt.headless=true \
+        -Denforcer.skip=true \
+        -Danimal.sniffer.skip=true
 
-if [ "$?" != "0" ];then
-    echo "[ERROR] maven test / build-classpath failed"
-    exit 1
+    if [ "$?" != "0" ];then
+        echo "[ERROR] maven test / build-classpath failed"
+        exit 1
+    fi
 fi
 
-if [ ! -f "${CLASSPATH_FILE}" ];then
-    echo "[ERROR] Classpath file required for docu generation does not exist"
-    exit 1
-fi
+for f in "${CLASSPATH_FILE}" "${TRACKED_CALLS_FILE}"
+do
+    if [ ! -f "${f}" ];then
+        echo "[ERROR] \"${f}\" is required for docu generation but does not exist."
+        echo "[ERROR] Run this script without PIPER_SKIP_MAVEN, or make the Maven build hand the file over."
+        exit 1
+    fi
+done
 
 # Run the helper scripts with the project's own Groovy (org.codehaus.groovy:groovy-all is a
 # project dependency and therefore part of ${CLASSPATH_FILE}) instead of requiring a separate
@@ -71,7 +82,7 @@ groovyRun() {
 # are performed by other pipeline steps. E.g.: each step includes basically a call to
 # handlePipelineStepErrors. The Plugin calls issues by handlePipelineStepErrors are also
 # reported for the step calling that auxiliar step).
-groovyRun "${d}resolveTransitiveCalls.groovy" -in target/trackedCalls.json --out "${CALLS}"
+groovyRun "${d}resolveTransitiveCalls.groovy" -in "${TRACKED_CALLS_FILE}" --out "${CALLS}"
 
 [ -f "${CALLS}" ] || { echo "File \"${CALLS}\" does not exist." ; exit 1; }
 
