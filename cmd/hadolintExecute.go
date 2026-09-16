@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -105,6 +107,13 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	if len(filesToLint) == 0 {
 		return fmt.Errorf("no Dockerfiles found for pattern '%s'", config.DockerFile)
 	}
+	filesToLint, err = excludeDockerfiles(filesToLint, config.DockerFileExclude)
+	if err != nil {
+		return fmt.Errorf("failed to apply dockerFileExclude: %w", err)
+	}
+	if len(filesToLint) == 0 {
+		return fmt.Errorf("no Dockerfiles found for pattern '%s' after applying dockerFileExclude", config.DockerFile)
+	}
 	err = utils.RunExecutable(hadolintCommand, append(filesToLint, options...)...)
 
 	//TODO: related to https://github.com/hadolint/hadolint/issues/391
@@ -123,6 +132,25 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	// persist report information
 	piperutils.PersistReportsAndLinks("hadolintExecute", "./", utils, []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
 	return nil
+}
+
+func excludeDockerfiles(files, exclusions []string) ([]string, error) {
+	if len(exclusions) == 0 {
+		return files, nil
+	}
+
+	patterns := make([]string, 0, len(exclusions)*2)
+	for _, exclusion := range exclusions {
+		if strings.TrimSpace(exclusion) == "" {
+			continue
+		}
+		patterns = append(patterns, exclusion)
+		// Treat a directory value as a recursive exclusion while preserving
+		// exact-file and regular glob matching through the original pattern.
+		patterns = append(patterns, filepath.Join(exclusion, "**"))
+	}
+
+	return piperutils.ExcludeFiles(files, patterns)
 }
 
 // loadConfigurationFile loads a file from the provided url
