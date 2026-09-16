@@ -154,10 +154,11 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:   STEP_NAME,
-							StageName:  telemetryClient.GetData().StageName,
-							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineID: telemetryClient.GetBuildURL(),
+							StepName:         STEP_NAME,
+							StageName:        telemetryClient.GetData().StageName,
+							ErrorCode:        stepTelemetryData.ErrorCode,
+							PipelineID:       telemetryClient.GetBuildURL(),
+							CPEEventDataPath: GeneralConfig.EnvRootPath,
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")

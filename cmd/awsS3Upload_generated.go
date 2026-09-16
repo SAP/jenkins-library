@@ -135,10 +135,11 @@ In case a file is uploaded that is already contained in the S3 bucket, it will b
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:   STEP_NAME,
-							StageName:  telemetryClient.GetData().StageName,
-							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineID: telemetryClient.GetBuildURL(),
+							StepName:         STEP_NAME,
+							StageName:        telemetryClient.GetData().StageName,
+							ErrorCode:        stepTelemetryData.ErrorCode,
+							PipelineID:       telemetryClient.GetBuildURL(),
+							CPEEventDataPath: GeneralConfig.EnvRootPath,
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
