@@ -42,7 +42,7 @@ type ScanRow struct {
 }
 
 // AddColumn adds a column to a dedicated ScanRow
-func (s *ScanRow) AddColumn(content interface{}, style ColumnStyle) {
+func (s *ScanRow) AddColumn(content any, style ColumnStyle) {
 	if s.Columns == nil {
 		s.Columns = []ScanCell{}
 	}

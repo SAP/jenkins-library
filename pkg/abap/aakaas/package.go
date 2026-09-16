@@ -2,10 +2,9 @@ package aakaas
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
-
-	"errors"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"

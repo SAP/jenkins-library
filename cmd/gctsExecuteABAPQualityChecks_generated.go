@@ -13,26 +13,27 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type gctsExecuteABAPQualityChecksOptions struct {
-	Username             string                 `json:"username,omitempty"`
-	Password             string                 `json:"password,omitempty"`
-	Host                 string                 `json:"host,omitempty"`
-	Repository           string                 `json:"repository,omitempty"`
-	Client               string                 `json:"client,omitempty"`
-	AUnitTest            bool                   `json:"aUnitTest,omitempty"`
-	AtcCheck             bool                   `json:"atcCheck,omitempty"`
-	AtcVariant           string                 `json:"atcVariant,omitempty"`
-	Scope                string                 `json:"scope,omitempty"`
-	Commit               string                 `json:"commit,omitempty"`
-	Workspace            string                 `json:"workspace,omitempty"`
-	AtcResultsFileName   string                 `json:"atcResultsFileName,omitempty"`
-	AUnitResultsFileName string                 `json:"aUnitResultsFileName,omitempty"`
-	QueryParameters      map[string]interface{} `json:"queryParameters,omitempty"`
-	SkipSSLVerification  bool                   `json:"skipSSLVerification,omitempty"`
-	Proxy                string                 `json:"proxy,omitempty"`
+	Username             string         `json:"username,omitempty"`
+	Password             string         `json:"password,omitempty"`
+	Host                 string         `json:"host,omitempty"`
+	Repository           string         `json:"repository,omitempty"`
+	Client               string         `json:"client,omitempty"`
+	AUnitTest            bool           `json:"aUnitTest,omitempty"`
+	AtcCheck             bool           `json:"atcCheck,omitempty"`
+	AtcVariant           string         `json:"atcVariant,omitempty"`
+	Scope                string         `json:"scope,omitempty"`
+	Commit               string         `json:"commit,omitempty"`
+	Workspace            string         `json:"workspace,omitempty"`
+	AtcResultsFileName   string         `json:"atcResultsFileName,omitempty"`
+	AUnitResultsFileName string         `json:"aUnitResultsFileName,omitempty"`
+	QueryParameters      map[string]any `json:"queryParameters,omitempty"`
+	SkipSSLVerification  bool           `json:"skipSSLVerification,omitempty"`
+	Proxy                string         `json:"proxy,omitempty"`
 }
 
 // GctsExecuteABAPQualityChecksCommand Runs ABAP unit tests and ATC (ABAP Test Cockpit) checks for a specified object scope.
@@ -124,8 +125,9 @@ You can use this step as of SAP S/4HANA 2020 with SAP Note [3159798](https://lau
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -349,7 +351,7 @@ func gctsExecuteABAPQualityChecksMetadata() config.StepData {
 						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

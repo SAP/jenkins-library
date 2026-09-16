@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,8 +11,6 @@ import (
 	"strings"
 	"sync"
 	"text/template"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -428,7 +427,7 @@ func complete(mode DeployMode, action Action, operationID string, s command.Shel
 	return nil
 }
 
-func executeCmd(templateID string, commandPattern string, properties interface{}, s command.ShellRunner) error {
+func executeCmd(templateID string, commandPattern string, properties any, s command.ShellRunner) error {
 
 	tmpl, e := template.New(templateID).Parse(commandPattern)
 	if e != nil {

@@ -11,10 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestVaultConfigLoad(t *testing.T) {

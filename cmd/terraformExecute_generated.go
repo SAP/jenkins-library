@@ -15,6 +15,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +31,7 @@ type terraformExecuteOptions struct {
 
 type terraformExecuteCommonPipelineEnvironment struct {
 	custom struct {
-		terraformOutputs map[string]interface{}
+		terraformOutputs map[string]any
 	}
 }
 
@@ -38,7 +39,7 @@ func (p *terraformExecuteCommonPipelineEnvironment) persist(path, resourceName s
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "terraformOutputs", value: p.custom.terraformOutputs},
 	}
@@ -138,8 +139,9 @@ func TerraformExecuteCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				config.RemoveVaultSecretFiles()
@@ -300,15 +302,15 @@ func terraformExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "terraform", Image: "hashicorp/terraform:1.0.10", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
+				{Name: "terraform", Image: "hashicorp/terraform:1.10.5", EnvVars: []config.EnvVar{{Name: "TF_IN_AUTOMATION", Value: "piper"}}, Options: []config.Option{{Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"name": "custom/terraformOutputs", "type": "map[string]interface{}"},
+						Parameters: []map[string]any{
+							{"name": "custom/terraformOutputs", "type": "map[string]any"},
 						},
 					},
 				},

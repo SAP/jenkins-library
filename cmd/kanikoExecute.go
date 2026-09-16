@@ -7,8 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
-
 	"github.com/SAP/jenkins-library/pkg/build"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -20,8 +18,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/moby/buildkit/util/purl"
-	purlParser "github.com/package-url/packageurl-go"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
@@ -472,24 +470,11 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 		// syft sbom do not contain purl for the parent component
 		// this is problem since the way we tie back promoted artifact to build
 		// is only via the sbom parent component , until the time https://github.com/anchore/syft/issues/1408
-		// is fixed we are generating a purl and inserting it into the sbom
-		constructedPurl, err := purl.RefToPURL("docker", fmt.Sprintf("%s:%s", parentComponentName, parentComponentVersion), nil)
+		// is fixed we are generating a purl and inserting it into the sbom.
+		// The registry is stripped from the final purl since we don't want to expose it.
+		constructedPurl, registry, name, version, err := piperutils.BuildRegistryFreeDockerPurl(parentComponentName, parentComponentVersion)
 		if err != nil {
-			log.Entry().Warnf("unable to create purl from reference")
-			return nil
-		}
-
-		// this purl contains the docker registry and we remove that from the final purl
-		// and recreate the purl without the registry, and we dont want to expose that
-		registry, name, version, err := parsePurl(constructedPurl)
-		if err != nil {
-			log.Entry().Warnf("unable to parse purl creating build artifact metadata")
-			return nil
-		}
-
-		constructedPurl, err = purl.RefToPURL("docker", fmt.Sprintf("%s:%s", name, version), nil)
-		if err != nil {
-			log.Entry().Warnf("unable to create purl from reference")
+			log.Entry().Warnf("%v, not creating build artifact metadata for: %s", err, file)
 			return nil
 		}
 
@@ -527,31 +512,6 @@ func createDockerBuildArtifactMetadata(containerImageNameTags []string, commonPi
 	return nil
 }
 
-func parsePurl(purlStr string) (registry, name, version string, err error) {
-	p, err := purlParser.FromString(purlStr)
-	if err != nil {
-		return "", "", "", err
-	}
-
-	// Split namespace to extract registry
-	// E.g., namespace = "ghcr.io/my-org"
-	namespace := p.Namespace
-	if namespace == "" {
-		registry = "docker.io"
-	} else {
-		nsParts := strings.Split(namespace, "/")
-		if strings.Contains(nsParts[0], ".") {
-			registry = nsParts[0]
-		} else {
-			registry = "docker.io"
-		}
-	}
-
-	name = p.Name
-	version = p.Version
-	return
-}
-
 func findImageNameTagInPurl(containerImageNameTags []string, purlReference string) string {
 	// check for exact matches
 	for _, entry := range containerImageNameTags {
@@ -581,7 +541,7 @@ type multipleImageConf struct {
 	ContainerImage     string `json:"containerImage,omitempty"`
 }
 
-func parseMultipleImages(src []map[string]interface{}) ([]multipleImageConf, error) {
+func parseMultipleImages(src []map[string]any) ([]multipleImageConf, error) {
 	var result []multipleImageConf
 
 	for _, conf := range src {

@@ -1,15 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
@@ -113,11 +111,7 @@ func checkCommitIDSameAsGiven(pckgWR []aakaas.PackageWithRepository, i int, chec
 
 	var commitIdLength int
 	//determine shortes commitID length
-	if len(AAKaaSCommitId) >= len(AddonYAMLCommitId) {
-		commitIdLength = len(AddonYAMLCommitId)
-	} else {
-		commitIdLength = len(AAKaaSCommitId)
-	}
+	commitIdLength = min(len(AAKaaSCommitId), len(AddonYAMLCommitId))
 
 	//shorten both to common length
 	AAKaaSCommitId = AAKaaSCommitId[0:commitIdLength]
@@ -140,11 +134,7 @@ func checkCommitIDNotSameAsPrevious(pckgWR []aakaas.PackageWithRepository, i int
 
 	var commitIdLength int
 	//determine shortes commitID length
-	if len(AAKaaSPreviousCommitId) >= len(AddonYAMLCommitId) {
-		commitIdLength = len(AddonYAMLCommitId)
-	} else {
-		commitIdLength = len(AAKaaSPreviousCommitId)
-	}
+	commitIdLength = min(len(AAKaaSPreviousCommitId), len(AddonYAMLCommitId))
 
 	AAKaaSPreviousCommitId = AAKaaSPreviousCommitId[0:commitIdLength]
 	AddonYAMLCommitId = AddonYAMLCommitId[0:commitIdLength]

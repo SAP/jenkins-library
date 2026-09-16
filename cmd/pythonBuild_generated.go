@@ -15,31 +15,34 @@ import (
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
 type pythonBuildOptions struct {
-	BuildFlags               []string `json:"buildFlags,omitempty"`
-	SetupFlags               []string `json:"setupFlags,omitempty"`
-	CreateBOM                bool     `json:"createBOM,omitempty"`
-	Publish                  bool     `json:"publish,omitempty"`
-	TargetRepositoryPassword string   `json:"targetRepositoryPassword,omitempty"`
-	TargetRepositoryUser     string   `json:"targetRepositoryUser,omitempty"`
-	TargetRepositoryURL      string   `json:"targetRepositoryURL,omitempty"`
-	BuildSettingsInfo        string   `json:"buildSettingsInfo,omitempty"`
-	VirtualEnvironmentName   string   `json:"virtualEnvironmentName,omitempty"`
-	RequirementsFilePath     string   `json:"requirementsFilePath,omitempty"`
-	RunTests                 bool     `json:"runTests,omitempty"`
-	TestOptions              []string `json:"testOptions,omitempty"`
+	BuildFlags                   []string `json:"buildFlags,omitempty"`
+	SetupFlags                   []string `json:"setupFlags,omitempty"`
+	CreateBOM                    bool     `json:"createBOM,omitempty"`
+	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
+	Publish                      bool     `json:"publish,omitempty"`
+	TargetRepositoryPassword     string   `json:"targetRepositoryPassword,omitempty"`
+	TargetRepositoryUser         string   `json:"targetRepositoryUser,omitempty"`
+	TargetRepositoryURL          string   `json:"targetRepositoryURL,omitempty"`
+	BuildSettingsInfo            string   `json:"buildSettingsInfo,omitempty"`
+	VirtualEnvironmentName       string   `json:"virtualEnvironmentName,omitempty"`
+	RequirementsFilePath         string   `json:"requirementsFilePath,omitempty"`
+	RunTests                     bool     `json:"runTests,omitempty"`
+	TestOptions                  []string `json:"testOptions,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
 	custom struct {
-		buildSettingsInfo string
+		buildSettingsInfo    string
+		pythonBuildArtifacts string
 	}
 }
 
@@ -47,9 +50,10 @@ func (p *pythonBuildCommonPipelineEnvironment) persist(path, resourceName string
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "buildSettingsInfo", value: p.custom.buildSettingsInfo},
+		{category: "custom", name: "pythonBuildArtifacts", value: p.custom.pythonBuildArtifacts},
 	}
 
 	errCount := 0
@@ -95,7 +99,7 @@ func (p *pythonBuildReports) persist(stepConfig pythonBuildOptions, gcpJsonKeyFi
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -195,8 +199,9 @@ The variables ` + "`" + `PIPER_VAULTCREDENTIAL_USERNAME` + "`" + ` and ` + "`" +
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
@@ -254,6 +259,7 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.BuildFlags, "buildFlags", []string{}, "Defines list of build flags passed to python binary.")
 	cmd.Flags().StringSliceVar(&stepConfig.SetupFlags, "setupFlags", []string{}, "Defines list of flags passed to setup.py / build module.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX plugin.")
+	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", true, "When true, writes artifact coordinates (name, version, and PURL if a CycloneDX BOM was produced) to commonPipelineEnvironment/custom/pythonBuildArtifacts. This data is consumed by downstream steps such as OSC CTP scans.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures the build to publish artifacts to a repository.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryPassword, "targetRepositoryPassword", os.Getenv("PIPER_targetRepositoryPassword"), "Password for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.TargetRepositoryUser, "targetRepositoryUser", os.Getenv("PIPER_targetRepositoryUser"), "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment.")
@@ -303,6 +309,15 @@ func pythonBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "createBuildArtifactsMetadata",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "publish",
@@ -415,14 +430,15 @@ func pythonBuildMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "custom/buildSettingsInfo"},
+							{"name": "custom/pythonBuildArtifacts"},
 						},
 					},
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/TEST-python.xml", "type": "junit"},
 							{"filePattern": "**/cobertura-coverage.xml", "type": "cobertura-coverage"},
 						},

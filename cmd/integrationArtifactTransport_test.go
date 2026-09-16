@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/apim"
 	apimhttp "github.com/SAP/jenkins-library/pkg/apim"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 

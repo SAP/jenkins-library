@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	sonargo "github.com/magicsong/sonargo/sonar"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
@@ -28,7 +26,7 @@ type TaskService struct {
 }
 
 // GetTask ...
-func (service *TaskService) GetTask(options *sonargo.CeTaskOption) (*sonargo.CeTaskObject, *http.Response, error) {
+func (service *TaskService) GetTask(options *CeTaskOption) (*CeTaskObject, *http.Response, error) {
 	request, err := service.apiClient.create("GET", EndpointCeTask, options)
 	if err != nil {
 		return nil, nil, err
@@ -38,13 +36,13 @@ func (service *TaskService) GetTask(options *sonargo.CeTaskOption) (*sonargo.CeT
 	if response == nil && err != nil {
 		return nil, nil, err
 	}
-	// reuse response verrification from sonargo
-	err = sonargo.CheckResponse(response)
+	// verify the response status
+	err = CheckResponse(response)
 	if err != nil {
 		return nil, response, err
 	}
 	// decode JSON response
-	result := new(sonargo.CeTaskObject)
+	result := new(CeTaskObject)
 	err = service.apiClient.decode(response, result)
 	if err != nil {
 		return nil, response, err
@@ -54,7 +52,7 @@ func (service *TaskService) GetTask(options *sonargo.CeTaskOption) (*sonargo.CeT
 
 // HasFinished ...
 func (service *TaskService) HasFinished() (bool, error) {
-	options := &sonargo.CeTaskOption{
+	options := &CeTaskOption{
 		Id: service.TaskID,
 		// AdditionalFields: "warnings",
 	}

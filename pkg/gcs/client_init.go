@@ -5,8 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"cloud.google.com/go/storage"
 	"github.com/SAP/jenkins-library/pkg/log"
+
+	"cloud.google.com/go/storage"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/option"
 )

@@ -22,10 +22,12 @@ import (
 
 // ContainerConfig holds configuration for creating a test container
 type ContainerConfig struct {
-	Image    string // Docker image to use
-	TestData string // Path relative to integration/testdata (e.g., "TestGradleIntegration/java-project")
-	WorkDir  string // Working directory inside container (e.g., "/java-project")
-	User     string // User to run as (optional, defaults to image default)
+	Image          string   // Docker image to use
+	TestData       string   // Path relative to integration/testdata (e.g., "TestGradleIntegration/java-project")
+	WorkDir        string   // Working directory inside container (e.g., "/java-project")
+	User           string   // User to run as (optional, defaults to image default)
+	Networks       []string // Docker networks to attach the container to (optional)
+	NetworkAliases []string // Aliases the container is reachable by on those networks (optional)
 }
 
 // K3dContainerConfig holds configuration for creating a k3d cluster container
@@ -61,6 +63,16 @@ func StartPiperContainer(t *testing.T, cfg ContainerConfig) testcontainers.Conta
 
 	if cfg.User != "" {
 		req.User = cfg.User
+	}
+
+	if len(cfg.Networks) > 0 {
+		req.Networks = cfg.Networks
+		if len(cfg.NetworkAliases) > 0 {
+			req.NetworkAliases = map[string][]string{}
+			for _, network := range cfg.Networks {
+				req.NetworkAliases[network] = cfg.NetworkAliases
+			}
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

@@ -14,6 +14,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 	"go.yaml.in/yaml/v3"
 )
@@ -410,7 +411,7 @@ func TestMtaBuild(t *testing.T) {
 			}
 			err := runMtaBuild(options, &cpe, utilsMock)
 			assert.Nil(t, err)
-			assert.Equal(t, cpe.custom.mtaBuildArtifacts, `{"Coordinates":[{"groupId":"dummy","artifactId":"test","version":"dummy","packaging":"mtar","buildPath":"./","url":"dummydummy/test/dummy/test-dummy.mtar","purl":""}]}`)
+			assert.Equal(t, cpe.custom.mtaBuildArtifacts, `{"Coordinates":[{"groupId":"dummy","artifactId":"test","version":"dummy","packaging":"mtar","buildPath":"./","url":"dummy","purl":""}]}`)
 		})
 	})
 }

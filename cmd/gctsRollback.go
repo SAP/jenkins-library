@@ -1,19 +1,19 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http/cookiejar"
 	"net/url"
 
-	"errors"
-
-	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/gcts"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 func gctsRollback(config gctsRollbackOptions, telemetryData *telemetry.CustomData) {

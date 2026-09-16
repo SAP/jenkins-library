@@ -47,9 +47,9 @@ type License struct {
 }
 
 type Descriptor struct {
-	Project       Project                `toml:"project"`
-	Build         Build                  `toml:"build"`
-	Metadata      map[string]interface{} `toml:"metadata"`
+	Project       Project        `toml:"project"`
+	Build         Build          `toml:"build"`
+	Metadata      map[string]any `toml:"metadata"`
 	SchemaVersion *api.Version
 }
 

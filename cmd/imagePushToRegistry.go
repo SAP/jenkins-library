@@ -2,20 +2,19 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
-
-	"errors"
-
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -168,7 +167,6 @@ func copyImages(config *imagePushToRegistryOptions, utils imagePushToRegistryUti
 	platform := config.TargetArchitecture
 
 	for _, sourceImage := range config.SourceImages {
-		sourceImage := sourceImage
 		src := fmt.Sprintf("%s/%s:%s", config.SourceRegistryURL, sourceImage, config.SourceImageTag)
 
 		targetImage, ok := config.TargetImages[sourceImage]

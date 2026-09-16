@@ -3,14 +3,14 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 	"strconv"
 	"testing"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/tms"
+
 	"github.com/stretchr/testify/assert"
 )
 

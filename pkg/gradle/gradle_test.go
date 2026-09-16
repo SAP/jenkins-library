@@ -6,10 +6,9 @@ package gradle
 import (
 	"errors"
 	"os"
+	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
-
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

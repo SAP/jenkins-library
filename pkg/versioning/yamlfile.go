@@ -18,7 +18,7 @@ type YAMLDescriptor struct {
 // YAMLfile defines an artifact using a yaml file for versioning
 type YAMLfile struct {
 	path            string
-	content         map[string]interface{}
+	content         map[string]any
 	versionField    string
 	artifactIDField string
 	readFile        func(string) ([]byte, error)

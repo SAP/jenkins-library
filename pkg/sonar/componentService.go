@@ -1,15 +1,13 @@
 package sonar
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/log"
-	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
 // EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/measures/component
@@ -44,7 +42,7 @@ type SonarLanguageDistribution struct {
 	LinesOfCode int    `json:"linesOfCode"`
 }
 
-func (service *ComponentService) Component(options *MeasuresComponentOption) (*sonargo.MeasuresComponentObject, *http.Response, error) {
+func (service *ComponentService) Component(options *MeasuresComponentOption) (*MeasuresComponentObject, *http.Response, error) {
 	// if PR, ignore branch name and consider PR branch name. If not PR, consider branch name
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
@@ -60,13 +58,13 @@ func (service *ComponentService) Component(options *MeasuresComponentOption) (*s
 	if err != nil {
 		return nil, nil, err
 	}
-	// reuse response verrification from sonargo
-	err = sonargo.CheckResponse(response)
+	// verify the response status
+	err = CheckResponse(response)
 	if err != nil {
 		return nil, response, err
 	}
 	// decode JSON response
-	result := new(sonargo.MeasuresComponentObject)
+	result := new(MeasuresComponentObject)
 	err = service.apiClient.decode(response, result)
 	if err != nil {
 		return nil, response, err
@@ -85,8 +83,8 @@ func (service *ComponentService) GetLinesOfCode() (*SonarLinesOfCode, error) {
 		return nil, fmt.Errorf("Failed to get coverage from Sonar measures/component API: %w", err)
 	}
 
-	// reuse response verification from sonargo
-	err = sonargo.CheckResponse(response)
+	// verify the response status
+	err = CheckResponse(response)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get lines of code from Sonar measures/component API: %w", err)
 	}
@@ -124,8 +122,8 @@ func (service *ComponentService) GetCoverage() (*SonarCoverage, error) {
 		return nil, fmt.Errorf("Failed to get coverage from Sonar measures/component API: %w", err)
 	}
 
-	// reuse response verification from sonargo
-	err = sonargo.CheckResponse(response)
+	// verify the response status
+	err = CheckResponse(response)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get coverage from Sonar measures/component API: %w", err)
 	}
@@ -174,7 +172,7 @@ func NewMeasuresComponentService(host, token, project, organization, branch, pul
 	}
 }
 
-func parseMeasureValuef32(measure sonargo.SonarMeasure) (float32, error) {
+func parseMeasureValuef32(measure SonarMeasure) (float32, error) {
 	str := measure.Value
 	f64, err := strconv.ParseFloat(str, 32)
 	if err != nil {
@@ -183,7 +181,7 @@ func parseMeasureValuef32(measure sonargo.SonarMeasure) (float32, error) {
 	return float32(f64), nil
 }
 
-func parseMeasureValueInt(measure sonargo.SonarMeasure) (int, error) {
+func parseMeasureValueInt(measure SonarMeasure) (int, error) {
 	str := measure.Value
 	val, err := strconv.Atoi(str)
 	if err != nil {
@@ -192,12 +190,12 @@ func parseMeasureValueInt(measure sonargo.SonarMeasure) (int, error) {
 	return int(val), nil
 }
 
-func parseMeasureLanguageDistribution(measure sonargo.SonarMeasure) ([]SonarLanguageDistribution, error) {
+func parseMeasureLanguageDistribution(measure SonarMeasure) ([]SonarLanguageDistribution, error) {
 	str := measure.Value // example: js=589;ts=16544;web=1377
 	var ld []SonarLanguageDistribution
-	entries := strings.Split(str, ";")
+	entries := strings.SplitSeq(str, ";")
 
-	for _, entry := range entries {
+	for entry := range entries {
 
 		dist := strings.Split(entry, "=")
 

@@ -13,10 +13,10 @@ import (
 	"path"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPiperIntegrationHelp(t *testing.T) {

@@ -10,7 +10,8 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/gcs/mocks"
-	"github.com/bmatcuk/doublestar"
+
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/stretchr/testify/assert"
 )
 

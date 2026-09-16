@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -16,8 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
@@ -26,8 +25,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
-	"github.com/bmatcuk/doublestar"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/go-github/v68/github"
 )
 
@@ -503,7 +502,7 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	return nil
 }
 
-func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScanInflux) {
+func reportToInflux(results map[string]any, influx *checkmarxExecuteScanInflux) {
 	influx.checkmarx_data.fields.high_issues = results["High"].(map[string]int)["Issues"]
 	influx.checkmarx_data.fields.high_not_false_positive = results["High"].(map[string]int)["NotFalsePositive"]
 	influx.checkmarx_data.fields.high_not_exploitable = results["High"].(map[string]int)["NotExploitable"]
@@ -559,7 +558,7 @@ func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID i
 	return utils.WriteFile(reportFileName, report, 0o700)
 }
 
-func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
+func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]any) (bool, []string, []string) {
 	neutralResults := []string{}
 	insecureResults := []string{}
 	insecure := false
@@ -772,8 +771,8 @@ func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	return count
 }
 
-func getDetailedResults(config checkmarxExecuteScanOptions, sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
-	resultMap := map[string]interface{}{}
+func getDetailedResults(config checkmarxExecuteScanOptions, sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]any, error) {
+	resultMap := map[string]any{}
 	data, err := generateAndDownloadReport(sys, scanID, "XML")
 	if err != nil {
 		return resultMap, fmt.Errorf("failed to download xml report: %w", err)
@@ -990,7 +989,7 @@ func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, 
 	return true, nil
 }
 
-func createToolRecordCx(utils checkmarxExecuteScanUtils, workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
+func createToolRecordCx(utils checkmarxExecuteScanUtils, workspace string, config checkmarxExecuteScanOptions, results map[string]any) (string, error) {
 	record := toolrecord.New(utils, workspace, "checkmarx", config.ServerURL)
 	// Todo TeamId - see run_scan()
 	// record.AddKeyData("team", XXX, resultMap["Team"], "")

@@ -3,11 +3,10 @@ package cmd
 import (
 	"bytes"
 	b64 "encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"

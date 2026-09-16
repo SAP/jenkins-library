@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
+
 	"github.com/stretchr/testify/assert"
 )
 

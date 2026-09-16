@@ -22,10 +22,10 @@ func (f *CollectorHook) Levels() []logrus.Level {
 }
 
 type Message struct {
-	Time    time.Time    `json:"time,omitempty"`
+	Time    time.Time    `json:"time"`
 	Level   logrus.Level `json:"level,omitempty"`
 	Message string       `json:"message,omitempty"`
-	Data    interface{}  `json:"data,omitempty"`
+	Data    any          `json:"data,omitempty"`
 }
 
 // Fire creates a new event from the logrus and stores it in the SplunkHook object

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/jenkins/mocks"
+
 	"github.com/bndr/gojenkins"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

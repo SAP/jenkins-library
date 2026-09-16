@@ -13,22 +13,23 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type ansSendEventOptions struct {
-	AnsServiceKey    string                 `json:"ansServiceKey,omitempty"`
-	EventType        string                 `json:"eventType,omitempty"`
-	Severity         string                 `json:"severity,omitempty" validate:"possible-values=INFO NOTICE WARNING ERROR FATAL"`
-	Category         string                 `json:"category,omitempty" validate:"possible-values=NOTIFICATION ALERT EXCEPTION"`
-	Subject          string                 `json:"subject,omitempty"`
-	Body             string                 `json:"body,omitempty"`
-	Priority         int                    `json:"priority,omitempty"`
-	Tags             map[string]interface{} `json:"tags,omitempty"`
-	ResourceName     string                 `json:"resourceName,omitempty"`
-	ResourceType     string                 `json:"resourceType,omitempty"`
-	ResourceInstance string                 `json:"resourceInstance,omitempty"`
-	ResourceTags     map[string]interface{} `json:"resourceTags,omitempty"`
+	AnsServiceKey    string         `json:"ansServiceKey,omitempty"`
+	EventType        string         `json:"eventType,omitempty"`
+	Severity         string         `json:"severity,omitempty" validate:"possible-values=INFO NOTICE WARNING ERROR FATAL"`
+	Category         string         `json:"category,omitempty" validate:"possible-values=NOTIFICATION ALERT EXCEPTION"`
+	Subject          string         `json:"subject,omitempty"`
+	Body             string         `json:"body,omitempty"`
+	Priority         int            `json:"priority,omitempty"`
+	Tags             map[string]any `json:"tags,omitempty"`
+	ResourceName     string         `json:"resourceName,omitempty"`
+	ResourceType     string         `json:"resourceType,omitempty"`
+	ResourceInstance string         `json:"resourceInstance,omitempty"`
+	ResourceTags     map[string]any `json:"resourceTags,omitempty"`
 }
 
 // AnsSendEventCommand Send Event to the SAP Alert Notification Service
@@ -112,8 +113,9 @@ func AnsSendEventCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -268,7 +270,7 @@ func ansSendEventMetadata() config.StepData {
 						Name:        "tags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -303,7 +305,7 @@ func ansSendEventMetadata() config.StepData {
 						Name:        "resourceTags",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

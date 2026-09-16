@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	"dario.cat/mergo"
 	"github.com/SAP/jenkins-library/pkg/buildpacks"
 	"github.com/SAP/jenkins-library/pkg/buildsettings"
 	"github.com/SAP/jenkins-library/pkg/certutils"
@@ -23,8 +22,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/syft"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/mitchellh/mapstructure"
 
+	"dario.cat/mergo"
+	"github.com/go-viper/mapstructure/v2"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -40,7 +40,7 @@ type cnbBuildUtilsBundle struct {
 	*docker.Client
 }
 
-func processConfigs(main cnbBuildOptions, multipleImages []map[string]interface{}) ([]cnbBuildOptions, error) {
+func processConfigs(main cnbBuildOptions, multipleImages []map[string]any) ([]cnbBuildOptions, error) {
 	var result []cnbBuildOptions
 
 	if len(multipleImages) == 0 {
@@ -222,7 +222,7 @@ func linkTargetFolder(utils cnbutils.BuildUtils, source, target string) error {
 	return utils.Symlink(targetPath, linkPath)
 }
 
-func (config *cnbBuildOptions) mergeEnvVars(vars map[string]interface{}) {
+func (config *cnbBuildOptions) mergeEnvVars(vars map[string]any) {
 	if config.BuildEnvVars == nil {
 		config.BuildEnvVars = vars
 
@@ -392,7 +392,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetry *buildpacks.Telemetry, image
 	}
 
 	if config.BuildEnvVars == nil {
-		config.BuildEnvVars = map[string]interface{}{}
+		config.BuildEnvVars = map[string]any{}
 	}
 	config.BuildEnvVars["TMPDIR"] = tempdir
 

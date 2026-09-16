@@ -13,26 +13,27 @@ import (
 	"github.com/SAP/jenkins-library/pkg/eventing"
 	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
-	"github.com/bmatcuk/doublestar"
+
 	"github.com/spf13/cobra"
 )
 
 type npmExecuteTestsOptions struct {
-	InstallCommand   string                   `json:"installCommand,omitempty"`
-	RunCommand       string                   `json:"runCommand,omitempty"`
-	URLs             []map[string]interface{} `json:"URLs,omitempty"`
-	Username         string                   `json:"username,omitempty"`
-	Password         string                   `json:"password,omitempty"`
-	BaseURL          string                   `json:"baseUrl,omitempty"`
-	UsernameEnvVar   string                   `json:"usernameEnvVar,omitempty"`
-	PasswordEnvVar   string                   `json:"passwordEnvVar,omitempty"`
-	UrlOptionPrefix  string                   `json:"urlOptionPrefix,omitempty"`
-	Envs             []string                 `json:"envs,omitempty"`
-	Paths            []string                 `json:"paths,omitempty"`
-	WorkingDirectory string                   `json:"workingDirectory,omitempty"`
+	InstallCommand   string           `json:"installCommand,omitempty"`
+	RunCommand       string           `json:"runCommand,omitempty"`
+	URLs             []map[string]any `json:"URLs,omitempty"`
+	Username         string           `json:"username,omitempty"`
+	Password         string           `json:"password,omitempty"`
+	BaseURL          string           `json:"baseUrl,omitempty"`
+	UsernameEnvVar   string           `json:"usernameEnvVar,omitempty"`
+	PasswordEnvVar   string           `json:"passwordEnvVar,omitempty"`
+	UrlOptionPrefix  string           `json:"urlOptionPrefix,omitempty"`
+	Envs             []string         `json:"envs,omitempty"`
+	Paths            []string         `json:"paths,omitempty"`
+	WorkingDirectory string           `json:"workingDirectory,omitempty"`
 }
 
 type npmExecuteTestsReports struct {
@@ -64,7 +65,7 @@ func (p *npmExecuteTestsReports) persist(stepConfig npmExecuteTestsOptions, gcpJ
 			inputParameters[paramName[0]] = paramValue
 		}
 	}
-	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, doublestar.Glob, os.Stat); err != nil {
+	if err := gcs.PersistReportsToGCS(gcsClient, content, inputParameters, gcsFolderPath, gcsBucketId, gcsSubFolder, piperutils.Glob, os.Stat); err != nil {
 		log.Entry().Errorf("failed to persist reports: %v", err)
 	}
 }
@@ -156,8 +157,9 @@ The tests can be restricted to run only on the productive branch by setting ` + 
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
@@ -266,7 +268,7 @@ func npmExecuteTestsMetadata() config.StepData {
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "[]map[string]interface{}",
+						Type:      "[]map[string]any",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 					},
@@ -369,14 +371,14 @@ func npmExecuteTestsMetadata() config.StepData {
 				{Name: "node", Image: "node:24-bookworm", EnvVars: []config.EnvVar{{Name: "BASE_URL", Value: "${{params.baseUrl}}"}, {Name: "CREDENTIALS_ID", Value: "${{params.credentialsId}}"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
-				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
+				{Name: "selenium", Image: "selenium/standalone-chrome:151.0", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/e2e-results.xml", "type": "end-to-end-test"},
 						},
 					},

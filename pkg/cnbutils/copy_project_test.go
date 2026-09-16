@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/stretchr/testify/assert"
 )

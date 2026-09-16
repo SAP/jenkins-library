@@ -14,7 +14,7 @@ import (
 )
 
 // CPEMap represents the common pipeline environment map
-type CPEMap map[string]interface{}
+type CPEMap map[string]any
 
 // LoadFromDisk reads the given path from disk and populates it to the CPEMap.
 func (c *CPEMap) LoadFromDisk(path string) error {
@@ -63,7 +63,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 	return nil
 }
 
-func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
+func dirToMap(m map[string]any, dirPath, prefix string) error {
 	if stat, err := os.Stat(dirPath); err != nil || !stat.IsDir() {
 		log.Entry().Debugf("stat on %s failed. Path does not exist", dirPath)
 		return nil
@@ -111,7 +111,7 @@ func addEmptyValueToFile(fullPath string) error {
 	return nil
 }
 
-func readFileContent(fullPath string) (string, interface{}, bool, error) {
+func readFileContent(fullPath string) (string, any, bool, error) {
 	toBeEmptied := false
 
 	fileContent, err := os.ReadFile(fullPath)
@@ -122,7 +122,7 @@ func readFileContent(fullPath string) (string, interface{}, bool, error) {
 
 	if strings.HasSuffix(fullPath, ".json") {
 		// value is json encoded
-		var value interface{}
+		var value any
 
 		// Clean invalid UTF-8 sequences that can cause JSON parsing errors
 		cleanContent := CleanJSONData(fileContent)

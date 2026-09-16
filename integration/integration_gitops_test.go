@@ -12,7 +12,7 @@ import (
 
 func TestGitOpsIntegrationUpdateDeployment(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "nekottyo/kustomize-kubeval:kustomizev4",
+		Image:   "alpine/k8s:1.33.13",
 		TestDir: []string{"testdata", "TestGitopsUpdateIntegration", "kustomize", "workdir"},
 		Mounts:  map[string]string{"./testdata/TestGitopsUpdateIntegration/kustomize/gitopsRepo": "/gitopsRepo-source"},
 		Setup:   []string{"cp -r /gitopsRepo-source /gitopsRepo"},

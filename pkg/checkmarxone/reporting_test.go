@@ -7,7 +7,7 @@ import (
 )
 
 func TestCreateJSONReport(t *testing.T) {
-	resultMap := map[string]interface{}{}
+	resultMap := map[string]any{}
 	resultMap["ToolName"] = `checkmarxone`
 	resultMap["ProjectName"] = `ssba`
 	resultMap["Group"] = `test-group`
@@ -17,6 +17,7 @@ func TestCreateJSONReport(t *testing.T) {
 	resultMap["DeepLink"] = `https://cx1.sap/projects/f5702f86-b396-417f-82e2-4949a55d5382/scans?branch=master&page=1&id=21e40b36-0dd7-48e5-9768-da1a8f36c907`
 	resultMap["SastPreset"] = `Checkmarx Default`
 	resultMap["ToolVersion"] = `v1`
+	resultMap["SASTVersion"] = `SAST: 9.7.6`
 	resultMap["ScanType"] = `Incremental`
 	resultMap["ProjectId"] = `f5702f86-b396-417f-82e2-4949a55d5382`
 	resultMap["ScanId"] = `21e40b36-0dd7-48e5-9768-da1a8f36c907`
@@ -69,7 +70,7 @@ func TestCreateJSONReport(t *testing.T) {
 
 	resultMap["LowPerQuery"] = lowPerQuery
 
-	reportingData := CreateJSONHeaderReport(&resultMap)
+	reportingData := CreateJSONHeaderReport(&resultMap, "sast")
 	assert.Equal(t, "21e40b36-0dd7-48e5-9768-da1a8f36c907", reportingData.ScanID)
 	assert.Equal(t, "ssba", reportingData.ProjectName)
 	assert.Equal(t, "f5702f86-b396-417f-82e2-4949a55d5382", reportingData.ProjectID)
@@ -78,14 +79,14 @@ func TestCreateJSONReport(t *testing.T) {
 	assert.Equal(t, "CheckmarxOne", reportingData.ToolName)
 	assert.Equal(t, "https://cx1.sap/projects/f5702f86-b396-417f-82e2-4949a55d5382/scans?branch=master&page=1&id=21e40b36-0dd7-48e5-9768-da1a8f36c907", reportingData.DeepLink)
 	assert.Equal(t, "Checkmarx Default", reportingData.Preset)
-	assert.Equal(t, "v1", reportingData.ToolVersion)
+	assert.Equal(t, "v1, SAST: 9.7.6", reportingData.ToolVersion)
 	assert.Equal(t, "Incremental", reportingData.ScanType)
 
 	lowList := (*reportingData.Findings)[3].LowPerQuery
 	lowListLen := len(*lowList)
 	assert.Equal(t, 2, lowListLen)
 
-	for i := 0; i < lowListLen; i++ {
+	for i := range lowListLen {
 		if (*lowList)[i].QueryName == "Low_Query_Name_1" {
 			assert.Equal(t, 0, (*lowList)[i].Audited)
 			assert.Equal(t, 4, (*lowList)[i].Total)

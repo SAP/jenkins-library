@@ -10,6 +10,7 @@ import (
 	generator "github.com/SAP/jenkins-library/pkg/documentation/generator"
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"go.yaml.in/yaml/v3"
 )
 

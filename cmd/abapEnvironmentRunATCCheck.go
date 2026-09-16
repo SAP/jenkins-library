@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -415,24 +414,24 @@ func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP
 }
 
 func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.AbapEnvironmentOptions {
-	subOptions := abaputils.AbapEnvironmentOptions{}
+	subOptions := abaputils.AbapEnvironmentOptions{
 
-	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
-	subOptions.CfServiceInstance = options.CfServiceInstance
-	subOptions.CfServiceKeyName = options.CfServiceKeyName
-	subOptions.CfOrg = options.CfOrg
-	subOptions.CfSpace = options.CfSpace
-	subOptions.Host = options.Host
-	subOptions.Password = options.Password
-	subOptions.Username = options.Username
+		CfAPIEndpoint:     options.CfAPIEndpoint,
+		CfServiceInstance: options.CfServiceInstance,
+		CfServiceKeyName:  options.CfServiceKeyName,
+		CfOrg:             options.CfOrg,
+		CfSpace:           options.CfSpace,
+		Host:              options.Host,
+		Password:          options.Password,
+		Username:          options.Username,
 
-	// BTP configuration
-	subOptions.URL = options.BtpAPIEndpoint
-	subOptions.Subdomain = options.BtpSubdomain
-	subOptions.Subaccount = options.BtpSubaccount
-	subOptions.Idp = options.BtpIDp
-	subOptions.ServiceInstanceName = options.BtpServiceInstanceName
-	subOptions.ServiceBindingName = options.BtpServiceBindingName
+		// BTP configuration
+		URL:                 options.BtpAPIEndpoint,
+		Subdomain:           options.BtpSubdomain,
+		Subaccount:          options.BtpSubaccount,
+		Idp:                 options.BtpIDp,
+		ServiceInstanceName: options.BtpServiceInstanceName,
+		ServiceBindingName:  options.BtpServiceBindingName}
 
 	return subOptions
 }
@@ -471,7 +470,7 @@ type ATCConfiguration struct {
 	CheckVariant  string              `json:"checkvariant,omitempty"`
 	Configuration string              `json:"configuration,omitempty"`
 	Objects       ATCObjects          `json:"atcobjects"`
-	ObjectSet     abaputils.ObjectSet `json:"objectset,omitempty"`
+	ObjectSet     abaputils.ObjectSet `json:"objectset"`
 }
 
 // ATCObjects in form of packages and software components to be checked

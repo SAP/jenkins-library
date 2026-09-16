@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/abap/aakaas"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
+
 	"github.com/stretchr/testify/assert"
 )
 

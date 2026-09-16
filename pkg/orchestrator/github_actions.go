@@ -15,8 +15,8 @@ import (
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/google/go-github/v68/github"
 
+	"github.com/google/go-github/v68/github"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -116,7 +116,6 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 	wg := errgroup.Group{}
 	wg.SetLimit(10)
 	for i := range jobs {
-		i := i // https://golang.org/doc/faq#closures_and_goroutines
 		wg.Go(func() error {
 			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 1)
 			if err != nil {

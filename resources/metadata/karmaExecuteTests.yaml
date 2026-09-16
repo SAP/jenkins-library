@@ -92,7 +92,7 @@ spec:
         - mountPath: /dev/shm
           name: dev-shm
   sidecars:
-    - image: selenium/standalone-chrome
+    - image: selenium/standalone-chrome:151.0
       name: selenium
       securityContext:
         privileged: true

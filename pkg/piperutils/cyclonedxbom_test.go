@@ -507,3 +507,91 @@ func TestUpdateBOMPurl(t *testing.T) {
 		})
 	}
 }
+
+func TestParsePurl(t *testing.T) {
+	tests := []struct {
+		name         string
+		purl         string
+		wantRegistry string
+		wantName     string
+		wantVersion  string
+		wantErr      bool
+	}{
+		{
+			name:         "purl with registry namespace",
+			purl:         "pkg:docker/ghcr.io/my-org/nginx@1.25",
+			wantRegistry: "ghcr.io",
+			wantName:     "nginx",
+			wantVersion:  "1.25",
+		},
+		{
+			name:         "purl without namespace defaults to docker.io",
+			purl:         "pkg:docker/nginx@1.25",
+			wantRegistry: "docker.io",
+			wantName:     "nginx",
+			wantVersion:  "1.25",
+		},
+		{
+			name:         "namespace without a dot defaults to docker.io",
+			purl:         "pkg:docker/library/nginx@1.25",
+			wantRegistry: "docker.io",
+			wantName:     "nginx",
+			wantVersion:  "1.25",
+		},
+		{
+			name:    "invalid purl string returns an error",
+			purl:    "not-a-purl",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			registry, name, version, err := ParsePurl(tt.purl)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantRegistry, registry)
+			assert.Equal(t, tt.wantName, name)
+			assert.Equal(t, tt.wantVersion, version)
+		})
+	}
+}
+
+func TestBuildRegistryFreeDockerPurl(t *testing.T) {
+	t.Run("strips the registry and yields a clean docker purl", func(t *testing.T) {
+		purl, registry, name, version, err := BuildRegistryFreeDockerPurl("ghcr.io/my-org/nginx", "1.25")
+
+		require.NoError(t, err)
+		// The registry host is stripped from the final purl.
+		assert.Equal(t, "pkg:docker/nginx@1.25", purl)
+		assert.Equal(t, "ghcr.io", registry)
+		assert.Equal(t, "nginx", name)
+		assert.Equal(t, "1.25", version)
+	})
+
+	t.Run("registry-free image defaults to docker.io registry", func(t *testing.T) {
+		purl, registry, name, version, err := BuildRegistryFreeDockerPurl("nginx", "1.25")
+
+		require.NoError(t, err)
+		assert.Equal(t, "pkg:docker/nginx@1.25", purl)
+		assert.Equal(t, "docker.io", registry)
+		assert.Equal(t, "nginx", name)
+		assert.Equal(t, "1.25", version)
+	})
+
+	t.Run("invalid image reference fails the first purl construction", func(t *testing.T) {
+		// RefToPURL parses the "<name>:<version>" reference; an uppercase name is
+		// an invalid docker reference ("repository name must be lowercase"), so
+		// the first RefToPURL call returns an error. This is the only one of the
+		// three error guards reachable by input: once the first PURL is built,
+		// ParsePurl cannot fail on it and the second RefToPURL runs on an
+		// already-validated name/version, so those two guards are defensive only.
+		_, _, _, _, err := BuildRegistryFreeDockerPurl("UPPER", "1.0")
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unable to create purl from reference")
+	})
+}

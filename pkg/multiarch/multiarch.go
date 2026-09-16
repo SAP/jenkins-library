@@ -38,9 +38,9 @@ func ParsePlatformString(s string) (Platform, error) {
 		return Platform{}, fmt.Errorf("unable to parse platform '%s'", s)
 	}
 
-	p := Platform{}
+	p := Platform{
 
-	p.OS = strings.Trim(matches[1], " ")
+		OS: strings.Trim(matches[1], " ")}
 
 	if !slices.Contains(knownGoos, p.OS) {
 		log.Entry().Warningf("OS '%s' is unknown to us", p.OS)
