@@ -201,6 +201,10 @@ func enforceComplianceThresholds(config *contrastExecuteScanOptions, setup *agen
 	if !config.CheckForCompliance {
 		return nil
 	}
+	if setup.ConnectedServerViolation != nil {
+		return setup.ConnectedServerViolation
+	}
+
 	if setup.InactivityViolation != nil {
 		return setup.InactivityViolation
 	}
@@ -211,11 +215,12 @@ func enforceComplianceThresholds(config *contrastExecuteScanOptions, setup *agen
 }
 
 type agentSetupResult struct {
-	RouteCoveragePct       *float64
-	RouteDiscoveredCount   *int
-	RouteExercisedCount    *int
-	InactivityViolation    error
-	RouteCoverageViolation error
+	RouteCoveragePct         *float64
+	RouteDiscoveredCount     *int
+	RouteExercisedCount      *int
+	ConnectedServerViolation error
+	InactivityViolation      error
+	RouteCoverageViolation   error
 }
 
 // checkAgentSetup performs agent pre-flight checks.
@@ -233,9 +238,11 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 
 	// Check 1: Are there any servers?
 	if len(servers) == 0 {
-		return nil, fmt.Errorf("application %s has no agents connected in organization %s. "+
+		msg := fmt.Sprintf("application %s has no servers or agents connected in organization %s. "+
 			"Please finish your Contrast agent setup before running this step.",
 			config.ApplicationID, config.OrganizationID)
+		log.Entry().Warn(msg)
+		result.ConnectedServerViolation = errors.New(msg)
 	}
 	log.Entry().Infof("Agent check: %d server(s) connected to the application.", len(servers))
 
