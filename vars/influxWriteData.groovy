@@ -12,7 +12,12 @@ import groovy.transform.Field
 
 @Field def STEP_NAME = getClass().getName()
 
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Defines if Influx telemetry data should be collected and written. Set to `false` to disable all Influx data collection.
+     */
+    'collectInfluxTelemetry'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Defines the version of the current artifact. Defaults to `commonPipelineEnvironment.getArtifactVersion()`
@@ -95,6 +100,11 @@ void call(Map parameters = [:]) {
             .addIfNull('customDataMap', InfluxData.getInstance().getFields().findAll({ it.key != 'jenkins_custom_data' }))
             .addIfNull('customDataMapTags', InfluxData.getInstance().getTags().findAll({ it.key != 'jenkins_custom_data' }))
             .use()
+
+        if (config.collectInfluxTelemetry == false) {
+            echo "[${STEP_NAME}] collectInfluxTelemetry is disabled -> skipping Influx data collection"
+            return
+        }
 
         if (!config.artifactVersion)  {
             //this takes care that terminated builds due to milestone-locking do not cause an error
