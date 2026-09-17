@@ -66,6 +66,15 @@ spec:
           - STAGES
           - STEPS
         default: "**/Dockerfile"
+      - name: dockerFileExclude
+        type: "[]string"
+        description: "List of files, directories, or GLOB patterns to exclude from the Dockerfiles selected by dockerFile. Directory exclusions apply recursively."
+        mandatory: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: configurationFile
         type: string
         description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
