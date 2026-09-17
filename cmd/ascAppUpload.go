@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/asc"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -36,7 +37,7 @@ func ascAppUpload(config ascAppUploadOptions, telemetryData *telemetry.CustomDat
 	utils := newAscAppUploadUtils()
 	client := &piperHttp.Client{}
 
-	ascClient, err := asc.NewSystemInstance(client, config.ServerURL, config.AppToken)
+	ascClient, err := asc.NewSystemInstance(client, config.ServerURL, config.AppToken, time.Duration(config.Timeout)*time.Second)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create ASC client talking to URL %v", config.ServerURL)
 	} else {
@@ -54,55 +55,24 @@ func runAscAppUpload(config *ascAppUploadOptions, telemetryData *telemetry.Custo
 		return errors.New("jamfTargetSystem must be set")
 	}
 
-	log.Entry().Infof("Collect data to create new release in ASC")
+	log.Entry().Infof("Deploy %v to ASC & Jamf (BundleID %v)", config.FilePath, config.BundleID)
 
-	app, err := ascClient.GetAppById(config.AppID)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("failed to get app information: %w", err)
-	}
-
-	log.Entry().Debugf("Found App with name %v", app.AppName)
-
-	log.Entry().Infof("Create release for %v in ASC (AppID %v)", app.AppName, app.AppId)
-
-	releaseResponse, err := ascClient.CreateRelease(app.AppId, config.ReleaseAppVersion, config.ReleaseDescription, config.ReleaseDate, config.ReleaseVisible)
-
+	err := ascClient.DeployApp(asc.DeployRequest{
+		BundleID:     config.BundleID,
+		FilePath:     config.FilePath,
+		Version:      config.ReleaseAppVersion,
+		Description:  config.ReleaseDescription,
+		ReleaseDate:  config.ReleaseDate,
+		Visible:      config.ReleaseVisible,
+		TargetSystem: config.JamfTargetSystem,
+		User:         config.User,
+	})
 	if err != nil {
 		log.SetErrorCategory(log.ErrorService)
-		return fmt.Errorf("failed to create release: %w", err)
+		return fmt.Errorf("failed to deploy app: %w", err)
 	}
 
-	if releaseResponse.Status != "success" {
-		log.SetErrorCategory(log.ErrorService)
-		return errors.New(releaseResponse.Message)
-	}
-
-	log.Entry().Infof("Collect data to upload app to ASC & Jamf")
-
-	jamfAppInformationResponse, err := ascClient.GetJamfAppInfo(app.BundleId, config.JamfTargetSystem)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorService)
-		return fmt.Errorf("failed to get jamf app info: %w", err)
-	}
-
-	jamfAppId := jamfAppInformationResponse.MobileDeviceApplication.General.Id
-
-	if jamfAppId == 0 {
-		return fmt.Errorf("failed to get jamf app id")
-	}
-
-	log.Entry().Debugf("Got Jamf info for app %v, jamfId: %v", app.AppName, jamfAppId)
-
-	log.Entry().Infof("Upload ipa %v to ASC & Jamf", config.FilePath)
-
-	err = ascClient.UploadIpa(config.FilePath, jamfAppId, config.JamfTargetSystem, app.BundleId, releaseResponse.Data)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorService)
-		return fmt.Errorf("failed to upload ipa: %w", err)
-	}
-
-	log.Entry().Infof("Successfully uploaded %v to ASC (AppId %v) & Jamf (Id %v)", config.FilePath, app.AppId, jamfAppId)
+	log.Entry().Infof("Successfully deployed %v to ASC (BundleID %v) & Jamf (system %v)", config.FilePath, config.BundleID, config.JamfTargetSystem)
 
 	return nil
 }

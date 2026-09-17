@@ -5,9 +5,7 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/SAP/jenkins-library/pkg/asc"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -29,158 +27,90 @@ func newAscAppUploadTestsUtils() ascAppUploadMockUtils {
 }
 
 type ascSystemMock struct {
-	app                        asc.App
-	appError                   error
-	createReleaseResponse      asc.CreateReleaseResponse
-	createReleaseResponseError error
-	jamfAppInfo                asc.JamfAppInformationResponse
-	jamfAppInfoError           error
-	uploadIpaError             error
+	deployRequest  asc.DeployRequest
+	deployAppError error
 }
 
-func (sys *ascSystemMock) GetAppById(appId string) (asc.App, error) {
-	return sys.app, sys.appError
-}
-
-func (sys *ascSystemMock) CreateRelease(ascAppId int, version string, description string, releaseDate string, visible bool) (asc.CreateReleaseResponse, error) {
-	return sys.createReleaseResponse, sys.createReleaseResponseError
-}
-
-func (sys *ascSystemMock) GetJamfAppInfo(bundleId string, jamfTargetSystem string) (asc.JamfAppInformationResponse, error) {
-	return sys.jamfAppInfo, sys.jamfAppInfoError
-}
-
-func (sys *ascSystemMock) UploadIpa(path string, jamfAppId int, jamfTargetSystem string, bundleId string, ascRelease asc.Release) error {
-	return sys.uploadIpaError
+func (sys *ascSystemMock) DeployApp(request asc.DeployRequest) error {
+	sys.deployRequest = request
+	return sys.deployAppError
 }
 
 func TestRunAscAppUpload(t *testing.T) {
 	t.Parallel()
 
-	t.Run("succesfull upload", func(t *testing.T) {
+	t.Run("successful deploy", func(t *testing.T) {
 		t.Parallel()
 		// init
 		config := ascAppUploadOptions{
-			FilePath:         "./sample-app.ipa",
-			JamfTargetSystem: "test",
-			AppID:            "1",
+			FilePath:           "./sample-app.ipa",
+			JamfTargetSystem:   "test",
+			BundleID:           "com.sap.sample",
+			ReleaseAppVersion:  "3.1.15",
+			ReleaseDescription: "test test",
+			ReleaseDate:        "2026-09-17",
+			ReleaseVisible:     true,
 		}
 
 		utils := newAscAppUploadTestsUtils()
 		utils.AddFile("sample-app.ipa", []byte("dummy content"))
 
-		ascClient := &ascSystemMock{
-			app: asc.App{
-				AppId:    1,
-				AppName:  "Sample App",
-				BundleId: "sample.bundle.id",
-			},
-			createReleaseResponse: asc.CreateReleaseResponse{
-				Status: "success",
-				Data:   asc.Release{ReleaseID: 1, AppID: 1, Version: "version", Description: "description", ReleaseDate: time.Now(), Visible: true},
-			},
-			jamfAppInfo: asc.JamfAppInformationResponse{
-				MobileDeviceApplication: asc.JamfMobileDeviceApplication{
-					General: asc.JamfMobileDeviceApplicationGeneral{
-						Id: 1,
-					},
-				},
-			},
-		}
+		ascClient := &ascSystemMock{}
+
 		// test
 		err := runAscAppUpload(&config, nil, utils, ascClient)
 
 		// assert
 		assert.NoError(t, err)
+		assert.Equal(t, "com.sap.sample", ascClient.deployRequest.BundleID)
+		assert.Equal(t, "./sample-app.ipa", ascClient.deployRequest.FilePath)
+		assert.Equal(t, "3.1.15", ascClient.deployRequest.Version)
+		assert.Equal(t, "test test", ascClient.deployRequest.Description)
+		assert.Equal(t, "2026-09-17", ascClient.deployRequest.ReleaseDate)
+		assert.True(t, ascClient.deployRequest.Visible)
+		assert.Equal(t, "test", ascClient.deployRequest.TargetSystem)
 	})
 
-	t.Run("error during release creation", func(t *testing.T) {
+	t.Run("error if jamfTargetSystem is not set", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := ascAppUploadOptions{
+			FilePath: "./sample-app.ipa",
+			BundleID: "com.sap.sample",
+		}
+
+		utils := newAscAppUploadTestsUtils()
+
+		ascClient := &ascSystemMock{}
+
+		// test
+		err := runAscAppUpload(&config, nil, utils, ascClient)
+
+		// assert
+		assert.EqualError(t, err, "jamfTargetSystem must be set")
+	})
+
+	t.Run("error during deploy", func(t *testing.T) {
 		t.Parallel()
 		// init
 		config := ascAppUploadOptions{
 			FilePath:         "./sample-app.ipa",
 			JamfTargetSystem: "test",
-			AppID:            "1",
+			BundleID:         "com.sap.sample",
 		}
 
 		utils := newAscAppUploadTestsUtils()
 
-		errorMessage := "Error while creating release"
+		errorMessage := "Error while deploying app"
 
 		ascClient := &ascSystemMock{
-			app: asc.App{
-				AppId:    1,
-				AppName:  "Sample App",
-				BundleId: "sample.bundle.id",
-			},
-			createReleaseResponse: asc.CreateReleaseResponse{Status: "failure", Message: errorMessage},
+			deployAppError: errors.New(errorMessage),
 		}
+
 		// test
 		err := runAscAppUpload(&config, nil, utils, ascClient)
 
 		// assert
-		assert.EqualError(t, err, errorMessage)
-	})
-
-	t.Run("error while fetching jamf app info", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := ascAppUploadOptions{
-			FilePath:         "./sample-app.ipa",
-			JamfTargetSystem: "test",
-			AppID:            "1",
-		}
-
-		utils := newAscAppUploadTestsUtils()
-
-		errorMessage := "Error while fetching jamf app info"
-
-		ascClient := &ascSystemMock{
-			app: asc.App{
-				AppId:    1,
-				AppName:  "Sample App",
-				BundleId: "sample.bundle.id",
-			},
-			createReleaseResponse: asc.CreateReleaseResponse{Status: "success", Data: asc.Release{ReleaseID: 1}},
-			jamfAppInfoError:      errors.New(errorMessage),
-		}
-		// test
-		err := runAscAppUpload(&config, nil, utils, ascClient)
-
-		// assert
-		assert.EqualError(t, err, fmt.Sprintf("failed to get jamf app info: %s", errorMessage))
-	})
-
-	t.Run("error if jamf app id is 0", func(t *testing.T) {
-		t.Parallel()
-		// init
-		config := ascAppUploadOptions{
-			FilePath:         "./sample-app.ipa",
-			JamfTargetSystem: "test",
-			AppID:            "1",
-		}
-
-		utils := newAscAppUploadTestsUtils()
-
-		ascClient := &ascSystemMock{
-			app: asc.App{
-				AppId:    1,
-				AppName:  "Sample App",
-				BundleId: "sample.bundle.id",
-			},
-			createReleaseResponse: asc.CreateReleaseResponse{Status: "success", Data: asc.Release{ReleaseID: 1}},
-			jamfAppInfo: asc.JamfAppInformationResponse{
-				MobileDeviceApplication: asc.JamfMobileDeviceApplication{
-					General: asc.JamfMobileDeviceApplicationGeneral{
-						Id: 0,
-					},
-				},
-			},
-		}
-		// test
-		err := runAscAppUpload(&config, nil, utils, ascClient)
-
-		// assert
-		assert.EqualError(t, err, fmt.Sprintf("failed to get jamf app id"))
+		assert.EqualError(t, err, "failed to deploy app: "+errorMessage)
 	})
 }
