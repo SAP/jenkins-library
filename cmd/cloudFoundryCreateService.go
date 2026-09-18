@@ -11,9 +11,9 @@ import (
 
 func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData) {
 
-	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+	c := command.Command{}
 
-	err := runCloudFoundryCreateService(&config, telemetryData, cf)
+	err := runCloudFoundryCreateService(&config, telemetryData, &c)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -21,9 +21,7 @@ func cloudFoundryCreateService(config cloudFoundryCreateServiceOptions, telemetr
 
 }
 
-func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) (err error) {
-	var c = cf.Exec
-
+func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) (err error) {
 	loginOptions := cloudfoundry.LoginOptions{
 		CfAPIEndpoint: config.CfAPIEndpoint,
 		CfOrg:         config.CfOrg,
@@ -32,14 +30,14 @@ func runCloudFoundryCreateService(config *cloudFoundryCreateServiceOptions, tele
 		Password:      config.Password,
 	}
 
-	err = cf.Login(loginOptions)
+	err = cloudfoundry.Login(c, loginOptions)
 
 	if err != nil {
 		return fmt.Errorf("Error while logging in: %w", err)
 	}
 
 	defer func() {
-		logoutErr := cf.Logout()
+		logoutErr := cloudfoundry.Logout(c)
 		if logoutErr != nil {
 			err = fmt.Errorf("Error while logging out occurred: %w", logoutErr)
 		}

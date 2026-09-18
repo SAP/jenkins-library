@@ -4,26 +4,16 @@
 package cloudfoundry
 
 import (
+	"os"
 	"testing"
-
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestVarsFiles(t *testing.T) {
-
-	defer func() {
-		_fileUtils = piperutils.Files{}
-	}()
-
-	filesMock := mock.FilesMock{}
-	filesMock.AddDir("/home/me")
-	filesMock.Chdir("/home/me")
-	filesMock.AddFile("varsA.yml", []byte("file content does not matter"))
-	filesMock.AddFile("varsB.yml", []byte("file content does not matter"))
-	_fileUtils = &filesMock
+	t.Chdir(t.TempDir())
+	assert.NoError(t, os.WriteFile("varsA.yml", []byte("file content does not matter"), 0o644))
+	assert.NoError(t, os.WriteFile("varsB.yml", []byte("file content does not matter"), 0o644))
 
 	t.Run("All vars files found", func(t *testing.T) {
 		opts, err := GetVarsFileOptions([]string{"varsA.yml", "varsB.yml"})
@@ -42,7 +32,6 @@ func TestVarsFiles(t *testing.T) {
 }
 
 func TestVars(t *testing.T) {
-
 	t.Run("Empty vars", func(t *testing.T) {
 		opts, err := GetVarsOptions([]string{})
 		if assert.NoError(t, err) {
