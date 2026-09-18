@@ -211,6 +211,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 				return err
 			}
 
+			if config.Password != "" && config.Username == "" {
+				config.Username = "system-trust"
+			}
+
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now, certs)
 			if err != nil {
