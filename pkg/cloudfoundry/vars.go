@@ -7,10 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-var (
-	fileUtils     piperutils.FileUtils = piperutils.Files{}
-	varAssignment                      = regexp.MustCompile(`\S+=\S+`)
-)
+var varAssignment = regexp.MustCompile(`\S+=\S+`)
 
 // VarsFilesNotFoundError reports the variable files that were not found.
 type VarsFilesNotFoundError struct {
@@ -30,7 +27,7 @@ func GetVarsFileOptions(files []string) ([]string, error) {
 	missing := make([]string, 0)
 
 	for _, file := range files {
-		exists, err := fileUtils.FileExists(file)
+		exists, err := piperutils.Files{}.FileExists(file)
 		if err != nil {
 			return nil, fmt.Errorf("Error accessing file system: %w", err)
 		}
