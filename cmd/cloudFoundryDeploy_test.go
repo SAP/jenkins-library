@@ -156,6 +156,29 @@ func TestCfDeployment(t *testing.T) {
 		return false, nil
 	}
 
+	t.Run("token is passed to Cloud Foundry login", func(t *testing.T) {
+		defer cleanup()
+
+		config.Token = "testToken"
+		config.TokenOrigin = "testOrigin"
+		s := mock.ExecMockRunner{}
+
+		err := cfDeploy(&config, []string{"push", "testApp"}, nil, &s)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, cloudfoundry.LoginOptions{
+				CfAPIEndpoint: config.APIEndpoint,
+				CfOrg:         config.Org,
+				CfSpace:       config.Space,
+				Username:      config.Username,
+				Password:      config.Password,
+				Token:         "testToken",
+				TokenOrigin:   "testOrigin",
+				CfLoginOpts:   []string{},
+			}, loginOpts)
+		}
+	})
+
 	t.Run("Test invalid appname", func(t *testing.T) {
 
 		defer cleanup()

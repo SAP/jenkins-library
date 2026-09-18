@@ -601,6 +601,8 @@ func cfDeploy(
 			CfSpace:       config.Space,
 			Username:      config.Username,
 			Password:      config.Password,
+			Token:         config.Token,
+			TokenOrigin:   config.TokenOrigin,
 			CfLoginOpts:   strings.Fields(config.LoginParameters),
 		})
 	}

@@ -14,8 +14,8 @@ func (cf *CFUtils) LoginCheck(options LoginOptions) (bool, error) {
 	return cf.loggedIn, nil
 }
 
-// Login logs user in to Cloud Foundry via cf cli.
-// Checks if user is logged in first, if not perform 'cf login' command with appropriate parameters
+// Login logs user in to Cloud Foundry via cf CLI.
+// It uses an assertion token when one is provided; otherwise it uses username/password credentials.
 func (cf *CFUtils) Login(options LoginOptions) error {
 	var err error
 
@@ -25,8 +25,11 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 		_c = &command.Command{}
 	}
 
-	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
-		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password"))
+	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" {
+		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org and Space"))
+	}
+	if options.Token == "" && (options.Username == "" || options.Password == "") {
+		return fmt.Errorf("Failed to login to Cloud Foundry: %w", errors.New("Parameters missing. Please provide a token or Username and Password"))
 	}
 
 	var loggedIn bool
@@ -39,19 +42,31 @@ func (cf *CFUtils) Login(options LoginOptions) error {
 
 	if err == nil {
 		log.Entry().Info("Logging in to Cloud Foundry")
-
-		var cfLoginScript = append([]string{
-			"login",
-			"-a", options.CfAPIEndpoint,
-			"-o", options.CfOrg,
-			"-s", options.CfSpace,
-			"-u", options.Username,
-			"-p", options.Password,
-		}, options.CfLoginOpts...)
-
 		log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
-		err = _c.RunExecutable("cf", cfLoginScript...)
+		if options.Token != "" {
+			err = _c.RunExecutable("cf", "api", options.CfAPIEndpoint)
+			if err == nil {
+				cfAuthScript := []string{"auth", "--assertion", options.Token}
+				if options.TokenOrigin != "" {
+					cfAuthScript = append(cfAuthScript, "--origin", options.TokenOrigin)
+				}
+				err = _c.RunExecutable("cf", cfAuthScript...)
+			}
+			if err == nil {
+				err = _c.RunExecutable("cf", "target", "-o", options.CfOrg, "-s", options.CfSpace)
+			}
+		} else {
+			cfLoginScript := append([]string{
+				"login",
+				"-a", options.CfAPIEndpoint,
+				"-o", options.CfOrg,
+				"-s", options.CfSpace,
+				"-u", options.Username,
+				"-p", options.Password,
+			}, options.CfLoginOpts...)
+			err = _c.RunExecutable("cf", cfLoginScript...)
+		}
 	}
 
 	if err != nil {
@@ -92,6 +107,8 @@ type LoginOptions struct {
 	CfSpace       string
 	Username      string
 	Password      string
+	Token         string
+	TokenOrigin   string
 	CfLoginOpts   []string
 }
 
