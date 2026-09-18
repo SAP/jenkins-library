@@ -14,19 +14,6 @@ const constPropApplications = "applications"
 const constPropBuildpacks = "buildpacks"
 const constPropBuildpack = "buildpack"
 
-// Manifest ...
-type Manifest interface {
-	GetFileName() string
-	GetAppName(index int) (string, error)
-	ApplicationHasProperty(index int, name string) (bool, error)
-	GetApplicationProperty(index int, name string) (any, error)
-	Transform() error
-	IsModified() bool
-	GetApplications() ([]map[string]any, error)
-	WriteManifest() error
-}
-
-// manifest ...
 type manifest struct {
 	self     map[string]any
 	modified bool
@@ -37,7 +24,7 @@ var _readFile = os.ReadFile
 var _writeFile = os.WriteFile
 
 // ReadManifest Reads the manifest denoted by 'name'
-func ReadManifest(name string) (Manifest, error) {
+func ReadManifest(name string) (*manifest, error) {
 
 	log.Entry().Infof("Reading manifest file  '%s'", name)
 

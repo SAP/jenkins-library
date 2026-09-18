@@ -15,7 +15,7 @@ import (
 func TestVarsFiles(t *testing.T) {
 
 	defer func() {
-		_fileUtils = piperutils.Files{}
+		fileUtils = piperutils.Files{}
 	}()
 
 	filesMock := mock.FilesMock{}
@@ -23,7 +23,7 @@ func TestVarsFiles(t *testing.T) {
 	filesMock.Chdir("/home/me")
 	filesMock.AddFile("varsA.yml", []byte("file content does not matter"))
 	filesMock.AddFile("varsB.yml", []byte("file content does not matter"))
-	_fileUtils = &filesMock
+	fileUtils = &filesMock
 
 	t.Run("All vars files found", func(t *testing.T) {
 		opts, err := GetVarsFileOptions([]string{"varsA.yml", "varsB.yml"})
