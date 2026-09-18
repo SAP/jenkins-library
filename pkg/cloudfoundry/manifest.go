@@ -20,9 +20,6 @@ type manifest struct {
 	name     string
 }
 
-var _readFile = os.ReadFile
-var _writeFile = os.WriteFile
-
 // ReadManifest Reads the manifest denoted by 'name'
 func ReadManifest(name string) (*manifest, error) {
 
@@ -30,7 +27,7 @@ func ReadManifest(name string) (*manifest, error) {
 
 	m := &manifest{self: make(map[string]any), name: name, modified: false}
 
-	content, err := _readFile(name)
+	content, err := os.ReadFile(name)
 	if err != nil {
 		return m, fmt.Errorf("cannot read file '%v': %w", m.name, err)
 	}
@@ -56,7 +53,7 @@ func (m *manifest) WriteManifest() error {
 	}
 
 	log.Entry().Debugf("Writing manifest file '%s'", m.GetFileName())
-	err = _writeFile(m.GetFileName(), d, 0644)
+	err = os.WriteFile(m.GetFileName(), d, 0644)
 
 	if err == nil {
 		m.modified = false
