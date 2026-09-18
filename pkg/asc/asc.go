@@ -77,9 +77,13 @@ func (sys *SystemInstance) DeployApp(request DeployRequest) error {
 	releaseDate := request.ReleaseDate
 	if len(releaseDate) == 0 {
 		releaseDate = time.Now().UTC().Format("2006-01-02")
+	} else if _, err := time.Parse("2006-01-02", releaseDate); err == nil {
+		// already in the expected YYYY-MM-DD format
 	} else if t, err := time.Parse("01/02/2006", releaseDate); err == nil {
 		// auto-convert legacy MM/DD/YYYY format to YYYY-MM-DD
 		releaseDate = t.Format("2006-01-02")
+	} else {
+		return fmt.Errorf("invalid release date %q: expected format YYYY-MM-DD", releaseDate)
 	}
 
 	fileHandle, err := piperutils.Files{}.Open(request.FilePath)
