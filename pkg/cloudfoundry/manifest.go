@@ -14,36 +14,20 @@ const constPropApplications = "applications"
 const constPropBuildpacks = "buildpacks"
 const constPropBuildpack = "buildpack"
 
-// Manifest ...
-type Manifest interface {
-	GetFileName() string
-	GetAppName(index int) (string, error)
-	ApplicationHasProperty(index int, name string) (bool, error)
-	GetApplicationProperty(index int, name string) (any, error)
-	Transform() error
-	IsModified() bool
-	GetApplications() ([]map[string]any, error)
-	WriteManifest() error
-}
-
-// manifest ...
 type manifest struct {
 	self     map[string]any
 	modified bool
 	name     string
 }
 
-var _readFile = os.ReadFile
-var _writeFile = os.WriteFile
-
 // ReadManifest Reads the manifest denoted by 'name'
-func ReadManifest(name string) (Manifest, error) {
+func ReadManifest(name string) (*manifest, error) {
 
 	log.Entry().Infof("Reading manifest file  '%s'", name)
 
 	m := &manifest{self: make(map[string]any), name: name, modified: false}
 
-	content, err := _readFile(name)
+	content, err := os.ReadFile(name)
 	if err != nil {
 		return m, fmt.Errorf("cannot read file '%v': %w", m.name, err)
 	}
@@ -69,7 +53,7 @@ func (m *manifest) WriteManifest() error {
 	}
 
 	log.Entry().Debugf("Writing manifest file '%s'", m.GetFileName())
-	err = _writeFile(m.GetFileName(), d, 0644)
+	err = os.WriteFile(m.GetFileName(), d, 0644)
 
 	if err == nil {
 		m.modified = false

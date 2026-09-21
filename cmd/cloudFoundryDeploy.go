@@ -17,45 +17,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/yaml"
 )
 
-type cfFileUtil interface {
-	FileExists(string) (bool, error)
-	FileRename(string, string) error
-	FileRead(string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	Getwd() (string, error)
-	Glob(string) ([]string, error)
-	Chmod(string, os.FileMode) error
-	Copy(string, string) (int64, error)
-	Stat(path string) (os.FileInfo, error)
-}
-
-var _now = time.Now
-var _cfLogin = cfLogin
-var _cfLogout = cfLogout
-var _getManifest = getManifest
-var _replaceVariables = yaml.Substitute
-var _getVarsOptions = cloudfoundry.GetVarsOptions
-var _getVarsFileOptions = cloudfoundry.GetVarsFileOptions
-var _environ = os.Environ
-var fileUtils cfFileUtil = piperutils.Files{}
-
-// for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
-func cfLogin(c command.ExecRunner, options cloudfoundry.LoginOptions) error {
-	cf := &cloudfoundry.CFUtils{Exec: c}
-	return cf.Login(options)
-}
-
-// for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
-func cfLogout(c command.ExecRunner) error {
-	cf := &cloudfoundry.CFUtils{Exec: c}
-	return cf.Logout()
-}
-
 func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux) {
-	// for command execution use Command
 	c := command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
@@ -66,13 +30,13 @@ func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemet
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runCloudFoundryDeploy(&config, telemetryData, influxData, &c)
+	err := runCloudFoundryDeploy(&config, telemetryData, influxData, &c, time.Now)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %s", err)
 	}
 }
 
-func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner) error {
+func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner, now func() time.Time) error {
 
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
@@ -98,7 +62,7 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	}
 
 	if deployTriggered {
-		prepareInflux(err == nil, config, influxData)
+		prepareInflux(err == nil, config, influxData, now)
 	}
 
 	return err
@@ -154,7 +118,7 @@ func validateAppName(appName string) error {
 	return nil
 }
 
-func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux) {
+func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux, now func() time.Time) {
 
 	if influxData == nil {
 		return
@@ -177,7 +141,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 	influxData.deployment_data.fields.artifactURL = "n/a"
 	influxData.deployment_data.fields.commitHash = config.CommitHash
 
-	influxData.deployment_data.fields.deployTime = strings.ToUpper(_now().Format("Jan 02 2006 15:04:05"))
+	influxData.deployment_data.fields.deployTime = strings.ToUpper(now().Format("Jan 02 2006 15:04:05"))
 
 	// we should discuss how we handle the job trigger
 	// 1.) outside Jenkins
@@ -202,7 +166,7 @@ func handleMTADeployment(config *cloudFoundryDeployOptions, command command.Exec
 
 	} else {
 
-		exists, err := fileUtils.FileExists(mtarFilePath)
+		exists, err := piperutils.Files{}.FileExists(mtarFilePath)
 
 		if err != nil {
 			return fmt.Errorf("Cannot check if file path '%s' exists: %w", mtarFilePath, err)
@@ -314,10 +278,6 @@ func deployCfNative(deployConfig deployConfig, config *cloudFoundryDeployOptions
 	return cfDeploy(config, deployStatement, additionalEnvironment, cmd)
 }
 
-func getManifest(name string) (cloudfoundry.Manifest, error) {
-	return cloudfoundry.ReadManifest(name)
-}
-
 func getManifestFileName(config *cloudFoundryDeployOptions) (string, error) {
 
 	manifestFileName := config.Manifest
@@ -335,14 +295,14 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 
 	manifestFile, err := getManifestFileName(config)
 
-	fileExists, err := fileUtils.FileExists(manifestFile)
+	fileExists, err := (piperutils.Files{}).FileExists(manifestFile)
 	if err != nil {
 		return "", fmt.Errorf("Cannot check if file '%s' exists: %w", manifestFile, err)
 	}
 	if !fileExists {
 		return "", fmt.Errorf("Manifest file '%s' not found. Cannot retrieve app name", manifestFile)
 	}
-	manifest, err := _getManifest(manifestFile)
+	manifest, err := cloudfoundry.ReadManifest(manifestFile)
 	if err != nil {
 		return "", err
 	}
@@ -379,12 +339,12 @@ func getAppName(config *cloudFoundryDeployOptions) (string, error) {
 func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []string, error) {
 
 	deployOptions := []string{}
-	varOptions, err := _getVarsOptions(config.ManifestVariables)
+	varOptions, err := cloudfoundry.GetVarsOptions(config.ManifestVariables)
 	if err != nil {
 		return "", []string{}, fmt.Errorf("Cannot prepare var-options: '%v': %w", config.ManifestVariables, err)
 	}
 
-	varFileOptions, err := _getVarsFileOptions(config.ManifestVariablesFiles)
+	varFileOptions, err := cloudfoundry.GetVarsFileOptions(config.ManifestVariablesFiles)
 	if err != nil {
 		if e, ok := err.(*cloudfoundry.VarsFilesNotFoundError); ok {
 			for _, missingVarFile := range e.MissingFiles {
@@ -432,7 +392,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	extFileParams, extFiles := handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
 
 	for _, extFile := range extFiles {
-		_, err := fileUtils.Copy(extFile, extFile+".original")
+		_, err := (piperutils.Files{}).Copy(extFile, extFile+".original")
 		if err != nil {
 			return fmt.Errorf("Cannot prepare mta extension files: %w", err)
 		}
@@ -447,7 +407,7 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	err := cfDeploy(config, cfDeployParams, nil, command)
 
 	for _, extFile := range extFiles {
-		renameError := fileUtils.FileRename(extFile+".original", extFile)
+		renameError := (piperutils.Files{}).FileRename(extFile+".original", extFile)
 		if err == nil && renameError != nil {
 			return renameError
 		}
@@ -460,13 +420,13 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]any) (
 
 	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
 
-	b, err := fileUtils.FileRead(extFile)
+	b, err := (piperutils.Files{}).FileRead(extFile)
 	if err != nil {
 		return false, false, fmt.Errorf("Cannot handle credentials for mta extension file '%s': %w", extFile, err)
 	}
 	content := string(b)
 
-	env, err := toMap(_environ(), "=")
+	env, err := toMap(os.Environ(), "=")
 	if err != nil {
 		return false, false, fmt.Errorf("Cannot handle mta extension credentials.: %w", err)
 	}
@@ -510,12 +470,12 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]any) (
 	if !updated {
 		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
 	} else {
-		fInfo, err := fileUtils.Stat(extFile)
+		fInfo, err := (piperutils.Files{}).Stat(extFile)
 		fMode := fInfo.Mode()
 		if err != nil {
 			return false, false, fmt.Errorf("Cannot handle mta extension credentials.: %w", err)
 		}
-		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
+		err = (piperutils.Files{}).FileWrite(extFile, []byte(content), fMode)
 		if err != nil {
 			return false, false, fmt.Errorf("Cannot handle mta extension credentials.: %w", err)
 		}
@@ -595,7 +555,7 @@ func cfDeploy(
 	err = command.RunExecutable("cf", "version")
 
 	if err == nil {
-		err = _cfLogin(command, cloudfoundry.LoginOptions{
+		err = cloudfoundry.Login(command, cloudfoundry.LoginOptions{
 			CfAPIEndpoint: config.APIEndpoint,
 			CfOrg:         config.Org,
 			CfSpace:       config.Space,
@@ -622,7 +582,7 @@ func cfDeploy(
 
 	if loginPerformed {
 
-		logoutErr := _cfLogout(command)
+		logoutErr := cloudfoundry.Logout(command)
 
 		if logoutErr != nil {
 			log.Entry().WithError(logoutErr).Errorf("Cannot perform cf logout")
@@ -646,7 +606,7 @@ func findMtar() (string, error) {
 
 	const pattern = "**/*.mtar"
 
-	mtars, err := fileUtils.Glob(pattern)
+	mtars, err := (piperutils.Files{}).Glob(pattern)
 
 	if err != nil {
 		return "", err
@@ -667,7 +627,7 @@ func findMtar() (string, error) {
 
 func handleCfCliLog(logFile string) error {
 
-	fExists, err := fileUtils.FileExists(logFile)
+	fExists, err := (piperutils.Files{}).FileExists(logFile)
 
 	if err != nil {
 		return err
