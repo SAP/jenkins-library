@@ -501,7 +501,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 							{
 								Name:    "gitSystemTrustSecretName",
 								Type:    "systemTrustSecret",
-								Default: "github-app<scope>pipeline-ghas",
+								Default: "github-app",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
