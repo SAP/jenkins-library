@@ -293,7 +293,7 @@ spec:
             default: gitHttpsCredential
           - type: systemTrustSecret
             name: gitSystemTrustSecretName
-            default: git
+            default: github-app<scope>pipeline-ghas
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
