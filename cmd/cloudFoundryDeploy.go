@@ -30,13 +30,13 @@ func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemet
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runCloudFoundryDeploy(&config, telemetryData, influxData, &c)
+	err := runCloudFoundryDeploy(&config, telemetryData, influxData, &c, time.Now)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("step execution failed: %s", err)
 	}
 }
 
-func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner) error {
+func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner, now func() time.Time) error {
 
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
@@ -62,7 +62,7 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	}
 
 	if deployTriggered {
-		prepareInflux(err == nil, config, influxData)
+		prepareInflux(err == nil, config, influxData, now)
 	}
 
 	return err
@@ -118,7 +118,7 @@ func validateAppName(appName string) error {
 	return nil
 }
 
-func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux) {
+func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *cloudFoundryDeployInflux, now func() time.Time) {
 
 	if influxData == nil {
 		return
@@ -141,7 +141,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 	influxData.deployment_data.fields.artifactURL = "n/a"
 	influxData.deployment_data.fields.commitHash = config.CommitHash
 
-	influxData.deployment_data.fields.deployTime = strings.ToUpper(time.Now().Format("Jan 02 2006 15:04:05"))
+	influxData.deployment_data.fields.deployTime = strings.ToUpper(now().Format("Jan 02 2006 15:04:05"))
 
 	// we should discuss how we handle the job trigger
 	// 1.) outside Jenkins

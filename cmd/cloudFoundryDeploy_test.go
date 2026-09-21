@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 
@@ -72,7 +73,7 @@ func TestCfDeployment(t *testing.T) {
 		defer cleanup()
 		config.AppName = "a_z"
 		s := mock.ExecMockRunner{}
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		assert.EqualError(t, err, "Your application name 'a_z' contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
 	})
@@ -85,7 +86,7 @@ func TestCfDeployment(t *testing.T) {
 
 		config.DeployTool = "invalid"
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 			noopCfAPICalls(t, s)
@@ -104,7 +105,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -140,14 +141,19 @@ func TestCfDeployment(t *testing.T) {
 
 		influxData := cloudFoundryDeployInflux{}
 
-		err := runCloudFoundryDeploy(&config, nil, &influxData, &s)
+		now := func() time.Time {
+			// There was the big eclipse in Karlsruhe.
+			return time.Date(1999, time.August, 11, 12, 32, 0, 0, time.UTC)
+		}
+
+		err := runCloudFoundryDeploy(&config, nil, &influxData, &s, now)
 
 		if assert.NoError(t, err) {
 
 			expected := cloudFoundryDeployInflux{}
 
 			expected.deployment_data.fields.artifactURL = "n/a"
-			expected.deployment_data.fields.deployTime = influxData.deployment_data.fields.deployTime
+			expected.deployment_data.fields.deployTime = "AUG 11 1999 12:32:00"
 			expected.deployment_data.fields.jobTrigger = "n/a"
 			expected.deployment_data.fields.commitHash = "123456"
 
@@ -158,7 +164,6 @@ func TestCfDeployment(t *testing.T) {
 			expected.deployment_data.tags.cfOrg = "myOrg"
 			expected.deployment_data.tags.cfSpace = "mySpace"
 
-			assert.Regexp(t, `^[A-Z]{3} [0-9]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}$`, expected.deployment_data.fields.deployTime)
 			assert.Equal(t, expected, influxData)
 
 		}
@@ -178,7 +183,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -216,7 +221,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 			t.Run("check shell calls", func(t *testing.T) {
@@ -258,7 +263,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -295,7 +300,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -331,7 +336,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.EqualError(t, err, "Blue-green deployment type is deprecated for cf native builds."+
 			"Instead set parameter `cfNativeDeployParameters: '--strategy rolling'`. "+
@@ -361,7 +366,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.EqualError(t, err, "Invalid deploy type received: 'blue'. Supported value: standard") {
 
@@ -384,7 +389,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.EqualError(t, err, "appName from manifest 'test-manifest.yml' is empty") {
 
@@ -408,7 +413,7 @@ func TestCfDeployment(t *testing.T) {
 		s := mock.ExecMockRunner{}
 
 		s.ShouldFailOnCommand = map[string]error{"cf.*push.*": fmt.Errorf("cf deploy failed")}
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.EqualError(t, err, "cf deploy failed") {
 			assert.Equal(t, []string{"logout"}, s.Calls[len(s.Calls)-1].Params)
@@ -426,7 +431,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"cf login .*": fmt.Errorf("Unable to login")}}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.EqualError(t, err, "Failed to login to Cloud Foundry: Unable to login") {
 			assert.Equal(t, []mock.ExecCall{
@@ -450,7 +455,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -497,7 +502,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -542,7 +547,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -585,7 +590,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		err := runCloudFoundryDeploy(&config, nil, nil, &s)
+		err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 		if assert.NoError(t, err) {
 
@@ -624,7 +629,7 @@ func TestCfDeployment(t *testing.T) {
 
 			assert.NoError(t, os.WriteFile("xyz.mtar", []byte("content does not matter"), 0644))
 			s := mock.ExecMockRunner{}
-			err := runCloudFoundryDeploy(&config, nil, nil, &s)
+			err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 
 			if assert.NoError(t, err) {
 
@@ -643,7 +648,7 @@ func TestCfDeployment(t *testing.T) {
 			defer func() { config.MtaPath = "" }()
 			config.MtaPath = "my.mtar"
 			s := mock.ExecMockRunner{}
-			err := runCloudFoundryDeploy(&config, nil, nil, &s)
+			err := runCloudFoundryDeploy(&config, nil, nil, &s, time.Now)
 			assert.EqualError(t, err, "mtar file 'my.mtar' retrieved from configuration does not exist")
 		})
 
