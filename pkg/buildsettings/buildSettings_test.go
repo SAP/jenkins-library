@@ -79,6 +79,11 @@ func TestCreateBuildSettingsInfo(t *testing.T) {
 				buildTool: "dockerBuild",
 				expected:  `{"dockerBuild":[{"dockerImage":"docker:latest"}]}`,
 			},
+			{
+				config:    BuildOptions{CreateBOM: true, DockerImage: "piper-build-rust:latest"},
+				buildTool: "rustBuild",
+				expected:  `{"rustBuild":[{"createBOM":true,"dockerImage":"piper-build-rust:latest"}]}`,
+			},
 		}
 
 		for _, testCase := range testTableConfig {
