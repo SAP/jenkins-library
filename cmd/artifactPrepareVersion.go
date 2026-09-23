@@ -211,7 +211,10 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 				return err
 			}
 
-			if config.Password != "" && config.Username == "" {
+			// System Trust token takes precedence over the Vault/Jenkins password.
+			if config.Token != "" {
+				log.Entry().Debug("Using System Trust token for git authentication")
+				config.Password = config.Token
 				config.Username = "system-trust"
 			}
 
