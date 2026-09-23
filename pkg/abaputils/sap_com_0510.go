@@ -2,20 +2,19 @@ package abaputils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"errors"
-
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"slices"
 )
 
 type SAP_COM_0510 struct {

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/ans"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

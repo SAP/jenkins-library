@@ -7,14 +7,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 	m := &mock.ExecMockRunner{}
-	cf := cloudfoundry.CFUtils{Exec: m}
 	u := &uuidMock{}
 
 	t.Run("Create service with cf create-service", func(t *testing.T) {
@@ -29,7 +28,7 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 			CfServiceInstance: "testName",
 			CfServicePlan:     "testPlan",
 		}
-		err := runAbapEnvironmentCreateSystem(&config, nil, cf, u)
+		err := runAbapEnvironmentCreateSystem(&config, nil, m, u)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
@@ -76,7 +75,7 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 		manifestFileStringBody := []byte(manifestFileString)
 		err := os.WriteFile("customManifest.yml", manifestFileStringBody, 0644)
 
-		err = runAbapEnvironmentCreateSystem(&config, nil, cf, u)
+		err = runAbapEnvironmentCreateSystem(&config, nil, m, u)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},

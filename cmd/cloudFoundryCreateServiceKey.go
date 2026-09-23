@@ -18,11 +18,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	cfUtils := cloudfoundry.CFUtils{
-		Exec: &c,
-	}
-
-	err := runCloudFoundryCreateServiceKey(&options, telemetryData, &c, &cfUtils)
+	err := runCloudFoundryCreateServiceKey(&options, telemetryData, &c)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -30,7 +26,7 @@ func cloudFoundryCreateServiceKey(options cloudFoundryCreateServiceKeyOptions, t
 	}
 }
 
-func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) (returnedError error) {
+func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOptions, telemetryData *telemetry.CustomData, c command.ExecRunner) (returnedError error) {
 
 	// Login via cf cli
 	config := cloudfoundry.LoginOptions{
@@ -40,12 +36,12 @@ func runCloudFoundryCreateServiceKey(options *cloudFoundryCreateServiceKeyOption
 		Username:      options.Username,
 		Password:      options.Password,
 	}
-	loginErr := cfUtils.Login(config)
+	loginErr := cloudfoundry.Login(c, config)
 	if loginErr != nil {
 		return fmt.Errorf("Error while logging in occurred: %w", loginErr)
 	}
 	defer func() {
-		logoutErr := cfUtils.Logout()
+		logoutErr := cloudfoundry.Logout(c)
 		if logoutErr != nil && returnedError == nil {
 			returnedError = fmt.Errorf("Error while logging out occurred: %w", logoutErr)
 		}

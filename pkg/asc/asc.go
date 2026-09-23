@@ -1,12 +1,9 @@
 package asc
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	url2 "net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -15,44 +12,20 @@ import (
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/sirupsen/logrus"
 )
 
-type App struct {
-	AppId    int    `json:"app_id"`
-	AppName  string `json:"app_name"`
-	BundleId string `json:"bundle_id"`
-}
-
-type JamfAppInformationResponse struct {
-	MobileDeviceApplication JamfMobileDeviceApplication `json:"mobile_device_application"`
-}
-
-type JamfMobileDeviceApplication struct {
-	General JamfMobileDeviceApplicationGeneral `json:"general"`
-}
-
-type JamfMobileDeviceApplicationGeneral struct {
-	Id int `json:"id"`
-}
-
-type CreateReleaseResponse struct {
-	Status  string  `json:"status"`
-	Message string  `json:"message"`
-	LastID  int     `json:"lastID"`
-	Data    Release `json:"data"`
-}
-
-type Release struct {
-	ReleaseID    int       `json:"release_id"`
-	AppID        int       `json:"app_id"`
-	Version      string    `json:"version"`
-	Description  string    `json:"description"`
-	ReleaseDate  time.Time `json:"release_date"`
-	SortOrder    any       `json:"sort_order"`
-	Visible      bool      `json:"visible"`
-	Created      time.Time `json:"created"`
-	FileMetadata any       `json:"file_metadata"`
+// DeployRequest holds the data used to deploy an app to ASC (and therewith to Jamf)
+type DeployRequest struct {
+	BundleID     string
+	FilePath     string
+	Version      string
+	Description  string
+	ReleaseDate  string
+	Visible      bool
+	TargetSystem string
+	User         string
 }
 
 // SystemInstance is the client communicating with the ASC backend
@@ -64,14 +37,11 @@ type SystemInstance struct {
 }
 
 type System interface {
-	GetAppById(appId string) (App, error)
-	CreateRelease(ascAppId int, version string, description string, releaseDate string, visible bool) (CreateReleaseResponse, error)
-	GetJamfAppInfo(bundleId string, jamfTargetSystem string) (JamfAppInformationResponse, error)
-	UploadIpa(path string, jamfAppId int, jamfTargetSystem string, bundleId string, ascRelease Release) error
+	DeployApp(request DeployRequest) error
 }
 
 // NewSystemInstance returns a new ASC client for communicating with the backend
-func NewSystemInstance(client *piperHttp.Client, serverURL, token string) (*SystemInstance, error) {
+func NewSystemInstance(client *piperHttp.Client, serverURL, token string, timeout time.Duration) (*SystemInstance, error) {
 	loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/asc")
 
 	if len(serverURL) == 0 {
@@ -92,109 +62,75 @@ func NewSystemInstance(client *piperHttp.Client, serverURL, token string) (*Syst
 	log.RegisterSecret(token)
 
 	options := piperHttp.ClientOptions{
-		Token:            fmt.Sprintf("Bearer %s", sys.token),
-		TransportTimeout: time.Second * 15,
+		Token:              fmt.Sprintf("Bearer %s", sys.token),
+		TransportTimeout:   timeout,
+		MaxRequestDuration: timeout,
 	}
 	sys.client.SetOptions(options)
 
 	return sys, nil
 }
 
-func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
-	var requestBody io.Reader
-	if body != nil {
-		closer := io.NopCloser(body)
-		bodyBytes, _ := io.ReadAll(closer)
-		requestBody = bytes.NewBuffer(bodyBytes)
-		defer closer.Close()
-	}
-	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/%v", sys.serverURL, url), requestBody, header, nil)
-	if err != nil && (response == nil) {
-		sys.logger.Errorf("HTTP request failed with error: %s", err)
-		return nil, err
-	}
-
-	data, _ := io.ReadAll(response.Body)
-	sys.logger.Debugf("Valid response body: %v", string(data))
-	defer response.Body.Close()
-	return data, nil
-}
-
-// GetAppById returns the app addressed by appId from the ASC backend
-func (sys *SystemInstance) GetAppById(appId string) (App, error) {
-	sys.logger.Debugf("Getting ASC App with ID %v...", appId)
-
-	data, err := sendRequest(sys, http.MethodGet, fmt.Sprintf("api/v1/apps/%v", appId), nil, nil)
-	if err != nil {
-		return App{}, fmt.Errorf("fetching app %v failed: %w", appId, err)
-	}
-
-	var apps []App
-	json.Unmarshal(data, &apps)
-	if len(apps) == 0 {
-		return App{}, fmt.Errorf("no app found with id %v", appId)
-	}
-	return apps[0], nil
-}
-
-// CreateRelease creates a release in ASC
-func (sys *SystemInstance) CreateRelease(ascAppId int, version string, description string, releaseDate string, visible bool) (CreateReleaseResponse, error) {
-
-	var createReleaseResponse CreateReleaseResponse
-
+// DeployApp uploads the app binary together with the release information to ASC in a single request.
+// ASC creates the release note and forwards the binary to Jamf.
+func (sys *SystemInstance) DeployApp(request DeployRequest) error {
+	releaseDate := request.ReleaseDate
 	if len(releaseDate) == 0 {
-		currentTime := time.Now()
-		releaseDate = currentTime.Format("01/02/2006")
+		releaseDate = time.Now().UTC().Format("2006-01-02")
+	} else if _, err := time.Parse("2006-01-02", releaseDate); err == nil {
+		// already in the expected YYYY-MM-DD format
+	} else if t, err := time.Parse("01/02/2006", releaseDate); err == nil {
+		// auto-convert legacy MM/DD/YYYY format to YYYY-MM-DD
+		releaseDate = t.Format("2006-01-02")
+	} else {
+		return fmt.Errorf("invalid release date %q: expected format YYYY-MM-DD", releaseDate)
 	}
 
-	jsonData := map[string]string{
-		"version":      version,
-		"description":  description,
+	fileHandle, err := piperutils.Files{}.Open(request.FilePath)
+	if err != nil {
+		return fmt.Errorf("unable to locate file %v: %w", request.FilePath, err)
+	}
+	defer fileHandle.Close()
+
+	url := fmt.Sprintf("%v/api/public/apps/%v/deploy", sys.serverURL, request.BundleID)
+
+	formFields := map[string]string{
+		"version":      request.Version,
+		"description":  request.Description,
 		"release_date": releaseDate,
-		"visible":      strconv.FormatBool(visible),
+		"visible":      strconv.FormatBool(request.Visible),
+		"system":       request.TargetSystem,
+		"user":         request.User,
 	}
 
-	jsonValue, err := json.Marshal(jsonData)
+	sys.logger.Infof("Deploying app to ASC")
+	sys.logger.Infof("  URL:          %v", url)
+	sys.logger.Infof("  bundleId:     %v", request.BundleID)
+	sys.logger.Infof("  file:         %v", request.FilePath)
+	sys.logger.Infof("  version:      %v", request.Version)
+	sys.logger.Infof("  description:  %v", request.Description)
+	sys.logger.Infof("  release_date: %v", releaseDate)
+	sys.logger.Infof("  visible:      %v", request.Visible)
+	sys.logger.Infof("  system:       %v", request.TargetSystem)
+	sys.logger.Infof("  user:         %v", request.User)
+
+	response, err := sys.client.Upload(piperHttp.UploadRequestData{
+		Method:        http.MethodPost,
+		URL:           url,
+		File:          request.FilePath,
+		FileFieldName: "file",
+		FormFields:    formFields,
+		FileContent:   fileHandle,
+		UploadType:    "form",
+	})
 	if err != nil {
-		return createReleaseResponse, fmt.Errorf("error marshalling release payload: %w", err)
+		return fmt.Errorf("failed to deploy app to asc: %w", err)
 	}
+	defer response.Body.Close()
 
-	header := http.Header{}
-	header.Set("Content-Type", "application/json")
-
-	response, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("api/v1/apps/%v/releases", ascAppId), bytes.NewBuffer(jsonValue), header)
-	if err != nil {
-		return createReleaseResponse, fmt.Errorf("creating release: %w", err)
-	}
-
-	json.Unmarshal(response, &createReleaseResponse)
-	return createReleaseResponse, nil
-}
-
-// GetJamfAppInfo fetches information about the app from Jamf
-func (sys *SystemInstance) GetJamfAppInfo(bundleId string, jamfTargetSystem string) (JamfAppInformationResponse, error) {
-
-	sys.logger.Debugf("Getting Jamf App Info by ID %v from jamf %v system...", bundleId, jamfTargetSystem)
-	var jamfAppInformationResponse JamfAppInformationResponse
-
-	data, err := sendRequest(sys, http.MethodPost, fmt.Sprintf("api/v1/jamf/%v/info?system=%v", bundleId, url2.QueryEscape(jamfTargetSystem)), nil, nil)
-	if err != nil {
-		return jamfAppInformationResponse, fmt.Errorf("fetching jamf %v app info for %v failed: %w", jamfTargetSystem, bundleId, err)
-	}
-
-	json.Unmarshal(data, &jamfAppInformationResponse)
-	return jamfAppInformationResponse, nil
-
-}
-
-// UploadIpa uploads the ipa to ASC and therewith to Jamf
-func (sys *SystemInstance) UploadIpa(path string, jamfAppId int, jamfTargetSystem string, bundleId string, ascRelease Release) error {
-
-	url := fmt.Sprintf("%v/api/v1/jamf/%v/ipa?app_id=%v&version=%v&system=%v&release_id=%v&bundle_id=%v", sys.serverURL, jamfAppId, ascRelease.AppID, url2.QueryEscape(ascRelease.Version), url2.QueryEscape(jamfTargetSystem), ascRelease.ReleaseID, url2.QueryEscape(bundleId))
-	_, err := sys.client.UploadFile(url, path, "file", nil, nil, "form")
-
-	if err != nil {
-		return fmt.Errorf("failed to upload ipa to asc: %w", err)
+	if response.StatusCode >= 300 {
+		body, _ := io.ReadAll(response.Body)
+		return fmt.Errorf("deploy request failed with status %v: %v", response.StatusCode, string(body))
 	}
 
 	return nil

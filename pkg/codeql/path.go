@@ -50,8 +50,8 @@ func AppendCodeQLPaths(cfgPath string, scanPaths, ignorePaths []string) error {
 
 func ParsePaths(pathsStr string) []string {
 	var paths []string
-	patterns := strings.Split(pathsStr, "\n")
-	for _, p := range patterns {
+	patterns := strings.SplitSeq(pathsStr, "\n")
+	for p := range patterns {
 		p = strings.TrimSpace(p)
 		if p == "" {
 			continue

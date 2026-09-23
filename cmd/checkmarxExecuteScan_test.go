@@ -16,12 +16,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
-
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
-	"github.com/stretchr/testify/assert"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/google/go-github/v68/github"
+	"github.com/stretchr/testify/assert"
 )
 
 type fileInfo struct {

@@ -83,4 +83,4 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/terraformOutputs
-            type: "map[string]interface{}"
+            type: "map[string]any"

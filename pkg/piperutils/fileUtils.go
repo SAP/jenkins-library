@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/bmatcuk/doublestar/v4"
 )
 

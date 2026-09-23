@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	transportrequest "github.com/SAP/jenkins-library/pkg/transportrequest/cts"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -2,10 +2,9 @@ package codeql
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"

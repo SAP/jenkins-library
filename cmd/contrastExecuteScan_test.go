@@ -14,6 +14,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/contrast"
 	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -283,9 +284,9 @@ func TestCheckAgentSetup(t *testing.T) {
 		defer server.Close()
 
 		result, err := checkAgentSetup(newMockContrastClient(server), newMockConfig(server.URL))
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "no agents connected")
-		assert.Nil(t, result)
+		assert.NoError(t, err)
+		assert.NotNil(t, result.ConnectedServerViolation)
+		assert.Contains(t, result.ConnectedServerViolation.Error(), "no servers or agents connected")
 	})
 
 	t.Run("Active server within threshold sets no inactivity violation", func(t *testing.T) {

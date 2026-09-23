@@ -12,6 +12,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/reporting"
+
 	"github.com/package-url/packageurl-go"
 )
 
@@ -36,7 +37,7 @@ type Projects struct {
 // Project defines a BlackDuck project
 type Project struct {
 	Name     string `json:"name,omitempty"`
-	Metadata `json:"_meta,omitempty"`
+	Metadata `json:"_meta"`
 }
 
 // Metadata defines BlackDuck metadata for e.g. projects
@@ -60,7 +61,7 @@ type ProjectVersions struct {
 // ProjectVersion defines a version of a BlackDuck project
 type ProjectVersion struct {
 	Name     string `json:"versionName,omitempty"`
-	Metadata `json:"_meta,omitempty"`
+	Metadata `json:"_meta"`
 }
 
 type Components struct {
@@ -76,7 +77,7 @@ type Component struct {
 	PolicyStatus        string            `json:"policyStatus,omitempty"`
 	MatchTypes          []string          `json:"matchTypes,omitempty"`
 	Origins             []ComponentOrigin `json:"origins,omitempty"`
-	Metadata            `json:"_meta,omitempty"`
+	Metadata            `json:"_meta"`
 }
 
 type ComponentOrigin struct {
@@ -90,7 +91,7 @@ type PaginatedResponse[T any] struct {
 }
 
 type ComponentPolicyRule struct {
-	Metadata             `json:"_meta,omitempty"`
+	Metadata             `json:"_meta"`
 	Name                 string `json:"name,omitempty"`
 	PolicyApprovalStatus string `json:"policyApprovalStatus,omitempty"`
 }
@@ -141,7 +142,7 @@ type Vulnerability struct {
 	ComponentVersionOriginID     string `json:"componentVersionOriginId,omitempty"`
 	ComponentVersionOriginName   string `json:"componentVersionOriginName,omitempty"`
 	Ignored                      bool   `json:"ignored,omitempty"`
-	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
+	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation"`
 	Component                    *Component
 	projectName                  string
 	projectVersion               string
@@ -228,7 +229,7 @@ Link: [%v](%v)`,
 
 type PolicyStatus struct {
 	OverallStatus        string `json:"overallStatus,omitempty"`
-	PolicyVersionDetails `json:"componentVersionPolicyViolationDetails,omitempty"`
+	PolicyVersionDetails `json:"componentVersionPolicyViolationDetails"`
 }
 
 type PolicyVersionDetails struct {

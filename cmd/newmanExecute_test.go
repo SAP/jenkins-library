@@ -4,16 +4,15 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
-	"errors"
-
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"uuid"
 )
 
 type executedExecutables struct {

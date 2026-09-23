@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 )
@@ -11,34 +12,35 @@ func stepOutputs(stepData *config.StepData) string {
 		return ""
 	}
 
-	stepOutput := "\n## Outputs\n\n"
-	stepOutput += "| Output type | Details |\n"
-	stepOutput += "| ----------- | ------- |\n"
+	var stepOutput strings.Builder
+	stepOutput.WriteString("\n## Outputs\n\n")
+	stepOutput.WriteString("| Output type | Details |\n")
+	stepOutput.WriteString("| ----------- | ------- |\n")
 
 	for _, res := range stepData.Spec.Outputs.Resources {
 		//handle commonPipelineEnvironment output
 		if res.Type == "piperEnvironment" {
-			stepOutput += fmt.Sprintf("| %v | <ul>", res.Name)
+			stepOutput.WriteString(fmt.Sprintf("| %v | <ul>", res.Name))
 			for _, param := range res.Parameters {
-				stepOutput += fmt.Sprintf("<li>%v</li>", param["name"])
+				stepOutput.WriteString(fmt.Sprintf("<li>%v</li>", param["name"]))
 			}
-			stepOutput += "</ul> |\n"
+			stepOutput.WriteString("</ul> |\n")
 		}
 
 		//handle Influx output
 		if res.Type == "influx" {
-			stepOutput += fmt.Sprintf("| %v | ", res.Name)
+			stepOutput.WriteString(fmt.Sprintf("| %v | ", res.Name))
 			for _, param := range res.Parameters {
-				stepOutput += fmt.Sprintf("measurement `%v`<br /><ul>", param["name"])
-				fields, _ := param["fields"].([]interface{})
+				stepOutput.WriteString(fmt.Sprintf("measurement `%v`<br /><ul>", param["name"]))
+				fields, _ := param["fields"].([]any)
 				for _, field := range fields {
-					fieldMap, _ := field.(map[string]interface{})
-					stepOutput += fmt.Sprintf("<li>%v</li>", fieldMap["name"])
+					fieldMap, _ := field.(map[string]any)
+					stepOutput.WriteString(fmt.Sprintf("<li>%v</li>", fieldMap["name"]))
 				}
 			}
-			stepOutput += "</ul> |\n"
+			stepOutput.WriteString("</ul> |\n")
 		}
 
 	}
-	return stepOutput
+	return stepOutput.String()
 }

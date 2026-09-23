@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"

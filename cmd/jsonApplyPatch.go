@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	jsonpatch "github.com/evanphx/json-patch"
 )
 

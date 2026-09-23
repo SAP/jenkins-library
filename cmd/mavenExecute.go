@@ -8,7 +8,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 

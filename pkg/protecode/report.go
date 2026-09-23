@@ -47,7 +47,7 @@ func WriteReport(data ReportData, reportPath string, reportFileName string, resu
 	return writeJSON(reportPath, reportFileName, data, fileUtils)
 }
 
-func writeJSON(path, name string, data interface{}, fileUtils piperutils.FileUtils) error {
+func writeJSON(path, name string, data any, fileUtils piperutils.FileUtils) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err

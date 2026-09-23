@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/xsuaa"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

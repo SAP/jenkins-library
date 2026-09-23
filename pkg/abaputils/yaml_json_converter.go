@@ -81,8 +81,8 @@ func YAMLToJSON(y []byte) ([]byte, error) {
 	return yamlToJSON(y, nil, yaml.Unmarshal)
 }
 
-func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, interface{}) error) ([]byte, error) {
-	var yamlObj interface{}
+func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, any) error) ([]byte, error) {
+	var yamlObj any
 	if err := yamlUnmarshal(y, &yamlObj); err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, 
 	return json.Marshal(jsonObj)
 }
 
-func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (interface{}, error) {
+func convertToJSONableObject(yamlObj any, jsonTarget *reflect.Value) (any, error) {
 	// Handle pointer and interface indirection for jsonTarget
 	if jsonTarget != nil {
 		ju, tu, pv := indirect(*jsonTarget, false)
@@ -105,8 +105,8 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 	}
 
 	switch v := yamlObj.(type) {
-	case map[interface{}]interface{}:
-		strMap := make(map[string]interface{})
+	case map[any]any:
+		strMap := make(map[string]any)
 		for k, val := range v {
 			keyString, err := yamlKeyToString(k)
 			if err != nil {
@@ -149,7 +149,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 			}
 		}
 		return strMap, nil
-	case []interface{}:
+	case []any:
 		var jsonSliceElemValue *reflect.Value
 		if jsonTarget != nil {
 			t := *jsonTarget
@@ -158,7 +158,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 				jsonSliceElemValue = &ev
 			}
 		}
-		arr := make([]interface{}, len(v))
+		arr := make([]any, len(v))
 		for i, elem := range v {
 			var err error
 			arr[i], err = convertToJSONableObject(elem, jsonSliceElemValue)
@@ -177,7 +177,7 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 	}
 }
 
-func yamlKeyToString(k interface{}) (string, error) {
+func yamlKeyToString(k any) (string, error) {
 	switch key := k.(type) {
 	case string:
 		return key, nil
@@ -206,7 +206,7 @@ func yamlKeyToString(k interface{}) (string, error) {
 	}
 }
 
-func yamlPrimitiveToString(v interface{}) (string, bool) {
+func yamlPrimitiveToString(v any) (string, bool) {
 	switch val := v.(type) {
 	case int:
 		return strconv.FormatInt(int64(val), 10), true
@@ -228,21 +228,21 @@ func yamlPrimitiveToString(v interface{}) (string, bool) {
 
 // indirect walks down v allocating pointers as needed, until it gets to a non-pointer.
 func indirect(v reflect.Value, decodingNull bool) (json.Unmarshaler, encoding.TextUnmarshaler, reflect.Value) {
-	if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+	if v.Kind() != reflect.Pointer && v.Type().Name() != "" && v.CanAddr() {
 		v = v.Addr()
 	}
 	for {
 		if v.Kind() == reflect.Interface && !v.IsNil() {
 			e := v.Elem()
-			if e.Kind() == reflect.Ptr && !e.IsNil() && (!decodingNull || e.Elem().Kind() == reflect.Ptr) {
+			if e.Kind() == reflect.Pointer && !e.IsNil() && (!decodingNull || e.Elem().Kind() == reflect.Pointer) {
 				v = e
 				continue
 			}
 		}
-		if v.Kind() != reflect.Ptr {
+		if v.Kind() != reflect.Pointer {
 			break
 		}
-		if v.Elem().Kind() != reflect.Ptr && decodingNull && v.CanSet() {
+		if v.Elem().Kind() != reflect.Pointer && decodingNull && v.CanSet() {
 			break
 		}
 		if v.IsNil() {
@@ -314,7 +314,7 @@ func typeFields(t reflect.Type) []field {
 				}
 				index := append(append([]int(nil), f.index...), i)
 				ft := sf.Type
-				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
+				if ft.Name() == "" && ft.Kind() == reflect.Pointer {
 					ft = ft.Elem()
 				}
 				if name != "" || !sf.Anonymous || ft.Kind() != reflect.Struct {
@@ -371,8 +371,8 @@ func typeFields(t reflect.Type) []field {
 
 // parseTag splits a struct field's json tag into its name and options.
 func parseTag(tag string) (string, tagOptions) {
-	if idx := strings.Index(tag, ","); idx != -1 {
-		return tag[:idx], tagOptions(tag[idx+1:])
+	if before, after, ok := strings.Cut(tag, ","); ok {
+		return before, tagOptions(after)
 	}
 	return tag, tagOptions("")
 }

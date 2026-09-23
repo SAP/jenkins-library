@@ -22,7 +22,7 @@ func readStepMetadata(metadataFilePath string, docuHelperData DocuHelperData) co
 // adjustDefaultValues corrects the Default value according to the Type.
 func adjustDefaultValues(stepMetadata *config.StepData) {
 	for key, parameter := range stepMetadata.Spec.Inputs.Parameters {
-		var typedDefault interface{} = nil
+		var typedDefault any = nil
 		if parameter.Type == "bool" {
 			typedDefault = false
 		}
@@ -77,12 +77,12 @@ func applyCustomDefaultValues(stepMetadata *config.StepData, stepConfiguration c
 }
 
 // check length only if interface type is a slice
-func interfaceArrayLength(i interface{}) int {
+func interfaceArrayLength(i any) int {
 	switch i.(type) {
 	case []string:
 		return len(i.([]string))
-	case []interface{}:
-		return len(i.([]interface{}))
+	case []any:
+		return len(i.([]any))
 	default:
 		return -1
 	}

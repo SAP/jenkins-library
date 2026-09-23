@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 func TestIssueService(t *testing.T) {

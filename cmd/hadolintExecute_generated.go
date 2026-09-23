@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +22,7 @@ type hadolintExecuteOptions struct {
 	ConfigurationUsername     string   `json:"configurationUsername,omitempty"`
 	ConfigurationPassword     string   `json:"configurationPassword,omitempty"`
 	DockerFile                string   `json:"dockerFile,omitempty"`
+	DockerFileExclude         []string `json:"dockerFileExclude,omitempty"`
 	ConfigurationFile         string   `json:"configurationFile,omitempty"`
 	ReportFile                string   `json:"reportFile,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
@@ -109,8 +111,9 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -167,6 +170,7 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 	cmd.Flags().StringVar(&stepConfig.ConfigurationUsername, "configurationUsername", os.Getenv("PIPER_configurationUsername"), "The username to authenticate")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationPassword, "configurationPassword", os.Getenv("PIPER_configurationPassword"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.DockerFile, "dockerFile", `**/Dockerfile`, "Path or glob pattern of Dockerfile(s) to be used for the assessment. Supports double-star glob patterns (e.g. `**/Dockerfile`, `images/**/Dockerfile`). When a pattern is provided, all matching files are linted in a single hadolint invocation.")
+	cmd.Flags().StringSliceVar(&stepConfig.DockerFileExclude, "dockerFileExclude", []string{}, "List of files, directories, or GLOB patterns to exclude from the Dockerfiles selected by dockerFile. Directory exclusions apply recursively.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationFile, "configurationFile", `.hadolint.yaml`, "Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
 	cmd.Flags().StringVar(&stepConfig.ReportFile, "reportFile", `hadolint.xml`, "Name of the result file used locally within the step.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from.")
@@ -246,6 +250,15 @@ func hadolintExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
 						Default:     `**/Dockerfile`,
+					},
+					{
+						Name:        "dockerFileExclude",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "configurationFile",

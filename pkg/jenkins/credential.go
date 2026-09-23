@@ -23,7 +23,7 @@ type DockerServerCredentials = gojenkins.DockerServerCredentials
 
 // CredentialsManager is utility to control credential plugin
 type CredentialsManager interface {
-	Update(context.Context, string, string, interface{}) error
+	Update(context.Context, string, string, any) error
 }
 
 // NewCredentialsManager returns a new CredentialManager
@@ -32,7 +32,7 @@ func NewCredentialsManager(jenkins *gojenkins.Jenkins) CredentialsManager {
 }
 
 // UpdateCredential overwrites an existing credential
-func UpdateCredential(ctx context.Context, credentialsManager CredentialsManager, domain string, credential interface{}) error {
+func UpdateCredential(ctx context.Context, credentialsManager CredentialsManager, domain string, credential any) error {
 	credValue := reflect.ValueOf(credential)
 	if credValue.Kind() != reflect.Struct {
 		return fmt.Errorf("'credential' parameter is supposed to be a Credentials struct not '%s'", credValue.Type())

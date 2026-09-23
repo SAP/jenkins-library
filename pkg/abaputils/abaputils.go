@@ -3,6 +3,7 @@ package abaputils
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/btp"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
@@ -109,9 +108,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 		Password:          options.Password,
 	}
 
-	cf := cloudfoundry.CFUtils{Exec: c}
-
-	serviceKeyJSON, err = cf.ReadServiceKey(cfconfig)
+	serviceKeyJSON, err = cloudfoundry.ReadServiceKey(c, cfconfig)
 
 	if err != nil {
 		// Executing cfReadServiceKeyScript failed

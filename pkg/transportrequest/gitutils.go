@@ -2,17 +2,17 @@ package transportrequest
 
 import (
 	"fmt"
-
-	gitUtils "github.com/SAP/jenkins-library/pkg/git"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
-
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+
+	gitUtils "github.com/SAP/jenkins-library/pkg/git"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 var logRange = gitUtils.LogRange

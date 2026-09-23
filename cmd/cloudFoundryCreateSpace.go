@@ -12,13 +12,12 @@ import (
 func cloudFoundryCreateSpace(config cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData) {
 
 	c := command.Command{}
-	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
 
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	err := runCloudFoundryCreateSpace(&config, telemetryData, cf, &c)
+	err := runCloudFoundryCreateSpace(&config, telemetryData, &c, &c)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -26,9 +25,7 @@ func cloudFoundryCreateSpace(config cloudFoundryCreateSpaceOptions, telemetryDat
 
 }
 
-func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, s command.ShellRunner) (err error) {
-
-	var c = cf.Exec
+func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, s command.ShellRunner) (err error) {
 
 	cfLoginError := s.RunShell("/bin/sh", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
 
@@ -38,7 +35,7 @@ func runCloudFoundryCreateSpace(config *cloudFoundryCreateSpaceOptions, telemetr
 	log.Entry().Info("Successfully logged into cloud foundry.")
 
 	defer func() {
-		logoutErr := cf.Logout()
+		logoutErr := cloudfoundry.Logout(c)
 		if logoutErr != nil {
 			err = fmt.Errorf("Error while logging out occured: %w", logoutErr)
 		}

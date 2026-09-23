@@ -1,18 +1,18 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
-	"errors"
-
-	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
+	"github.com/Jeffail/gabs/v2"
 )
 
 func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) {

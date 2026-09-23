@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"golang.org/x/exp/slices"
 )
 

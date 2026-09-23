@@ -13,11 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	pipergithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGitHubIntegrationPiperPublishRelease(t *testing.T) {

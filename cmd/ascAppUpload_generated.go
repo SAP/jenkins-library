@@ -13,19 +13,22 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type ascAppUploadOptions struct {
 	ServerURL          string `json:"serverUrl,omitempty"`
 	AppToken           string `json:"appToken,omitempty"`
-	AppID              string `json:"appId,omitempty"`
+	BundleID           string `json:"bundleId,omitempty"`
 	FilePath           string `json:"filePath,omitempty"`
 	JamfTargetSystem   string `json:"jamfTargetSystem,omitempty"`
 	ReleaseAppVersion  string `json:"releaseAppVersion,omitempty"`
 	ReleaseDescription string `json:"releaseDescription,omitempty"`
 	ReleaseDate        string `json:"releaseDate,omitempty"`
 	ReleaseVisible     bool   `json:"releaseVisible,omitempty"`
+	Timeout            int    `json:"timeout,omitempty"`
+	User               string `json:"user,omitempty"`
 }
 
 // AscAppUploadCommand Upload an app to ASC
@@ -111,8 +114,9 @@ For more information about ASC, check out [Application Support Center](https://g
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -167,16 +171,18 @@ For more information about ASC, check out [Application Support Center](https://g
 func addAscAppUploadFlags(cmd *cobra.Command, stepConfig *ascAppUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the ASC backend")
 	cmd.Flags().StringVar(&stepConfig.AppToken, "appToken", os.Getenv("PIPER_appToken"), "App token used to authenticate with the ASC backend")
-	cmd.Flags().StringVar(&stepConfig.AppID, "appId", os.Getenv("PIPER_appId"), "The app ID in ASC")
+	cmd.Flags().StringVar(&stepConfig.BundleID, "bundleId", os.Getenv("PIPER_bundleId"), "The bundle ID of the app in ASC")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The path to the app binary")
 	cmd.Flags().StringVar(&stepConfig.JamfTargetSystem, "jamfTargetSystem", os.Getenv("PIPER_jamfTargetSystem"), "The jamf target system")
 	cmd.Flags().StringVar(&stepConfig.ReleaseAppVersion, "releaseAppVersion", `Pending Release`, "The new app version name to be created in ASC")
 	cmd.Flags().StringVar(&stepConfig.ReleaseDescription, "releaseDescription", `<p>TBD</p>`, "The new release description")
-	cmd.Flags().StringVar(&stepConfig.ReleaseDate, "releaseDate", os.Getenv("PIPER_releaseDate"), "The new release date (Format: MM/DD/YYYY) Default is the current date")
+	cmd.Flags().StringVar(&stepConfig.ReleaseDate, "releaseDate", os.Getenv("PIPER_releaseDate"), "The new release date in YYYY-MM-DD format (e.g. 2026-09-17). Default is the current date. The legacy MM/DD/YYYY format is auto-converted.")
 	cmd.Flags().BoolVar(&stepConfig.ReleaseVisible, "releaseVisible", false, "The new release visible flag")
+	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 900, "Timeout in seconds until an HTTP call is forcefully terminated.")
+	cmd.Flags().StringVar(&stepConfig.User, "user", `system`, "The user on whose behalf the app is deployed to ASC")
 
 	cmd.MarkFlagRequired("serverUrl")
-	cmd.MarkFlagRequired("appId")
+	cmd.MarkFlagRequired("bundleId")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("jamfTargetSystem")
 }
@@ -225,13 +231,13 @@ func ascAppUploadMetadata() config.StepData {
 						Default:   os.Getenv("PIPER_appToken"),
 					},
 					{
-						Name:        "appId",
+						Name:        "bundleId",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_appId"),
+						Default:     os.Getenv("PIPER_bundleId"),
 					},
 					{
 						Name:        "filePath",
@@ -286,6 +292,24 @@ func ascAppUploadMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "timeout",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     900,
+					},
+					{
+						Name:        "user",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `system`,
 					},
 				},
 			},

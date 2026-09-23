@@ -17,6 +17,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -156,8 +157,9 @@ func ContrastExecuteScanCommand() *cobra.Command {
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				reports.persist(stepConfig, GeneralConfig.GCPJsonKeyFilePath, GeneralConfig.GCSBucketId, GeneralConfig.GCSFolderPath, GeneralConfig.GCSSubFolder)
 				config.RemoveVaultSecretFiles()
@@ -221,7 +223,7 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().BoolVar(&stepConfig.CheckForCompliance, "checkForCompliance", true, "If set to true, the piper step checks for compliance based on vulnerability thresholds. Example - If total vulnerabilities are 10 and vulnerabilityThresholdTotal is set as 0, then the steps throws an compliance error.")
 	cmd.Flags().BoolVar(&stepConfig.GenerateSarif, "generateSarif", true, "Generate SARIF report asynchronously from Contrast API")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdf, "generatePdf", false, "Generate PDF attestation report from Contrast API")
-	cmd.Flags().IntVar(&stepConfig.RouteCoverageThreshold, "routeCoverageThreshold", 30, "Minimum percentage of discovered routes that must have been exercised. If the actual coverage falls below this value, the step logs a warning.\n")
+	cmd.Flags().IntVar(&stepConfig.RouteCoverageThreshold, "routeCoverageThreshold", 60, "Minimum percentage of discovered routes that must have been exercised. If the actual coverage falls below this value, the step logs a warning.\n")
 	cmd.Flags().IntVar(&stepConfig.AgentInactivityThresholdDays, "agentInactivityThresholdDays", 7, "If all servers for this application have been inactive for longer than this many days, the step logs a warning. Set to 0 to disable the check.\n")
 
 	cmd.MarkFlagRequired("userApiKey")
@@ -383,7 +385,7 @@ func contrastExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     30,
+						Default:     60,
 					},
 					{
 						Name:        "agentInactivityThresholdDays",
@@ -401,7 +403,7 @@ func contrastExecuteScanMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/toolrun_contrast_*.json", "type": "contrast"},
 							{"filePattern": "**/piper_contrast_report.json", "type": "contrast"},
 							{"filePattern": "**/piper_contrast.sarif", "type": "contrast"},

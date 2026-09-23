@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	b64 "encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,19 +10,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"errors"
-
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-
-	b64 "encoding/base64"
-
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+
 	"go.yaml.in/yaml/v3"
 )
 

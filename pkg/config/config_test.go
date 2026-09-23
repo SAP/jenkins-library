@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+
 	"github.com/stretchr/testify/assert"
 )
 

@@ -2,6 +2,7 @@ package build
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -10,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"

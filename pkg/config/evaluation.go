@@ -160,10 +160,8 @@ func (s *StepCondition) evaluateV1(
 
 		// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
 		for param, activationValues := range s.Config {
-			for _, activationValue := range activationValues {
-				if activationValue == config.Config[param] {
-					return true, nil
-				}
+			if slices.Contains(activationValues, config.Config[param]) {
+				return true, nil
 			}
 			return false, nil
 		}
@@ -251,7 +249,7 @@ func (s *StepCondition) evaluateV1(
 	}
 }
 
-func getCPEEntry(param string, value interface{}, metadata *StepData, stepName string, envRootPath string) map[string]interface{} {
+func getCPEEntry(param string, value any, metadata *StepData, stepName string, envRootPath string) map[string]any {
 	dataType := "interface"
 	_, ok := value.(string)
 	if ok {
@@ -267,12 +265,12 @@ func getCPEEntry(param string, value interface{}, metadata *StepData, stepName s
 	return metadata.GetResourceParameters(envRootPath, "commonPipelineEnvironment")
 }
 
-func checkConfigKeyV1(config map[string]interface{}, configKey []string) (bool, error) {
+func checkConfigKeyV1(config map[string]any, configKey []string) (bool, error) {
 	value, ok := config[configKey[0]]
 	if len(configKey) == 1 {
 		return ok, nil
 	}
-	castedValue, ok := value.(map[string]interface{})
+	castedValue, ok := value.(map[string]any)
 	if !ok {
 		return false, nil
 	}

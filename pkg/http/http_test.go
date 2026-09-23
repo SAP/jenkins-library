@@ -22,13 +22,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/log"
+
 	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 func TestSend(t *testing.T) {

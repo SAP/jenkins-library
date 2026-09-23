@@ -19,6 +19,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
@@ -96,7 +97,7 @@ func (p *whitesourceExecuteScanCommonPipelineEnvironment) persist(path, resource
 	content := []struct {
 		category string
 		name     string
-		value    interface{}
+		value    any
 	}{
 		{category: "custom", name: "whitesourceProjectNames", value: p.custom.whitesourceProjectNames},
 	}
@@ -139,7 +140,7 @@ func (i *whitesourceExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       interface{}
+		value       any
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "whitesource", value: i.step_data.fields.whitesource},
 		{valType: config.InfluxField, measurement: "whitesource_data", name: "vulnerabilities", value: i.whitesource_data.fields.vulnerabilities},
@@ -301,8 +302,9 @@ The step uses the so-called Mend Unified Agent. For details please refer to the 
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
@@ -1154,14 +1156,14 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "custom/whitesourceProjectNames", "type": "[]string"},
 						},
 					},
 					{
 						Name: "influx",
 						Type: "influx",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"name": "step_data", "fields": []map[string]string{{"name": "whitesource"}}},
 							{"name": "whitesource_data", "fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "policy_violations"}}},
 						},
@@ -1169,7 +1171,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					{
 						Name: "reports",
 						Type: "reports",
-						Parameters: []map[string]interface{}{
+						Parameters: []map[string]any{
 							{"filePattern": "**/whitesource-ip.json", "type": "whitesource-ip"},
 							{"filePattern": "**/*risk-report.pdf", "type": "whitesource-ip"},
 							{"filePattern": "**/toolrun_whitesource_*.json", "type": "whitesource-ip"},

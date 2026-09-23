@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v68/github"
 
-	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	"github.com/google/go-github/v68/github"
 )
 
 type gitHubBranchProtectionRepositoriesService interface {

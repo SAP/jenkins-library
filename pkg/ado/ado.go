@@ -2,12 +2,11 @@ package ado
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"errors"
-
-	"github.com/microsoft/azure-devops-go-api/azuredevops"
-	"github.com/microsoft/azure-devops-go-api/azuredevops/build"
+	"github.com/microsoft/azure-devops-go-api/azuredevops/v7"
+	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/build"
 )
 
 const azureUrl = "https://dev.azure.com"

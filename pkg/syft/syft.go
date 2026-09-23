@@ -3,13 +3,12 @@ package syft
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
-
-	"errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -80,6 +79,31 @@ func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.Exec
 		}
 	}
 
+	return nil
+}
+
+// ScanImageTo scans a single image and writes the SBOM to the given output file.
+// Extra arguments (e.g. "--platform=linux/arm64") are forwarded directly to syft so
+// the scanner instance is not mutated and can be safely reused across multiple calls.
+func (s *SyftScanner) ScanImageTo(dockerConfigDir string, execRunner command.ExecRunner, registryURL, image, outputFile string, extraArgs ...string) error {
+	if registryURL == "" {
+		return errors.New("syft: registry url must not be empty")
+	}
+	if image == "" {
+		return errors.New("syft: image name must not be empty")
+	}
+	execRunner.AppendEnv([]string{fmt.Sprintf("DOCKER_CONFIG=%s", dockerConfigDir)})
+	args := []string{
+		"scan",
+		fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image),
+		"-o", fmt.Sprintf("cyclonedx-xml%s=%s", cyclonedxFormatForSyft, outputFile),
+		"-q",
+		"--exclude=**/{distlib,distlib-*}/**/*.exe",
+	}
+	args = append(args, extraArgs...)
+	if err := execRunner.RunExecutable(s.syftFile, args...); err != nil {
+		return fmt.Errorf("failed to generate SBOM: %w", err)
+	}
 	return nil
 }
 

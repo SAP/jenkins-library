@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/influx/mocks"
+
 	"github.com/stretchr/testify/mock"
 )
 

@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,11 +16,10 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+
 	"golang.org/x/crypto/pkcs12"
 )
 
@@ -241,15 +241,15 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	conn.DownloadClient = inputclient
 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// Mapping for options
-	subOptions := abaputils.AbapEnvironmentOptions{}
-	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
-	subOptions.CfServiceInstance = config.CfServiceInstance
-	subOptions.CfServiceKeyName = config.CfServiceKeyName
-	subOptions.CfOrg = config.CfOrg
-	subOptions.CfSpace = config.CfSpace
-	subOptions.Host = config.Host
-	subOptions.Password = config.Password
-	subOptions.Username = config.Username
+	subOptions := abaputils.AbapEnvironmentOptions{
+		CfAPIEndpoint:     config.CfAPIEndpoint,
+		CfServiceInstance: config.CfServiceInstance,
+		CfServiceKeyName:  config.CfServiceKeyName,
+		CfOrg:             config.CfOrg,
+		CfSpace:           config.CfSpace,
+		Host:              config.Host,
+		Password:          config.Password,
+		Username:          config.Username}
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/BUILD/CORE_SRV")

@@ -13,27 +13,28 @@ import (
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/validation"
+
 	"github.com/spf13/cobra"
 )
 
 type gctsDeployOptions struct {
-	Username            string                 `json:"username,omitempty"`
-	Password            string                 `json:"password,omitempty"`
-	Repository          string                 `json:"repository,omitempty"`
-	Host                string                 `json:"host,omitempty"`
-	Client              string                 `json:"client,omitempty"`
-	Commit              string                 `json:"commit,omitempty"`
-	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
-	Role                string                 `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
-	VSID                string                 `json:"vSID,omitempty"`
-	Type                string                 `json:"type,omitempty" validate:"possible-values=GIT GITHUB GITLAB"`
-	Branch              string                 `json:"branch,omitempty"`
-	Scope               string                 `json:"scope,omitempty"`
-	Rollback            bool                   `json:"rollback,omitempty"`
-	Configuration       map[string]interface{} `json:"configuration,omitempty"`
-	QueryParameters     map[string]interface{} `json:"queryParameters,omitempty"`
-	SkipSSLVerification bool                   `json:"skipSSLVerification,omitempty"`
-	Proxy               string                 `json:"proxy,omitempty"`
+	Username            string         `json:"username,omitempty"`
+	Password            string         `json:"password,omitempty"`
+	Repository          string         `json:"repository,omitempty"`
+	Host                string         `json:"host,omitempty"`
+	Client              string         `json:"client,omitempty"`
+	Commit              string         `json:"commit,omitempty"`
+	RemoteRepositoryURL string         `json:"remoteRepositoryURL,omitempty"`
+	Role                string         `json:"role,omitempty" validate:"possible-values=SOURCE TARGET"`
+	VSID                string         `json:"vSID,omitempty"`
+	Type                string         `json:"type,omitempty" validate:"possible-values=GIT GITHUB GITLAB"`
+	Branch              string         `json:"branch,omitempty"`
+	Scope               string         `json:"scope,omitempty"`
+	Rollback            bool           `json:"rollback,omitempty"`
+	Configuration       map[string]any `json:"configuration,omitempty"`
+	QueryParameters     map[string]any `json:"queryParameters,omitempty"`
+	SkipSSLVerification bool           `json:"skipSSLVerification,omitempty"`
+	Proxy               string         `json:"proxy,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git repository to a local repository and then to an ABAP system
@@ -122,8 +123,9 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 				oidcTokenProvider = vaultClient.GetOIDCTokenByValidation
 			}
 
-			stepTelemetryData := telemetry.CustomData{}
-			stepTelemetryData.ErrorCode = "1"
+			stepTelemetryData := telemetry.CustomData{
+				ErrorCode: "1",
+			}
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				stepTelemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -348,7 +350,7 @@ func gctsDeployMetadata() config.StepData {
 						Name:        "configuration",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
 					},
@@ -356,7 +358,7 @@ func gctsDeployMetadata() config.StepData {
 						Name:        "queryParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "map[string]interface{}",
+						Type:        "map[string]any",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
