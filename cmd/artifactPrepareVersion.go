@@ -162,6 +162,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	now := time.Now()
 
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
+		log.Entry().Debugf("versioning type: %v", config.VersioningType)
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
 		provider := utils.GetConfigProvider()
