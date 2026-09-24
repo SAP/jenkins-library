@@ -112,9 +112,9 @@ steps:
     helmCommand: publish
     chartPath: helm/charts/my-app
     publish: true
-    # Override the default Vault secret names if your secrets are stored under different paths:
-    signingKeyVaultSecretName: my-team/helm-signing
-    signingKeyRingVaultSecretName: my-team/helm-signing-keyring
+    # Override the default Vault secret names if your secrets use different names:
+    signingKeyVaultSecretName: my-pgp-key
+    signingKeyRingVaultSecretName: my-pgp-keyring
 ```
 
 **Vault secret structure:**
