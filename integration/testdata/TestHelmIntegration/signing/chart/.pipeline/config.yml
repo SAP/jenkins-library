@@ -5,7 +5,7 @@ steps:
   artifactPrepareVersion:
     versioningType: cloud_noTag
 
-  helmExecute:
+  helmBuild:
     chartPath: '.'
     helmCommand: 'publish'
     publish: true
