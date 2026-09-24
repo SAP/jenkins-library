@@ -81,7 +81,7 @@ steps:
 
 ## Creating a Bill of Materials (BOM)
 
-Set `createBOM: true` to generate a CycloneDX 1.4 bill of materials for the container images referenced by the chart. The BOM is written to `bom-helm.xml` and consumed by downstream compliance steps (e.g. OSC CTP scans).
+Set `createBOM: true` to generate a CycloneDX 1.4 bill of materials for the container images referenced by the chart. The BOM is written to `bom-helm.xml` and can be consumed by downstream compliance steps.
 
 ```yaml
 # .pipeline/config.yml
