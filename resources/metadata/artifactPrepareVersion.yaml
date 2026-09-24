@@ -343,8 +343,6 @@ spec:
         description: Token for git authentication. It is provided by System Trust, so there is no need to set it manually.
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
         secret: true
         resourceRef:
           - type: systemTrustSecret
