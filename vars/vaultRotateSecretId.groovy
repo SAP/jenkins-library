@@ -6,5 +6,10 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
-        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [], false, false, false)
+        List credentials = [
+            [type: 'token', id: 'jenkinsUrlCredentialsId', env: ['PIPER_jenkinsUrl']],
+            [type: 'token', id: 'jenkinsUsernameCredentialsId', env: ['PIPER_jenkinsUsername']],
+            [type: 'token', id: 'jenkinsTokenCredentialsId', env: ['PIPER_jenkinsToken']]
+        ]
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, false)
 }
