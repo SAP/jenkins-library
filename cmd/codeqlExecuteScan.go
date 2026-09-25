@@ -383,13 +383,13 @@ func executeAnalysis(format, reportPath string, customFlags map[string]string, c
 		return nil, "", err
 	}
 	return []piperutils.Path{
-			{Target: report},
-		}, func() string {
-			if strings.HasPrefix(format, "sarif") {
-				return report
-			}
-			return ""
-		}(), nil
+		{Target: report},
+	}, func() string {
+		if strings.HasPrefix(format, "sarif") {
+			return report
+		}
+		return ""
+	}(), nil
 }
 
 func prepareCmdForDatabaseCreate(customFlags map[string]string, config *codeqlExecuteScanOptions, utils codeqlExecuteScanUtils) (bool, []string, error) {

@@ -38,6 +38,30 @@ edition = "2021"
 serde = { version = "0.1.0", features = ["derive"] }
 `
 
+// cargoTomlWithBinSection has a [[bin]] array-table after [package] whose header
+// starts with "[" — the line-by-line parser must treat it as a section boundary.
+const cargoTomlWithBinSection = `[package]
+name = "gha-rust-hello-world"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cli"
+path = "src/main.rs"
+`
+
+// cargoTomlVersionAfterMultiline has a [package] description using a triple-quoted
+// multi-line string whose body contains a "["-prefixed line — the parser must not
+// treat that line as a section header and must still find version below it.
+const cargoTomlVersionAfterMultiline = `[package]
+name = "gha-rust-hello-world"
+description = """
+See [README.md] for configuration.
+"""
+version = "0.1.0"
+edition = "2021"
+`
+
 func TestCargoGetVersion(t *testing.T) {
 	t.Parallel()
 	t.Run("success", func(t *testing.T) {
@@ -98,6 +122,36 @@ func TestCargoSetVersion(t *testing.T) {
 		updated := string(updatedBytes)
 		assert.Contains(t, updated, `version = "2.0.0"`, "package version should be updated")
 		assert.Contains(t, updated, `version = "0.1.0"`, "dependency version must remain unchanged")
+	})
+
+	t.Run("version before [[bin]] array-table is replaced", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlWithBinSection))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("2.0.0")
+		assert.NoError(t, err)
+
+		cargo2 := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		version, err := cargo2.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "2.0.0", version)
+	})
+
+	t.Run("version after triple-quoted description containing '[' is replaced", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlVersionAfterMultiline))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("2.0.0")
+		assert.NoError(t, err)
+
+		cargo2 := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		version, err := cargo2.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "2.0.0", version)
 	})
 }
 

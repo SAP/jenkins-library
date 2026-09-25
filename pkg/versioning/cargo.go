@@ -83,33 +83,44 @@ func (c *Cargo) SetVersion(newVersion string) error {
 	return nil
 }
 
-// replaceVersionInPackageSection replaces version strings only within the [package]
+// replaceVersionInPackageSection replaces the version line only within the [package]
 // section of a Cargo.toml, leaving [dependencies] and other sections untouched.
+// It processes the file line by line so that content inside other sections (or inside
+// multi-line strings) that happens to start with "[" is never misidentified as a
+// section boundary.
 func replaceVersionInPackageSection(content, current, newVersion string) (string, error) {
-	pkgHeader := "[package]"
-	start := strings.Index(content, pkgHeader)
-	if start == -1 {
-		return "", fmt.Errorf("no [package] section found")
+	lines := strings.Split(content, "\n")
+	inPackage := false
+	inMultilineStr := false
+	for i, line := range lines {
+		// Track triple-quoted multi-line strings so their content is never misread as
+		// a section header. Each line with an odd number of `"""` toggles the state.
+		if count := strings.Count(line, `"""`); count%2 != 0 {
+			inMultilineStr = !inMultilineStr
+		}
+		if inMultilineStr {
+			continue
+		}
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") {
+			inPackage = trimmed == "[package]"
+			continue
+		}
+		if !inPackage {
+			continue
+		}
+		doubleQ := fmt.Sprintf(`version = "%s"`, current)
+		singleQ := fmt.Sprintf(`version = '%s'`, current)
+		if line == doubleQ {
+			lines[i] = fmt.Sprintf(`version = "%s"`, newVersion)
+			return strings.Join(lines, "\n"), nil
+		}
+		if line == singleQ {
+			lines[i] = fmt.Sprintf(`version = '%s'`, newVersion)
+			return strings.Join(lines, "\n"), nil
+		}
 	}
-	// Find the start of the next TOML table after [package], or use EOF.
-	rest := content[start+len(pkgHeader):]
-	nextSection := strings.Index(rest, "\n[")
-	var section string
-	var suffix string
-	if nextSection == -1 {
-		section = rest
-		suffix = ""
-	} else {
-		section = rest[:nextSection+1] // include the newline before '['
-		suffix = rest[nextSection+1:]
-	}
-	section = strings.ReplaceAll(section,
-		fmt.Sprintf("version = \"%v\"", current),
-		fmt.Sprintf("version = \"%v\"", newVersion))
-	section = strings.ReplaceAll(section,
-		fmt.Sprintf("version = '%v'", current),
-		fmt.Sprintf("version = '%v'", newVersion))
-	return content[:start+len(pkgHeader)] + section + suffix, nil
+	return "", fmt.Errorf("version %q not found in [package] section", current)
 }
 
 // GetCoordinates returns the artifact coordinates from Cargo.toml
