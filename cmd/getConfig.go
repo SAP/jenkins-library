@@ -174,7 +174,7 @@ func getConfigWithFlagValues(cmd *cobra.Command) (config.StepConfig, error) {
 		// add hooks (defaults + custom defaults) to stage-config.json output
 		stepConfig.Config["hooks"] = stepConfig.HookConfig
 	} else {
-		log.Entry().Infof("Printing stepName %s", configOptions.StepName)
+		log.Entry().Infof("Printing stepName [SONAR-438] %s", configOptions.StepName)
 		if GeneralConfig.MetaDataResolver == nil {
 			GeneralConfig.MetaDataResolver = GetAllStepMetadata
 		}
