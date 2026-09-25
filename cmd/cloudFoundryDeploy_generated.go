@@ -44,6 +44,8 @@ type cloudFoundryDeployOptions struct {
 	MtaPath                  string         `json:"mtaPath,omitempty"`
 	Org                      string         `json:"org,omitempty"`
 	Password                 string         `json:"password,omitempty"`
+	Token                    string         `json:"token,omitempty"`
+	TokenOrigin              string         `json:"tokenOrigin,omitempty"`
 	Space                    string         `json:"space,omitempty"`
 	Username                 string         `json:"username,omitempty"`
 }
@@ -156,6 +158,7 @@ The step achieves this via following deploy tools
 			log.RegisterSecret(stepConfig.DockerPassword)
 			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.Username)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -271,15 +274,15 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password used for technical-user authentication. Required only when token is not provided.")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Assertion token used to authenticate with Cloud Foundry. When provided, token authentication takes precedence over username/password authentication.")
+	cmd.Flags().StringVar(&stepConfig.TokenOrigin, "tokenOrigin", os.Getenv("PIPER_tokenOrigin"), "Optional identity provider origin passed to the cf auth command when using token authentication.")
 	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "Cloud Foundry target space")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name used for deployment")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name used for technical-user authentication. Required only when token is not provided.")
 
 	cmd.MarkFlagRequired("apiEndpoint")
 	cmd.MarkFlagRequired("org")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("space")
-	cmd.MarkFlagRequired("username")
 }
 
 // retrieve step metadata
@@ -564,9 +567,27 @@ func cloudFoundryDeployMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
+					},
+					{
+						Name:        "token",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_token"),
+					},
+					{
+						Name:        "tokenOrigin",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_tokenOrigin"),
 					},
 					{
 						Name:        "space",
@@ -594,7 +615,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
 					},

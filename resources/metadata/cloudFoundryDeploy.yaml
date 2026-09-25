@@ -337,12 +337,12 @@ spec:
         secret: false
       - name: password
         type: string
-        description: "Password"
+        description: "Password used for technical-user authentication. Required only when token is not provided."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: cfCredentialsId
@@ -351,6 +351,24 @@ spec:
           - type: vaultSecret
             default: cloudfoundry-$(org)-$(space)
             name: cloudfoundryVaultSecretName
+      - name: token
+        type: string
+        description: "Assertion token used to authenticate with Cloud Foundry. When provided, token authentication takes precedence over username/password authentication."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        secret: true
+      - name: tokenOrigin
+        type: string
+        description: "Optional identity provider origin passed to the cf auth command when using token authentication."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
       - name: space
         type: string
         description: "Cloud Foundry target space"
@@ -366,12 +384,12 @@ spec:
         mandatory: true
       - name: username
         type: string
-        description: User name used for deployment
+        description: "User name used for technical-user authentication. Required only when token is not provided."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: cfCredentialsId
