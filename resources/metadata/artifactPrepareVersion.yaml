@@ -338,6 +338,16 @@ spec:
           - type: vaultSecret
             name: gitHttpsCredentialVaultSecretName
             default: gitHttpsCredential
+      - name: token
+        type: string
+        description: Token for git authentication. It is provided by System Trust, so there is no need to set it manually.
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - type: systemTrustSecret
+            name: gitSystemTrustSecretName
+            default: github-app
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"

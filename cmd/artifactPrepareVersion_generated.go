@@ -41,6 +41,7 @@ type artifactPrepareVersionOptions struct {
 	TagPrefix                   string   `json:"tagPrefix,omitempty"`
 	UnixTimestamp               bool     `json:"unixTimestamp,omitempty"`
 	Username                    string   `json:"username,omitempty"`
+	Token                       string   `json:"token,omitempty"`
 	VersioningTemplate          string   `json:"versioningTemplate,omitempty"`
 	VersioningType              string   `json:"versioningType,omitempty" validate:"possible-values=cloud cloud_noTag library"`
 	CustomTLSCertificateLinks   []string `json:"customTlsCertificateLinks,omitempty"`
@@ -208,6 +209,7 @@ If the file additionally contains a top-level ` + "`" + `ID` + "`" + ` field, it
 			log.SetStepErrors(stepErrors)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Token)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -320,6 +322,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", `build_`, "Defines the prefix which is used for the git tag which is written during the versioning run (only `versioningType: cloud`).")
 	cmd.Flags().BoolVar(&stepConfig.UnixTimestamp, "unixTimestamp", false, "Defines if the Unix timestamp number should be used as build number instead of the standard date format.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token for git authentication provided by System Trust. If set, it takes precedence over the Vault/Jenkins password.")
 	cmd.Flags().StringVar(&stepConfig.VersioningTemplate, "versioningTemplate", os.Getenv("PIPER_versioningTemplate"), "DEPRECATED: Defines the template for the automatic version which will be created")
 	cmd.Flags().StringVar(&stepConfig.VersioningType, "versioningType", `cloud`, "Defines the type of versioning")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
@@ -560,6 +563,21 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
+					},
+					{
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "gitSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_token"),
 					},
 					{
 						Name:        "versioningTemplate",
