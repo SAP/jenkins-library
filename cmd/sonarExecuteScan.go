@@ -361,17 +361,12 @@ func handlePullRequest(config sonarExecuteScanOptions) error {
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
 			provider := strings.ToLower(config.PullRequestProvider)
-			if provider == "github" {
-				if len(config.Owner) > 0 && len(config.Repository) > 0 {
-					sonar.addOption("sonar.pullrequest.github.repository=" + config.Owner + "/" + config.Repository)
-				}
-			} else {
+			if provider != "github" {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
 			sonar.addOption("sonar.pullrequest.key=" + config.ChangeID)
 			sonar.addOption("sonar.pullrequest.base=" + config.ChangeTarget)
 			sonar.addOption("sonar.pullrequest.branch=" + config.ChangeBranch)
-			sonar.addOption("sonar.pullrequest.provider=" + provider)
 		}
 	} else if len(config.BranchName) > 0 {
 		sonar.addOption("sonar.branch.name=" + config.BranchName)
