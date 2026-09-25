@@ -191,7 +191,8 @@ func TestMixinVault(t *testing.T) {
 		HookConfig: nil,
 	}
 	general := map[string]interface{}{
-		"vaultPath": vaultPath,
+		"vaultPath":       vaultPath,
+		"skipSystemTrust": true,
 	}
 	steps := map[string]interface{}{
 		"vaultServerUrl": vaultServerUrl,
@@ -204,6 +205,7 @@ func TestMixinVault(t *testing.T) {
 	assert.Equal(t, vaultServerUrl, config.Config["vaultServerUrl"])
 	assert.Contains(t, config.Config, "vaultPath")
 	assert.Equal(t, vaultPath, config.Config["vaultPath"])
+	assert.Equal(t, true, config.Config[skipSystemTrust])
 	assert.NotContains(t, config.Config, "unknownConfig")
 
 }
