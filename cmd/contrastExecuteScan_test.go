@@ -343,7 +343,7 @@ func TestCheckRouteCoverage(t *testing.T) {
 		config := newMockConfig(server.URL)
 		config.RouteCoverageThreshold = 30
 		result := &agentSetupResult{}
-		checkRouteCoverage(newMockContrastClient(server), config, result)
+		checkRouteCoverage(newMockContrastClient(server), config, result, "")
 
 		assert.NotNil(t, result.RouteCoverageViolation)
 		assert.NotNil(t, result.RouteCoveragePct)
@@ -362,7 +362,7 @@ func TestCheckRouteCoverage(t *testing.T) {
 		config := newMockConfig(server.URL)
 		config.RouteCoverageThreshold = 30
 		result := &agentSetupResult{}
-		checkRouteCoverage(newMockContrastClient(server), config, result)
+		checkRouteCoverage(newMockContrastClient(server), config, result, "")
 
 		assert.Nil(t, result.RouteCoverageViolation)
 		assert.NotNil(t, result.RouteCoveragePct)
@@ -377,7 +377,7 @@ func TestCheckRouteCoverage(t *testing.T) {
 		defer server.Close()
 
 		result := &agentSetupResult{}
-		checkRouteCoverage(newMockContrastClient(server), newMockConfig(server.URL), result)
+		checkRouteCoverage(newMockContrastClient(server), newMockConfig(server.URL), result, "")
 
 		assert.Nil(t, result.RouteCoverageViolation)
 		assert.Nil(t, result.RouteCoveragePct)

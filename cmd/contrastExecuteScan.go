@@ -79,12 +79,20 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 	appAPIUrl, appUIUrl := getApplicationUrls(config)
 	client := contrast.NewClient(config.UserAPIKey, config.ServiceKey, config.Username, config.OrganizationID, config.Server, appAPIUrl)
 
-	// Pre-flight agent setup checks
+	// Pre-flight agent setup checks (server connectivity + inactivity)
 	agentSetup, err := checkAgentSetup(client, config)
 	if err != nil {
 		log.Entry().Errorf("Agent setup check failed: %v", err)
 		return nil, err
 	}
+
+	agentSessionID, err := resolveSessionID(client, config)
+	if err != nil {
+		return nil, err
+	}
+
+	// Route coverage check — runs after session resolution so it can be scoped per-session
+	checkRouteCoverage(client, config, agentSetup, agentSessionID)
 
 	// Generate SARIF report if boolean flag is set
 	if config.GenerateSarif {
@@ -111,7 +119,12 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		return nil, err
 	}
 
-	findings, err := client.GetVulnerabilities()
+	var findings []contrast.ContrastFindings
+	if agentSessionID != "" {
+		findings, err = client.GetVulnerabilitiesBySession(config.ApplicationID, agentSessionID)
+	} else {
+		findings, err = client.GetVulnerabilities()
+	}
 	if err != nil {
 		log.Entry().Errorf("error while getting vulns")
 		return nil, err
@@ -137,17 +150,7 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 	reports = append(reports, paths...)
 
 	if config.CheckForCompliance {
-		for _, results := range findings {
-			if results.ClassificationName == "Audit All" {
-				unaudited := results.Total - results.Audited
-				if unaudited > config.VulnerabilityThresholdTotal {
-					msg := fmt.Sprintf("Your application %v in organization %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v",
-						config.ApplicationID, config.OrganizationID, unaudited, config.VulnerabilityThresholdTotal)
-					return reports, errors.New(msg)
-				}
-			}
-		}
-		if err := enforceComplianceThresholds(config, agentSetup); err != nil {
+		if err := checkCompliance(config, findings, agentSetup); err != nil {
 			return reports, err
 		}
 	}
@@ -274,13 +277,17 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 		}
 	}
 
-	checkRouteCoverage(client, config, result)
-
 	return result, nil
 }
 
-func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOptions, result *agentSetupResult) {
-	coverage, err := client.GetRouteCoverage(config.ApplicationID)
+func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOptions, result *agentSetupResult, agentSessionID string) {
+	var coverage *contrast.RouteCoverageResponse
+	var err error
+	if agentSessionID != "" {
+		coverage, err = client.GetRouteCoverageBySession(config.ApplicationID, agentSessionID)
+	} else {
+		coverage, err = client.GetRouteCoverage(config.ApplicationID)
+	}
 	if err != nil {
 		log.Entry().Warnf("Could not retrieve route coverage: %v", err)
 		return
@@ -302,4 +309,30 @@ func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOpti
 		log.Entry().Infof("Route coverage check: %.1f%% of routes exercised (%d/%d).",
 			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)
 	}
+}
+
+func resolveSessionID(client *contrast.Client, config *contrastExecuteScanOptions) (string, error) {
+	if config.SessionMetadataVersion == "" {
+		return "", nil
+	}
+	id, err := client.ValidateAndResolveSession(config.ApplicationID, config.SessionMetadataVersion)
+	if err != nil {
+		log.Entry().Errorf("Session metadata validation failed: %v", err)
+		return "", err
+	}
+	log.Entry().Infof("Session filter active: findings and route coverage scoped to agentSessionId '%s'", id)
+	return id, nil
+}
+
+func checkCompliance(config *contrastExecuteScanOptions, findings []contrast.ContrastFindings, agentSetup *agentSetupResult) error {
+	for _, results := range findings {
+		if results.ClassificationName == "Audit All" {
+			unaudited := results.Total - results.Audited
+			if unaudited > config.VulnerabilityThresholdTotal {
+				return fmt.Errorf("Your application %v in organization %v is not compliant. Total unaudited issues are %v which is greater than the VulnerabilityThresholdTotal count %v",
+					config.ApplicationID, config.OrganizationID, unaudited, config.VulnerabilityThresholdTotal)
+			}
+		}
+	}
+	return enforceComplianceThresholds(config, agentSetup)
 }

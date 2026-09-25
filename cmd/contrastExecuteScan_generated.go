@@ -34,6 +34,7 @@ type contrastExecuteScanOptions struct {
 	GeneratePdf                  bool   `json:"generatePdf,omitempty"`
 	RouteCoverageThreshold       int    `json:"routeCoverageThreshold,omitempty"`
 	AgentInactivityThresholdDays int    `json:"agentInactivityThresholdDays,omitempty"`
+	SessionMetadataVersion       string `json:"sessionMetadataVersion,omitempty"`
 }
 
 type contrastExecuteScanReports struct {
@@ -225,6 +226,7 @@ func addContrastExecuteScanFlags(cmd *cobra.Command, stepConfig *contrastExecute
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdf, "generatePdf", false, "Generate PDF attestation report from Contrast API")
 	cmd.Flags().IntVar(&stepConfig.RouteCoverageThreshold, "routeCoverageThreshold", 60, "Minimum percentage of discovered routes that must have been exercised. If the actual coverage falls below this value, the step logs a warning.\n")
 	cmd.Flags().IntVar(&stepConfig.AgentInactivityThresholdDays, "agentInactivityThresholdDays", 7, "If all servers for this application have been inactive for longer than this many days, the step logs a warning. Set to 0 to disable the check.\n")
+	cmd.Flags().StringVar(&stepConfig.SessionMetadataVersion, "sessionMetadataVersion", ``, "Value of the 'version' session metadata key set on the Contrast agent. When provided, vulnerability counts and route coverage are scoped to only findings observed in sessions tagged with this version value (case-insensitive match). If the value does not match any known session, the step fails hard. If empty (default), findings are counted at application-level across all sessions.\n")
 
 	cmd.MarkFlagRequired("userApiKey")
 	cmd.MarkFlagRequired("serviceKey")
@@ -395,6 +397,15 @@ func contrastExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     7,
+					},
+					{
+						Name:        "sessionMetadataVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     ``,
 					},
 				},
 			},

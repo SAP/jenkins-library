@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -91,6 +92,65 @@ func newPollConfig() pollConfig {
 		pollInterval:    5 * time.Second,
 		backoffFactor:   1.5,
 	}
+}
+
+// --- Session metadata types ---
+
+type sessionMetadataFilterValue struct {
+	Value string `json:"value"`
+	Count int    `json:"count"`
+}
+
+// sessionMetadataFilterGroup is one filter group in the filters response (e.g. label="Version")
+type sessionMetadataFilterGroup struct {
+	ID         string                       `json:"id"`
+	FieldType  string                       `json:"fieldType"`
+	Label      string                       `json:"label"`
+	AgentLabel string                       `json:"agentLabel"`
+	Values     []sessionMetadataFilterValue `json:"values"`
+}
+
+type sessionMetadataFiltersResponse struct {
+	Success  bool                         `json:"success"`
+	Messages []string                     `json:"messages"`
+	Filters  []sessionMetadataFilterGroup `json:"filters"`
+}
+
+// metadataFieldResource is the field descriptor in an agent session metadata entry
+type metadataFieldResource struct {
+	AgentLabel   string `json:"agentLabel"`
+	DisplayLabel string `json:"displayLabel"`
+}
+
+// sessionMetadataEntry is one metadata key-value pair on an agent session
+type sessionMetadataEntry struct {
+	Value         string                `json:"value"`
+	MetadataField metadataFieldResource `json:"metadataField"`
+}
+type agentSessionResource struct {
+	AgentSessionID   string                 `json:"agentSessionId"`
+	MetadataSessions []sessionMetadataEntry `json:"metadataSessions"`
+	CreatedDate      float64                `json:"createdDate"` // Unix seconds with sub-second precision
+	SessionStatus    string                 `json:"sessionStatus"`
+}
+type agentSessionsResponse struct {
+	Success       bool                   `json:"success"`
+	Messages      []string               `json:"messages"`
+	Total         int                    `json:"total"`
+	AgentSessions []agentSessionResource `json:"agentSessions"`
+}
+type sessionMetadataOpenApiRequest struct {
+	Metadata []sessionMetadataRequestEntry `json:"metadata"`
+}
+
+type sessionMetadataRequestEntry struct {
+	Label  string   `json:"label"`
+	Values []string `json:"values"`
+}
+type TraceFilterResponse struct {
+	Success bool            `json:"success"`
+	Count   int64           `json:"count"`
+	Traces  []Vulnerability `json:"traces"`
 }
 
 func NewClient(apiKey, serviceKey, username, orgID, baseURL, appURL string) *Client {
@@ -514,4 +574,218 @@ func (c *Client) StartAsyncPdfGeneration(appUuid string) (string, error) {
 		DownloadURLPattern: "%s/Contrast/api/ng/%s/reports/%s/download",
 	}
 	return c.startAsyncReportGeneration(appUuid, config)
+}
+
+// ValidateAndResolveSession validates that the user-supplied version exists as a session metadata
+// value for the application, then resolves and returns the agentSessionId for that version.
+func (c *Client) ValidateAndResolveSession(appID, userVersion string) (string, error) {
+	canonicalValue, err := c.validateVersionExists(appID, userVersion)
+	if err != nil {
+		return "", err
+	}
+	return c.resolveAgentSessionID(appID, canonicalValue)
+}
+
+// validateVersionExists calls the session metadata filters endpoint and confirms
+// the user-supplied version exists. Returns the canonical (server-side) value string.
+func (c *Client) validateVersionExists(appID, userVersion string) (string, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/metadata/session/%s/filters",
+		c.BaseURL, c.OrgID, appID)
+	httpClient := NewContrastHttpClient(c.ApiKey, c.Auth)
+
+	var resp sessionMetadataFiltersResponse
+	if err := httpClient.ExecuteRequest(url, nil, &resp); err != nil {
+		return "", fmt.Errorf("failed to fetch session metadata filters: %w", err)
+	}
+	if !resp.Success {
+		return "", fmt.Errorf("session metadata filters request unsuccessful: %v", resp.Messages)
+	}
+
+	for _, group := range resp.Filters {
+		if !strings.EqualFold(group.AgentLabel, "version") {
+			continue
+		}
+		// Found the version filter group — look for a case-insensitive value match
+		available := make([]string, 0, len(group.Values))
+		for _, v := range group.Values {
+			available = append(available, v.Value)
+			if strings.EqualFold(v.Value, userVersion) {
+				log.Entry().Infof("Session validation: version '%s' found (matched user input '%s')", v.Value, userVersion)
+				return v.Value, nil
+			}
+		}
+		return "", fmt.Errorf(
+			"session metadata version '%s' not found for application %s. Available versions: %v",
+			userVersion, appID, available,
+		)
+	}
+
+	return "", fmt.Errorf(
+		"no 'version' session metadata field configured for application %s. "+
+			"Ensure the Contrast agent is sending session metadata with key 'version'.",
+		appID,
+	)
+}
+
+// resolveAgentSessionID calls the agent-sessions/filter endpoint with the canonical version value
+// and returns the agentSessionId of the most recent matching session.
+func (c *Client) resolveAgentSessionID(appID, canonicalVersion string) (string, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/organizations/%s/applications/%s/agent-sessions/filter",
+		c.BaseURL, c.OrgID, appID)
+
+	reqBody := sessionMetadataOpenApiRequest{
+		Metadata: []sessionMetadataRequestEntry{
+			{
+				Label:  "Version",
+				Values: []string{canonicalVersion},
+			},
+		},
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal agent-sessions filter request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return "", fmt.Errorf("failed to create agent-sessions filter request: %w", err)
+	}
+	req.Header.Set(ContentType, JSONContentType)
+	c.addAuth(req)
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to call agent-sessions filter API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("agent-sessions filter returned unexpected status %d: %s", resp.StatusCode, string(b))
+	}
+
+	var sessionsResp agentSessionsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&sessionsResp); err != nil {
+		return "", fmt.Errorf("failed to parse agent-sessions filter response: %w", err)
+	}
+	if !sessionsResp.Success {
+		return "", fmt.Errorf("agent-sessions filter request unsuccessful: %v", sessionsResp.Messages)
+	}
+	if len(sessionsResp.AgentSessions) == 0 {
+		return "", fmt.Errorf(
+			"no agent sessions found for version '%s' in application %s",
+			canonicalVersion, appID,
+		)
+	}
+
+	latest := sessionsResp.AgentSessions[0]
+	for _, s := range sessionsResp.AgentSessions[1:] {
+		if s.CreatedDate > latest.CreatedDate {
+			latest = s
+		}
+	}
+
+	log.Entry().Infof("Resolved agentSessionId '%s' for version '%s' (status: %s)",
+		latest.AgentSessionID, canonicalVersion, latest.SessionStatus)
+	return latest.AgentSessionID, nil
+}
+
+// GetVulnerabilitiesBySession fetches vulnerabilities scoped to a specific agent session.
+// Uses POST /ng/{org}/traces/{appId}/filter with agentSessionId in the request body.
+// Paginates through all pages and aggregates into the same []ContrastFindings shape as GetVulnerabilities.
+func (c *Client) GetVulnerabilitiesBySession(appID, agentSessionID string) ([]ContrastFindings, error) {
+	return c.getVulnerabilitiesBySessionPage(appID, agentSessionID, 0)
+}
+
+func (c *Client) getVulnerabilitiesBySessionPage(appID, agentSessionID string, offset int) ([]ContrastFindings, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/traces/%s/filter",
+		c.BaseURL, c.OrgID, appID)
+
+	reqBody := map[string]interface{}{
+		"agentSessionId": agentSessionID,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal vulnerability filter request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create vulnerability filter request: %w", err)
+	}
+	req.Header.Set(ContentType, JSONContentType)
+	c.addAuth(req)
+
+	q := req.URL.Query()
+	q.Set("offset", fmt.Sprintf("%d", offset))
+	q.Set("limit", fmt.Sprintf("%d", pageSize))
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call vulnerability filter API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("vulnerability filter returned unexpected status %d: %s", resp.StatusCode, string(b))
+	}
+
+	var filterResp TraceFilterResponse
+	if err := json.NewDecoder(resp.Body).Decode(&filterResp); err != nil {
+		return nil, fmt.Errorf("failed to parse vulnerability filter response: %w", err)
+	}
+
+	auditAll, optional := getFindings(filterResp.Traces)
+
+	nextOffset := offset + pageSize
+	if int64(nextOffset) < filterResp.Count {
+		nextFindings, err := c.getVulnerabilitiesBySessionPage(appID, agentSessionID, nextOffset)
+		if err != nil {
+			return nil, err
+		}
+		accumulateFindings(auditAll, optional, nextFindings)
+		return nextFindings, nil
+	}
+	return []ContrastFindings{auditAll, optional}, nil
+}
+
+// GetRouteCoverageBySession fetches route coverage scoped to a specific agent session.
+// Uses POST /ng/{org}/applications/{appId}/route/filter with sessionID in the request body.
+func (c *Client) GetRouteCoverageBySession(appID, agentSessionID string) (*RouteCoverageResponse, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/applications/%s/route/filter",
+		c.BaseURL, c.OrgID, appID)
+
+	reqBody := map[string]interface{}{
+		"sessionID": agentSessionID,
+	}
+	bodyBytes, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal route coverage filter request: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create route coverage filter request: %w", err)
+	}
+	req.Header.Set(ContentType, JSONContentType)
+	c.addAuth(req)
+
+	resp, err := c.HttpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call route coverage filter API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("route coverage filter returned unexpected status %d: %s", resp.StatusCode, string(b))
+	}
+
+	var coverage RouteCoverageResponse
+	if err := json.NewDecoder(resp.Body).Decode(&coverage); err != nil {
+		return nil, fmt.Errorf("failed to parse route coverage filter response: %w", err)
+	}
+	if !coverage.Success {
+		return nil, fmt.Errorf("route coverage by session request unsuccessful")
+	}
+	return &coverage, nil
 }

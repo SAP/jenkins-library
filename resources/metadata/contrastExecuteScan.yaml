@@ -146,6 +146,19 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: sessionMetadataVersion
+        type: string
+        default: ""
+        description: >
+          Value of the 'version' session metadata key set on the Contrast agent.
+          When provided, vulnerability counts and route coverage are scoped to only
+          findings observed in sessions tagged with this version value (case-insensitive match).
+          If the value does not match any known session, the step fails hard.
+          If empty (default), findings are counted at application-level across all sessions.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: reports
