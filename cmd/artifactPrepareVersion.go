@@ -363,11 +363,13 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 // A System Trust token takes precedence over the Vault/Jenkins password.
 func resolveGitCredentials(config *artifactPrepareVersionOptions) {
 	if config.Token != "" {
-		log.Entry().Debug("Git authentication: using System Trust token")
+		log.Entry().Info("Git authentication: using System Trust token")
 		config.Password = config.Token
 		config.Username = "system-trust"
+	} else if config.Username != "" && config.Password != "" {
+		log.Entry().Info("Git authentication: no System Trust token, using Vault/Jenkins credentials")
 	} else {
-		log.Entry().Debug("Git authentication: no System Trust token, using Vault/Jenkins credentials")
+		log.Entry().Info("Git authentication: no System Trust token or Vault/Jenkins credentials provided")
 	}
 }
 
