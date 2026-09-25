@@ -9,14 +9,132 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/config/mocks"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/systemtrust"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestSystemTrustPreferredOverVault(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	const vaultPath = "team1"
+	stepParams := []StepParameters{{
+		Name: secretName,
+		ResourceRef: []ResourceReference{
+			{Type: "vaultSecret", Name: "sonarVaultSecretName", Default: secretName},
+			{Type: RefTypeSystemTrustSecret, Name: secretNameInSystemTrust, Default: secretName},
+		},
+	}}
+	systemTrustConfig := systemtrust.Configuration{
+		Token:               "testToken",
+		ServerURL:           testServerURL,
+		TokenEndPoint:       testTokenEndPoint,
+		TokenQueryParamName: testTokenQueryParamName,
+	}
+
+	t.Run("System Trust value is not overwritten by Vault", func(t *testing.T) {
+		httpmock.RegisterResponder(http.MethodPost, testFullURL, httpmock.NewStringResponder(http.StatusOK, mockSingleTokenResponse))
+
+		vaultMock := &mocks.VaultClient{}
+		stepConfig := &StepConfig{Config: map[string]interface{}{
+			"vaultPath": vaultPath,
+			secretName:  "",
+		}}
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfig, client)
+		resolveAllVaultReferences(stepConfig, vaultMock, stepParams)
+
+		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
+		vaultMock.AssertNotCalled(t, "GetKvSecret", path.Join(vaultPath, secretName))
+	})
+
+	t.Run("Vault remains the fallback when System Trust fails", func(t *testing.T) {
+		httpmock.RegisterResponder(http.MethodPost, testFullURL, httpmock.NewStringResponder(http.StatusForbidden, "forbidden"))
+
+		vaultMock := &mocks.VaultClient{}
+		vaultMock.On("GetKvSecret", path.Join(vaultPath, secretName)).Return(map[string]string{secretName: "vaultToken"}, nil)
+		stepConfig := &StepConfig{Config: map[string]interface{}{
+			"vaultPath": vaultPath,
+			secretName:  "",
+		}}
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfig, client)
+		resolveAllVaultReferences(stepConfig, vaultMock, stepParams)
+
+		assert.Equal(t, "vaultToken", stepConfig.Config[secretName])
+		vaultMock.AssertExpectations(t)
+	})
+
+	t.Run("Vault is used when System Trust is skipped", func(t *testing.T) {
+		httpmock.ZeroCallCounters()
+		httpmock.RegisterResponder(http.MethodPost, testFullURL, httpmock.NewStringResponder(http.StatusOK, mockSingleTokenResponse))
+
+		vaultMock := &mocks.VaultClient{}
+		vaultMock.On("GetKvSecret", path.Join(vaultPath, secretName)).Return(map[string]string{secretName: "vaultToken"}, nil)
+		stepConfig := &StepConfig{Config: map[string]interface{}{
+			"vaultPath":     vaultPath,
+			skipSystemTrust: true,
+			secretName:      "presetToken",
+		}}
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfig, client)
+		resolveAllVaultReferences(stepConfig, vaultMock, stepParams)
+
+		assert.Equal(t, "vaultToken", stepConfig.Config[secretName])
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		vaultMock.AssertExpectations(t)
+	})
+
+	t.Run("Preset value remains when System Trust is skipped and Vault overwrite is disabled", func(t *testing.T) {
+		httpmock.ZeroCallCounters()
+
+		vaultMock := &mocks.VaultClient{}
+		stepConfig := &StepConfig{Config: map[string]interface{}{
+			"vaultPath":           vaultPath,
+			skipSystemTrust:       true,
+			vaultDisableOverwrite: true,
+			secretName:            "presetToken",
+		}}
+
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfig, &piperhttp.Client{})
+		resolveAllVaultReferences(stepConfig, vaultMock, stepParams)
+
+		assert.Equal(t, "presetToken", stepConfig.Config[secretName])
+		assert.Equal(t, 0, httpmock.GetTotalCallCount())
+		vaultMock.AssertNotCalled(t, "GetKvSecret", path.Join(vaultPath, secretName))
+	})
+	t.Run("Vault fallback when System Trust returns an empty token", func(t *testing.T) {
+		httpmock.RegisterResponder(http.MethodPost, testFullURL, httpmock.NewStringResponder(http.StatusOK, `{"sonar":""}`))
+
+		vaultMock := &mocks.VaultClient{}
+		vaultMock.On("GetKvSecret", path.Join(vaultPath, secretName)).Return(map[string]string{secretName: "vaultToken"}, nil)
+		stepConfig := &StepConfig{Config: map[string]interface{}{
+			"vaultPath": vaultPath,
+			secretName:  "",
+		}}
+		client := &piperhttp.Client{}
+		client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfig, client)
+		resolveAllVaultReferences(stepConfig, vaultMock, stepParams)
+
+		assert.Equal(t, "vaultToken", stepConfig.Config[secretName])
+		vaultMock.AssertExpectations(t)
+	})
+}
 
 const secretName = "sonar"
 const secretNameInSystemTrust = "sonarSystemtrustSecretName"
@@ -72,6 +190,12 @@ func TestSystemTrustConfig(t *testing.T) {
 		stepConfig := &StepConfig{Config: map[string]interface{}{
 			secretName: "",
 		}}
+
+		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfiguration, client)
+		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
+	})
+	t.Run("Load secret from System Trust - parameter is absent", func(t *testing.T) {
+		stepConfig := &StepConfig{Config: map[string]interface{}{}}
 
 		resolveAllSystemTrustReferences(stepConfig, stepParams, systemTrustConfiguration, client)
 		assert.Equal(t, mockSonarToken, stepConfig.Config[secretName])
