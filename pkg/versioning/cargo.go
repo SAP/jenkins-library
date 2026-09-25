@@ -15,6 +15,7 @@ type Cargo struct {
 	path        string
 	readFile    func(string) ([]byte, error)
 	writeFile   func(string, []byte, os.FileMode) error
+	content     []byte
 	coordinates cargoCoordinates
 }
 
@@ -32,6 +33,9 @@ func (c *Cargo) init() error {
 	if c.writeFile == nil {
 		c.writeFile = os.WriteFile
 	}
+	if len(c.content) > 0 {
+		return nil
+	}
 	content, err := c.readFile(c.path)
 	if err != nil {
 		return fmt.Errorf("failed to read file '%v': %w", c.path, err)
@@ -40,6 +44,7 @@ func (c *Cargo) init() error {
 	if _, err := toml.Decode(string(content), &coords); err != nil {
 		return fmt.Errorf("failed to parse file '%v': %w", c.path, err)
 	}
+	c.content = content
 	c.coordinates = coords
 	return nil
 }
@@ -68,11 +73,7 @@ func (c *Cargo) SetVersion(newVersion string) error {
 	if err != nil {
 		return err
 	}
-	content, err := c.readFile(c.path)
-	if err != nil {
-		return fmt.Errorf("failed to read file '%v': %w", c.path, err)
-	}
-	updated, err := replaceVersionInPackageSection(string(content), current, newVersion)
+	updated, err := replaceVersionInPackageSection(string(c.content), current, newVersion)
 	if err != nil {
 		return fmt.Errorf("failed to update version in file '%v': %w", c.path, err)
 	}
