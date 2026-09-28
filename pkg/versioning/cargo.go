@@ -80,6 +80,8 @@ func (c *Cargo) SetVersion(newVersion string) error {
 	if err := c.writeFile(c.path, []byte(updated), 0600); err != nil {
 		return fmt.Errorf("failed to write file '%v': %w", c.path, err)
 	}
+	c.content = []byte(updated)
+	c.coordinates.Package.Version = newVersion
 	return nil
 }
 

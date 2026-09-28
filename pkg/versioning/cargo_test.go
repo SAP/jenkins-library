@@ -4,7 +4,6 @@
 package versioning
 
 import (
-	"fmt"
 	"testing"
 
 	piperMock "github.com/SAP/jenkins-library/pkg/mock"
@@ -104,6 +103,12 @@ func TestCargoSetVersion(t *testing.T) {
 		err := cargo.SetVersion("1.2.3")
 		assert.NoError(t, err)
 
+		// Same instance: in-memory cache must reflect the update (not the pre-write value).
+		sameVersion, err := cargo.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "1.2.3", sameVersion, "same-instance GetVersion should return the new version")
+
+		// Fresh instance: confirms the file on disk was written correctly.
 		cargo2 := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
 		version, err := cargo2.GetVersion()
 		assert.NoError(t, err)
@@ -175,7 +180,7 @@ func TestCargoGetCoordinates(t *testing.T) {
 
 		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
 		_, err := cargo.GetCoordinates()
-		assert.ErrorContains(t, err, fmt.Sprintf("no name information found in file 'Cargo.toml'"))
+		assert.ErrorContains(t, err, "no name information found in file 'Cargo.toml'")
 	})
 	t.Run("missing version", func(t *testing.T) {
 		t.Parallel()
