@@ -4,6 +4,7 @@
 package versioning
 
 import (
+	"errors"
 	"testing"
 
 	piperMock "github.com/SAP/jenkins-library/pkg/mock"
@@ -61,6 +62,18 @@ version = "0.1.0"
 edition = "2021"
 `
 
+const cargoTomlSingleQuotedVersion = `[package]
+name = "gha-rust-hello-world"
+version = '0.1.0'
+edition = "2021"
+`
+
+const cargoTomlNoSpacesAroundEq = `[package]
+name = "gha-rust-hello-world"
+version="0.1.0"
+edition = "2021"
+`
+
 func TestCargoGetVersion(t *testing.T) {
 	t.Parallel()
 	t.Run("success", func(t *testing.T) {
@@ -89,6 +102,15 @@ func TestCargoGetVersion(t *testing.T) {
 		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
 		_, err := cargo.GetVersion()
 		assert.ErrorContains(t, err, "failed to read file 'Cargo.toml'")
+	})
+	t.Run("malformed toml", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte("[package\nversion = \"1.0.0\"\n"))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		_, err := cargo.GetVersion()
+		assert.ErrorContains(t, err, "failed to parse file 'Cargo.toml'")
 	})
 }
 
@@ -157,6 +179,41 @@ func TestCargoSetVersion(t *testing.T) {
 		version, err := cargo2.GetVersion()
 		assert.NoError(t, err)
 		assert.Equal(t, "2.0.0", version)
+	})
+	t.Run("single-quoted version is replaced", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlSingleQuotedVersion))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("1.2.3")
+		assert.NoError(t, err)
+
+		updatedBytes, _ := fileUtils.FileRead("Cargo.toml")
+		assert.Contains(t, string(updatedBytes), `version = '1.2.3'`)
+	})
+	t.Run("no spaces around equals sign", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlNoSpacesAroundEq))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("1.2.3")
+		assert.NoError(t, err)
+
+		updatedBytes, _ := fileUtils.FileRead("Cargo.toml")
+		assert.Contains(t, string(updatedBytes), `version="1.2.3"`)
+	})
+	t.Run("write failure", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{
+			FileWriteError: errors.New("disk full"),
+		}
+		fileUtils.AddFile("Cargo.toml", []byte(sampleCargoToml))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("2.0.0")
+		assert.ErrorContains(t, err, "failed to write file 'Cargo.toml'")
 	})
 }
 

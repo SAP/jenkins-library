@@ -111,14 +111,17 @@ func replaceVersionInPackageSection(content, current, newVersion string) (string
 		if !inPackage {
 			continue
 		}
-		doubleQ := fmt.Sprintf(`version = "%s"`, current)
-		singleQ := fmt.Sprintf(`version = '%s'`, current)
-		if line == doubleQ {
-			lines[i] = fmt.Sprintf(`version = "%s"`, newVersion)
+		eqIdx := strings.IndexByte(trimmed, '=')
+		if eqIdx <= 0 || strings.TrimSpace(trimmed[:eqIdx]) != "version" {
+			continue
+		}
+		val := strings.TrimSpace(trimmed[eqIdx+1:])
+		if val == fmt.Sprintf(`"%s"`, current) {
+			lines[i] = strings.Replace(line, fmt.Sprintf(`"%s"`, current), fmt.Sprintf(`"%s"`, newVersion), 1)
 			return strings.Join(lines, "\n"), nil
 		}
-		if line == singleQ {
-			lines[i] = fmt.Sprintf(`version = '%s'`, newVersion)
+		if val == fmt.Sprintf(`'%s'`, current) {
+			lines[i] = strings.Replace(line, fmt.Sprintf(`'%s'`, current), fmt.Sprintf(`'%s'`, newVersion), 1)
 			return strings.Join(lines, "\n"), nil
 		}
 	}
