@@ -70,7 +70,7 @@ When Piper is configured to lookup secrets in Vault, there are some aspects that
 
 For Vault-only parameters, a value provided via `config.yml` or passed to the CLI gets overwritten when a secret is found in Vault. To disable overriding parameters put a `vaultDisableOverwrite: true` on `Step`, `Stage` or `General` Section in your config.
 
-For parameters that declare both `vaultSecret` and `systemTrustSecret` references, System Trust is resolved first and Vault is used only as a fallback. A non-empty explicit or System Trust value is not overwritten by Vault.
+For parameters that declare both `vaultSecret` and `systemTrustSecret` references, System Trust is resolved first. Vault is used only when the credential cannot be retrieved from System Trust or System Trust returns an empty value. Piper does not retry with Vault when a retrieved System Trust credential is later rejected by the target service. A non-empty explicit or System Trust value is not overwritten by Vault.
 
 ```yaml
 general:

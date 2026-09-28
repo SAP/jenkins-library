@@ -290,7 +290,7 @@ func (c *Config) GetStepConfig(flagValues map[string]any, paramJSON string, conf
 
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
-		// Revocation of Vault token will happen at the of each step execution (see _generated.go part of the steps)
+		// Revocation of Vault token will happen at the end of each step execution (see _generated.go part of the steps)
 		vaultClient, err := GetVaultClientFromConfig(stepConfig.Config, c.vaultCredentials)
 		if err != nil {
 			return StepConfig{}, err
