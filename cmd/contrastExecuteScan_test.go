@@ -298,7 +298,7 @@ func TestCheckAgentSetup(t *testing.T) {
 					`}]}`))
 			} else if strings.Contains(r.URL.Path, "/route") {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"success":true,"discovered_count":0,"exercised_count":0}`))
+				w.Write([]byte(`{"success":true,"count":0,"discovered_count":0,"exercised_count":0}`))
 			}
 		}))
 		defer server.Close()
@@ -318,7 +318,7 @@ func TestCheckAgentSetup(t *testing.T) {
 				w.Write([]byte(fmt.Sprintf(`{"success":true,"count":1,"servers":[{"server_id":1,"last_activity":%d}]}`, oldActivity)))
 			} else if strings.Contains(r.URL.Path, "/route") {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"success":true,"discovered_count":0,"exercised_count":0}`))
+				w.Write([]byte(`{"success":true,"count":0,"discovered_count":0,"exercised_count":0}`))
 			}
 		}))
 		defer server.Close()
@@ -336,7 +336,7 @@ func TestCheckRouteCoverage(t *testing.T) {
 	t.Run("Coverage below threshold sets violation and warns", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"success":true,"discovered_count":100,"exercised_count":20}`))
+			w.Write([]byte(`{"success":true,"count":100,"discovered_count":80,"exercised_count":20}`))
 		}))
 		defer server.Close()
 
@@ -348,14 +348,14 @@ func TestCheckRouteCoverage(t *testing.T) {
 		assert.NotNil(t, result.RouteCoverageViolation)
 		assert.NotNil(t, result.RouteCoveragePct)
 		assert.InDelta(t, 20.0, *result.RouteCoveragePct, 0.1)
-		assert.Equal(t, 100, *result.RouteDiscoveredCount)
+		assert.Equal(t, 80, *result.RouteDiscoveredCount)
 		assert.Equal(t, 20, *result.RouteExercisedCount)
 	})
 
 	t.Run("Coverage above threshold sets no violation", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"success":true,"discovered_count":100,"exercised_count":80}`))
+			w.Write([]byte(`{"success":true,"count":100,"discovered_count":90,"exercised_count":80}`))
 		}))
 		defer server.Close()
 
@@ -372,7 +372,7 @@ func TestCheckRouteCoverage(t *testing.T) {
 	t.Run("No routes discovered sets no violation and nil coverage", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"success":true,"discovered_count":0,"exercised_count":0}`))
+			w.Write([]byte(`{"success":true,"count":0,"discovered_count":0,"exercised_count":0}`))
 		}))
 		defer server.Close()
 

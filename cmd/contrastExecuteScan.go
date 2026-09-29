@@ -294,20 +294,20 @@ func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOpti
 	}
 	result.RouteDiscoveredCount = &coverage.DiscoveredCount
 	result.RouteExercisedCount = &coverage.ExercisedCount
-	if coverage.DiscoveredCount == 0 {
+	if coverage.Count == 0 {
 		return
 	}
-	exercisedPct := float64(coverage.ExercisedCount) / float64(coverage.DiscoveredCount) * 100
+	exercisedPct := float64(coverage.ExercisedCount) / float64(coverage.Count) * 100
 	result.RouteCoveragePct = &exercisedPct
 	if exercisedPct < float64(config.RouteCoverageThreshold) {
-		msg := fmt.Sprintf("Route coverage check: only %.1f%% of discovered routes have been exercised (%d/%d). "+
+		msg := fmt.Sprintf("Route coverage check: only %.1f%% of total routes have been exercised (%d/%d). "+
 			"Security findings may be incomplete — consider increasing test coverage.",
-			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)
+			exercisedPct, coverage.ExercisedCount, coverage.Count)
 		log.Entry().Warn(msg)
 		result.RouteCoverageViolation = errors.New(msg)
 	} else {
 		log.Entry().Infof("Route coverage check: %.1f%% of routes exercised (%d/%d).",
-			exercisedPct, coverage.ExercisedCount, coverage.DiscoveredCount)
+			exercisedPct, coverage.ExercisedCount, coverage.Count)
 	}
 }
 

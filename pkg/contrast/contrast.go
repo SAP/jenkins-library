@@ -418,6 +418,7 @@ func (c *Client) GetServers(appID string) ([]ServerResource, error) {
 // RouteCoverageResponse is returned by GET /ng/{orgUuid}/applications/{appId}/route
 type RouteCoverageResponse struct {
 	Success         bool `json:"success"`
+	Count           int  `json:"count"`
 	DiscoveredCount int  `json:"discovered_count"`
 	ExercisedCount  int  `json:"exercised_count"`
 }
