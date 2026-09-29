@@ -23,7 +23,7 @@ metadata:
       install       install a chart
       test          run tests for a release
       uninstall     uninstall a release
-      dependency    package a chart directory into a chart archive
+      dependency    manage a chart's dependencies (build, update, list)
       publish       package and publish a release
 
     ```
