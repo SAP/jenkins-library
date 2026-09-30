@@ -40,11 +40,41 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 	}
 }
 
+// containsProfile reports whether target appears in the profiles slice.
+func containsProfile(profiles []string, target string) bool {
+	for _, p := range profiles {
+		if p == target {
+			return true
+		}
+	}
+	return false
+}
+
+// buildBuiltinProfiles returns the set of always-prepended Maven profiles.
+// When the caller opts in to milestone-quality resolution via "milestone.build",
+// only the snapshot exclusion is prepended so that the caller's "milestone.build"
+// is not silently blocked by a conflicting "!milestone.build" deactivation.
+// When the caller opts in to snapshot resolution via "snapshot.build", only the
+// milestone and release exclusions are prepended so that the caller's "snapshot.build"
+// is not silently blocked by a conflicting "!snapshot.build" deactivation flag
+// (Maven 3.x deactivation wins the !snapshot.build / snapshot.build clash).
+// For all other cases the default set blocks both snapshot and milestone deps and
+// activates the release repository profile.
+func buildBuiltinProfiles(userProfiles []string) []string {
+	if containsProfile(userProfiles, "milestone.build") {
+		return []string{"!snapshot.build"}
+	}
+	if containsProfile(userProfiles, "snapshot.build") {
+		return []string{"!milestone.build", "release.build"}
+	}
+	return []string{"!snapshot.build", "!milestone.build", "release.build"}
+}
+
 func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	flags := []string{"--update-snapshots", "--batch-mode"}
-	if len(config.Profiles) > 0 {
-		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
-	}
+	builtinProfilesBOM := buildBuiltinProfiles(config.Profiles)
+	allProfilesBOM := append(builtinProfilesBOM, config.Profiles...)
+	flags = append(flags, "--activate-profiles", strings.Join(allProfilesBOM, ","))
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
 	if exists {
 		flags = append(flags, "-pl", "!integration-tests")
@@ -91,9 +121,9 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
 	flags := []string{"--update-snapshots", "--batch-mode"}
 
-	if len(config.Profiles) > 0 {
-		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
-	}
+	builtinProfiles := buildBuiltinProfiles(config.Profiles)
+	allProfiles := append(builtinProfiles, config.Profiles...)
+	flags = append(flags, "--activate-profiles", strings.Join(allProfiles, ","))
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
 	if exists {
@@ -165,7 +195,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 	}
 
 	mavenConfig := buildsettings.BuildOptions{
-		Profiles:                    config.Profiles,
+		Profiles:                    allProfiles,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		CreateBOM:                   config.CreateBOM,
@@ -212,6 +242,15 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 				}
 			}
 
+			// Intentionally unguarded: the deploy invocation replaces Flags with
+			// deployFlags and does NOT carry '--activate-profiles !snapshot.build,...'.
+			// All dependency resolution was completed by the preceding 'mvn install'
+			// run (whose output is already in the local Maven cache).  The deploy
+			// goal only transfers the already-built artifacts to the target repository;
+			// it does not re-resolve transitive dependencies.  If the settings.xml
+			// contains an activeByDefault repository profile it will be active here,
+			// but no new snapshot or milestone artifacts can enter the build through
+			// the deploy goal.  See mavenBuild.yaml longDescription for the exception note.
 			mavenOptions.Flags = deployFlags
 			mavenOptions.Goals = []string{"deploy"}
 			mavenOptions.Defines = []string{}
