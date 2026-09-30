@@ -47,6 +47,8 @@ var (
 		vaultPipelineName,
 		vaultPath,
 		skipVault,
+		skipSystemTrust,
+
 		vaultDisableOverwrite,
 		vaultTestCredentialPath,
 		vaultTestCredentialKeys,
@@ -159,10 +161,17 @@ func resolveAllVaultReferences(config *StepConfig, client VaultClient, params []
 }
 
 func resolveVaultReference(ref *ResourceReference, config *StepConfig, client VaultClient, param StepParameters) {
-	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
-	if paramValue, _ := config.Config[param.Name].(string); vaultDisableOverwrite && paramValue != "" {
-		log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
-		return
+	vaultOverwriteDisabled, _ := config.Config[vaultDisableOverwrite].(bool)
+	systemTrustSkipped, _ := config.Config[skipSystemTrust].(bool)
+	if paramValue, _ := config.Config[param.Name].(string); paramValue != "" {
+		if param.GetReference(RefTypeSystemTrustSecret) != nil && !systemTrustSkipped {
+			log.Entry().Debugf("Not fetching '%s' from Vault since a System Trust or explicit value is already set", param.Name)
+			return
+		}
+		if vaultOverwriteDisabled {
+			log.Entry().Debugf("Not fetching '%s' from Vault since it has already been set", param.Name)
+			return
+		}
 	}
 
 	log.Entry().WithField("parameter", param.Name).Debug("Resolving vault secret")
