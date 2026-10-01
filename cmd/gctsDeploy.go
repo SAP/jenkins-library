@@ -80,6 +80,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	if getRepositoryErr != nil || repoMetadataInitState.Result.Rid == "" {
 		// If failOnMissingRepository is set, fail instead of creating the repository
 		if config.FailOnMissingRepository {
+			if getRepositoryErr != nil {
+				log.Entry().WithError(getRepositoryErr).Errorf("Failed to check whether repository %v exists in the gCTS backend and failOnMissingRepository is enabled", config.Repository)
+				return fmt.Errorf("failed to check whether repository %v exists in the gCTS backend and failOnMissingRepository is enabled: %w", config.Repository, getRepositoryErr)
+			}
 			log.Entry().Errorf("Repository %v does not exist in the gCTS backend and failOnMissingRepository is enabled", config.Repository)
 			return fmt.Errorf("repository %v does not exist in the gCTS backend and failOnMissingRepository is enabled", config.Repository)
 		}
