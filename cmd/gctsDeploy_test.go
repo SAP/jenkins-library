@@ -4,8 +4,14 @@
 package cmd
 
 import (
+	"bytes"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -641,6 +647,70 @@ func TestGctsDeployToAbapSystemFailure(t *testing.T) {
 
 	})
 
+}
+
+// httpMockGctsDeployRoute routes responses by request URL so that a full
+// gctsDeployRepository run can be exercised: configuration metadata retrieval
+// succeeds while the repository existence check reports the repo as missing.
+type httpMockGctsDeployRoute struct {
+	Method string
+}
+
+func (c *httpMockGctsDeployRoute) SetOptions(options piperhttp.ClientOptions) {}
+
+func (c *httpMockGctsDeployRoute) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	c.Method = method
+
+	// configuration metadata endpoint: respond successfully
+	if strings.Contains(url, "/cts_abapvcs/config") {
+		return &http.Response{
+			StatusCode: 200,
+			Body: io.NopCloser(bytes.NewReader([]byte(`{
+				"config": [
+				    {
+					"ckey": "dummy_key_repo",
+					"ctype": "REPOSITORY",
+					"datatype": "STRING",
+					"example": "dummy"
+				    }
+				]
+			    }`))),
+		}, nil
+	}
+
+	// repository existence check: repository does not exist
+	return &http.Response{
+		StatusCode: 500,
+		Body:       io.NopCloser(bytes.NewReader([]byte(`{"exception": "No relation between system and repository"}`))),
+	}, nil
+}
+
+func TestGctsDeployFailOnMissingRepository(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:                "http://testHost.com:50000",
+		Client:              "000",
+		Repository:          "missingRepo",
+		Username:            "testUser",
+		Password:            "testPassword",
+		RemoteRepositoryURL: "http://testRepoUrl.com",
+	}
+
+	t.Run("fails when repository is missing and failOnMissingRepository is enabled", func(t *testing.T) {
+		config.FailOnMissingRepository = true
+		httpClient := &httpMockGctsDeployRoute{}
+
+		err := gctsDeployRepository(&config, &telemetry.CustomData{}, nil, httpClient)
+
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "does not exist")
+			assert.Contains(t, err.Error(), "failOnMissingRepository")
+		}
+	})
+
+	t.Run("is disabled by default", func(t *testing.T) {
+		defaultConfig := gctsDeployOptions{}
+		assert.False(t, defaultConfig.FailOnMissingRepository)
+	})
 }
 
 func TestGctsSplitConfigurationToMap(t *testing.T) {
