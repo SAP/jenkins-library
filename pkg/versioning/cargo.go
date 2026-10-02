@@ -121,7 +121,7 @@ func replaceVersionInPackageSection(content, current, newVersion string) (string
 	for i, line := range lines {
 		// Track triple-quoted multi-line strings so their content is never misread as
 		// a section header. Each line with an odd number of `"""` toggles the state.
-		if count := strings.Count(line, `"""`); count%2 != 0 {
+		if strings.Count(line, `"""`)%2 != 0 {
 			inMultilineStr = !inMultilineStr
 		}
 		if inMultilineStr {
@@ -137,18 +137,17 @@ func replaceVersionInPackageSection(content, current, newVersion string) (string
 		if !inPackage {
 			continue
 		}
-		eqIdx := strings.IndexByte(trimmed, '=')
-		if eqIdx <= 0 || strings.TrimSpace(trimmed[:eqIdx]) != "version" {
+		key, val, found := strings.Cut(trimmed, "=")
+		if !found || strings.TrimSpace(key) != "version" {
 			continue
 		}
-		val := strings.TrimSpace(trimmed[eqIdx+1:])
-		if val == fmt.Sprintf(`"%s"`, current) {
-			lines[i] = strings.Replace(line, fmt.Sprintf(`"%s"`, current), fmt.Sprintf(`"%s"`, newVersion), 1)
-			return strings.Join(lines, "\n"), nil
-		}
-		if val == fmt.Sprintf(`'%s'`, current) {
-			lines[i] = strings.Replace(line, fmt.Sprintf(`'%s'`, current), fmt.Sprintf(`'%s'`, newVersion), 1)
-			return strings.Join(lines, "\n"), nil
+		val = strings.TrimSpace(val)
+		for _, quote := range []string{`"`, `'`} {
+			oldVal := quote + current + quote
+			if val == oldVal {
+				lines[i] = strings.Replace(line, oldVal, quote+newVersion+quote, 1)
+				return strings.Join(lines, "\n"), nil
+			}
 		}
 	}
 	return "", fmt.Errorf("version %q not found in [package] section", current)
