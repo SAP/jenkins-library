@@ -361,17 +361,12 @@ func handlePullRequest(config sonarExecuteScanOptions) error {
 		} else {
 			// see https://sonarcloud.io/documentation/analysis/pull-request/
 			provider := strings.ToLower(config.PullRequestProvider)
-			if provider == "github" {
-				if len(config.Owner) > 0 && len(config.Repository) > 0 {
-					sonar.addOption("sonar.pullrequest.github.repository=" + config.Owner + "/" + config.Repository)
-				}
-			} else {
+			if provider != "github" {
 				return errors.New("Pull-Request provider '" + provider + "' is not supported!")
 			}
 			sonar.addOption("sonar.pullrequest.key=" + config.ChangeID)
 			sonar.addOption("sonar.pullrequest.base=" + config.ChangeTarget)
 			sonar.addOption("sonar.pullrequest.branch=" + config.ChangeBranch)
-			sonar.addOption("sonar.pullrequest.provider=" + provider)
 		}
 	} else if len(config.BranchName) > 0 {
 		sonar.addOption("sonar.branch.name=" + config.BranchName)
@@ -488,7 +483,7 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	if provider.IsPullRequest() {
 		config := provider.PullRequestConfig()
 		if len(options.ChangeBranch) == 0 {
-			log.Entry().Info("Inferring parameter changeBranch from environment: " + config.Branch)
+			log.Entry().Info("<SONAR-438> Inferring parameter changeBranch from environment: " + config.Branch)
 			options.ChangeBranch = config.Branch
 		}
 		if len(options.ChangeTarget) == 0 {
@@ -502,8 +497,9 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	} else {
 		branch := provider.Branch()
 		if options.InferBranchName && len(options.BranchName) == 0 {
-			log.Entry().Info("Inferring parameter branchName from environment: " + branch)
+			log.Entry().Info("<SONAR-438> Inferring parameter branchName from environment: " + branch)
 			options.BranchName = branch
 		}
+		log.Entry().Info("<SONAR-438> No pull request")
 	}
 }
