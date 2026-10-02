@@ -85,11 +85,35 @@ func (c *Cargo) SetVersion(newVersion string) error {
 	return nil
 }
 
+// stripTOMLComment removes a trailing TOML comment (text from an unquoted '#' to end
+// of line). A '#' inside a single- or double-quoted string is not a comment.
+func stripTOMLComment(s string) string {
+	inSingle, inDouble := false, false
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\'':
+			if !inDouble {
+				inSingle = !inSingle
+			}
+		case '"':
+			if !inSingle {
+				inDouble = !inDouble
+			}
+		case '#':
+			if !inSingle && !inDouble {
+				return s[:i]
+			}
+		}
+	}
+	return s
+}
+
 // replaceVersionInPackageSection replaces the version line only within the [package]
 // section of a Cargo.toml, leaving [dependencies] and other sections untouched.
 // It processes the file line by line so that content inside other sections (or inside
 // multi-line strings) that happens to start with "[" is never misidentified as a
-// section boundary.
+// section boundary. Trailing TOML comments are stripped before matching, but the
+// original line (including the comment) is preserved in the output.
 func replaceVersionInPackageSection(content, current, newVersion string) (string, error) {
 	lines := strings.Split(content, "\n")
 	inPackage := false
@@ -103,7 +127,9 @@ func replaceVersionInPackageSection(content, current, newVersion string) (string
 		if inMultilineStr {
 			continue
 		}
-		trimmed := strings.TrimSpace(line)
+		// Strip trailing comment before matching; the original line is used for replacement
+		// so the comment and surrounding whitespace are preserved in the written file.
+		trimmed := strings.TrimSpace(stripTOMLComment(line))
 		if strings.HasPrefix(trimmed, "[") {
 			inPackage = trimmed == "[package]"
 			continue

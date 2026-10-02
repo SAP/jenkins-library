@@ -74,6 +74,20 @@ version="0.1.0"
 edition = "2021"
 `
 
+// cargoTomlCommentedPackageHeader has a trailing comment on the [package] header line.
+const cargoTomlCommentedPackageHeader = `[package] # my package
+name = "gha-rust-hello-world"
+version = "0.1.0"
+edition = "2021"
+`
+
+// cargoTomlCommentedVersion has a trailing comment on the version line.
+const cargoTomlCommentedVersion = `[package]
+name = "gha-rust-hello-world"
+version = "0.1.0" # pin here
+edition = "2021"
+`
+
 func TestCargoGetVersion(t *testing.T) {
 	t.Parallel()
 	t.Run("success", func(t *testing.T) {
@@ -203,6 +217,37 @@ func TestCargoSetVersion(t *testing.T) {
 
 		updatedBytes, _ := fileUtils.FileRead("Cargo.toml")
 		assert.Contains(t, string(updatedBytes), `version="1.2.3"`)
+	})
+	t.Run("commented [package] header is recognized", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlCommentedPackageHeader))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("2.0.0")
+		assert.NoError(t, err)
+
+		cargo2 := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		version, err := cargo2.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "2.0.0", version)
+	})
+	t.Run("version line with trailing comment is replaced and comment preserved", func(t *testing.T) {
+		t.Parallel()
+		fileUtils := piperMock.FilesMock{}
+		fileUtils.AddFile("Cargo.toml", []byte(cargoTomlCommentedVersion))
+
+		cargo := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		err := cargo.SetVersion("2.0.0")
+		assert.NoError(t, err)
+
+		updatedBytes, _ := fileUtils.FileRead("Cargo.toml")
+		updated := string(updatedBytes)
+		cargo2 := Cargo{path: "Cargo.toml", readFile: fileUtils.FileRead, writeFile: fileUtils.FileWrite}
+		version, err := cargo2.GetVersion()
+		assert.NoError(t, err)
+		assert.Equal(t, "2.0.0", version)
+		assert.Contains(t, updated, "# pin here", "trailing comment must be preserved in the written file")
 	})
 	t.Run("write failure", func(t *testing.T) {
 		t.Parallel()
