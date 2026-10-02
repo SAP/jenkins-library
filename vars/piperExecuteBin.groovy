@@ -172,7 +172,7 @@ static String getCustomConfigArg(def script) {
 // reused in sonarExecuteScan
 void dockerWrapper(script, stepName, config, body) {
     if (config.dockerImage) {
-        echo "[INFO] <SONAR-438> executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
+        echo "[INFO] executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
         Map dockerExecuteParameters = [:].plus(config)
         dockerExecuteParameters.script = script
         dockerExecute(dockerExecuteParameters) {

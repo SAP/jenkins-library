@@ -483,7 +483,7 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	if provider.IsPullRequest() {
 		config := provider.PullRequestConfig()
 		if len(options.ChangeBranch) == 0 {
-			log.Entry().Info("Inferring parameter changeBranch from environment: " + config.Branch)
+			log.Entry().Info("<SONAR-438> Inferring parameter changeBranch from environment: " + config.Branch)
 			options.ChangeBranch = config.Branch
 		}
 		if len(options.ChangeTarget) == 0 {
