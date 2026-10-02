@@ -147,6 +147,12 @@ Artifactory repository resolution:
   ` + "`" + `-P !milestone.build,release.build,snapshot.build` + "`" + `
   — the ` + "`" + `!snapshot.build` + "`" + ` deactivation is suppressed so it does not silently block the
   caller's ` + "`" + `snapshot.build` + "`" + ` activation (Maven 3.x deactivation wins the clash).
+  Note: ` + "`" + `release.build` + "`" + ` remains active alongside ` + "`" + `snapshot.build` + "`" + `, so both the release
+  and snapshot Artifactory repositories are reachable.  This is intentional: non-snapshot
+  transitive dependencies still resolve from the release repo.
+* **milestone.build + snapshot.build together**: ` + "`" + `milestone.build` + "`" + ` takes precedence
+  (first-branch check in the binary).  The effective profile set is
+  ` + "`" + `-P !snapshot.build,milestone.build` + "`" + ` — snapshot resolution is blocked.
 
 **Jenkins orchestrator**: Groovy wrappers (` + "`" + `executeBuild` + "`" + ` / ` + "`" + `sapPiperStageCentralBuild` + "`" + `)
 communicate the desired build quality by passing ` + "`" + `['milestone.build']` + "`" + ` for Milestone
