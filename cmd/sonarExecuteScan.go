@@ -500,5 +500,6 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 			log.Entry().Info("<SONAR-438> Inferring parameter branchName from environment: " + branch)
 			options.BranchName = branch
 		}
+		log.Entry().Info("<SONAR-438> No pull request")
 	}
 }
