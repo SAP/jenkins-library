@@ -131,30 +131,55 @@ func MavenBuildCommand() *cobra.Command {
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.
 
-### Default build image
+### Build-quality profile strategy
 
-This step runs in ` + "`" + `maven:3.9-sapmachine-17` + "`" + ` by default. That image bundles
-` + "`" + `maven-deploy-plugin` + "`" + ` 3.x, which is required because the step publishes artifacts using the
-Maven ` + "`" + `id::url` + "`" + ` deployment syntax; older images such as ` + "`" + `maven:3.8-jdk-8` + "`" + ` bundle
-` + "`" + `maven-deploy-plugin` + "`" + ` 2.7, which rejects that syntax and fails the deploy.
+The step always prepends a set of built-in Maven profiles to control
+Artifactory repository resolution:
 
-If you need a different JDK or toolchain, override the image via
-` + "`" + `steps.mavenBuild.dockerImage: <another maintained image>` + "`" + `.
+* **Default / Release quality**: ` + "`" + `-P !snapshot.build,!milestone.build,release.build` + "`" + `
+  — snapshot and milestone dependency repos are blocked; only the release repo is active.
+* **Milestone quality** (when ` + "`" + `milestone.build` + "`" + ` is present in ` + "`" + `profiles` + "`" + `):
+  ` + "`" + `-P !snapshot.build,milestone.build` + "`" + `
+  — the ` + "`" + `!milestone.build` + "`" + ` deactivation and ` + "`" + `release.build` + "`" + ` activation are suppressed so
+  they do not conflict with the caller's ` + "`" + `milestone.build` + "`" + ` opt-in (Maven 3.x deactivation
+  wins the ` + "`" + `!milestone.build` + "`" + ` / ` + "`" + `milestone.build` + "`" + ` clash).
+* **Snapshot opt-in** (when ` + "`" + `snapshot.build` + "`" + ` is present in ` + "`" + `profiles` + "`" + `):
+  ` + "`" + `-P !milestone.build,release.build,snapshot.build` + "`" + `
+  — the ` + "`" + `!snapshot.build` + "`" + ` deactivation is suppressed so it does not silently block the
+  caller's ` + "`" + `snapshot.build` + "`" + ` activation (Maven 3.x deactivation wins the clash).
+  Note: ` + "`" + `release.build` + "`" + ` remains active alongside ` + "`" + `snapshot.build` + "`" + `, so both the release
+  and snapshot Artifactory repositories are reachable.  This is intentional: non-snapshot
+  transitive dependencies still resolve from the release repo.
+* **milestone.build + snapshot.build together**: ` + "`" + `milestone.build` + "`" + ` takes precedence
+  (first-branch check in the binary).  The effective profile set is
+  ` + "`" + `-P !snapshot.build,milestone.build` + "`" + ` — snapshot resolution is blocked.
 
-### Staying on Java 8
+**Jenkins orchestrator**: Groovy wrappers (` + "`" + `executeBuild` + "`" + ` / ` + "`" + `sapPiperStageCentralBuild` + "`" + `)
+communicate the desired build quality by passing ` + "`" + `['milestone.build']` + "`" + ` for Milestone
+builds and an empty list for Release builds.  The step then assembles the full profile
+string according to the rules above.
 
-If your project must stay on JDK 8, the recommended fallback is to keep the
-` + "`" + `maven:3.8.6-jdk-8` + "`" + ` image **and** pin ` + "`" + `maven-deploy-plugin` + "`" + ` 3.1.1 in your ` + "`" + `pom.xml` + "`" + `:
+**GHA and Azure orchestrators**: There is no Groovy wrapper and no ` + "`" + `buildQuality` + "`" + ` mapping
+for these orchestrators.  ` + "`" + `mavenBuild` + "`" + ` always uses the default Release profile set
+(` + "`" + `!snapshot.build,!milestone.build,release.build` + "`" + `).  Milestone builds are **not supported**
+on GHA/Azure.  A user who manually adds ` + "`" + `milestone.build` + "`" + ` to the ` + "`" + `profiles` + "`" + ` parameter on
+GHA/Azure will receive the Milestone-quality profile set (binary suppresses the conflicting
+builtins), but there is no orchestrator-level mechanism to supply a milestone-quality
+` + "`" + `settings.xml` + "`" + ` or npm registry on those platforms.
 
-` + "`" + `` + "`" + `` + "`" + `xml
-<plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-deploy-plugin</artifactId>
-  <version>3.1.1</version>
-</plugin>
-` + "`" + `` + "`" + `` + "`" + `
+**Note on profile blocking effectiveness on Azure**: Profile guard flags are Maven no-ops
+unless the ` + "`" + `globalSettingsFile` + "`" + ` settings.xml defines the ` + "`" + `snapshot.build` + "`" + `, ` + "`" + `milestone.build` + "`" + `,
+and ` + "`" + `release.build` + "`" + ` profiles.  Jenkins and GHA deviation files set ` + "`" + `globalSettingsFile` + "`" + `
+to the SAP Artifactory release settings.xml, so blocking is effective on those orchestrators.
+The Azure deviation file (` + "`" + `deviation-azure.yml` + "`" + `) also sets ` + "`" + `globalSettingsFile` + "`" + ` to the same
+release settings.xml, so profile guards are effective on Azure as well.
 
-This keeps your project on a JDK 8 image at the cost of a pom edit.
+**Deploy phase exception**: When ` + "`" + `publish: true` + "`" + `, the ` + "`" + `mvn deploy` + "`" + ` invocation does **not**
+carry the ` + "`" + `--activate-profiles` + "`" + ` profile guard.  This is intentional: dependency resolution
+was completed by the preceding ` + "`" + `mvn install` + "`" + `; the deploy goal only transfers already-built
+artifacts to the target repository and does not re-resolve transitive dependencies.  Any
+` + "`" + `activeByDefault` + "`" + ` repository profile in the settings.xml will be active during deploy, but
+no new snapshot or milestone artifacts can enter the build through this invocation.
 
 ### build with dependencies from a private repository
 
@@ -317,7 +342,7 @@ general:
 
 func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
-	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used.")
+	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of Maven build profiles to be used. The step prepends a set of built-in profiles before any user-supplied entries. By default (Release quality) it prepends '!snapshot.build,!milestone.build,release.build' to block non-release-quality artifact resolution. When 'milestone.build' is present in this list the binary switches to Milestone mode and prepends only '!snapshot.build', suppressing the conflicting '!milestone.build' deactivation and the 'release.build' activation. On GHA and Azure orchestrators only Release quality is supported; Milestone builds are not available on those platforms.\n")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
 	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
@@ -597,7 +622,7 @@ func mavenBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.9-sapmachine-17"},
+				{Name: "mvn", Image: "maven:3.8-jdk-8"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
