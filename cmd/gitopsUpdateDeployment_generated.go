@@ -22,8 +22,17 @@ type gitopsUpdateDeploymentOptions struct {
 	CommitMessage             string   `json:"commitMessage,omitempty"`
 	ServerURL                 string   `json:"serverUrl,omitempty"`
 	ForcePush                 bool     `json:"forcePush,omitempty"`
-	Username                  string   `json:"username,omitempty"`
-	Password                  string   `json:"password,omitempty"`
+	MaxPushAttempts           int      `json:"maxPushAttempts,omitempty" validate:"possible-values=1 2 3"`
+	AuthenticationMode        string   `json:"authenticationMode,omitempty" validate:"possible-values=legacy githubApp"`
+	GithubAppID               string   `json:"githubAppId,omitempty"`
+	GithubAppPrivateKey       string   `json:"githubAppPrivateKey,omitempty"`
+	GithubAppVaultSecretName  string   `json:"githubAppVaultSecretName,omitempty"`
+	GithubAppAPIURL           string   `json:"githubAppApiUrl,omitempty"`
+	VaultPath                 string   `json:"vaultPath,omitempty"`
+	VaultBasePath             string   `json:"vaultBasePath,omitempty"`
+	VaultPipelineName         string   `json:"vaultPipelineName,omitempty"`
+	Username                  string   `json:"username,omitempty" validate:"required_if=AuthenticationMode legacy"`
+	Password                  string   `json:"password,omitempty" validate:"required_if=AuthenticationMode legacy"`
 	FilePath                  string   `json:"filePath,omitempty"`
 	ContainerName             string   `json:"containerName,omitempty"`
 	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
@@ -88,6 +97,8 @@ For *kustomize* the ` + "`" + `images` + "`" + ` section will be update with the
 				}
 			}
 			log.SetStepErrors(stepErrors)
+			log.RegisterSecret(stepConfig.GithubAppID)
+			log.RegisterSecret(stepConfig.GithubAppPrivateKey)
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
@@ -184,6 +195,15 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
 	cmd.Flags().BoolVar(&stepConfig.ForcePush, "forcePush", false, "Force push to serverUrl")
+	cmd.Flags().IntVar(&stepConfig.MaxPushAttempts, "maxPushAttempts", 1, "Maximum attempts after a rejected push due to concurrent branch updates. Each retry clones the branch again and reapplies the manifest changes. Other errors are not retried.")
+	cmd.Flags().StringVar(&stepConfig.AuthenticationMode, "authenticationMode", `legacy`, "Authentication provider for the target Git repository. GitHub App authentication is explicitly opt-in.")
+	cmd.Flags().StringVar(&stepConfig.GithubAppID, "githubAppId", os.Getenv("PIPER_githubAppId"), "GitHub App ID or client ID. Supply together with githubAppPrivateKey through secret environment variables.")
+	cmd.Flags().StringVar(&stepConfig.GithubAppPrivateKey, "githubAppPrivateKey", os.Getenv("PIPER_githubAppPrivateKey"), "PEM encoded RSA private key of the GitHub App. Supply together with githubAppId through secret environment variables.")
+	cmd.Flags().StringVar(&stepConfig.GithubAppVaultSecretName, "githubAppVaultSecretName", `githubApp`, "Name of the Vault secret containing appId and privateKey. Only read in githubApp mode when direct App credentials are absent.")
+	cmd.Flags().StringVar(&stepConfig.GithubAppAPIURL, "githubAppApiUrl", os.Getenv("PIPER_githubAppApiUrl"), "GitHub REST API base URL for the target repository. Defaults to api.github.com for github.com or serverUrl's origin plus /api/v3 for Enterprise. An override must use HTTPS and the same host as the target (or api.github.com for github.com).")
+	cmd.Flags().StringVar(&stepConfig.VaultPath, "vaultPath", os.Getenv("PIPER_vaultPath"), "Existing Piper Vault lookup root, used for lazy GitHub App credential lookup.")
+	cmd.Flags().StringVar(&stepConfig.VaultBasePath, "vaultBasePath", os.Getenv("PIPER_vaultBasePath"), "Existing Piper Vault base path, used for lazy GitHub App credential lookup.")
+	cmd.Flags().StringVar(&stepConfig.VaultPipelineName, "vaultPipelineName", os.Getenv("PIPER_vaultPipelineName"), "Existing Piper Vault pipeline name, used for lazy GitHub App credential lookup.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:\n\n * `kubectl` - path to the `deployment.yaml` that should be patched. Supports globbing.\n * `helm` - path where the helm chart will be generated into. Here no globbing is supported.\n * `kustomize` - path to the `kustomization.yaml`. Supports globbing.\n")
@@ -198,8 +218,6 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 
 	cmd.MarkFlagRequired("branchName")
 	cmd.MarkFlagRequired("serverUrl")
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("containerImageNameTag")
@@ -260,6 +278,87 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "maxPushAttempts",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     1,
+					},
+					{
+						Name:        "authenticationMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `legacy`,
+					},
+					{
+						Name:        "githubAppId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_githubAppId"),
+					},
+					{
+						Name:        "githubAppPrivateKey",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_githubAppPrivateKey"),
+					},
+					{
+						Name:        "githubAppVaultSecretName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `githubApp`,
+					},
+					{
+						Name:        "githubAppApiUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_githubAppApiUrl"),
+					},
+					{
+						Name:        "vaultPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultPath"),
+					},
+					{
+						Name:        "vaultBasePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultBasePath"),
+					},
+					{
+						Name:        "vaultPipelineName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultPipelineName"),
+					},
+					{
 						Name: "username",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -276,7 +375,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
 					},
@@ -297,7 +396,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
 					},
