@@ -82,6 +82,9 @@ spec:
             param: custom/helmRepositoryURL
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: targetRepositoryName
         type: string
         description: set the chart repository. The value is required for install/upgrade/uninstall commands.
@@ -111,6 +114,9 @@ spec:
             param: custom/helmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: targetRepositoryPassword
         aliases:
           - name: helmRepositoryPassword
@@ -132,6 +138,9 @@ spec:
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: sourceRepositoryURL
         description: "URL of the source repository where the dependencies can be downloaded."
         type: string

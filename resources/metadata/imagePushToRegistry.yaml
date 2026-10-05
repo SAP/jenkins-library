@@ -103,6 +103,9 @@ spec:
           - type: vaultSecret
             name: registryCredentialsVaultSecretName
             default: docker-registry
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: sourceRegistryPassword
         type: string
         mandatoryIf:
@@ -120,6 +123,9 @@ spec:
           - type: vaultSecret
             name: registryCredentialsVaultSecretName
             default: docker-registry
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: targetRegistryUrl
         description: Defines a registry url from where the image should optionally be pushed to, incl. the protocol like `https://my.registry.com`*"
         type: string

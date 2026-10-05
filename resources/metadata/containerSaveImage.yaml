@@ -57,6 +57,9 @@ spec:
             param: container/repositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: containerRegistryUser
         description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
         type: string
@@ -70,6 +73,9 @@ spec:
             param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: filePath
         type: string
         description: The path to the file to which the image should be saved.
@@ -93,6 +99,9 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: imageFormat
         type: string
         description: Format of the image when saving the docker image locally.

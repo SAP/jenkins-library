@@ -172,6 +172,9 @@ spec:
             param: custom/npmRepositoryURL
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: repositoryPassword
         type: string
         description: Password for the repository to which the project artifacts should be published.
@@ -186,6 +189,9 @@ spec:
             param: custom/npmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: repositoryUsername
         type: string
         description: Username for the repository to which the project artifacts should be published.
@@ -200,6 +206,9 @@ spec:
             param: custom/npmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: buildSettingsInfo
         type: string
         description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the npm build . This information is typically used for compliance related processes.

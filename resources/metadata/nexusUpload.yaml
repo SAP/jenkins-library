@@ -140,6 +140,9 @@ spec:
             param: username
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: password
         type: string
         description: Password for accessing the Nexus endpoint.
@@ -152,6 +155,9 @@ spec:
             param: password
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
     resources:
       - name: buildDescriptor
         type: stash

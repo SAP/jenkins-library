@@ -383,6 +383,12 @@ func helmBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -423,6 +429,12 @@ func helmBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -453,6 +465,12 @@ func helmBuildMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
+							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

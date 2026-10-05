@@ -67,6 +67,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: targetRepositoryUser
         description: "Username for the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
         type: string
@@ -78,6 +81,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: targetRepositoryURL
         description: "URL of the target repository where the compiled binaries shall be uploaded - typically provided by the CI/CD environment."
         type: string
@@ -88,6 +94,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: buildSettingsInfo
         type: string
         description: build settings info is typically filled by the step automatically to create information about the build settings that were used during the build. This information is typically used for compliance related processes.

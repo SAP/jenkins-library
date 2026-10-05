@@ -453,6 +453,12 @@ func npmExecuteScriptsMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -472,6 +478,12 @@ func npmExecuteScriptsMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -490,6 +502,12 @@ func npmExecuteScriptsMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
+							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
