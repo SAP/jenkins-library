@@ -14,9 +14,10 @@ const skipSystemTrust = "skipSystemTrust"
 // resolveAllSystemTrustReferences retrieves all the step's secrets from the System Trust
 func resolveAllSystemTrustReferences(config *StepConfig, params []StepParameters, systemTrustConfiguration systemtrust.Configuration, client *piperhttp.Client) {
 
+	skip, _ := config.Config[skipSystemTrust].(bool)
 	for _, param := range params {
 		if ref := param.GetReference(RefTypeSystemTrustSecret); ref != nil {
-			if skip, _ := config.Config[skipSystemTrust].(bool); skip {
+			if skip {
 				log.Entry().Debugf("Skipping retrieval of '%s' from System Trust: disabled by configuration", param.Name)
 				continue
 			}
