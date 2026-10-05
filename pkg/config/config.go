@@ -542,6 +542,13 @@ func merge(base, overlay map[string]any, metadata StepData) map[string]any {
 								log.Entry().Warnf("config id %s should only contain strings but contains a %s", v.Name, arrayValueType)
 							}
 						}
+					} else if tVal == "[]interface {}" && strings.HasPrefix(v.Type, "[]map[string]") {
+						// json Unmarshal generates arrays of interface{} for arrays of maps
+						for _, interfaceValue := range value.([]any) {
+							if _, ok := interfaceValue.(map[string]any); !ok {
+								log.Entry().Warnf("config id %s should only contain maps but contains a %T", v.Name, interfaceValue)
+							}
+						}
 					} else {
 						log.Entry().Warnf("config value provided for %s is of wrong type %s should be of type %s", v.Name, tVal, v.Type)
 					}
