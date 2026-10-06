@@ -177,6 +177,9 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+          - type: systemTrustSecret
+            name: githubSystemTrustSecretName
+            default: github-app
       - name: uploadUrl
         aliases:
           - name: githubUploadUrl
