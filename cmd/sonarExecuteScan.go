@@ -58,7 +58,6 @@ const (
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
-	log.Entry().Info("Triggered from branch <SONAR-438>")
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
@@ -484,7 +483,7 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	if provider.IsPullRequest() {
 		config := provider.PullRequestConfig()
 		if len(options.ChangeBranch) == 0 {
-			log.Entry().Info("<SONAR-438> Inferring parameter changeBranch from environment: " + config.Branch)
+			log.Entry().Info("Inferring parameter changeBranch from environment: " + config.Branch)
 			options.ChangeBranch = config.Branch
 		}
 		if len(options.ChangeTarget) == 0 {
@@ -498,9 +497,8 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	} else {
 		branch := provider.Branch()
 		if options.InferBranchName && len(options.BranchName) == 0 {
-			log.Entry().Info("<SONAR-438> Inferring parameter branchName from environment: " + branch)
+			log.Entry().Info("Inferring parameter branchName from environment: " + branch)
 			options.BranchName = branch
 		}
-		log.Entry().Info("<SONAR-438> No pull request")
 	}
 }
