@@ -411,6 +411,44 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: stagingCredentialMode
+        type: string
+        description: "Controls how repository credentials are resolved when publishing artifacts. Set to 'justInTimeV1' to fetch Nexus credentials at runtime via the staging service 3-step exchange (System Trust session token → staging-service token → impersonate → Nexus user/password). When set, the systemTrust session token from PIPER_systemTrustToken is used; repository credentials from the commonPipelineEnvironment are ignored."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: stagingServiceURL
+        type: string
+        description: "Base URL of the staging service API (e.g. https://example.com/api). Required when stagingCredentialMode is 'justInTimeV1'."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: stagingGroupId
+        type: string
+        description: "Nexus staging group ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/stagingGroupId
+      - name: stagingRepositoryId
+        type: string
+        description: "Nexus staging repository ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/stagingRepositoryId
   containers:
     - image: alpine/k8s:1.33.13
       workingDir: /config

@@ -501,6 +501,12 @@ func kanikoExecuteMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryUsername",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -514,6 +520,12 @@ func kanikoExecuteMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

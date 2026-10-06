@@ -83,6 +83,9 @@ spec:
             param: container/repositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: containerRegistryUser
         description: "For `buildTool: docker`: Username for container registry access - typically provided by the CI/CD environment."
         type: string
@@ -96,6 +99,9 @@ spec:
             param: container/repositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: dockerConfigJSON
         type: string
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
@@ -112,6 +118,9 @@ spec:
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
             default: docker-config
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: cleanupMode
         type: string
         description: Decides which parts are removed from the Protecode backend after the scan

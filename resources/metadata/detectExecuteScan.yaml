@@ -621,6 +621,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: repositoryPassword
         type: string
         mandatoryIf:
@@ -634,6 +637,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: useDetect9
         description:
           "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11"

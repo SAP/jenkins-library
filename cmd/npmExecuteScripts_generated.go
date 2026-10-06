@@ -42,6 +42,10 @@ type npmExecuteScriptsOptions struct {
 	Production                   bool     `json:"production,omitempty"`
 	CreateBuildArtifactsMetadata bool     `json:"createBuildArtifactsMetadata,omitempty"`
 	PnpmVersion                  string   `json:"pnpmVersion,omitempty"`
+	StagingCredentialMode        string   `json:"stagingCredentialMode,omitempty"`
+	StagingServiceURL            string   `json:"stagingServiceURL,omitempty"`
+	StagingGroupID               string   `json:"stagingGroupId,omitempty"`
+	StagingRepositoryID          string   `json:"stagingRepositoryId,omitempty"`
 }
 
 type npmExecuteScriptsCommonPipelineEnvironment struct {
@@ -287,6 +291,10 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().BoolVar(&stepConfig.Production, "production", false, "used for omitting installation of dev. dependencies if true")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
 	cmd.Flags().StringVar(&stepConfig.PnpmVersion, "pnpmVersion", os.Getenv("PIPER_pnpmVersion"), "Version of pnpm to use for installation. If not specified, will use globally installed pnpm or install latest locally. Only used when pnpm-lock.yaml is detected.")
+	cmd.Flags().StringVar(&stepConfig.StagingCredentialMode, "stagingCredentialMode", os.Getenv("PIPER_stagingCredentialMode"), "Controls how repository credentials are resolved when publishing artifacts. Set to 'justInTimeV1' to fetch Nexus credentials at runtime via the staging service 3-step exchange (System Trust session token → staging-service token → impersonate → Nexus user/password). When set, the systemTrust session token from PIPER_systemTrustToken is used; repository credentials from the commonPipelineEnvironment are ignored.")
+	cmd.Flags().StringVar(&stepConfig.StagingServiceURL, "stagingServiceURL", os.Getenv("PIPER_stagingServiceURL"), "Base URL of the staging service API (e.g. https://example.com/api). Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingGroupID, "stagingGroupId", os.Getenv("PIPER_stagingGroupId"), "Nexus staging group ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingRepositoryID, "stagingRepositoryId", os.Getenv("PIPER_stagingRepositoryId"), "Nexus staging repository ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
 
 }
 
@@ -547,6 +555,52 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_pnpmVersion"),
+					},
+					{
+						Name:        "stagingCredentialMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingCredentialMode"),
+					},
+					{
+						Name:        "stagingServiceURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingServiceURL"),
+					},
+					{
+						Name: "stagingGroupId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingGroupId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingGroupId"),
+					},
+					{
+						Name: "stagingRepositoryId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingRepositoryId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingRepositoryId"),
 					},
 				},
 			},

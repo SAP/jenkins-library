@@ -177,6 +177,9 @@ spec:
             param: custom/mavenRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
           - type: vaultSecretFile
             name: mtaDeploymentRepositoryPasswordFileVaultSecretName
             default: mta-deployment-repository-password
@@ -193,6 +196,9 @@ spec:
             param: custom/mavenRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: mtaDeploymentRepositoryUrl
         type: string
         description: Url for the alternative deployment repository to which mtar artifacts will be publised
@@ -206,6 +212,9 @@ spec:
             param: custom/mavenRepositoryURL
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: publish
         type: bool
         description: pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true

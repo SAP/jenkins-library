@@ -231,6 +231,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: containerRegistryPassword
         aliases:
           - name: dockerRegistryPassword
@@ -244,6 +247,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.

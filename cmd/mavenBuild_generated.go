@@ -43,6 +43,10 @@ type mavenBuildOptions struct {
 	BuildSettingsInfo               string   `json:"buildSettingsInfo,omitempty"`
 	DeployFlags                     []string `json:"deployFlags,omitempty"`
 	CreateBuildArtifactsMetadata    bool     `json:"createBuildArtifactsMetadata,omitempty"`
+	StagingCredentialMode           string   `json:"stagingCredentialMode,omitempty"`
+	StagingServiceURL               string   `json:"stagingServiceURL,omitempty"`
+	StagingGroupID                  string   `json:"stagingGroupId,omitempty"`
+	StagingRepositoryID             string   `json:"stagingRepositoryId,omitempty"`
 }
 
 type mavenBuildCommonPipelineEnvironment struct {
@@ -310,6 +314,10 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "build settings info is typically filled by the step automatically to create information about the build settings that were used during the maven build . This information is typically used for compliance related processes.")
 	cmd.Flags().StringSliceVar(&stepConfig.DeployFlags, "deployFlags", []string{`-Dmaven.main.skip=true`, `-Dmaven.test.skip=true`, `-Dmaven.install.skip=true`}, "maven deploy flags that will be used when publish is detected.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBuildArtifactsMetadata, "createBuildArtifactsMetadata", false, "metadata about the artifacts that are build and published , this metadata is generally used by steps downstream in the pipeline")
+	cmd.Flags().StringVar(&stepConfig.StagingCredentialMode, "stagingCredentialMode", os.Getenv("PIPER_stagingCredentialMode"), "Controls how repository credentials are resolved when publishing artifacts. Set to 'justInTimeV1' to fetch Nexus credentials at runtime via the staging service 3-step exchange (System Trust session token → staging-service token → impersonate → Nexus user/password). When set, the systemTrust session token from PIPER_systemTrustToken is used; repository credentials from the commonPipelineEnvironment are ignored.")
+	cmd.Flags().StringVar(&stepConfig.StagingServiceURL, "stagingServiceURL", os.Getenv("PIPER_stagingServiceURL"), "Base URL of the staging service API (e.g. https://example.com/api). Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingGroupID, "stagingGroupId", os.Getenv("PIPER_stagingGroupId"), "Nexus staging group ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingRepositoryID, "stagingRepositoryId", os.Getenv("PIPER_stagingRepositoryId"), "Nexus staging repository ID. For maven, populated from custom/repositoryId. Required when stagingCredentialMode is 'justInTimeV1'.")
 
 }
 
@@ -568,6 +576,52 @@ func mavenBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "stagingCredentialMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingCredentialMode"),
+					},
+					{
+						Name:        "stagingServiceURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingServiceURL"),
+					},
+					{
+						Name: "stagingGroupId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingGroupId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingGroupId"),
+					},
+					{
+						Name: "stagingRepositoryId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingRepositoryId"),
 					},
 				},
 			},

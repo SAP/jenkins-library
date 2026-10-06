@@ -44,6 +44,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: repositoryPassword
         type: string
         description: Password for the repository to which the project artifacts should be published.
@@ -56,6 +59,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: repositoryUsername
         type: string
         description: Username for the repository to which the project artifacts should be published.
@@ -68,6 +74,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
+          - type: systemTrustSecret
+            name: stagingSystemTrustSecretName
+            default: staging-service
       - name: createBOM
         type: bool
         description: Creates the bill of materials (BOM) using CycloneDX plugin.

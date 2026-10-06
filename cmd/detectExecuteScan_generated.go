@@ -942,6 +942,12 @@ func detectExecuteScanMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryUsername",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
@@ -955,6 +961,12 @@ func detectExecuteScanMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
