@@ -37,6 +37,10 @@ type pythonBuildOptions struct {
 	RequirementsFilePath         string   `json:"requirementsFilePath,omitempty"`
 	RunTests                     bool     `json:"runTests,omitempty"`
 	TestOptions                  []string `json:"testOptions,omitempty"`
+	StagingCredentialMode        string   `json:"stagingCredentialMode,omitempty"`
+	StagingServiceURL            string   `json:"stagingServiceURL,omitempty"`
+	StagingGroupID               string   `json:"stagingGroupId,omitempty"`
+	StagingRepositoryID          string   `json:"stagingRepositoryId,omitempty"`
 }
 
 type pythonBuildCommonPipelineEnvironment struct {
@@ -269,6 +273,10 @@ func addPythonBuildFlags(cmd *cobra.Command, stepConfig *pythonBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.RequirementsFilePath, "requirementsFilePath", `requirements.txt`, "file path to the requirements.txt file needed for the sbom cycloneDx file creation.")
 	cmd.Flags().BoolVar(&stepConfig.RunTests, "runTests", false, "When set to true, pytest and pytest-cov are installed into the virtual environment via pip and the test suite\nis executed. JUnit and Cobertura XML reports are written to TEST-python.xml and cobertura-coverage.xml\nrespectively. Any non-zero pytest exit code — including exit code 5 (no tests collected) — causes the step\nto fail. Poetry-managed projects should omit this flag and use a preBuild extension to run tests instead,\nas pytest is installed directly with pip outside of poetry's dependency management.\n")
 	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{}, "List of additional options passed verbatim to pytest after the injected report flags (--junitxml, --cov, --cov-report).")
+	cmd.Flags().StringVar(&stepConfig.StagingCredentialMode, "stagingCredentialMode", os.Getenv("PIPER_stagingCredentialMode"), "Controls how repository credentials are resolved when publishing artifacts. Set to 'justInTimeV1' to fetch Nexus credentials at runtime via the staging service 3-step exchange (System Trust session token → staging-service token → impersonate → Nexus user/password). When set, the systemTrust session token from PIPER_systemTrustToken is used; repository credentials from the commonPipelineEnvironment are ignored.")
+	cmd.Flags().StringVar(&stepConfig.StagingServiceURL, "stagingServiceURL", os.Getenv("PIPER_stagingServiceURL"), "Base URL of the staging service API (e.g. https://example.com/api). Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingGroupID, "stagingGroupId", os.Getenv("PIPER_stagingGroupId"), "Nexus staging group ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingRepositoryID, "stagingRepositoryId", os.Getenv("PIPER_stagingRepositoryId"), "Nexus staging repository ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
 
 }
 
@@ -335,12 +343,6 @@ func pythonBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
-
-							{
-								Name:    "stagingSystemTrustSecretName",
-								Type:    "systemTrustSecret",
-								Default: "staging-service",
-							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -355,12 +357,6 @@ func pythonBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
 							},
-
-							{
-								Name:    "stagingSystemTrustSecretName",
-								Type:    "systemTrustSecret",
-								Default: "staging-service",
-							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -374,12 +370,6 @@ func pythonBuildMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
-							},
-
-							{
-								Name:    "stagingSystemTrustSecretName",
-								Type:    "systemTrustSecret",
-								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -437,6 +427,52 @@ func pythonBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "stagingCredentialMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingCredentialMode"),
+					},
+					{
+						Name:        "stagingServiceURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingServiceURL"),
+					},
+					{
+						Name: "stagingGroupId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingGroupId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingGroupId"),
+					},
+					{
+						Name: "stagingRepositoryId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingRepositoryId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingRepositoryId"),
 					},
 				},
 			},

@@ -82,9 +82,6 @@ spec:
             param: custom/helmRepositoryURL
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
-          - type: systemTrustSecret
-            name: stagingSystemTrustSecretName
-            default: staging-service
       - name: targetRepositoryName
         type: string
         description: set the chart repository. The value is required for install/upgrade/uninstall commands.
@@ -114,9 +111,6 @@ spec:
             param: custom/helmRepositoryUsername
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-          - type: systemTrustSecret
-            name: stagingSystemTrustSecretName
-            default: staging-service
       - name: targetRepositoryPassword
         aliases:
           - name: helmRepositoryPassword
@@ -138,9 +132,6 @@ spec:
             param: custom/helmRepositoryPassword
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - type: systemTrustSecret
-            name: stagingSystemTrustSecretName
-            default: staging-service
       - name: sourceRepositoryURL
         description: "URL of the source repository where the dependencies can be downloaded."
         type: string
@@ -420,6 +411,44 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/buildSettingsInfo
+      - name: stagingCredentialMode
+        type: string
+        description: "Controls how repository credentials are resolved when publishing artifacts. Set to 'justInTimeV1' to fetch Nexus credentials at runtime via the staging service 3-step exchange (System Trust session token → staging-service token → impersonate → Nexus user/password). When set, the systemTrust session token from PIPER_systemTrustToken is used; repository credentials from the commonPipelineEnvironment are ignored."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: stagingServiceURL
+        type: string
+        description: "Base URL of the staging service API (e.g. https://example.com/api). Required when stagingCredentialMode is 'justInTimeV1'."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: stagingGroupId
+        type: string
+        description: "Nexus staging group ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/stagingGroupId
+      - name: stagingRepositoryId
+        type: string
+        description: "Nexus staging repository ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/stagingRepositoryId
   containers:
     - image: alpine/k8s:1.33.13
       workingDir: /config

@@ -59,6 +59,10 @@ type helmBuildOptions struct {
 	SyftDownloadURL           string   `json:"syftDownloadUrl,omitempty"`
 	ContainerImageNameTags    []string `json:"containerImageNameTags,omitempty"`
 	BuildSettingsInfo         string   `json:"buildSettingsInfo,omitempty"`
+	StagingCredentialMode     string   `json:"stagingCredentialMode,omitempty"`
+	StagingServiceURL         string   `json:"stagingServiceURL,omitempty"`
+	StagingGroupID            string   `json:"stagingGroupId,omitempty"`
+	StagingRepositoryID       string   `json:"stagingRepositoryId,omitempty"`
 }
 
 type helmBuildCommonPipelineEnvironment struct {
@@ -329,6 +333,10 @@ func addHelmBuildFlags(cmd *cobra.Command, stepConfig *helmBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.SyftDownloadURL, "syftDownloadUrl", `https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz`, "Specifies the download url of the Syft Linux amd64 tar binary file. This can be found at https://github.com/anchore/syft/releases/.")
 	cmd.Flags().StringSliceVar(&stepConfig.ContainerImageNameTags, "containerImageNameTags", []string{}, "List of full names (registry and tag) of the container images referenced by the chart. Used as a fallback source when image discovery via `helm template` yields no results. Typically populated by an upstream kanikoExecute step.")
 	cmd.Flags().StringVar(&stepConfig.BuildSettingsInfo, "buildSettingsInfo", os.Getenv("PIPER_buildSettingsInfo"), "Build settings info is typically filled by the step automatically to create information about the build settings that were used during the helm build. This information is typically used for compliance related processes.")
+	cmd.Flags().StringVar(&stepConfig.StagingCredentialMode, "stagingCredentialMode", os.Getenv("PIPER_stagingCredentialMode"), "Controls how repository credentials are resolved when publishing artifacts. Set to 'justInTimeV1' to fetch Nexus credentials at runtime via the staging service 3-step exchange (System Trust session token → staging-service token → impersonate → Nexus user/password). When set, the systemTrust session token from PIPER_systemTrustToken is used; repository credentials from the commonPipelineEnvironment are ignored.")
+	cmd.Flags().StringVar(&stepConfig.StagingServiceURL, "stagingServiceURL", os.Getenv("PIPER_stagingServiceURL"), "Base URL of the staging service API (e.g. https://example.com/api). Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingGroupID, "stagingGroupId", os.Getenv("PIPER_stagingGroupId"), "Nexus staging group ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
+	cmd.Flags().StringVar(&stepConfig.StagingRepositoryID, "stagingRepositoryId", os.Getenv("PIPER_stagingRepositoryId"), "Nexus staging repository ID. Populated by the sapCallStagingService step. Required when stagingCredentialMode is 'justInTimeV1'.")
 
 	cmd.MarkFlagRequired("image")
 }
@@ -383,12 +391,6 @@ func helmBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
 							},
-
-							{
-								Name:    "stagingSystemTrustSecretName",
-								Type:    "systemTrustSecret",
-								Default: "staging-service",
-							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -429,12 +431,6 @@ func helmBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUsername",
 							},
-
-							{
-								Name:    "stagingSystemTrustSecretName",
-								Type:    "systemTrustSecret",
-								Default: "staging-service",
-							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -465,12 +461,6 @@ func helmBuildMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
-							},
-
-							{
-								Name:    "stagingSystemTrustSecretName",
-								Type:    "systemTrustSecret",
-								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -800,6 +790,52 @@ func helmBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_buildSettingsInfo"),
+					},
+					{
+						Name:        "stagingCredentialMode",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingCredentialMode"),
+					},
+					{
+						Name:        "stagingServiceURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_stagingServiceURL"),
+					},
+					{
+						Name: "stagingGroupId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingGroupId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingGroupId"),
+					},
+					{
+						Name: "stagingRepositoryId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/stagingRepositoryId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_stagingRepositoryId"),
 					},
 				},
 			},

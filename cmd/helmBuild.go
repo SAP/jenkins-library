@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -27,6 +28,10 @@ import (
 const helmDockerConfigDir = "/root/.docker"
 
 func helmBuild(config helmBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *helmBuildCommonPipelineEnvironment) {
+	if err := acquireHelmBuildStagingCredentials(context.Background(), &config); err != nil {
+		log.Entry().WithError(err).Fatal("acquire JIT staging credentials")
+	}
+
 	helmConfig := kubernetes.HelmExecuteOptions{
 		AdditionalParameters:      config.AdditionalParameters,
 		ChartPath:                 config.ChartPath,
