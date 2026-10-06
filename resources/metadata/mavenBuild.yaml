@@ -16,6 +16,56 @@ metadata:
     It will also prepare jacoco to record the code coverage and
     supports ci friendly versioning by flattening the pom before installing.
 
+    ### Build-quality profile strategy
+
+    The step always prepends a set of built-in Maven profiles to control
+    Artifactory repository resolution:
+
+    * **Default / Release quality**: `-P !snapshot.build,!milestone.build,release.build`
+      — snapshot and milestone dependency repos are blocked; only the release repo is active.
+    * **Milestone quality** (when `milestone.build` is present in `profiles`):
+      `-P !snapshot.build,milestone.build`
+      — the `!milestone.build` deactivation and `release.build` activation are suppressed so
+      they do not conflict with the caller's `milestone.build` opt-in (Maven 3.x deactivation
+      wins the `!milestone.build` / `milestone.build` clash).
+    * **Snapshot opt-in** (when `snapshot.build` is present in `profiles`):
+      `-P !milestone.build,release.build,snapshot.build`
+      — the `!snapshot.build` deactivation is suppressed so it does not silently block the
+      caller's `snapshot.build` activation (Maven 3.x deactivation wins the clash).
+      Note: `release.build` remains active alongside `snapshot.build`, so both the release
+      and snapshot Artifactory repositories are reachable.  This is intentional: non-snapshot
+      transitive dependencies still resolve from the release repo.
+    * **milestone.build + snapshot.build together**: `milestone.build` takes precedence
+      (first-branch check in the binary).  The effective profile set is
+      `-P !snapshot.build,milestone.build` — snapshot resolution is blocked.
+
+    **Jenkins orchestrator**: Groovy wrappers (`executeBuild` / `sapPiperStageCentralBuild`)
+    communicate the desired build quality by passing `['milestone.build']` for Milestone
+    builds and an empty list for Release builds.  The step then assembles the full profile
+    string according to the rules above.
+
+    **GHA and Azure orchestrators**: There is no Groovy wrapper and no `buildQuality` mapping
+    for these orchestrators.  `mavenBuild` always uses the default Release profile set
+    (`!snapshot.build,!milestone.build,release.build`).  Milestone builds are **not supported**
+    on GHA/Azure.  A user who manually adds `milestone.build` to the `profiles` parameter on
+    GHA/Azure will receive the Milestone-quality profile set (binary suppresses the conflicting
+    builtins), but there is no orchestrator-level mechanism to supply a milestone-quality
+    `settings.xml` or npm registry on those platforms.
+
+    **Note on profile blocking effectiveness on Azure**: Profile guard flags are Maven no-ops
+    unless the `globalSettingsFile` settings.xml defines the `snapshot.build`, `milestone.build`,
+    and `release.build` profiles.  Jenkins and GHA deviation files set `globalSettingsFile`
+    to the SAP Artifactory release settings.xml, so blocking is effective on those orchestrators.
+    The Azure deviation file (`deviation-azure.yml`) also sets `globalSettingsFile` to the same
+    release settings.xml, so profile guards are effective on Azure as well.
+
+    **Deploy phase exception**: When `publish: true`, the `mvn deploy` invocation does **not**
+    carry the `--activate-profiles` profile guard.  This is intentional: dependency resolution
+    was completed by the preceding `mvn install`; the deploy goal only transfers already-built
+    artifacts to the target repository and does not re-resolve transitive dependencies.  Any
+    `activeByDefault` repository profile in the settings.xml will be active during deploy, but
+    no new snapshot or milestone artifacts can enter the build through this invocation.
+
     ### build with dependencies from a private repository
 
     if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the `<url>`
@@ -71,7 +121,16 @@ spec:
         default: pom.xml
       - name: profiles
         type: "[]string"
-        description: Defines list of maven build profiles to be used.
+        description: >
+          Defines list of Maven build profiles to be used.
+          The step prepends a set of built-in profiles before any user-supplied entries.
+          By default (Release quality) it prepends '!snapshot.build,!milestone.build,release.build'
+          to block non-release-quality artifact resolution.
+          When 'milestone.build' is present in this list the binary switches to Milestone mode and
+          prepends only '!snapshot.build', suppressing the conflicting '!milestone.build' deactivation
+          and the 'release.build' activation.
+          On GHA and Azure orchestrators only Release quality is supported; Milestone builds are not
+          available on those platforms.
         scope:
           - PARAMETERS
           - GENERAL
