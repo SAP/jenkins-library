@@ -21,8 +21,8 @@ func acquireHelmBuildStagingCredentials(ctx context.Context, config *helmBuildOp
 		SystemTrustURL:          GeneralConfig.HookConfig.SystemTrustConfig.ServerURL,
 		SystemTrustSessionToken: GeneralConfig.SystemTrustToken,
 		StagingServiceURL:       config.StagingServiceURL,
-		GroupID:                 config.StagingGroupId,
-		RepositoryID:            config.StagingRepositoryId,
+		GroupID:                 config.StagingGroupID,
+		RepositoryID:            config.StagingRepositoryID,
 		Operation:               stagingcredentials.OperationWrite,
 	}
 
