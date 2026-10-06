@@ -131,7 +131,7 @@ func (sys *checkmarxOneSystemMock) GetProjectByID(projectID string) (checkmarxOn
 }
 
 func (sys *checkmarxOneSystemMock) GetProjectsByName(projectName string) ([]checkmarxOne.Project, error) {
-	str := `[        
+	str := `[
 		{
 			"id": "3cb99ae5-5245-4cf7-83aa-9b517b8c1c57",
 			"name": "ssba-github",
@@ -399,7 +399,7 @@ func TestUpdateProjectTags(t *testing.T) {
 			"name": "test-apr24-piper",
 			"tags": {
 				"key1": "value1",
-				"key2": "value2", 
+				"key2": "value2",
 				"keywithoutvalue1": ""
 			},
 			"groups": [],
@@ -418,7 +418,7 @@ func TestUpdateProjectTags(t *testing.T) {
 
 		oldTagsJson := `{
 			"key1": "value1",
-			"key2": "value2", 
+			"key2": "value2",
 			"keywithoutvalue1": ""
 		}`
 		oldTags := make(map[string]string, 0)
@@ -484,7 +484,7 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 
 		cx1sh := checkmarxOneExecuteScanHelper{config: checkmarxOneExecuteScanOptions{MonorepoPath: "PathToComponentA"}}
 		utils := newcheckmarxOneExecuteScanUtilsBundle(dir, nil)
-		zipFile, err := cx1sh.zipWorkspaceFiles("", utils)
+		zipFile, err := cx1sh.zipWorkspaceFiles("src/**/*.go", utils)
 		assert.NoError(t, err)
 		defer os.Remove(zipFile.Name())
 

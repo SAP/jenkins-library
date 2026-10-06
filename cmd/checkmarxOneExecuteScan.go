@@ -948,7 +948,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 		}
 		comment := &github.IssueComment{
 			Body: new(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
-# %s CheckmarxOne scan completed 
+# %s CheckmarxOne scan completed
 **Project**: %s
 **ScanId**: %s
 %s%s
@@ -1601,7 +1601,7 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return err
 		}
 		fileName = filepath.ToSlash(fileName)
-		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
+		noMatch, err := c.isFileNotMatchingPattern(patterns, fileName, info, utils)
 		if err != nil || noMatch {
 			if noMatch {
 				log.Entry().Debugf("Excluded %s", fileName)
