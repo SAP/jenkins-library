@@ -70,6 +70,14 @@ spec:
         default:
           "!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go,
           **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts"
+      - name: monorepoPath
+        type: string
+        description: Workspace-relative path to the monorepo component to scan. If empty, the entire workspace is scanned.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ""
       - name: fullScanCycle
         type: string
         description: Indicates how often a full scan should happen between the incremental scans when activated

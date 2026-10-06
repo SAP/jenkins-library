@@ -585,7 +585,7 @@ func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
 	}
 	zipFile, err := c.zipWorkspaceFiles(c.config.FilterPattern, c.utils)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to zip workspace files")
+		return nil, fmt.Errorf("Failed to zip workspace files: %w", err)
 	}
 	return zipFile, nil
 }
@@ -1516,17 +1516,43 @@ func (c *checkmarxOneExecuteScanHelper) zipWorkspaceFiles(filterPattern string, 
 	log.Entry().Infof("Zipping files using filter: %v", filterPattern)
 	patterns := piperutils.Trim(strings.Split(filterPattern, ","))
 	sort.Strings(patterns)
+	source, err := c.zipSource(utils)
+	if err != nil {
+		return nil, err
+	}
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
 		return zipFile, fmt.Errorf("failed to create archive of project sources: %w", err)
 	}
 	defer zipFile.Close()
 
-	err = c.zipFolder(utils.GetWorkspace(), zipFile, patterns, zipFileName, utils)
+	err = c.zipFolder(source, zipFile, patterns, zipFileName, utils)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compact folder: %w", err)
 	}
 	return zipFile, nil
+}
+
+func (c *checkmarxOneExecuteScanHelper) zipSource(utils checkmarxOneExecuteScanUtils) (string, error) {
+	workspace := filepath.Clean(utils.GetWorkspace())
+	if c.config.MonorepoPath == "" {
+		return workspace, nil
+	}
+
+	componentPath := filepath.Clean(c.config.MonorepoPath)
+	if filepath.IsAbs(c.config.MonorepoPath) || componentPath == ".." || strings.HasPrefix(componentPath, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("monorepoPath must be a workspace-relative directory: %s", c.config.MonorepoPath)
+	}
+
+	source := filepath.Join(workspace, componentPath)
+	info, err := utils.Stat(source)
+	if err != nil {
+		return "", fmt.Errorf("monorepoPath does not exist: %s: %w", c.config.MonorepoPath, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("monorepoPath is not a directory: %s", c.config.MonorepoPath)
+	}
+	return source, nil
 }
 
 func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writer, patterns []string, zipFileName string, utils checkmarxOneExecuteScanUtils) error {
@@ -1540,9 +1566,8 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		return nil
 	}
 
-	var baseDir string
-	if info.IsDir() {
-		baseDir = filepath.Base(source)
+	if !info.IsDir() {
+		return fmt.Errorf("source is not a directory: %s", source)
 	}
 
 	// resolve the output archive's absolute path so it can be skipped during the walk,
@@ -1571,7 +1596,11 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return nil
 		}
 
-		fileName := strings.TrimPrefix(path, baseDir)
+		fileName, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		fileName = filepath.ToSlash(fileName)
 		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
 		if err != nil || noMatch {
 			if noMatch {
