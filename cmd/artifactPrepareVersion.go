@@ -161,6 +161,8 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	newVersion := version
 	now := time.Now()
 
+	resolveGitCredentials(config)
+
 	if config.VersioningType == "cloud" || config.VersioningType == "cloud_noTag" {
 		// make sure that versioning does not create tags (when set to "cloud")
 		// for PR pipelines, optimized pipelines (= no build)
@@ -357,8 +359,21 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 	return nil
 }
 
-func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
+// resolveGitCredentials resolves the effective git credentials.
+// A System Trust token takes precedence over the Vault/Jenkins password.
+func resolveGitCredentials(config *artifactPrepareVersionOptions) {
+	if config.Token != "" {
+		log.Entry().Info("Git authentication: using System Trust token")
+		config.Password = config.Token
+		config.Username = "system-trust"
+	} else if config.Username != "" && config.Password != "" {
+		log.Entry().Info("Git authentication: no System Trust token, using Vault/Jenkins credentials")
+	} else {
+		log.Entry().Info("Git authentication: no System Trust token or Vault/Jenkins credentials provided")
+	}
+}
 
+func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
 	var commitID string
 
 	commit, err := addAndCommit(config, worktree, newVersion, t)
