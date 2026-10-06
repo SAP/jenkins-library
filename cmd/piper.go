@@ -537,7 +537,7 @@ func getProjectConfigFile(name string) string {
 	var altName string
 	if ext := filepath.Ext(name); ext == ".yml" {
 		altName = fmt.Sprintf("%v.yaml", strings.TrimSuffix(name, ext))
-	} else if ext == "yaml" {
+	} else if ext == ".yaml" {
 		altName = fmt.Sprintf("%v.yml", strings.TrimSuffix(name, ext))
 	}
 
