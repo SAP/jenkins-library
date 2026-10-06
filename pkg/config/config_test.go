@@ -13,8 +13,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -803,6 +805,62 @@ func TestMerge(t *testing.T) {
 			stepConfig := StepConfig{Config: row.Source}
 			stepConfig.mixIn(row.MergeData, row.Filter, StepData{})
 			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin was incorrect")
+		})
+	}
+}
+
+func TestMergeTypeWarnings(t *testing.T) {
+	metadata := StepData{Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+		{Name: "stringList", Type: "[]string"},
+		{Name: "mapList", Type: "[]map[string]interface{}"},
+		{Name: "anyMapList", Type: "[]map[string]any"},
+		{Name: "flag", Type: "bool"},
+	}}}}
+
+	testTable := []struct {
+		name             string
+		mergeData        map[string]any
+		expectedWarnings []string
+	}{
+		{
+			name:      "list of strings from JSON",
+			mergeData: map[string]any{"stringList": []any{"a", "b"}},
+		},
+		{
+			name:      "list of maps from JSON",
+			mergeData: map[string]any{"mapList": []any{map[string]any{"name": "a"}}},
+		},
+		{
+			name:      "list of maps from JSON, type written with any",
+			mergeData: map[string]any{"anyMapList": []any{map[string]any{"name": "a"}}},
+		},
+		{
+			name:             "list of maps with wrong element",
+			mergeData:        map[string]any{"mapList": []any{map[string]any{"name": "a"}, "b"}},
+			expectedWarnings: []string{"config id mapList should only contain maps but contains a string"},
+		},
+		{
+			name:             "wrong type",
+			mergeData:        map[string]any{"flag": "true"},
+			expectedWarnings: []string{"config value provided for flag is of wrong type string should be of type bool"},
+		},
+	}
+
+	_, hook := test.NewNullLogger()
+	log.RegisterHook(hook)
+
+	for _, row := range testTable {
+		t.Run(row.name, func(t *testing.T) {
+			hook.Reset()
+			stepConfig := StepConfig{}
+			stepConfig.mixIn(row.mergeData, []string{}, metadata)
+
+			warnings := []string{}
+			for _, entry := range hook.AllEntries() {
+				warnings = append(warnings, entry.Message)
+			}
+			assert.ElementsMatch(t, row.expectedWarnings, warnings)
+			assert.Equal(t, row.mergeData, stepConfig.Config)
 		})
 	}
 }

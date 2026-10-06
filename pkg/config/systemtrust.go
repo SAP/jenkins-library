@@ -9,16 +9,28 @@ import (
 )
 
 const RefTypeSystemTrustSecret = "systemTrustSecret"
+const skipSystemTrust = "skipSystemTrust"
 
 // resolveAllSystemTrustReferences retrieves all the step's secrets from the System Trust
 func resolveAllSystemTrustReferences(config *StepConfig, params []StepParameters, systemTrustConfiguration systemtrust.Configuration, client *piperhttp.Client) {
+
+	skip, _ := config.Config[skipSystemTrust].(bool)
 	for _, param := range params {
 		if ref := param.GetReference(RefTypeSystemTrustSecret); ref != nil {
-			if config.Config[param.Name] == "" {
+			if skip {
+				log.Entry().Debugf("Skipping retrieval of '%s' from System Trust: disabled by configuration", param.Name)
+				continue
+			}
+			paramValue, _ := config.Config[param.Name].(string)
+			if paramValue == "" {
 				log.Entry().Infof("Getting '%s' from System Trust", param.Name)
 				token, err := systemtrust.GetToken(ref.Default, client, systemTrustConfiguration)
 				if err != nil {
 					log.Entry().WithError(err).Warnf("System Trust: failed to retrieve '%s' (key: '%s')", param.Name, ref.Default)
+					continue
+				}
+				if token == "" {
+					log.Entry().Warnf("System Trust: failed to retrieve '%s' (key: '%s'): empty token returned", param.Name, ref.Default)
 					continue
 				}
 				log.RegisterSecret(token)

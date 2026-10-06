@@ -279,9 +279,18 @@ func (c *Config) GetStepConfig(flagValues map[string]any, paramJSON string, conf
 	reportingConfig.ApplyAliasConfig(ReportingParameters.Parameters, []StepSecrets{}, ReportingParameters.getStepFilters(), stageName, stepName, []Alias{})
 	stepConfig.mixinReportingConfig(reportingConfig.General, reportingConfig.Steps[stepName], reportingConfig.Stages[stageName])
 
+	// hooks need to have been loaded from the defaults before the server URL is known
+	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
+	if err != nil {
+		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
+	} else {
+		systemTrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
+		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemTrustClient)
+	}
+
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
-		// Revocation of Vault token will happen at the of each step execution (see _generated.go part)
+		// Revocation of Vault token will happen at the end of each step execution (see _generated.go part of the steps)
 		vaultClient, err := GetVaultClientFromConfig(stepConfig.Config, c.vaultCredentials)
 		if err != nil {
 			return StepConfig{}, err
@@ -291,15 +300,6 @@ func (c *Config) GetStepConfig(flagValues map[string]any, paramJSON string, conf
 			resolveVaultTestCredentialsWrapper(&stepConfig, vaultClient)
 			resolveVaultCredentialsWrapper(&stepConfig, vaultClient)
 		}
-	}
-
-	// hooks need to have been loaded from the defaults before the server URL is known
-	err = c.setSystemTrustConfiguration(stepConfig.HookConfig)
-	if err != nil {
-		log.Entry().WithError(err).Debug("System Trust lookup skipped due to missing or incorrect configuration")
-	} else {
-		systemTrustClient := systemtrust.PrepareClient(&piperhttp.Client{}, c.systemTrustConfiguration)
-		resolveAllSystemTrustReferences(&stepConfig, append(parameters, ReportingParameters.Parameters...), c.systemTrustConfiguration, systemTrustClient)
 	}
 
 	// finally do the condition evaluation post processing
@@ -540,6 +540,13 @@ func merge(base, overlay map[string]any, metadata StepData) map[string]any {
 							arrayValueType := reflect.TypeOf(interfaceValue).String()
 							if arrayValueType != "string" {
 								log.Entry().Warnf("config id %s should only contain strings but contains a %s", v.Name, arrayValueType)
+							}
+						}
+					} else if tVal == "[]interface {}" && strings.HasPrefix(v.Type, "[]map[string]") {
+						// json Unmarshal generates arrays of interface{} for arrays of maps
+						for _, interfaceValue := range value.([]any) {
+							if _, ok := interfaceValue.(map[string]any); !ok {
+								log.Entry().Warnf("config id %s should only contain maps but contains a %T", v.Name, interfaceValue)
 							}
 						}
 					} else {
