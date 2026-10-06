@@ -134,10 +134,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.start.outputs.sha }}
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-          cache-dependency-path: 'go.sum'
+      # No setup-go here: this job compiles nothing. It runs the piper and
+      # integration_tests binaries built by the jobs above; Go usage inside
+      # the tests happens in Docker containers, not on this runner.
       - name: Download Piper binary
         uses: actions/download-artifact@v4
         with:
