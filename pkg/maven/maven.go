@@ -128,6 +128,9 @@ func InstallModuleWithReactor(moduleName string, options *EvaluateOptions, utils
 	if !slices.Contains(defines, "-DskipTests") {
 		defines = append(defines, "-DskipTests")
 	}
+	if !slices.Contains(defines, "-DskipITs") {
+		defines = append(defines, "-DskipITs")
+	}
 
 	mavenOptionsInstall := ExecuteOptions{
 		Goals:               []string{"install"},
