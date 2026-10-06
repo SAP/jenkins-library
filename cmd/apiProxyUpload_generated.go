@@ -135,10 +135,11 @@ Learn more about the SAP API Management API for uploading an api proxy artifact 
 						oidcTokenProvider,
 						&GeneralConfig,
 						eventing.EventContext{
-							StepName:   STEP_NAME,
-							StageName:  telemetryClient.GetData().StageName,
-							ErrorCode:  stepTelemetryData.ErrorCode,
-							PipelineID: telemetryClient.GetBuildURL(),
+							StepName:         STEP_NAME,
+							StageName:        telemetryClient.GetData().StageName,
+							ErrorCode:        stepTelemetryData.ErrorCode,
+							PipelineID:       telemetryClient.GetBuildURL(),
+							CPEEventDataPath: GeneralConfig.EnvRootPath,
 						},
 					); err != nil {
 						log.Entry().WithError(err).Warn("failed to publish GCP Pub/Sub event")
