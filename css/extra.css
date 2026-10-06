@@ -1,0 +1,7 @@
+.md-typeset a {
+    color: #448aff !important;
+}
+
+.md-typeset a:not(.headerlink):hover {
+    text-decoration: underline;
+}
