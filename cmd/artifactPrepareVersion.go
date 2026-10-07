@@ -359,6 +359,14 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 
 func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
 
+	// System Trust provides only a token (used as password), never a username.
+	// A set password with an empty username therefore indicates the token came from
+	// System Trust (Jenkins/Vault always fill both) -> use a static username.
+	if len(config.Password) > 0 && len(config.Username) == 0 {
+		log.Entry().Info("git username empty but password set - assuming System Trust token, using static username 'system-trust'")
+		config.Username = "system-trust"
+	}
+
 	var commitID string
 
 	commit, err := addAndCommit(config, worktree, newVersion, t)

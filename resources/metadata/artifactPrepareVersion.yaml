@@ -293,6 +293,9 @@ spec:
           - type: vaultSecret
             name: gitHttpsCredentialVaultSecretName
             default: gitHttpsCredential
+          - type: systemTrustSecret
+            name: gitSystemTrustSecretName
+            default: github-app
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
