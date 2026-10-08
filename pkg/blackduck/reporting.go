@@ -235,6 +235,10 @@ func WriteVulnerabilityReports(scanReport reporting.ScanReport, utils piperutils
 func WriteSarifFile(sarif *format.SARIF, utils piperutils.FileUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
+	// remove control characters and stray whitespace from location URIs so the
+	// SARIF file is accepted by consumers such as GitHub code scanning
+	sarif.Sanitize()
+
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	sarifReport, errorMarshall := json.Marshal(sarif)
 	if errorMarshall != nil {
