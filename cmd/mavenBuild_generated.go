@@ -159,10 +159,6 @@ If your project must stay on JDK 8, the recommended fallback is to keep the appr
 
 This keeps your project on an SLC-29-approved image at the cost of a pom edit.
 
-An alternative is ` + "`" + `maven:3.9-eclipse-temurin-8` + "`" + ` (Maven 3.9 bundles deploy-plugin 3.x, so no
-pom pin is needed and the JDK stays at 8), but that image is **not on the SLC-29 approved
-list**, so choosing it knowingly shifts compliance responsibility to your project.
-
 ### build with dependencies from a private repository
 
 if your build has dependencies from a private repository you can include a project settings xml into the source code repository as below (replace the ` + "`" + `<url>` + "`" + `
