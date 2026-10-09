@@ -28,6 +28,7 @@ type checkmarxOneExecuteScanOptions struct {
 	AvoidDuplicateProjectScans           bool     `json:"avoidDuplicateProjectScans,omitempty"`
 	Engines                              []string `json:"engines,omitempty"`
 	FilterPattern                        string   `json:"filterPattern,omitempty"`
+	MonorepoPath                         string   `json:"monorepoPath,omitempty"`
 	FullScanCycle                        string   `json:"fullScanCycle,omitempty"`
 	FullScansScheduled                   bool     `json:"fullScansScheduled,omitempty"`
 	GeneratePdfReport                    bool     `json:"generatePdfReport,omitempty"`
@@ -415,6 +416,7 @@ func addCheckmarxOneExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxOn
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not  [Not yet supported]")
 	cmd.Flags().StringSliceVar(&stepConfig.Engines, "engines", []string{`sast`}, "The scan engines to trigger for this scan. Can be: sast, iac")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory. For multiple-engine scans, this filter should include all files applicable to all engines - per-engine filters should be set separately through sastFileFilter and iacFileFilter.")
+	cmd.Flags().StringVar(&stepConfig.MonorepoPath, "monorepoPath", ``, "Workspace-relative path to the monorepo component to scan. If empty, the entire workspace is scanned.")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
@@ -540,6 +542,15 @@ func checkmarxOneExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.rb, **/*.scala, **/*.ts`,
+					},
+					{
+						Name:        "monorepoPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     ``,
 					},
 					{
 						Name:        "fullScanCycle",

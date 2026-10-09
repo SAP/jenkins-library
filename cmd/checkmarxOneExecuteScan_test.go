@@ -131,7 +131,7 @@ func (sys *checkmarxOneSystemMock) GetProjectByID(projectID string) (checkmarxOn
 }
 
 func (sys *checkmarxOneSystemMock) GetProjectsByName(projectName string) ([]checkmarxOne.Project, error) {
-	str := `[        
+	str := `[
 		{
 			"id": "3cb99ae5-5245-4cf7-83aa-9b517b8c1c57",
 			"name": "ssba-github",
@@ -399,7 +399,7 @@ func TestUpdateProjectTags(t *testing.T) {
 			"name": "test-apr24-piper",
 			"tags": {
 				"key1": "value1",
-				"key2": "value2", 
+				"key2": "value2",
 				"keywithoutvalue1": ""
 			},
 			"groups": [],
@@ -418,7 +418,7 @@ func TestUpdateProjectTags(t *testing.T) {
 
 		oldTagsJson := `{
 			"key1": "value1",
-			"key2": "value2", 
+			"key2": "value2",
 			"keywithoutvalue1": ""
 		}`
 		oldTags := make(map[string]string, 0)
@@ -472,6 +472,44 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 		}
 		// only the two regular source files must be archived, never the output archive
 		assert.Len(t, reader.File, 2)
+	})
+
+	t.Run("component path limits the archive to that component", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		componentDir := filepath.Join(dir, "PathToComponentA")
+		assert.NoError(t, os.MkdirAll(filepath.Join(componentDir, "src"), 0o700))
+		assert.NoError(t, os.WriteFile(filepath.Join(componentDir, "src", "component.go"), []byte("component"), 0o700))
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, "sibling.go"), []byte("sibling"), 0o700))
+
+		cx1sh := checkmarxOneExecuteScanHelper{config: checkmarxOneExecuteScanOptions{MonorepoPath: "PathToComponentA"}}
+		utils := newcheckmarxOneExecuteScanUtilsBundle(dir, nil)
+		zipFile, err := cx1sh.zipWorkspaceFiles("src/**/*.go", utils)
+		assert.NoError(t, err)
+		defer os.Remove(zipFile.Name())
+
+		archiveFile, err := os.Open(zipFile.Name())
+		assert.NoError(t, err)
+		defer archiveFile.Close()
+		zipInfo, err := archiveFile.Stat()
+		assert.NoError(t, err)
+		reader, err := zip.NewReader(archiveFile, zipInfo.Size())
+		assert.NoError(t, err)
+		assert.Len(t, reader.File, 1)
+		assert.Equal(t, "src/component.go", reader.File[0].Name)
+	})
+
+	t.Run("component path must identify a directory inside the workspace", func(t *testing.T) {
+		t.Parallel()
+		dir := t.TempDir()
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, "source.go"), []byte("source"), 0o700))
+		utils := newcheckmarxOneExecuteScanUtilsBundle(dir, nil)
+
+		for _, path := range []string{"missing", "source.go", "../outside", filepath.Join(dir, "absolute")} {
+			cx1sh := checkmarxOneExecuteScanHelper{config: checkmarxOneExecuteScanOptions{MonorepoPath: path}}
+			_, err := cx1sh.zipWorkspaceFiles("", utils)
+			assert.Error(t, err, path)
+		}
 	})
 }
 
