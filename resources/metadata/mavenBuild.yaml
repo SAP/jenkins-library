@@ -24,14 +24,11 @@ metadata:
     `maven-deploy-plugin` 2.7, which rejects that syntax and fails the deploy.
 
     If you need a different JDK or toolchain, override the image via
-    `steps.mavenBuild.dockerImage: <another approved image>`.
-
-    Overriding the default image moves SLC-29 compliance responsibility for that container to your
-    project, so choose another approved image.
+    `steps.mavenBuild.dockerImage: <another maintained image>`.
 
     ### Staying on Java 8
 
-    If your project must stay on JDK 8, the recommended fallback is to keep the approved
+    If your project must stay on JDK 8, the recommended fallback is to keep the
     `maven:3.8.6-jdk-8` image **and** pin `maven-deploy-plugin` 3.1.1 in your `pom.xml`:
 
     ```xml
@@ -42,11 +39,7 @@ metadata:
     </plugin>
     ```
 
-    This keeps your project on an SLC-29-approved image at the cost of a pom edit.
-
-    An alternative is `maven:3.9-eclipse-temurin-8` (Maven 3.9 bundles deploy-plugin 3.x, so no
-    pom pin is needed and the JDK stays at 8), but that image is **not on the SLC-29 approved
-    list**, so choosing it knowingly shifts compliance responsibility to your project.
+    This keeps your project on a JDK 8 image at the cost of a pom edit.
 
     ### build with dependencies from a private repository
 
