@@ -37,6 +37,6 @@ def mtarFilePath = commonPipelineEnvironment.getMtarFilePath()
 
 ## Build artifact metadata
 
-**Default changed:** `createBuildArtifactsMetadata` was previously `false` and is now `true` by default. The step now writes artifact coordinates to `commonPipelineEnvironment/custom/mtaBuildArtifacts` on every run. Downstream steps such as OSC CTP scans consume this data.
+**Default changed:** `createBuildArtifactsMetadata` was previously `false` and is now `true` by default. The step now writes artifact coordinates to `commonPipelineEnvironment/custom/mtaBuildArtifacts` on every run. Downstream compliance scan steps consume this data.
 
 Set `createBuildArtifactsMetadata: false` under the `mtaBuild` step key in `.pipeline/config.yml` (or the equivalent step-level configuration for your orchestrator) to opt out.
