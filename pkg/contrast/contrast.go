@@ -226,7 +226,7 @@ func getFindings(vulnerabilities []Vulnerability) (ContrastFindings, ContrastFin
 	optionalFindings.Audited = 0
 
 	for _, vuln := range vulnerabilities {
-		if vuln.Severity == Critical || vuln.Severity == High || vuln.Severity == Medium {
+		if severity := strings.ToUpper(vuln.Severity); severity == Critical || severity == High || severity == Medium {
 			if vuln.Status != StatusReported {
 				auditAllFindings.Audited += 1
 			}
