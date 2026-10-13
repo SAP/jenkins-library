@@ -649,6 +649,18 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
 	})
 
+	t.Run("success - system trust token sets static username", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{Password: "st-token", CommitUserName: "Project Piper"}
+		repo := gitRepositoryMock{remote: remote}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+		assert.Equal(t, "system-trust", config.Username)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: "system-trust", Password: "st-token"}}, repo.pushOptions)
+	})
+
 	t.Run("success - ssh fallback", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
