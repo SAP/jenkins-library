@@ -194,6 +194,17 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", npm.VersioningScheme())
 	})
 
+	t.Run("rust", func(t *testing.T) {
+		rust, err := GetArtifact("rust", "", &Options{}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := rust.(*Cargo)
+		assert.True(t, ok)
+		assert.Equal(t, CargoBuildDescriptor, theType.path)
+		assert.Equal(t, "semver2", rust.VersioningScheme())
+	})
+
 	t.Run("CAP - npm", func(t *testing.T) {
 		npm, err := GetArtifact("CAP", "", &Options{VersionField: "theversion", CAPVersioningPreference: "npm"}, nil)
 		assert.NoError(t, err)
