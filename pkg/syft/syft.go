@@ -66,7 +66,7 @@ func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.Exec
 			return errors.New("syft: image name must not be empty")
 		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index), "-q",
+		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index),
 			// Exclude Windows PE launcher stubs shipped by pip's distlib on Linux images.
 			// These are detected as "Simple Launcher" without a PURL, causing SBOM validation failures.
 			// The glob covers distlib/ and versioned variants (distlib-x.y.z/) at any depth.
@@ -97,7 +97,6 @@ func (s *SyftScanner) ScanImageTo(dockerConfigDir string, execRunner command.Exe
 		"scan",
 		fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image),
 		"-o", fmt.Sprintf("cyclonedx-xml%s=%s", cyclonedxFormatForSyft, outputFile),
-		"-q",
 		"--exclude=**/{distlib,distlib-*}/**/*.exe",
 	}
 	args = append(args, extraArgs...)
