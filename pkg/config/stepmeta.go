@@ -73,11 +73,12 @@ type ParameterDependence struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string  `json:"name" yaml:"name"`
-	Type    string  `json:"type,omitempty" yaml:"type,omitempty"`
-	Param   string  `json:"param,omitempty" yaml:"param,omitempty"`
-	Default string  `json:"default,omitempty" yaml:"default,omitempty"`
-	Aliases []Alias `json:"aliases,omitempty" yaml:"aliases,omitempty"`
+	Name    string            `json:"name" yaml:"name"`
+	Type    string            `json:"type,omitempty" yaml:"type,omitempty"`
+	Param   string            `json:"param,omitempty" yaml:"param,omitempty"`
+	Default string            `json:"default,omitempty" yaml:"default,omitempty"`
+	Args    map[string]string `json:"args,omitempty" yaml:"args,omitempty"`
+	Aliases []Alias           `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias

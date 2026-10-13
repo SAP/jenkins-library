@@ -4,14 +4,24 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/validation"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCfDeployment(t *testing.T) {
@@ -901,4 +911,152 @@ func TestMtaExtensionCredentials(t *testing.T) {
 func TestEnvVarKeyModification(t *testing.T) {
 	envVarCompatibleKey := toEnvVarKey("Mta.EXtensionCredential~Credential_Id1Abc")
 	assert.Equal(t, "MTA_EXTENSION_CREDENTIAL_CREDENTIAL_ID1_ABC", envVarCompatibleKey)
+}
+
+func TestCloudFoundryDeploySystemTrust(t *testing.T) {
+	for _, tc := range []struct {
+		name            string
+		tool            string
+		scope           string
+		status          int
+		credentials     bool
+		skip            bool
+		explicit        bool
+		failure         string
+		missingOrigin   bool
+		wantMode        string
+		wantError       string
+		validationError bool
+	}{
+		{name: "native component", tool: "cf_native", wantMode: "auth"},
+		{name: "MTA workspace", tool: "mtaDeployPlugin", scope: "workspace", wantMode: "auth"},
+		{name: "lookup failure falls back", tool: "cf_native", status: 403, credentials: true, wantMode: "login"},
+		{name: "skipped lookup falls back", tool: "cf_native", skip: true, credentials: true, wantMode: "login"},
+		{name: "explicit assertion survives skip", tool: "cf_native", skip: true, explicit: true, credentials: true, wantMode: "auth"},
+		{name: "CF assertion rejection never downgrades", tool: "cf_native", credentials: true, failure: "cf auth .*", wantMode: "auth", wantError: "CF operation rejected"},
+		{name: "target failure cleans up", tool: "cf_native", failure: "cf target .*", wantMode: "auth", wantError: "CF operation rejected"},
+		{name: "explicit assertion missing origin", tool: "cf_native", explicit: true, missingOrigin: true, wantMode: "auth", wantError: "identity provider origin"},
+		{name: "invalid scope rejected by step validation", tool: "cf_native", scope: "pipeline", credentials: true, validationError: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Chdir(t.TempDir())
+			t.Setenv("CF_USERNAME", "must-not-be-used")
+			t.Setenv("CF_PASSWORD", "must-not-be-used")
+			require.NoError(t, os.WriteFile("manifest.yml", []byte("applications:\n  - name: smoke-app\n"), 0600))
+			require.NoError(t, os.WriteFile("fixture.mtar", []byte("synthetic MTA fixture"), 0600))
+			require.NoError(t, os.WriteFile("cf.log", []byte("synthetic-stale-UAA-token\n"), 0600))
+			var output bytes.Buffer
+			logger := log.Entry().Logger
+			previousOutput, previousLevel, previousVerbose := logger.Out, logger.GetLevel(), GeneralConfig.Verbose
+			logger.SetOutput(&output)
+			GeneralConfig.Verbose = tc.wantMode == "auth"
+			t.Cleanup(func() {
+				logger.SetOutput(previousOutput)
+				logger.SetLevel(previousLevel)
+				GeneralConfig.Verbose = previousVerbose
+			})
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				assert.Equal(t, http.MethodPost, r.Method)
+				assert.Equal(t, "/tokens", r.URL.Path)
+				assert.Equal(t, "Bearer synthetic-session", r.Header.Get("Authorization"))
+				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				scope := tc.scope
+				if scope == "" {
+					scope = "component"
+				}
+				var request []map[string]any
+				assert.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+				assert.Equal(t, []map[string]any{{"system": "btp-cf", "scope": scope, "args": map[string]any{"ias_tenant_issuer_uri": "https://ias.example"}}}, request)
+				if tc.status != 0 {
+					w.WriteHeader(tc.status)
+					_, _ = io.WriteString(w, "forbidden")
+					return
+				}
+				_, _ = io.WriteString(w, `{"btp-cf":"synthetic-cf-assertion"}`)
+			}))
+			defer server.Close()
+			values := map[string]any{"apiEndpoint": "https://cf.example", "org": "org", "space": "space", "deployTool": tc.tool, "manifest": "manifest.yml", "mtaPath": "fixture.mtar", "iasTenantIssuerUri": "https://ias.example", "userOrigin": "ias-platform"}
+			if tc.scope != "" {
+				values["systemTrustScope"] = tc.scope
+			}
+			if tc.credentials {
+				values["username"], values["password"] = "fallback-user", "fallback-password"
+			}
+			if tc.explicit {
+				values["assertionToken"] = "synthetic-cf-assertion"
+			}
+			if tc.missingOrigin {
+				delete(values, "userOrigin")
+			}
+			customJSON, err := json.Marshal(map[string]any{"general": map[string]any{"skipVault": true, "skipSystemTrust": tc.skip}, "steps": map[string]any{"cloudFoundryDeploy": values}})
+			require.NoError(t, err)
+			defaults := fmt.Sprintf("hooks:\n  systemtrust:\n    serverURL: %s\n    tokenEndPoint: tokens\n    tokenQueryParamName: systems\n", server.URL)
+			metadata := cloudFoundryDeployMetadata()
+			pipelineConfig := config.Config{}
+			pipelineConfig.SetSystemTrustToken("synthetic-session")
+			flags := map[string]any{}
+			if tc.explicit {
+				flags["assertionToken"] = values["assertionToken"]
+			}
+			resolved, err := pipelineConfig.GetStepConfig(flags, "", io.NopCloser(bytes.NewReader(customJSON)), []io.ReadCloser{io.NopCloser(strings.NewReader(defaults))}, false, metadata.GetParameterFilters(), metadata, nil, "Acceptance", "cloudFoundryDeploy")
+			require.NoError(t, err)
+			encoded, err := json.Marshal(resolved.Config)
+			require.NoError(t, err)
+			var options cloudFoundryDeployOptions
+			require.NoError(t, json.Unmarshal(encoded, &options))
+			validator, err := validation.New()
+			require.NoError(t, err)
+			validationErr := validator.ValidateStruct(options)
+			if tc.validationError {
+				require.Error(t, validationErr)
+				return
+			}
+			require.NoError(t, validationErr)
+			runner := &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{}}
+			if tc.failure != "" {
+				runner.ShouldFailOnCommand[tc.failure] = fmt.Errorf("CF operation rejected")
+			}
+			err = runCloudFoundryDeploy(&options, nil, nil, runner, time.Now)
+			if tc.wantError == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, tc.wantError)
+			}
+			if tc.skip || tc.explicit {
+				assert.Zero(t, calls)
+			} else {
+				assert.Equal(t, 1, calls)
+			}
+			operations := []string{}
+			for _, call := range runner.Calls {
+				operations = append(operations, call.Params[0])
+			}
+			if tc.missingOrigin {
+				assert.Equal(t, []string{"version"}, operations)
+			} else if tc.failure == "cf auth .*" {
+				assert.Equal(t, []string{"version", "api", "auth"}, operations)
+			} else if tc.failure == "cf target .*" {
+				assert.Equal(t, []string{"version", "api", "auth", "target", "logout"}, operations)
+			} else if tc.wantMode == "login" {
+				assert.Equal(t, []string{"version", "login", "plugins", "push", "logout"}, operations)
+			} else {
+				deployOperation := "push"
+				if tc.tool == "mtaDeployPlugin" {
+					deployOperation = "deploy"
+				}
+				assert.Equal(t, []string{"version", "api", "auth", "target", "plugins", deployOperation, "logout"}, operations)
+			}
+			if tc.wantMode == "auth" {
+				assert.Contains(t, runner.Env, "CF_TRACE=false")
+				assert.Contains(t, runner.Env, "CF_USERNAME=")
+				assert.Contains(t, runner.Env, "CF_PASSWORD=")
+				assert.NotContains(t, runner.Env, "CF_TRACE=cf.log")
+				assert.NotContains(t, output.String(), "synthetic-stale-UAA-token")
+				assert.NotContains(t, output.String(), "START OF CF CLI TRACE")
+				assert.NotContains(t, output.String(), "synthetic-cf-assertion")
+			}
+		})
+	}
 }

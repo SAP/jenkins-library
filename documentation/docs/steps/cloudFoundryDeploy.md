@@ -4,6 +4,32 @@
 
 ### Additional Hints
 
+#### Authentication
+
+Username/password authentication remains available through the existing Jenkins or Vault credentials.
+Alternatively, provide an `assertionToken` as a step parameter or let System Trust resolve it using
+the session token in `PIPER_systemTrustToken` and the configured `hooks.systemtrust` endpoint.
+
+For System Trust, configure `iasTenantIssuerUri` with the target IAS issuer and `userOrigin` with
+the platform IdP origin from BTP Trust Configuration. The step requests a `btp-cf` assertion with
+`ias_tenant_issuer_uri` and `systemTrustScope`; the scope defaults to `component` and also accepts
+`workspace`. Empty or unresolved issuer configuration prevents lookup but does not prevent
+password authentication. The step validates the allowed scope values; the shared System Trust
+resolver only interpolates the reference and arguments.
+
+A nonempty assertion takes precedence over username/password credentials for both native and
+MTA deployments. Authentication uses `cf api`, `cf auth --assertion ... --origin ...`, and `cf target`.
+The selected CF CLI must support `cf auth --assertion`; check `cf version` and `cf auth --help` in
+your deployment image. `loginParameters` cannot be used with assertion authentication.
+
+Failed or skipped Trust lookup leaves credential fallback available. `skipSystemTrust` skips
+retrieval only, not an explicit assertion. CF assertion rejection or targeting failure never retries
+with a password. A targeting failure after authentication triggers a logout attempt.
+
+Assertion mode disables CF tracing, ignores any existing `cf.log`, and clears inherited
+`CF_USERNAME`/`CF_PASSWORD` OAuth client credentials. Password-mode tracing is unchanged.
+
+
 #### Standard CF deployments
 
 `deployType` parameter defaults to value `standard`.<br>
@@ -49,7 +75,7 @@ This table compares deployment strategies for MTA and Non-MTA applications.
 ## Prerequisites
 
 * Cloud Foundry organization, space and deployment users are available
-* Credentials for deployment have been configured in Jenkins or Vault.
+* Either deployment credentials have been configured in Jenkins or Vault, or assertion authentication has been configured as described above.
 
 ## ${docGenParameters}
 
