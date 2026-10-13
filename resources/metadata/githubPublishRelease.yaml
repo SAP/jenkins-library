@@ -162,14 +162,14 @@ spec:
         aliases:
           - name: githubToken
           - name: access_token
-        description: "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
+        description: "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line. On GitHub Actions the `GITHUB_TOKEN` environment variable is used when no other source provides a token."
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: githubTokenCredentialsId
