@@ -474,7 +474,7 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 		assert.Len(t, reader.File, 2)
 	})
 
-	t.Run("component path limits the archive to that component", func(t *testing.T) {
+	t.Run("working directory limits the archive to that component", func(t *testing.T) {
 		t.Parallel()
 		dir := t.TempDir()
 		componentDir := filepath.Join(dir, "PathToComponentA")
@@ -482,8 +482,8 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 		assert.NoError(t, os.WriteFile(filepath.Join(componentDir, "src", "component.go"), []byte("component"), 0o700))
 		assert.NoError(t, os.WriteFile(filepath.Join(dir, "sibling.go"), []byte("sibling"), 0o700))
 
-		cx1sh := checkmarxOneExecuteScanHelper{config: checkmarxOneExecuteScanOptions{MonorepoPath: "PathToComponentA"}}
-		utils := newcheckmarxOneExecuteScanUtilsBundle(dir, nil)
+		cx1sh := checkmarxOneExecuteScanHelper{}
+		utils := newcheckmarxOneExecuteScanUtilsBundle(componentDir, nil)
 		zipFile, err := cx1sh.zipWorkspaceFiles("src/**/*.go", utils)
 		assert.NoError(t, err)
 		defer os.Remove(zipFile.Name())
@@ -497,19 +497,6 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, reader.File, 1)
 		assert.Equal(t, "src/component.go", reader.File[0].Name)
-	})
-
-	t.Run("component path must identify a directory inside the workspace", func(t *testing.T) {
-		t.Parallel()
-		dir := t.TempDir()
-		assert.NoError(t, os.WriteFile(filepath.Join(dir, "source.go"), []byte("source"), 0o700))
-		utils := newcheckmarxOneExecuteScanUtilsBundle(dir, nil)
-
-		for _, path := range []string{"missing", "source.go", "../outside", filepath.Join(dir, "absolute")} {
-			cx1sh := checkmarxOneExecuteScanHelper{config: checkmarxOneExecuteScanOptions{MonorepoPath: path}}
-			_, err := cx1sh.zipWorkspaceFiles("", utils)
-			assert.Error(t, err, path)
-		}
 	})
 }
 
