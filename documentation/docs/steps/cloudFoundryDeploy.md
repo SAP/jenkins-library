@@ -29,7 +29,6 @@ with a password. A targeting failure after authentication triggers a logout atte
 Assertion mode disables CF tracing, ignores any existing `cf.log`, and clears inherited
 `CF_USERNAME`/`CF_PASSWORD` OAuth client credentials. Password-mode tracing is unchanged.
 
-
 #### Standard CF deployments
 
 `deployType` parameter defaults to value `standard`.<br>
