@@ -657,8 +657,8 @@ func TestPushChanges(t *testing.T) {
 		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
 		assert.NoError(t, err)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
-		assert.Equal(t, "system-trust", config.Username)
-		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: "system-trust", Password: "st-token"}}, repo.pushOptions)
+		assert.Equal(t, "x-access-token", config.Username)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: "x-access-token", Password: "st-token"}}, repo.pushOptions)
 	})
 
 	t.Run("success - GITHUB_TOKEN fallback", func(t *testing.T) {
