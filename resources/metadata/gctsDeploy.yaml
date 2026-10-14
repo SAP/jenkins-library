@@ -3,7 +3,7 @@ metadata:
   description: Deploys a Git repository to a local repository and then to an ABAP system
   longDescription: |
     This step deploys a remote Git repository to a local repository on an ABAP system and imports the content in the ABAP database.
-    If the repository does not yet exist in the system, this step also creates it.
+    If the repository does not yet exist in the system, this step also creates it (unless `failOnMissingRepository` is set to `true`, in which case the step fails instead).
     If the repository already exists on the ABAP system, this step executes the remaining actions of the step, depending on the parameters provided for the step.
     These actions include, for example, deploy a specific commit of the default branch or roll back to the previous commit, if import errors occur .
     You can use this step for gCTS as of SAP S/4HANA 2020.
@@ -131,6 +131,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: failOnMissingRepository
+        type: bool
+        description: If set to true, the step fails if the repository does not exist in the gCTS backend. If set to false (default), the step creates the repository if it does not exist.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: false
       - name: configuration
         type: "map[string]any"
         description: "Configuration parameters for the repository. Provide the parameters as a key-value pair map in the following format: `<configuration parameter>`:`<Value>`. For a list of available configuration parameters, see [Configuration Parameters for Repositories](https://help.sap.com/docs/ABAP_PLATFORM_NEW/4a368c163b08418890a406d413933ba7/99e471efcbee4a0faec82f9dd15897e1.html)."
