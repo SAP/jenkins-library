@@ -264,6 +264,21 @@ func TestGetFindings(t *testing.T) {
 		assert.Equal(t, 2, optional.Total)
 		assert.Equal(t, 2, optional.Audited)
 	})
+
+	t.Run("Camel case severity from session-filtered endpoint", func(t *testing.T) {
+		vulns := []Vulnerability{
+			{Severity: "Critical", Status: "FIXED"},
+			{Severity: "High", Status: "REMEDIATED"},
+			{Severity: "Medium", Status: "REPORTED"},
+			{Severity: "Low", Status: "CONFIRMED"},
+			{Severity: "Note", Status: "NOT_A_PROBLEM"},
+		}
+		auditAll, optional := getFindings(vulns)
+		assert.Equal(t, 3, auditAll.Total)
+		assert.Equal(t, 2, auditAll.Audited)
+		assert.Equal(t, 2, optional.Total)
+		assert.Equal(t, 2, optional.Audited)
+	})
 }
 
 func TestAccumulateFindings(t *testing.T) {
