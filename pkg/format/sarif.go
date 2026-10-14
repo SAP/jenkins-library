@@ -1,5 +1,10 @@
 package format
 
+import (
+	"strings"
+	"unicode"
+)
+
 const AUDIT_REQUIREMENT_GROUP_1_INDEX = 1
 const AUDIT_REQUIREMENT_GROUP_2_INDEX = 2
 const AUDIT_REQUIREMENT_GROUP_3_INDEX = 3
@@ -325,4 +330,48 @@ type Taxa struct {
 type Conversion struct {
 	Tool       Tool       `json:"tool"`
 	Invocation Invocation `json:"invocation"`
+}
+
+// sanitizeURI removes control characters (e.g. tab, newline, carriage return) and
+// trims surrounding whitespace from a SARIF location URI. GitHub's code scanning
+// SARIF parser rejects any URI that contains a control character, which can happen
+// when upstream scanners emit component names with stray formatting characters such
+// as a leading "\t" (observed with Black Duck component names like "\t python-hyper/h2 ").
+func sanitizeURI(uri string) string {
+	cleaned := strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, uri)
+	return strings.TrimSpace(cleaned)
+}
+
+// Sanitize cleans up all location URIs in the SARIF document so the file can be
+// accepted by consumers such as GitHub's code scanning SARIF upload, which reject
+// URIs containing control characters. It is safe to call multiple times.
+func (s *SARIF) Sanitize() {
+	if s == nil {
+		return
+	}
+	for i := range s.Runs {
+		run := &s.Runs[i]
+		for j := range run.Results {
+			result := &run.Results[j]
+			if result.AnalysisTarget != nil {
+				result.AnalysisTarget.URI = sanitizeURI(result.AnalysisTarget.URI)
+			}
+			for k := range result.Locations {
+				loc := &result.Locations[k]
+				loc.PhysicalLocation.ArtifactLocation.URI = sanitizeURI(loc.PhysicalLocation.ArtifactLocation.URI)
+			}
+			for k := range result.RelatedLocations {
+				rel := &result.RelatedLocations[k]
+				rel.PhysicalLocation.ArtifactLocation.URI = sanitizeURI(rel.PhysicalLocation.ArtifactLocation.URI)
+			}
+		}
+		for j := range run.Artifacts {
+			run.Artifacts[j].Location.Uri = sanitizeURI(run.Artifacts[j].Location.Uri)
+		}
+	}
 }
