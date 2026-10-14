@@ -269,6 +269,85 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.Equal(t, telemetry.CustomData{BuildTool: "maven", FilePath: ""}, telemetryData)
 	})
 
+	t.Run("success case - cloud with system trust (token takes precedence, username set to system-trust)", func(t *testing.T) {
+
+		config := artifactPrepareVersionOptions{
+			BuildTool:       "maven",
+			IncludeCommitID: true,
+			Token:           "system-trust-token",
+			TagPrefix:       "v",
+			VersioningType:  "cloud",
+		}
+		telemetryData := telemetry.CustomData{}
+
+		cpe := artifactPrepareVersionCommonPipelineEnvironment{}
+
+		versioningMock := artifactVersioningMock{
+			originalVersion:  "1.2.3",
+			versioningScheme: "maven",
+		}
+
+		utils := newArtifactPrepareVersionMockUtils()
+
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+
+		conf := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"https://my.test.server"}}
+
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+			remote:       git.NewRemote(nil, &conf),
+		}
+
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+
+		assert.NoError(t, err)
+		assert.Equal(t, "system-trust", config.Username)
+		assert.Equal(t, "system-trust-token", config.Password)
+		assert.True(t, repo.pushCalled)
+	})
+
+	t.Run("success case - cloud without system trust (falls back to vault credentials)", func(t *testing.T) {
+
+		config := artifactPrepareVersionOptions{
+			BuildTool:       "maven",
+			IncludeCommitID: true,
+			Username:        "vaultUser",
+			Password:        "vault-password",
+			TagPrefix:       "v",
+			VersioningType:  "cloud",
+		}
+		telemetryData := telemetry.CustomData{}
+
+		cpe := artifactPrepareVersionCommonPipelineEnvironment{}
+
+		versioningMock := artifactVersioningMock{
+			originalVersion:  "1.2.3",
+			versioningScheme: "maven",
+		}
+
+		utils := newArtifactPrepareVersionMockUtils()
+
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+
+		conf := gitConfig.RemoteConfig{Name: "origin", URLs: []string{"https://my.test.server"}}
+
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+			remote:       git.NewRemote(nil, &conf),
+		}
+
+		err := runArtifactPrepareVersion(&config, &telemetryData, &cpe, &versioningMock, utils, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+
+		assert.NoError(t, err)
+		assert.Equal(t, "vaultUser", config.Username)
+		assert.Equal(t, "vault-password", config.Password)
+		assert.True(t, repo.pushCalled)
+	})
+
 	t.Run("success case - cloud_noTag", func(t *testing.T) {
 
 		config := artifactPrepareVersionOptions{
