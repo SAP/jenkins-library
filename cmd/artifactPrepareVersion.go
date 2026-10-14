@@ -359,14 +359,18 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 
 func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
 
-	// System Trust provides only a token (used as password), never a username.
-	// A set password with an empty username therefore indicates the token came from
-	// System Trust (Jenkins/Vault always fill both) -> use a static username.
-	if len(config.Password) > 0 && len(config.Username) == 0 {
-		log.Entry().Info("git username empty but password set - assuming System Trust token, using static username 'system-trust'")
-		config.Username = "system-trust"
+	// Last resort: the GitHub Actions token. Keeps non-onboarded repos working.
+	if len(config.Password) == 0 {
+		if token := os.Getenv("GITHUB_TOKEN"); len(token) > 0 {
+			log.RegisterSecret(token)
+			log.Entry().Info("using GITHUB_TOKEN: no password from configuration, System Trust or Vault")
+			config.Password = token
+		}
 	}
-
+	// Tokens (System Trust, GITHUB_TOKEN) come without a username. Any non-empty one works for GitHub.
+	if len(config.Password) > 0 && len(config.Username) == 0 {
+		config.Username = "x-access-token"
+	}
 	var commitID string
 
 	commit, err := addAndCommit(config, worktree, newVersion, t)

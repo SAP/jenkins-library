@@ -661,6 +661,17 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: "system-trust", Password: "st-token"}}, repo.pushOptions)
 	})
 
+	t.Run("success - GITHUB_TOKEN fallback", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "gha-token")
+		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
+		repo := gitRepositoryMock{remote: remote}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		_, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, &gitHttp.BasicAuth{Username: "x-access-token", Password: "gha-token"}, repo.pushOptions.Auth)
+	})
+
 	t.Run("success - ssh fallback", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
