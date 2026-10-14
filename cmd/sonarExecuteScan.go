@@ -50,6 +50,10 @@ var (
 	doublestarGlob  = piperutils.Glob
 )
 
+const MAX_RETRIES = 3
+const BACKOFF_SECONDS = 3
+const NETWORK_EXCEPTION = "java.net.SocketException"
+
 const (
 	javaBinaries       = "sonar.java.binaries="
 	javaLibraries      = "sonar.java.libraries="
@@ -195,9 +199,19 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		Debug("Executing sonar scan command")
 	// execute scan
 	runner.SetEnv(sonar.environment)
-	err := runner.RunExecutable(sonar.binary, sonar.options...)
-	if err != nil {
-		return err
+
+	for i := range MAX_RETRIES {
+		err := runner.RunExecutable(sonar.binary, sonar.options...)
+		if err == nil {
+			break
+		}
+		if strings.Contains(err.Error(), NETWORK_EXCEPTION) && i != MAX_RETRIES-1 {
+			sleepTime := time.Duration((i+1)*BACKOFF_SECONDS) * time.Second
+			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
+			time.Sleep(sleepTime)
+		} else {
+			return err
+		}
 	}
 
 	// as PRs are handled locally for legacy SonarQube systems, no measurements will be fetched.
