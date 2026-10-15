@@ -226,6 +226,13 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 								Default: {{ .Default | quote }},
 								{{- end}}
 								{{- end }}
+								{{- if .Args }}
+								Args: map[string]string{
+									{{- range $key, $value := .Args }}
+									{{ $key | quote }}: {{ $value | quote }},
+									{{- end }}
+								},
+								{{- end }}
 							{{ "}" }},
 							{{- nindent 24 ""}}
 {{- end -}}

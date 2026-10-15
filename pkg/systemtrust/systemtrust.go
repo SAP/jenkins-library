@@ -31,8 +31,9 @@ type Configuration struct {
 type tokenRequestArray = []tokenRequest
 
 type tokenRequest struct {
-	System string `json:"system"`
-	Scope  string `json:"scope"`
+	System string            `json:"system"`
+	Scope  string            `json:"scope"`
+	Args   map[string]string `json:"args,omitempty"`
 }
 
 const defaultScope = "pipeline"
@@ -41,8 +42,14 @@ const defaultScope = "pipeline"
 // By default, refName is used as the system and the default scope is applied.
 // If refName contains "<scope>", the value before "<scope>" is used as the system
 // and the value after "<scope>" is propagated as the scope.
-func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration Configuration) (string, error) {
+func GetToken(refName string, client *piperhttp.Client, systemTrustConfiguration Configuration, requestArgs ...map[string]string) (string, error) {
+	if len(requestArgs) > 1 {
+		return "", errors.New("at most one System Trust argument map is supported")
+	}
 	body := refNameToTokenBody(refName)
+	if len(requestArgs) == 1 {
+		body.Args = requestArgs[0]
+	}
 	secrets, err := getSecrets(client, systemTrustConfiguration, body)
 	if err != nil {
 		return "", fmt.Errorf("couldn't get token from System Trust: %w", err)
@@ -106,6 +113,7 @@ func getResponse(serverURL, endpoint string, client *piperhttp.Client, body toke
 
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
+	header.Add("Content-Type", "application/json")
 
 	bodyReader, err := trustTokenRequestToReader(body)
 	if err != nil {
