@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -129,10 +130,28 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, _ *telemetry.C
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runGitopsUpdateDeployment(&config, c, &gitopsUpdateDeploymentGitUtils{}, piperutils.Files{})
+	err := runGitopsUpdateDeploymentAuthenticated(config, c)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+}
+
+func runGitopsUpdateDeploymentAuthenticated(options gitopsUpdateDeploymentOptions, runner gitopsUpdateDeploymentExecRunner) error {
+	// Do not initialize the App HTTP client (or download certificates) for legacy users.
+	var client *http.Client
+	if options.AuthenticationMode == "githubApp" {
+		apiClient := &piperhttp.Client{}
+		apiClient.SetOptions(piperhttp.ClientOptions{
+			MaxRequestDuration: 30 * time.Second,
+			TrustedCerts:       options.CustomTLSCertificateLinks,
+		})
+		client = apiClient.StandardClient()
+	}
+	return withGitopsAuthentication(options, config.GlobalVaultClient(), client, func(authenticated *gitopsUpdateDeploymentOptions) error {
+		return retryGitopsUpdateDeployment(authenticated.MaxPushAttempts, time.Sleep, func() error {
+			return runGitopsUpdateDeployment(authenticated, runner, &gitopsUpdateDeploymentGitUtils{}, piperutils.Files{})
+		})
+	})
 }
 
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
@@ -516,7 +535,7 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 
 	err = gitUtils.PushChangesToRepository(config.Username, config.Password, &config.ForcePush, certs)
 	if err != nil {
-		return [20]byte{}, fmt.Errorf("pushing changes failed: %w", err)
+		return [20]byte{}, &gitopsPushError{err: err}
 	}
 
 	return commit, nil
@@ -526,4 +545,34 @@ func defaultCommitMessage(config *gitopsUpdateDeploymentOptions) string {
 	image, tag, _ := buildRegistryPlusImageAndTagSeparately(config)
 	commitMessage := fmt.Sprintf("Updated %v to version %v", image, tag)
 	return commitMessage
+}
+
+// A typed boundary ensures only push failures can trigger a fresh-clone retry.
+type gitopsPushError struct{ err error }
+
+func (e *gitopsPushError) Error() string { return fmt.Sprintf("pushing changes failed: %v", e.err) }
+func (e *gitopsPushError) Unwrap() error { return e.err }
+
+func retryGitopsUpdateDeployment(attempts int, sleep func(time.Duration), run func() error) error {
+	if attempts == 0 {
+		attempts = 1
+	}
+	if attempts < 1 || attempts > 3 {
+		return errors.New("maxPushAttempts must be between 1 and 3")
+	}
+	for attempt := 1; ; attempt++ {
+		err := run()
+		var pushErr *gitopsPushError
+		if err == nil || attempt >= attempts || !errors.As(err, &pushErr) || !isGitopsBranchConflict(pushErr.err) {
+			return err
+		}
+		log.Entry().Info("Target branch changed during deployment; retrying from a fresh clone")
+		sleep(time.Duration(attempt*3-1) * time.Second)
+	}
+}
+
+func isGitopsBranchConflict(err error) bool {
+	message := err.Error()
+	return strings.Contains(message, "non-fast-forward") || strings.Contains(message, "fetch first") ||
+		regexp.MustCompile(`cannot lock ref .*: is at [0-9a-f]+ but expected [0-9a-f]+`).MatchString(message)
 }

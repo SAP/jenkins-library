@@ -69,6 +69,51 @@ spec:
           - STEPS
         mandatory: false
         default: false
+      - name: maxPushAttempts
+        type: int
+        default: 1
+        possibleValues: [1, 2, 3]
+        description: Maximum attempts after a rejected push due to concurrent branch updates. Each retry clones the branch again and reapplies the manifest changes. Other errors are not retried.
+        scope: [PARAMETERS, STAGES, STEPS]
+      - name: authenticationMode
+        type: string
+        default: legacy
+        possibleValues:
+          - legacy
+          - githubApp
+        description: Authentication provider for the target Git repository. GitHub App authentication is explicitly opt-in.
+        scope: [PARAMETERS, STAGES, STEPS]
+      - name: githubAppId
+        type: string
+        secret: true
+        description: GitHub App ID or client ID. Supply together with githubAppPrivateKey through secret environment variables.
+        scope: [PARAMETERS]
+      - name: githubAppPrivateKey
+        type: string
+        secret: true
+        description: PEM encoded RSA private key of the GitHub App. Supply together with githubAppId through secret environment variables.
+        scope: [PARAMETERS]
+      - name: githubAppVaultSecretName
+        type: string
+        default: githubApp
+        description: Name of the Vault secret containing appId and privateKey. Only read in githubApp mode when direct App credentials are absent.
+        scope: [PARAMETERS, STAGES, STEPS]
+      - name: githubAppApiUrl
+        type: string
+        description: GitHub REST API base URL for the target repository. Defaults to api.github.com for github.com or serverUrl's origin plus /api/v3 for Enterprise. An override must use HTTPS and the same host as the target (or api.github.com for github.com).
+        scope: [PARAMETERS, STAGES, STEPS]
+      - name: vaultPath
+        type: string
+        description: Existing Piper Vault lookup root, used for lazy GitHub App credential lookup.
+        scope: [GENERAL, PARAMETERS, STAGES, STEPS]
+      - name: vaultBasePath
+        type: string
+        description: Existing Piper Vault base path, used for lazy GitHub App credential lookup.
+        scope: [GENERAL, PARAMETERS, STAGES, STEPS]
+      - name: vaultPipelineName
+        type: string
+        description: Existing Piper Vault pipeline name, used for lazy GitHub App credential lookup.
+        scope: [GENERAL, PARAMETERS, STAGES, STEPS]
       - name: username
         type: string
         description: User name for git authentication
@@ -76,7 +121,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatoryIf:
+          - name: authenticationMode
+            value: legacy
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
@@ -92,7 +139,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatoryIf:
+          - name: authenticationMode
+            value: legacy
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
