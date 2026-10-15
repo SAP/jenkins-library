@@ -131,6 +131,31 @@ func MavenBuildCommand() *cobra.Command {
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.
 
+### Default build image
+
+This step runs in ` + "`" + `maven:3.9-sapmachine-17` + "`" + ` by default. That image bundles
+` + "`" + `maven-deploy-plugin` + "`" + ` 3.x, which is required because the step publishes artifacts using the
+Maven ` + "`" + `id::url` + "`" + ` deployment syntax; older images such as ` + "`" + `maven:3.8-jdk-8` + "`" + ` bundle
+` + "`" + `maven-deploy-plugin` + "`" + ` 2.7, which rejects that syntax and fails the deploy.
+
+If you need a different JDK or toolchain, override the image via
+` + "`" + `steps.mavenBuild.dockerImage: <another maintained image>` + "`" + `.
+
+### Staying on Java 8
+
+If your project must stay on JDK 8, the recommended fallback is to keep the
+` + "`" + `maven:3.8.6-jdk-8` + "`" + ` image **and** pin ` + "`" + `maven-deploy-plugin` + "`" + ` 3.1.1 in your ` + "`" + `pom.xml` + "`" + `:
+
+` + "`" + `` + "`" + `` + "`" + `xml
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-deploy-plugin</artifactId>
+  <version>3.1.1</version>
+</plugin>
+` + "`" + `` + "`" + `` + "`" + `
+
+This keeps your project on a JDK 8 image at the cost of a pom edit.
+
 ### Build-quality profile strategy
 
 The step always prepends a set of built-in Maven profiles to control
@@ -622,7 +647,7 @@ func mavenBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.8-jdk-8"},
+				{Name: "mvn", Image: "maven:3.9-sapmachine-17"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
