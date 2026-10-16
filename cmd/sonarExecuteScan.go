@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -205,7 +206,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			break
 		}
 		if strings.Contains(err.Error(), NETWORK_EXCEPTION) && i != MAX_RETRIES-1 {
-			sleepTime := time.Duration((i+1)*BACKOFF_SECONDS) * time.Second
+			sleepTime := time.Duration(math.Pow(2, float64(i))*BACKOFF_SECONDS) * time.Second
 			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
 			time.Sleep(sleepTime)
 		} else {
