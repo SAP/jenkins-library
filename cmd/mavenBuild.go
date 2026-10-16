@@ -40,16 +40,6 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData, c
 	}
 }
 
-// containsProfile reports whether target appears in the profiles slice.
-func containsProfile(profiles []string, target string) bool {
-	for _, p := range profiles {
-		if p == target {
-			return true
-		}
-	}
-	return false
-}
-
 // buildBuiltinProfiles returns the set of always-prepended Maven profiles.
 // When the caller opts in to milestone-quality resolution via "milestone.build",
 // only the snapshot exclusion is prepended so that the caller's "milestone.build"
