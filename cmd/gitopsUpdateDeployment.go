@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -135,29 +136,13 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, _ *telemetry.C
 	}
 }
 
-// applyTokenFallback uses the GitHub Actions token if no password was configured
-// and defaults the username for token based authentication.
-func (config *gitopsUpdateDeploymentOptions) applyTokenFallback() {
-	// Last resort: the GitHub Actions token. Keeps non-onboarded repos working.
-	if len(config.Password) == 0 {
-		if token := os.Getenv("GITHUB_TOKEN"); len(token) > 0 {
-			log.RegisterSecret(token)
-			log.Entry().Info("using GITHUB_TOKEN: no password from configuration, System Trust or Vault")
-			config.Password = token
-		}
-	}
-	if len(config.Password) > 0 && len(config.Username) == 0 {
-		config.Username = "x-access-token"
-	}
-}
-
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
 	err := checkRequiredFieldsForDeployTool(config)
 	if err != nil {
 		return err
 	}
 
-	config.applyTokenFallback()
+	config.Username, config.Password = piperGithub.WithActionsTokenFallback(config.Username, config.Password)
 
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
 	temporaryFolder = regexp.MustCompile(`^./`).ReplaceAllString(temporaryFolder, "")
