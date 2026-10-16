@@ -11,6 +11,41 @@ metadata:
   longDescription: |
     Executes the SAP Multitarget Application Archive Builder to create an mtar archive of the application.
 
+    ### Build-quality profile strategy
+
+    mtaBuild drives Maven internally via the `mbt` binary, so Maven profiles cannot be passed on
+    the command line.  Instead they are communicated by rewriting the `<activeProfiles>` section
+    of the downloaded global settings.xml before `mbt build` is invoked.
+
+    This rewrite is performed only when `globalSettingsFile` is provided — it is a no-op when no
+    global settings file is configured (the Docker image's default Maven settings are left unchanged).
+
+    Active-profile rules (positive IDs only; `!profile` is a CLI-only syntax):
+
+    * **Default / Release quality** (no user profiles): `<activeProfile>release.build</activeProfile>`
+      — replaces the SAP Artifactory default (`snapshot.build`) so that only the build-releases
+      repository is reachable.
+    * **Milestone quality** (when `milestone.build` is present in `profiles`): user profiles are
+      written as-is; `milestone.build` activates its own repository mapping.
+    * **Snapshot opt-in** (when `snapshot.build` is present in `profiles`): user profiles are
+      written as-is.
+    * **Custom profiles** (any other non-empty list): `release.build` is prepended to the user
+      list so the release repository remains accessible.
+
+    **Jenkins orchestrator**: Groovy wrappers (`executeBuild` / `sapPiperStageCentralBuild`)
+    communicate the desired build quality by passing `['milestone.build']` for Milestone builds
+    and an empty list for Release builds.
+
+    **GHA and Azure orchestrators**: There is no Groovy wrapper and no `buildQuality` mapping
+    for these orchestrators.  `mtaBuild` always uses the default Release profile set.
+    Milestone builds are **not supported** on GHA/Azure.
+
+    **Profile guard effectiveness**: Guard profiles are Maven no-ops unless the
+    `globalSettingsFile` settings.xml defines the `snapshot.build`, `milestone.build`, and
+    `release.build` profiles.  The SAP Artifactory release settings.xml used by all supported
+    deviation files (Jenkins, GHA, Azure) defines all three, so the guards are effective on all
+    orchestrators.
+
     ### build with dependencies from a private repository
 
     1. For Maven related settings refer [Maven build dependencies](./mavenBuild.md#build-with-dependencies-from-a-private-repository)
@@ -218,7 +253,18 @@ spec:
           - name: mta/publish
       - name: profiles
         type: "[]string"
-        description: Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml
+        description: >
+          Defines list of Maven build profiles to be used.
+          When globalSettingsFile is set the step rewrites the settings.xml <activeProfiles>
+          section with the effective profile set before invoking mbt build.
+          By default (Release quality, no user profiles) the active profile is set to
+          'release.build' — replacing the SAP Artifactory default (snapshot.build) and
+          restricting resolution to the build-releases repository only.
+          When 'milestone.build' is present the user profiles are written as-is (milestone
+          repository mapping is driven by the milestone.build profile itself).
+          When 'snapshot.build' is present the user profiles are written as-is.
+          On GHA and Azure orchestrators only Release quality is supported; Milestone builds are
+          not available on those platforms.
         scope:
           - PARAMETERS
           - GENERAL
