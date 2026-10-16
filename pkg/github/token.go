@@ -7,9 +7,7 @@ import (
 )
 
 const (
-	// gitHubTokenEnv is the token GitHub Actions provides to a workflow job, if the workflow exports it.
-	gitHubTokenEnv = "GITHUB_TOKEN"
-	// defaultTokenUsername is used for token based git authentication, GitHub accepts any non-empty username.
+	gitHubTokenEnv       = "GITHUB_TOKEN"
 	defaultTokenUsername = "x-access-token"
 )
 
