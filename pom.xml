@@ -42,6 +42,10 @@
     <properties>
         <revision>0-SNAPSHOT</revision>
         <findbugs.skip>true</findbugs.skip>
+        <!-- There is not a single .java file under src/, vars/ or test/; the parent POM
+             nevertheless binds maven-javadoc-plugin:javadoc to process-sources, so it forks
+             the javadoc tool on every build only to find nothing. -->
+        <maven.javadoc.skip>true</maven.javadoc.skip>
         <jenkins.version>2.32.3</jenkins.version>
         <pipeline.version>2.5</pipeline.version>
         <cps.global.lib.version>2.6</cps.global.lib.version>
@@ -237,24 +241,6 @@
                         <id>post-unit-test</id>
                         <phase>package</phase>
                         <goals><goal>report</goal></goals>
-                    </execution>
-                    <!-- INTEGRATION TESTS -->
-                    <!-- http://www.eclemma.org/jacoco/trunk/doc/maven.html
-                    Default settings
-                        propertyName: argLine
-                        destFile: ${project.build.directory}/jacoco-it.exec
-                        dataFile: ${project.build.directory}/jacoco-it.exec
-                        outputDirectory: ${project.reporting.outputDirectory}/jacoco-it
-                    -->
-                    <!-- Prepares the property pointing to the JaCoCo runtime agent which is passed as VM argument when Maven the Failsafe plugin is executed. -->
-                    <execution>
-                        <id>pre-integration-test</id>
-                        <goals><goal>prepare-agent-integration</goal></goals>
-                    </execution>
-                    <!-- Ensures that the code coverage report for integration tests after integration tests have been run. -->
-                    <execution>
-                        <id>post-integration-test</id>
-                        <goals><goal>report-integration</goal></goals>
                     </execution>
                 </executions>
             </plugin>

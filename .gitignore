@@ -53,3 +53,13 @@ cmd/checkmarx/piper_checkmarx_report.html
 cmd/fortify/piper_fortify_report.html
 cmd/fortify/piper_fortify_report.json
 cmd/toolruns
+
+# golangBuild output (see cmd/golangBuild.go). cover.out and unit-report.out had been
+# committed by accident in #5680; sonar-project.properties expects them to be generated.
+cover.out
+coverage.html
+cobertura-coverage.xml
+unit-report.out
+integration-report.out
+TEST-go.xml
+TEST-integration.xml
