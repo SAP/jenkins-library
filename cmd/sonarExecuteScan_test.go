@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -449,6 +450,109 @@ func TestSonarLoadScanner(t *testing.T) {
 		assert.Equal(t, url, mockClient.requestedURL[0])
 		assert.Regexp(t, "sonar-scanner-cli-4.6.2.2472-linux.zip$", mockClient.requestedFile[0])
 		assert.Equal(t, filepath.Join(getWorkingDir(), ".sonar-scanner", "bin", "sonar-scanner"), sonar.binary)
+	})
+}
+
+func TestRunSonarRetry(t *testing.T) {
+	mockDownloadClient := mockDownloader{shouldFail: false}
+	fileUtilsExists = mockFileUtilsExists(true)
+	defer func() { fileUtilsExists = piperutils.FileExists }()
+
+	apiClient := &piperHttp.Client{}
+	apiClient.SetOptions(piperHttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointCeTask, httpmock.NewStringResponder(http.StatusOK, `{ "task": { "componentId": "AXERR2JBbm9IiM5TEST", "status": "SUCCESS" }}`))
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointIssuesSearch, httpmock.NewStringResponder(http.StatusOK, `{ "total": 0 }`))
+	httpmock.RegisterResponder(http.MethodGet, sonarServerURL+"/api/"+SonarUtils.EndpointMeasuresComponent, httpmock.NewStringResponder(http.StatusOK, measuresComponentResponse))
+
+	socketErr := errors.New("java.net.SocketException: Connection reset")
+	otherErr := errors.New("java.lang.OutOfMemoryError")
+
+	newSonarSettings := func(tmpFolder string) {
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+	}
+
+	baseOptions := sonarExecuteScanOptions{
+		Token:               "secret",
+		ServerURL:           sonarServerURL,
+		PullRequestProvider: "GitHub",
+	}
+
+	t.Run("succeeds on first attempt without retry", func(t *testing.T) {
+		tmpFolder := t.TempDir()
+		createTaskReportFile(t, tmpFolder)
+		newSonarSettings(tmpFolder)
+
+		callCount := 0
+		mockRunner := mock.ExecMockRunner{}
+		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+			callCount++
+			return nil
+		}
+
+		err := runSonar(baseOptions, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.NoError(t, err)
+		assert.Equal(t, 1, callCount)
+	})
+
+	t.Run("retries on SocketException and succeeds", func(t *testing.T) {
+		tmpFolder := t.TempDir()
+		createTaskReportFile(t, tmpFolder)
+		newSonarSettings(tmpFolder)
+
+		callCount := 0
+		mockRunner := mock.ExecMockRunner{}
+		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+			callCount++
+			if callCount < 3 {
+				return socketErr
+			}
+			return nil
+		}
+
+		err := runSonar(baseOptions, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.NoError(t, err)
+		assert.Equal(t, 3, callCount)
+	})
+
+	t.Run("exhausts all retries on repeated SocketException and returns error", func(t *testing.T) {
+		tmpFolder := t.TempDir()
+		newSonarSettings(tmpFolder)
+
+		callCount := 0
+		mockRunner := mock.ExecMockRunner{}
+		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+			callCount++
+			return socketErr
+		}
+
+		err := runSonar(baseOptions, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.Error(t, err)
+		assert.Equal(t, socketErr, err)
+		assert.Equal(t, MAX_RETRIES, callCount)
+	})
+
+	t.Run("returns immediately on non-SocketException error without retrying", func(t *testing.T) {
+		tmpFolder := t.TempDir()
+		newSonarSettings(tmpFolder)
+
+		callCount := 0
+		mockRunner := mock.ExecMockRunner{}
+		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+			callCount++
+			return otherErr
+		}
+
+		err := runSonar(baseOptions, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.Error(t, err)
+		assert.Equal(t, otherErr, err)
+		assert.Equal(t, 1, callCount)
 	})
 }
 
