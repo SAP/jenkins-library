@@ -62,7 +62,7 @@ const (
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
-	log.Entry().Info(">>> Testing retry logic")
+	log.Entry().Info(">>> <SONAR-359> Testing retry logic")
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
