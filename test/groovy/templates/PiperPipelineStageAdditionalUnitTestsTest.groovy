@@ -41,14 +41,6 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
             return body()
         })
 
-        helper.registerAllowedMethod('batsExecuteTests', [Map.class], {m ->
-            stepsCalled.add('batsExecuteTests')
-        })
-
-        helper.registerAllowedMethod('karmaExecuteTests', [Map.class], {m ->
-            stepsCalled.add('karmaExecuteTests')
-        })
-
         helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
             stepsCalled.add('npmExecuteScripts')
         })
@@ -63,27 +55,7 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
 
         jsr.step.piperPipelineStageAdditionalUnitTests(script: nullScript, juStabUtils: utils)
 
-        assertThat(stepsCalled, not(anyOf(hasItem('batsExecuteTests'), hasItem('karmaExecuteTests'), hasItem('npmExecuteScripts'), hasItem('testsPublishResults'))))
-    }
-
-    @Test
-    void testAdditionalUnitTestsWithKarmaConfig() {
-
-        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Additional Unit Tests': [karmaExecuteTests: true]]]
-
-        jsr.step.piperPipelineStageAdditionalUnitTests(script: nullScript, juStabUtils: utils)
-
-        assertThat(stepsCalled, hasItems('karmaExecuteTests', 'testsPublishResults'))
-    }
-
-    @Test
-    void testAdditionalUnitTestsWithBats() {
-
-        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Additional Unit Tests': [batsExecuteTests: true]]]
-
-        jsr.step.piperPipelineStageAdditionalUnitTests(script: nullScript, juStabUtils: utils)
-
-        assertThat(stepsCalled, hasItems('batsExecuteTests', 'testsPublishResults'))
+        assertThat(stepsCalled, not(anyOf(hasItem('npmExecuteScripts'), hasItem('testsPublishResults'))))
     }
 
     @Test
