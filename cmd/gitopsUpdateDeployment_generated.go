@@ -185,7 +185,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
 	cmd.Flags().BoolVar(&stepConfig.ForcePush, "forcePush", false, "Force push to serverUrl")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication. On GitHub Actions the `GITHUB_TOKEN` environment variable is used when no other source provides a token.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated. For different tools this has different semantics:\n\n * `kubectl` - path to the `deployment.yaml` that should be patched. Supports globbing.\n * `helm` - path where the helm chart will be generated into. Here no globbing is supported.\n * `kustomize` - path to the `kustomization.yaml`. Supports globbing.\n")
 	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "The name of the container to update")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image is located")
@@ -198,8 +198,6 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 
 	cmd.MarkFlagRequired("branchName")
 	cmd.MarkFlagRequired("serverUrl")
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
 	cmd.MarkFlagRequired("containerImageNameTag")
@@ -276,7 +274,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
 					},
@@ -290,6 +288,12 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 							},
 
 							{
+								Name:    "gitSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app",
+							},
+
+							{
 								Name:    "gitHttpsCredentialVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "gitHttpsCredential",
@@ -297,7 +301,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
 					},
