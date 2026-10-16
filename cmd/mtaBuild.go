@@ -154,7 +154,8 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		return err
 	}
 
-	if err := handleActiveProfileUpdate(config, utils); err != nil {
+	effectiveProfiles := buildMtaEffectiveProfiles(config.Profiles)
+	if err := handleActiveProfileUpdate(config, effectiveProfiles, utils); err != nil {
 		return err
 	}
 
@@ -237,7 +238,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	mtaConfig := buildsettings.BuildOptions{
-		Profiles:           buildMtaEffectiveProfiles(config.Profiles),
+		Profiles:           effectiveProfiles,
 		GlobalSettingsFile: config.GlobalSettingsFile,
 		Publish:            config.Publish,
 		BuildSettingsInfo:  config.BuildSettingsInfo,
@@ -382,14 +383,13 @@ func buildMtaEffectiveProfiles(userProfiles []string) []string {
 	return result
 }
 
-func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
+func handleActiveProfileUpdate(config mtaBuildOptions, effectiveProfiles []string, utils mtaBuildUtils) error {
 	// Only update the settings.xml when a global settings file was provided;
 	// without one there is no $M2_HOME/conf/settings.xml for mbt's internal
 	// Maven to read, so there is nothing to update.
 	if len(config.GlobalSettingsFile) == 0 {
 		return nil
 	}
-	effectiveProfiles := buildMtaEffectiveProfiles(config.Profiles)
 	return maven.UpdateActiveProfileInSettingsXML(effectiveProfiles, utils)
 }
 
