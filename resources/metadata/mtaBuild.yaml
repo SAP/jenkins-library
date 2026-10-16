@@ -253,6 +253,7 @@ spec:
           - name: mta/publish
       - name: profiles
         type: "[]string"
+        mandatory: false
         description: >
           Defines list of Maven build profiles to be used.
           When globalSettingsFile is set the step rewrites the settings.xml <activeProfiles>

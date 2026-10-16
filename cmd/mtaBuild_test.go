@@ -572,6 +572,15 @@ const snapshotSettingsXML = `<?xml version="1.0" encoding="UTF-8"?>
     </activeProfiles>
 </settings>`
 
+// noActiveProfilesSettingsXML is a minimal settings.xml that contains no
+// <activeProfiles> element.  UpdateActiveProfileInSettingsXML warns and leaves
+// the file untouched in this case; tests assert the byte-identical no-op.
+const noActiveProfilesSettingsXML = `<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+</settings>`
+
 func TestBuildMtaEffectiveProfiles(t *testing.T) {
 	t.Parallel()
 
@@ -608,6 +617,13 @@ func TestBuildMtaEffectiveProfiles(t *testing.T) {
 	t.Run("multiple custom profiles get release.build prepended once", func(t *testing.T) {
 		assert.Equal(t, []string{"release.build", "p1", "p2"},
 			buildMtaEffectiveProfiles([]string{"p1", "p2"}))
+	})
+
+	t.Run("explicit release.build is not duplicated", func(t *testing.T) {
+		// When the caller already passes release.build the function must not
+		// prepend a second copy — that would produce duplicate <activeProfile>
+		// entries in settings.xml.
+		assert.Equal(t, []string{"release.build"}, buildMtaEffectiveProfiles([]string{"release.build"}))
 	})
 }
 
@@ -707,6 +723,8 @@ func TestMtaBuildProfileSettingsXMLUpdate(t *testing.T) {
 			s := string(content)
 			assert.Contains(t, s, "snapshot.build",
 				"settings.xml must contain snapshot.build for snapshot quality build")
+			assert.NotContains(t, s, "release.build",
+				"settings.xml must not contain release.build for snapshot quality passthrough")
 		}
 	})
 
@@ -765,5 +783,34 @@ func TestMtaBuildProfileSettingsXMLUpdate(t *testing.T) {
 		_, readErr := utilsMock.FileRead(settingsPath)
 		assert.NotNil(t, readErr,
 			"settings.xml must not exist (was not created/written) when no globalSettingsFile is provided")
+	})
+
+	t.Run("settings.xml with no activeProfiles element is left unchanged", func(t *testing.T) {
+		// UpdateActiveProfileInSettingsXML warns and leaves the file untouched
+		// when it finds no <activeProfiles> element; this test asserts that
+		// runMtaBuild propagates that no-op without error.
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		utilsMock.AddFile(settingsPath, []byte(noActiveProfilesSettingsXML))
+
+		options := mtaBuildOptions{
+			ApplicationName:    "myApp",
+			Platform:           "CF",
+			MtarName:           "myApp.mtar",
+			Source:             "./",
+			Target:             "./",
+			GlobalSettingsFile: "https://repo.example.com/settings.xml",
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+
+		content, readErr := utilsMock.FileRead(settingsPath)
+		if assert.Nil(t, readErr) {
+			assert.Equal(t, noActiveProfilesSettingsXML, string(content),
+				"settings.xml must be unchanged when no <activeProfiles> element is present")
+		}
 	})
 }

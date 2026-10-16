@@ -347,18 +347,6 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 	return nil
 }
 
-// containsProfile reports whether target appears in the profiles slice.
-// NOTE: an identical function is defined in mavenBuild.go (HSBUILD-118);
-// both should be de-duplicated into a shared file when the two branches merge.
-func containsProfile(profiles []string, target string) bool {
-	for _, p := range profiles {
-		if p == target {
-			return true
-		}
-	}
-	return false
-}
-
 // buildMtaEffectiveProfiles returns the Maven profile IDs to write into the
 // global settings.xml <activeProfiles> section for mtaBuild.
 //
@@ -381,6 +369,11 @@ func containsProfile(profiles []string, target string) bool {
 //     repository remains accessible alongside the custom profiles.
 func buildMtaEffectiveProfiles(userProfiles []string) []string {
 	if containsProfile(userProfiles, "milestone.build") || containsProfile(userProfiles, "snapshot.build") {
+		return userProfiles
+	}
+	if containsProfile(userProfiles, "release.build") {
+		// Caller already carries release.build; prepending another copy would produce
+		// a duplicate <activeProfile> entry in settings.xml.
 		return userProfiles
 	}
 	result := make([]string, 0, len(userProfiles)+1)
