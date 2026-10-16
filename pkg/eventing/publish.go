@@ -3,6 +3,8 @@ package eventing
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/gcp"
@@ -60,13 +62,34 @@ func PublishTaskRunFinishedEvent(tokenProvider gcp.OIDCTokenProvider, generalCon
 		}
 	}
 
-	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, map[string]any{
+	payload := map[string]any{
 		"taskName":      ctx.StepName,
 		"stageName":     ctx.StageName,
 		"outcome":       outcome,
 		"pipelineRunId": ctx.PipelineID,
 		"errorDetail":   fatalError,
-	})
+	}
+
+	// Merge CPE eventData if available (written by getConfig/sapCumulusUpload on productive branches).
+	// CPE fields never overwrite the EventContext-derived fields above.
+	if ctx.CPEEventDataPath != "" {
+		cpeEventDataFile := filepath.Join(ctx.CPEEventDataPath, "commonPipelineEnvironment", "custom", "eventData")
+		if raw, err := os.ReadFile(cpeEventDataFile); err == nil {
+			var cpeData map[string]any
+			if err := json.Unmarshal(raw, &cpeData); err == nil {
+				for k, v := range cpeData {
+					if _, exists := payload[k]; !exists {
+						payload[k] = v
+					}
+				}
+			} else {
+				log.Entry().WithError(err).Warn("could not parse CPE eventData for event enrichment")
+			}
+		}
+		// file not existing is not an error — CPE eventData is only present on productive branch runs
+	}
+
+	eventData, err := newEvent(eventTypeTaskRunFinished, eventSource, payload)
 	if err != nil {
 		return fmt.Errorf("failed to create event: %w", err)
 	}
