@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	gitHubTokenEnv = "GITHUB_TOKEN"
+	gitHubTokenEnv       = "GITHUB_TOKEN"
 	defaultTokenUsername = "x-access-token"
 )
 
