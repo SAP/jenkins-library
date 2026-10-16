@@ -615,6 +615,10 @@ func TestMtaBuildProfileSettingsXMLUpdate(t *testing.T) {
 	const testM2Home = "/opt/test/m2"
 	const settingsPath = testM2Home + "/conf/settings.xml"
 
+	SetConfigOptions(ConfigCommandOptions{
+		OpenFile: config.OpenPiperFile,
+	})
+
 	cpe := mtaBuildCommonPipelineEnvironment{}
 
 	t.Run("default profiles rewrite settings.xml to release.build", func(t *testing.T) {
