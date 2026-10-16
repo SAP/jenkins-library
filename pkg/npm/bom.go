@@ -8,6 +8,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telesiactl"
 )
 
 const (
@@ -37,6 +38,18 @@ var cycloneDxCliUrl = map[struct{ os, arch string }]string{
 // CreateBOM generates a CycloneDX Bill of Materials (BOM) file for the given package.json files.
 // It supports both pnpm and other package managers (npm/yarn) with different BOM generation strategies.
 func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
+	telesiactlBinary, canRunTelesiactl, err := telesiactl.ResolveBinary(exec.Utils)
+	if err != nil {
+		log.Entry().Warnf("telesiactl availability check failed, falling back to legacy implementation: %v", err)
+	}
+	if canRunTelesiactl {
+		if err := exec.createBOMWithTelesiactl(telesiactlBinary, packageJSONFiles); err == nil {
+			return nil
+		} else {
+			log.Entry().Warnf("telesiactl BOM creation failed, falling back to legacy implementation: %v", err)
+		}
+	}
+
 	log.Entry().Debug("Detecting package manager...")
 	pm, err := exec.detectPackageManager()
 	if err != nil {
@@ -51,6 +64,20 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	}
 
 	return exec.createNpmBOM(packageJSONFiles)
+}
+
+func (exec *Execute) createBOMWithTelesiactl(telesiactlBinary string, packageJSONFiles []string) error {
+	execRunner := exec.Utils.GetExecRunner()
+	for _, packageJSONFile := range packageJSONFiles {
+		projectPath := filepath.Dir(packageJSONFile)
+		args := []string{"sbom", "generate", "--tech", "npm", "--project-path", projectPath, "--output", npmBomFilename, "--schema-version", CycloneDxSchemaVersion}
+
+		if err := execRunner.RunExecutable(telesiactlBinary, args...); err != nil {
+			return fmt.Errorf("telesiactl BOM creation failed for package %s: %w", packageJSONFile, err)
+		}
+	}
+
+	return nil
 }
 
 // createPnpmBOM generates a BOM for pnpm projects using cdxgen and cyclonedx-cli
