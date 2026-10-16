@@ -135,11 +135,30 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, _ *telemetry.C
 	}
 }
 
+// applyGitCredentialFallback uses the GitHub Actions token if no password was configured
+// and defaults the username for token based authentication.
+func applyGitCredentialFallback(config *gitopsUpdateDeploymentOptions) {
+	// Last resort: the GitHub Actions token. Keeps non-onboarded repos working.
+	if len(config.Password) == 0 {
+		if token := os.Getenv("GITHUB_TOKEN"); len(token) > 0 {
+			log.RegisterSecret(token)
+			log.Entry().Info("using GITHUB_TOKEN: no password from configuration, System Trust or Vault")
+			config.Password = token
+		}
+	}
+	// Tokens (System Trust, GITHUB_TOKEN) come without a username. Any non-empty one works for GitHub.
+	if len(config.Password) > 0 && len(config.Username) == 0 {
+		config.Username = "x-access-token"
+	}
+}
+
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
 	err := checkRequiredFieldsForDeployTool(config)
 	if err != nil {
 		return err
 	}
+
+	applyGitCredentialFallback(config)
 
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
 	temporaryFolder = regexp.MustCompile(`^./`).ReplaceAllString(temporaryFolder, "")

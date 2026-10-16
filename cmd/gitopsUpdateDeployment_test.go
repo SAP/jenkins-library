@@ -815,6 +815,40 @@ func (f *filesMock) Glob(pattern string) (matches []string, err error) {
 	return piperutils.Files{}.Glob(pattern)
 }
 
+func TestApplyGitCredentialFallback(t *testing.T) {
+	t.Run("configured password wins over GITHUB_TOKEN", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "env-token")
+		config := &gitopsUpdateDeploymentOptions{Username: "user", Password: "configured"}
+		applyGitCredentialFallback(config)
+		assert.Equal(t, "user", config.Username)
+		assert.Equal(t, "configured", config.Password)
+	})
+
+	t.Run("GITHUB_TOKEN used as last resort, username defaulted", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "env-token")
+		config := &gitopsUpdateDeploymentOptions{}
+		applyGitCredentialFallback(config)
+		assert.Equal(t, "x-access-token", config.Username)
+		assert.Equal(t, "env-token", config.Password)
+	})
+
+	t.Run("token without username gets default username", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "")
+		config := &gitopsUpdateDeploymentOptions{Password: "st-token"}
+		applyGitCredentialFallback(config)
+		assert.Equal(t, "x-access-token", config.Username)
+		assert.Equal(t, "st-token", config.Password)
+	})
+
+	t.Run("nothing available stays empty", func(t *testing.T) {
+		t.Setenv("GITHUB_TOKEN", "")
+		config := &gitopsUpdateDeploymentOptions{}
+		applyGitCredentialFallback(config)
+		assert.Empty(t, config.Username)
+		assert.Empty(t, config.Password)
+	})
+}
+
 type gitUtilsMock struct {
 	savedFiles         []string
 	changedBranch      string
