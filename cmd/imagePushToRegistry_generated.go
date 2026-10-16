@@ -286,6 +286,12 @@ func imagePushToRegistryMetadata() config.StepData {
 								Type:    "vaultSecret",
 								Default: "docker-registry",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -305,6 +311,12 @@ func imagePushToRegistryMetadata() config.StepData {
 								Name:    "registryCredentialsVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "docker-registry",
+							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

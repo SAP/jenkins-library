@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/build"
@@ -90,6 +92,10 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
+	if err := acquireNpmExecuteScriptsStagingCredentials(context.Background(), config); err != nil {
+		return fmt.Errorf("acquire JIT staging credentials: %w", err)
+	}
 
 	buildCoordinates := []versioning.Coordinates{}
 

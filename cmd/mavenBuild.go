@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -178,6 +179,10 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		log.Entry().Warnf("failed to create build settings info: %v", err)
 	}
 	commonPipelineEnvironment.custom.buildSettingsInfo = buildSettingsInfo
+
+	if err := acquireMavenBuildStagingCredentials(context.Background(), config); err != nil {
+		return fmt.Errorf("acquire JIT staging credentials: %w", err)
+	}
 
 	if err == nil {
 		if config.Publish && !config.Verify {
