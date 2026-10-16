@@ -146,7 +146,6 @@ func applyGitCredentialFallback(config *gitopsUpdateDeploymentOptions) {
 			config.Password = token
 		}
 	}
-	// Tokens (System Trust, GITHUB_TOKEN) come without a username. Any non-empty one works for GitHub.
 	if len(config.Password) > 0 && len(config.Username) == 0 {
 		config.Username = "x-access-token"
 	}
