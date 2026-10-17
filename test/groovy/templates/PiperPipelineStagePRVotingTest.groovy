@@ -59,10 +59,6 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
             stepsCalled.add('testsPublishResults')
         })
 
-        helper.registerAllowedMethod('karmaExecuteTests', [Map.class], {m ->
-            stepsCalled.add('karmaExecuteTests')
-        })
-
         helper.registerAllowedMethod('mavenExecuteIntegration', [Map.class], {m ->
             stepsCalled.add('mavenExecuteIntegration')
         })
@@ -99,7 +95,7 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
         jsr.step.piperPipelineStagePRVoting(script: nullScript, juStabUtils: utils)
 
         assertThat(stepsCalled, hasItems('buildExecute', 'checksPublishResults', 'testsPublishResults'))
-        assertThat(stepsCalled, not(anyOf(hasItem('karmaExecuteTests'), hasItem('mavenExecuteIntegration'), hasItem('mavenExecuteStaticCodeChecks'), hasItem('npmExecuteLint'), hasItem('npmExecuteScripts'), hasItem('whitesourceExecuteScan'))))
+        assertThat(stepsCalled, not(anyOf(hasItem('mavenExecuteIntegration'), hasItem('mavenExecuteStaticCodeChecks'), hasItem('npmExecuteLint'), hasItem('npmExecuteScripts'), hasItem('whitesourceExecuteScan'))))
         assertThat(stepParameters.buildExecute.buildTool, is('maven'))
         assertThat(stepParameters.buildExecute.dockerRegistryUrl, nullValue())
     }
@@ -109,7 +105,7 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [
             general: [buildTool: 'maven'],
-            runStep: ['Pull-Request Voting': [karmaExecuteTests: true, whitesourceExecuteScan: true]]
+            runStep: ['Pull-Request Voting': [whitesourceExecuteScan: true]]
         ]
 
         jsr.step.piperPipelineStagePRVoting(
@@ -117,7 +113,7 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
             juStabUtils: utils,
         )
 
-        assertThat(stepsCalled, hasItems( 'karmaExecuteTests', 'whitesourceExecuteScan'))
+        assertThat(stepsCalled, hasItems('whitesourceExecuteScan'))
         assertThat(stepParameters.whitesourceExecuteScan.productVersion, is('PR-1'))
     }
 
@@ -126,7 +122,7 @@ class PiperPipelineStagePRVotingTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [
             general: [buildTool: 'docker'],
-            runStep: ['Pull-Request Voting': [karmaExecuteTests: true, whitesourceExecuteScan: true]]
+            runStep: ['Pull-Request Voting': [whitesourceExecuteScan: true]]
         ]
 
         jsr.step.piperPipelineStagePRVoting(

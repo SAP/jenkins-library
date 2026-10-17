@@ -1,8 +1,0 @@
-_schema-version: "3.1"
-ID: fs-storage-ext
-extends: fs-storage
-
-modules:
-  - name: anatz
-    parameters:
-      memory: 32M

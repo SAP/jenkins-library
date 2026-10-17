@@ -71,16 +71,6 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             stepParameters.newmanExecute = m
         })
 
-        helper.registerAllowedMethod('uiVeri5ExecuteTests', [Map.class], {m ->
-            stepsCalled.add('uiVeri5ExecuteTests')
-            stepParameters.uiVeri5ExecuteTests = m
-        })
-
-        helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
-            stepsCalled.add('npmExecuteEndToEndTests')
-            stepParameters.npmExecuteEndToEndTests = m
-        })
-
         helper.registerAllowedMethod('testsPublishResults', [Map.class], {m ->
             stepsCalled.add('testsPublishResults')
             stepParameters.testsPublishResults = m
@@ -94,7 +84,7 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(stepsCalled,  not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('newmanExecute'), hasItem('uiVeri5ExecuteTests'), hasItem('gaugeExecuteTests'))))
+        assertThat(stepsCalled,  not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('newmanExecute'), hasItem('gaugeExecuteTests'))))
 
     }
 
@@ -171,28 +161,5 @@ class PiperPipelineStageAcceptanceTest extends BasePiperTest {
             newmanExecute: true
         )
         assertThat(stepsCalled, hasItems('newmanExecute', 'testsPublishResults'))
-    }
-
-    @Test
-    void testAcceptanceStageUiVeri5() {
-
-        jsr.step.piperPipelineStageAcceptance(
-            script: nullScript,
-            juStabUtils: utils,
-            uiVeri5ExecuteTests: true
-        )
-        assertThat(stepsCalled, hasItems('uiVeri5ExecuteTests', 'testsPublishResults'))
-    }
-
-    @Test
-    void testAcceptanceNpmExecuteEndToEndTests() {
-
-        jsr.step.piperPipelineStageAcceptance(
-            script: nullScript,
-            juStabUtils: utils,
-            npmExecuteEndToEndTests: true
-        )
-
-        assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
     }
 }

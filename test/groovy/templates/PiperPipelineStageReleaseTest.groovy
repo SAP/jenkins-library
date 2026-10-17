@@ -63,11 +63,6 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             stepParameters.kubernetesDeploy = m
         })
 
-        helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
-            stepsCalled.add('npmExecuteEndToEndTests')
-            stepParameters.npmExecuteEndToEndTests = m
-        })
-
         helper.registerAllowedMethod('githubPublishRelease', [Map.class], {m ->
             stepsCalled.add('githubPublishRelease')
             stepParameters.githubPublishRelease = m
@@ -137,19 +132,6 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('kubernetesDeploy'))
-    }
-
-    @Test
-    void testAcceptanceNpmExecuteEndToEndTests() {
-
-        jsr.step.piperPipelineStageRelease(
-            script: nullScript,
-            juStabUtils: utils,
-            npmExecuteEndToEndTests: true
-        )
-
-        assertThat(stepsCalled, hasItem('npmExecuteEndToEndTests'))
-        assertThat(stepParameters.npmExecuteEndToEndTests.runScript, is('ci-smoke'))
     }
 
     @Test

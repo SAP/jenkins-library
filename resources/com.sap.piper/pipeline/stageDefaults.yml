@@ -23,12 +23,6 @@ spec:
               - filePattern: '**/sonar-project.properties'
      - displayName: Additional Unit Tests
        steps:
-          - name: batsExecuteTests
-            conditions:
-              - filePattern: '**/*.bats'
-          - name: karmaExecuteTests
-            conditions:
-              - filePattern: '**/karma.conf.js'
           - name: npmExecuteScripts
             conditions:
               - configKey: 'runScripts'
@@ -57,13 +51,6 @@ spec:
             conditions:
               - filePatternFromConfig: 'newmanCollection'
               - configKey: 'testRepository'
-          - name: uiVeri5ExecuteTests
-            conditions:
-              - filePattern: '**/conf.js'
-              - configKey: 'testRepository'
-          - name: npmExecuteEndToEndTests
-            conditions:
-              - configKey: 'appUrls'
      - displayName: Security
        steps:
           - name: checkmarxExecuteScan
@@ -93,9 +80,6 @@ spec:
           - name: containerPushToRegistry
             conditions:
               - configKey: 'dockerRegistryUrl'
-          - name: nexusUpload
-            conditions:
-              - configKey: 'url'
      - displayName: Release
        steps:
           - name: multicloudDeploy
@@ -109,18 +93,9 @@ spec:
           - name: neoDeploy
             conditions:
               - configKey: 'neo/account'
-          - name: tmsUpload
-            conditions:
-              - configKey: nodeName
-          - name: tmsExport
-            conditions:
-              - configKey: nodeName
           - name: healthExecuteCheck
             conditions:
               - configKey: 'testServerUrl'
-          - name: npmExecuteEndToEndTests
-            conditions:
-              - configKey: 'appUrls'
           - name: githubPublishRelease
             conditions:
               - configKey: 'githubTokenCredentialsId'

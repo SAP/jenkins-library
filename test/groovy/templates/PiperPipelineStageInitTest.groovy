@@ -221,16 +221,14 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         def config = [
             pullRequestStageName: 'Pull-Request Voting',
             stepMappings        : [
-                karma      : 'karmaExecuteTests',
                 whitesource: 'whitesourceExecuteScan'
             ],
             labelPrefix         : 'pr_'
         ]
 
-        def actions = ['karma', 'pr_whitesource']
+        def actions = ['pr_whitesource']
         jsr.step.piperPipelineStageInit.setPullRequestStageStepActivation(nullScript, config, actions)
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".karmaExecuteTests, is(true))
         assertThat(nullScript.commonPipelineEnvironment.configuration.runStep."Pull-Request Voting".whitesourceExecuteScan, is(true))
     }
 
