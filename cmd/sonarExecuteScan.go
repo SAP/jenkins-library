@@ -522,6 +522,7 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 }
 
 func isNetworkIssue(err error) bool {
+	log.Entry().Info(">>> Original error: " + err.Error())
 	for _, pattern := range NETWORK_ISSUES {
 		if strings.Contains(err.Error(), pattern) {
 			return true
