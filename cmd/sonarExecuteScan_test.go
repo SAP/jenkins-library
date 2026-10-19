@@ -511,6 +511,7 @@ func TestRunSonarRetry(t *testing.T) {
 		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
 			callCount++
 			if callCount < 3 {
+				fmt.Fprint(mockRunner.GetStderr(), socketErr.Error())
 				return socketErr
 			}
 			return nil
@@ -529,6 +530,7 @@ func TestRunSonarRetry(t *testing.T) {
 		mockRunner := mock.ExecMockRunner{}
 		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
 			callCount++
+			fmt.Fprint(mockRunner.GetStderr(), socketErr.Error())
 			return socketErr
 		}
 
@@ -546,6 +548,7 @@ func TestRunSonarRetry(t *testing.T) {
 		mockRunner := mock.ExecMockRunner{}
 		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
 			callCount++
+			fmt.Fprint(mockRunner.GetStderr(), otherErr.Error())
 			return otherErr
 		}
 
