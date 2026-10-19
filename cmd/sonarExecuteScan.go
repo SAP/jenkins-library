@@ -214,7 +214,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		if err == nil {
 			break
 		}
-		if i != MAX_RETRIES-1 && isNetworkIssue(err, stderrBuf.String()) {
+		if i != MAX_RETRIES-1 && isNetworkIssue(stderrBuf.String()) {
 			sleepTime := time.Duration(math.Pow(2, float64(i))*BACKOFF_SECONDS) * time.Second
 			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
 			time.Sleep(sleepTime)
@@ -527,11 +527,9 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	}
 }
 
-func isNetworkIssue(err error, stderr string) bool {
-	combined := err.Error() + stderr
-	log.Entry().Info(">>> Original error: [" + err.Error() + "]")
+func isNetworkIssue(stderr string) bool {
 	for _, pattern := range NETWORK_ISSUES {
-		if strings.Contains(combined, pattern) {
+		if strings.Contains(stderr, pattern) {
 			return true
 		}
 	}
