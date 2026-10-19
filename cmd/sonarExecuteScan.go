@@ -53,6 +53,7 @@ var (
 
 const MAX_RETRIES = 3
 const BACKOFF_SECONDS = 30
+
 var NETWORK_ISSUES = []string{
 	"java.net.SocketException",
 	"failed with HTTP 404 Not Found",
@@ -208,7 +209,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		if err == nil {
 			break
 		}
-		if  i != MAX_RETRIES-1 && isNetworkIssue(err) {
+		if i != MAX_RETRIES-1 && isNetworkIssue(err) {
 			sleepTime := time.Duration(math.Pow(2, float64(i))*BACKOFF_SECONDS) * time.Second
 			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
 			time.Sleep(sleepTime)
