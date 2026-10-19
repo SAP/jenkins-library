@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	gitHubTokenEnv       = "GITHUB_TOKEN"
+	// GitHubTokenEnv is the environment variable holding the token GitHub Actions provides to a job.
+	GitHubTokenEnv       = "GITHUB_TOKEN"
 	defaultTokenUsername = "x-access-token"
 )
 
@@ -16,9 +17,9 @@ const (
 // and a token without username gets a default username.
 func WithActionsTokenFallback(username, token string) (string, string) {
 	if token == "" {
-		if envToken := os.Getenv(gitHubTokenEnv); envToken != "" {
+		if envToken := os.Getenv(GitHubTokenEnv); envToken != "" {
 			log.RegisterSecret(envToken)
-			log.Entry().Infof("Using the %s environment variable: no token from configuration, System Trust or Vault", gitHubTokenEnv)
+			log.Entry().Infof("Using the %s environment variable: no token from configuration, System Trust or Vault", GitHubTokenEnv)
 			token = envToken
 		}
 	}

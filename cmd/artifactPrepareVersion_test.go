@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -662,7 +663,7 @@ func TestPushChanges(t *testing.T) {
 	})
 
 	t.Run("success - GITHUB_TOKEN fallback", func(t *testing.T) {
-		t.Setenv("GITHUB_TOKEN", "gha-token")
+		t.Setenv(piperGithub.GitHubTokenEnv, "gha-token")
 		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
 		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
