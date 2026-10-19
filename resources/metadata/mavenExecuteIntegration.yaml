@@ -142,7 +142,7 @@ spec:
             type: jacoco-coverage
   containers:
     - name: mvn
-      image: maven:3.6-jdk-8
+      image: docker.io/maven:3.6-jdk-8
 
   # This declaration is necessary in order to return any sidecar configuration in the context config.
   sidecars:

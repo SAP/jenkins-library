@@ -993,12 +993,12 @@ func detectExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "openjdk", Image: "openjdk:11-ea", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "openjdk", Image: "docker.io/openjdk:11-ea", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Sidecars: []config.Container{
-				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},
-				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "alpine"}}}}},
-				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "centos"}}}}},
+				{Name: "inspector-ubuntu", Image: "docker.io/blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "docker.io/blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "docker.io/blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

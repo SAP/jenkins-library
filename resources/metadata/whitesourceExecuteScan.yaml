@@ -753,7 +753,7 @@ spec:
           - filePattern: "**/piper_whitesource_sbom.xml"
             type: whitesource-security
   containers:
-    - image: buildpack-deps:stretch-curl
+    - image: docker.io/buildpack-deps:stretch-curl
       workingDir: /tmp
       env: []
       conditions:
@@ -763,7 +763,7 @@ spec:
               value: dub
             - name: buildTool
               value: docker
-    - image: devxci/mbtci-java11-node14
+    - image: docker.io/devxci/mbtci-java11-node14
       workingDir: /home/mta
       env: []
       conditions:
@@ -771,7 +771,7 @@ spec:
           params:
             - name: buildTool
               value: mta
-    - image: golang:1
+    - image: docker.io/golang:1
       workingDir: /go
       env: []
       options:
@@ -782,7 +782,7 @@ spec:
           params:
             - name: buildTool
               value: golang
-    - image: gradle
+    - image: docker.io/gradle
       workingDir: /home/gradle
       env: []
       conditions:
@@ -790,7 +790,7 @@ spec:
           params:
             - name: buildTool
               value: gradle
-    - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
+    - image: docker.io/hseeberger/scala-sbt:8u181_2.12.8_1.2.8
       workingDir: /tmp
       env: []
       conditions:
@@ -798,7 +798,7 @@ spec:
           params:
             - name: buildTool
               value: sbt
-    - image: maven:3.5-jdk-8
+    - image: docker.io/maven:3.5-jdk-8
       workingDir: /tmp
       env: []
       conditions:
@@ -806,7 +806,7 @@ spec:
           params:
             - name: buildTool
               value: maven
-    - image: node:24-bookworm
+    - image: docker.io/node:24-bookworm
       workingDir: /home/node
       env: []
       conditions:
@@ -814,7 +814,7 @@ spec:
           params:
             - name: buildTool
               value: npm
-    - image: python:3.6-stretch
+    - image: docker.io/python:3.6-stretch
       workingDir: /tmp
       env: []
       conditions:
@@ -822,7 +822,7 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: node:24-bookworm
+    - image: docker.io/node:24-bookworm
       workingDir: /home/node
       env: []
       conditions:

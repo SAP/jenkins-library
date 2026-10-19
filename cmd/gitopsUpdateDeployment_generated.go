@@ -399,9 +399,9 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "dtzar/helm-kubectl:3.18.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:3.18.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
-				{Image: "alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kustomize"}}}}},
+				{Image: "docker.io/dtzar/helm-kubectl:3.18.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
+				{Image: "docker.io/dtzar/helm-kubectl:3.18.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
+				{Image: "docker.io/alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kustomize"}}}}},
 			},
 		},
 	}

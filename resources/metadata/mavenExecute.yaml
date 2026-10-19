@@ -87,4 +87,4 @@ spec:
           - name: maven/logSuccessfulMavenTransfers
   containers:
     - name: mvn
-      image: maven:3.6-jdk-8
+      image: docker.io/maven:3.6-jdk-8

@@ -153,4 +153,4 @@ spec:
             type: cobertura-coverage
   containers:
     - name: python
-      image: python:3.11
+      image: docker.io/python:3.11
