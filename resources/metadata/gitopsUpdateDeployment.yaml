@@ -76,7 +76,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
@@ -87,17 +87,20 @@ spec:
             default: gitHttpsCredential
       - name: password
         type: string
-        description: Password/token for git authentication.
+        description: Password/token for git authentication. On GitHub Actions the `GITHUB_TOKEN` environment variable is used when no other source provides a token.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
             type: secret
             param: password
+          - type: systemTrustSecret
+            name: gitSystemTrustSecretName
+            default: github-app
           - type: vaultSecret
             name: gitHttpsCredentialVaultSecretName
             default: gitHttpsCredential

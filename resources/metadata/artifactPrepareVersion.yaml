@@ -122,6 +122,7 @@ spec:
           - mta
           - npm
           - pip
+          - rust
           - sbt
           - yarn
       - name: additionalTargetDescriptors
@@ -158,6 +159,7 @@ spec:
           - mta
           - npm
           - pip
+          - rust
           - sbt
           - yarn
           - CAP
@@ -291,6 +293,9 @@ spec:
           - type: vaultSecret
             name: gitHttpsCredentialVaultSecretName
             default: gitHttpsCredential
+          - type: systemTrustSecret
+            name: gitSystemTrustSecretName
+            default: github-app
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile

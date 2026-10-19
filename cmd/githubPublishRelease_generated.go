@@ -199,7 +199,7 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url for end-user access.")
 	cmd.Flags().StringVar(&stepConfig.TagPrefix, "tagPrefix", ``, "Defines a prefix to be added to the tag.")
-	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
+	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line. On GitHub Actions the `GITHUB_TOKEN` environment variable is used when no other source provides a token.")
 	cmd.Flags().StringVar(&stepConfig.UploadURL, "uploadUrl", `https://uploads.github.com`, "Set the GitHub API url.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Define the version number which will be written as tag as well as release name.")
 	cmd.Flags().BoolVar(&stepConfig.AutoDetectPreRelease, "autoDetectPreRelease", false, "If set to `true`, the pre-release flag will be determined automatically from the version per SemVer (versions with a hyphenated pre-release like `1.2.3-beta` are marked as pre-releases). Build metadata (`+...`) is ignored.")
@@ -208,7 +208,6 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("serverUrl")
-	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("uploadUrl")
 	cmd.MarkFlagRequired("version")
 }
@@ -390,10 +389,16 @@ func githubPublishReleaseMetadata() config.StepData {
 								Type:    "vaultSecret",
 								Default: "github",
 							},
+
+							{
+								Name:    "githubSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 						Default:   os.Getenv("PIPER_token"),
 					},

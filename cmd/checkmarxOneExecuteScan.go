@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -585,7 +584,7 @@ func (c *checkmarxOneExecuteScanHelper) ZipFiles() (*os.File, error) {
 	}
 	zipFile, err := c.zipWorkspaceFiles(c.config.FilterPattern, c.utils)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to zip workspace files")
+		return nil, fmt.Errorf("Failed to zip workspace files: %w", err)
 	}
 	return zipFile, nil
 }
@@ -948,7 +947,7 @@ func (c *checkmarxOneExecuteScanHelper) PostScanSummaryInPullRequest(detailedRes
 		}
 		comment := &github.IssueComment{
 			Body: new(fmt.Sprintf(`<!-- Piper CxOne Scan Summary -->
-# %s CheckmarxOne scan completed 
+# %s CheckmarxOne scan completed
 **Project**: %s
 **ScanId**: %s
 %s%s
@@ -1063,7 +1062,7 @@ func (c *checkmarxOneExecuteScanHelper) GetReportPDF(scan *checkmarxOne.Scan, en
 		return fmt.Errorf("cannot generate a report for 0 engines")
 	}
 	if c.config.GeneratePdfReport {
-		pdfReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_"+strings.ToUpper(engines[0])+"Report_%v.pdf")
+		pdfReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_"+strings.ToUpper(engines[0])+"Report.pdf")
 		err := c.downloadAndSaveReport(pdfReportName, scan, "pdf", engines)
 		if err != nil {
 			return fmt.Errorf("Report download failed: %s", err)
@@ -1117,7 +1116,7 @@ func (c *checkmarxOneExecuteScanHelper) GetReportJSON(scan *checkmarxOne.Scan, e
 	if len(engines) == 0 {
 		return fmt.Errorf("cannot generate a report for 0 engines")
 	}
-	jsonReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_"+strings.ToUpper(engines[0])+"Report_%v.json")
+	jsonReportName := c.createReportName(c.utils.GetWorkspace(), "Cx1_"+strings.ToUpper(engines[0])+"Report.json")
 	err := c.downloadAndSaveReport(jsonReportName, scan, "json", engines)
 	if err != nil {
 		return fmt.Errorf("Report download failed: %s", err)
@@ -1228,10 +1227,8 @@ func (c *checkmarxOneExecuteScanHelper) ParseResults(scan *checkmarxOne.Scan) (m
 	return detailedResults, nil
 }
 
-func (c *checkmarxOneExecuteScanHelper) createReportName(workspace, reportFileNameTemplate string) string {
-	regExpFileName := regexp.MustCompile(`[^\w\d]`)
-	timeStamp, _ := time.Now().Local().MarshalText()
-	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
+func (c *checkmarxOneExecuteScanHelper) createReportName(workspace, reportFileName string) string {
+	return filepath.Join(workspace, reportFileName)
 }
 
 func (c *checkmarxOneExecuteScanHelper) downloadAndSaveReport(reportFileName string, scan *checkmarxOne.Scan, reportType string, engines []string) error {
@@ -1540,9 +1537,8 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 		return nil
 	}
 
-	var baseDir string
-	if info.IsDir() {
-		baseDir = filepath.Base(source)
+	if !info.IsDir() {
+		return fmt.Errorf("source is not a directory: %s", source)
 	}
 
 	// resolve the output archive's absolute path so it can be skipped during the walk,
@@ -1571,8 +1567,12 @@ func (c *checkmarxOneExecuteScanHelper) zipFolder(source string, zipFile io.Writ
 			return nil
 		}
 
-		fileName := strings.TrimPrefix(path, baseDir)
-		noMatch, err := c.isFileNotMatchingPattern(patterns, path, info, utils)
+		fileName, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		fileName = filepath.ToSlash(fileName)
+		noMatch, err := c.isFileNotMatchingPattern(patterns, fileName, info, utils)
 		if err != nil || noMatch {
 			if noMatch {
 				log.Entry().Debugf("Excluded %s", fileName)

@@ -108,9 +108,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 		Password:          options.Password,
 	}
 
-	cf := cloudfoundry.CFUtils{Exec: c}
-
-	serviceKeyJSON, err = cf.ReadServiceKey(cfconfig)
+	serviceKeyJSON, err = cloudfoundry.ReadServiceKey(c, cfconfig)
 
 	if err != nil {
 		// Executing cfReadServiceKeyScript failed

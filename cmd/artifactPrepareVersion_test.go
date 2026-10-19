@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -647,6 +648,29 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, "1.2.3", repo.tag)
 		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", repo.tagHash.String())
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
+	})
+
+	t.Run("success - system trust token sets static username", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{Password: "st-token", CommitUserName: "Project Piper"}
+		repo := gitRepositoryMock{remote: remote}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		commitID, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "428ecf70bc22df0ba3dcf194b5ce53e769abab07", commitID)
+		assert.Equal(t, "x-access-token", config.Username)
+		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &gitHttp.BasicAuth{Username: "x-access-token", Password: "st-token"}}, repo.pushOptions)
+	})
+
+	t.Run("success - GITHUB_TOKEN fallback", func(t *testing.T) {
+		t.Setenv(piperGithub.GitHubTokenEnv, "gha-token")
+		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
+		repo := gitRepositoryMock{remote: remote}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		_, err := pushChanges(&config, newVersion, &repo, &worktree, testTime, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, &gitHttp.BasicAuth{Username: "x-access-token", Password: "gha-token"}, repo.pushOptions.Auth)
 	})
 
 	t.Run("success - ssh fallback", func(t *testing.T) {

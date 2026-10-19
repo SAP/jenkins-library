@@ -36,9 +36,9 @@ spec:
             type: secret
         aliases:
           - name: ascAppToken
-      - name: appId
+      - name: bundleId
         type: string
-        description: "The app ID in ASC"
+        description: "The bundle ID of the app in ASC"
         scope:
           - PARAMETERS
           - STAGES
@@ -78,7 +78,7 @@ spec:
         default: "<p>TBD</p>"
       - name: releaseDate
         type: string
-        description: "The new release date (Format: MM/DD/YYYY) Default is the current date"
+        description: "The new release date in YYYY-MM-DD format (e.g. 2026-09-17). Default is the current date. The legacy MM/DD/YYYY format is auto-converted."
         scope:
           - PARAMETERS
           - STAGES
@@ -91,3 +91,19 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: timeout
+        type: int
+        description: "Timeout in seconds until an HTTP call is forcefully terminated."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 900
+      - name: user
+        type: string
+        description: "The user on whose behalf the app is deployed to ASC"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: system

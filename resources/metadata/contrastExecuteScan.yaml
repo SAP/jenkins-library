@@ -128,7 +128,7 @@ spec:
           - STEPS
       - name: routeCoverageThreshold
         type: int
-        default: 30
+        default: 60
         description: >
           Minimum percentage of discovered routes that must have been exercised.
           If the actual coverage falls below this value, the step logs a warning.
@@ -142,6 +142,19 @@ spec:
         description: >
           If all servers for this application have been inactive for longer than this many days,
           the step logs a warning. Set to 0 to disable the check.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: sessionMetadataVersion
+        type: string
+        default: ""
+        description: >
+          Value of the 'version' session metadata key set on the Contrast agent.
+          When provided, vulnerability counts and route coverage are scoped to only
+          findings observed in sessions tagged with this version value (case-insensitive match).
+          If the value does not match any known session, the step fails hard.
+          If empty (default), findings are counted at application-level across all sessions.
         scope:
           - PARAMETERS
           - STAGES

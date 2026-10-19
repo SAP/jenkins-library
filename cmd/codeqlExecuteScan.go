@@ -14,6 +14,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/codeql"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
@@ -120,7 +121,7 @@ func getToken(config *codeqlExecuteScanOptions) (bool, string) {
 		return true, config.GithubToken
 	}
 
-	envVal, isEnvGithubToken := os.LookupEnv("GITHUB_TOKEN")
+	envVal, isEnvGithubToken := os.LookupEnv(piperGithub.GitHubTokenEnv)
 	if isEnvGithubToken {
 		return true, envVal
 	}

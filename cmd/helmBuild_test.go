@@ -13,10 +13,12 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/build"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/kubernetes/mocks"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -287,19 +289,21 @@ func TestRunHelmPush(t *testing.T) {
 	t.Parallel()
 	setupConfigOpenFileMock(t)
 
-	cpe := helmBuildCommonPipelineEnvironment{}
 	testTable := []struct {
 		config         helmBuildOptions
 		methodString   string
 		methodError    error
 		expectedErrStr string
+		expectChartURL bool
 	}{
 		{
 			config: helmBuildOptions{
 				HelmCommand: "publish",
+				ChartPath:   "helm/charts/my-chart",
 			},
-			methodString: "https://my.target.repository",
-			methodError:  nil,
+			methodString:   "https://my.target.repository/my-chart-1.2.3.tgz",
+			methodError:    nil,
+			expectChartURL: true,
 		},
 		{
 			config: helmBuildOptions{
@@ -307,20 +311,29 @@ func TestRunHelmPush(t *testing.T) {
 			},
 			methodError:    errors.New("some error"),
 			expectedErrStr: "failed to execute helm publish: some error",
+			expectChartURL: false,
 		},
 	}
 
 	for i, testCase := range testTable {
 		t.Run(fmt.Sprint("case ", i), func(t *testing.T) {
+			cpe := helmBuildCommonPipelineEnvironment{}
 			helmExecutor := &mocks.HelmExecutor{}
 			helmExecutor.On("RunHelmPublish").Return(testCase.methodString, testCase.methodError)
 
 			err := runHelmBuild(testCase.config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
-			if err != nil {
-				assert.Equal(t, testCase.expectedErrStr, err.Error())
+			if testCase.expectedErrStr != "" {
+				assert.EqualError(t, err, testCase.expectedErrStr)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			if testCase.expectChartURL {
+				assert.Equal(t, testCase.methodString, cpe.custom.helmChartURL, "helmChartURL must be set after successful publish")
+			} else {
+				assert.Empty(t, cpe.custom.helmChartURL, "helmChartURL must not be set on publish failure")
 			}
 		})
-
 	}
 }
 
@@ -497,6 +510,40 @@ func TestRunHelmDefaultCommand(t *testing.T) {
 		})
 	}
 
+}
+
+func TestWriteHelmBuildArtifacts(t *testing.T) {
+	setupConfigOpenFileMock(t)
+
+	t.Run("writeHelmBuildArtifacts sets helmBuildArtifacts in CPE", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		artifactInfo := versioning.Coordinates{ArtifactID: "my-chart", Version: "0.5.0"}
+		publishURL := "https://my.target.repository/my-chart-0.5.0.tgz"
+
+		writeHelmBuildArtifacts(artifactInfo, publishURL, "my-chart-path", &cpe)
+
+		assert.NotEmpty(t, cpe.custom.helmBuildArtifacts)
+		var artifacts build.BuildArtifacts
+		require.NoError(t, json.Unmarshal([]byte(cpe.custom.helmBuildArtifacts), &artifacts))
+		require.Len(t, artifacts.Coordinates, 1)
+		assert.Equal(t, "my-chart", artifacts.Coordinates[0].ArtifactID)
+		assert.Equal(t, "0.5.0", artifacts.Coordinates[0].Version)
+		assert.Equal(t, publishURL, artifacts.Coordinates[0].URL)
+		assert.Equal(t, "pkg:helm/my-chart@0.5.0", artifacts.Coordinates[0].PURL)
+		assert.Equal(t, "my-chart-path", artifacts.Coordinates[0].BuildPath)
+	})
+
+	t.Run("publish=false does not set helmBuildArtifacts", func(t *testing.T) {
+		cpe := helmBuildCommonPipelineEnvironment{}
+		helmExecutor := &mocks.HelmExecutor{}
+		helmExecutor.On("RunHelmLint").Return(nil)
+
+		config := helmBuildOptions{Publish: false}
+		err := runHelmBuild(config, helmExecutor, &fileHandlerMock{}, &cpe, newHelmMockUtilsBundle(), newHelmMockUtilsBundle(), newHelmMockUtilsBundle())
+
+		assert.NoError(t, err)
+		assert.Empty(t, cpe.custom.helmBuildArtifacts)
+	})
 }
 
 func TestRunHelmDefaultCommandSBOM(t *testing.T) {

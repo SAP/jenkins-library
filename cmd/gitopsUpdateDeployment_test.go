@@ -762,7 +762,7 @@ func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string
 	e.executable = executable
 	e.params = append(e.params, params...)
 	if executable == "kustomize" {
-		return fileUtils.FileWrite(filepath.Join(e.dir, "kustomization.yaml"), []byte(e.expectedYaml), 0755)
+		return piperutils.Files{}.FileWrite(filepath.Join(e.dir, "kustomization.yaml"), []byte(e.expectedYaml), 0755)
 
 	} else {
 		_, err := e.out.Write([]byte(e.expectedYaml))

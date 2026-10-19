@@ -14,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -359,6 +360,7 @@ func initializeWorktree(gitCommit plumbing.Hash, worktree gitWorktree) error {
 
 func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repository gitRepository, worktree gitWorktree, t time.Time, certs []byte) (string, error) {
 
+	config.Username, config.Password = piperGithub.WithActionsTokenFallback(config.Username, config.Password)
 	var commitID string
 
 	commit, err := addAndCommit(config, worktree, newVersion, t)

@@ -19,6 +19,17 @@ import (
 
 var errOwnerOrRepositoryEmpty = errors.New("'owner' or 'repository' is empty")
 
+var errNoGitHubToken = errors.New("no GitHub token available: provide 'token' via configuration, System Trust, Vault or the GITHUB_TOKEN environment variable")
+
+// resolveGitHubToken returns the configured token or, if empty, the GitHub Actions token from the environment.
+func resolveGitHubToken(configured string) (string, error) {
+	_, token := piperGithub.WithActionsTokenFallback("", configured)
+	if token == "" {
+		return "", errNoGitHubToken
+	}
+	return token, nil
+}
+
 type GithubRepoClient interface {
 	CreateRelease(ctx context.Context, owner string, repo string, release *github.RepositoryRelease) (*github.RepositoryRelease, *github.Response, error)
 	DeleteReleaseAsset(ctx context.Context, owner string, repo string, id int64) (*github.Response, error)
@@ -32,8 +43,14 @@ type githubIssueClient interface {
 }
 
 func githubPublishRelease(config githubPublishReleaseOptions, telemetryData *telemetry.CustomData) {
+	token, err := resolveGitHubToken(config.Token)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		log.Entry().WithError(err).Fatal("Failed to publish GitHub release.")
+	}
+
 	// TODO provide parameter for trusted certs
-	ctx, client, err := piperGithub.NewClientBuilder(config.Token, config.APIURL).
+	ctx, client, err := piperGithub.NewClientBuilder(token, config.APIURL).
 		WithTimeout(time.Duration(config.GithubAPITimeout) * time.Second).
 		WithUploadURL(config.UploadURL).
 		Build()

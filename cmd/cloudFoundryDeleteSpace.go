@@ -17,20 +17,14 @@ func cloudFoundryDeleteSpace(config cloudFoundryDeleteSpaceOptions, telemetryDat
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	cf := cloudfoundry.CFUtils{
-		Exec: &c,
-	}
-
-	err := runCloudFoundryDeleteSpace(&config, telemetryData, cf, &c)
+	err := runCloudFoundryDeleteSpace(&config, telemetryData, &c, &c)
 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runCloudFoundryDeleteSpace(config *cloudFoundryDeleteSpaceOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, s command.ShellRunner) (err error) {
-	var c = cf.Exec
-
+func runCloudFoundryDeleteSpace(config *cloudFoundryDeleteSpaceOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, s command.ShellRunner) (err error) {
 	cfLoginError := s.RunShell("/bin/sh", fmt.Sprintf("yes '' | cf login -a %s -u %s -p %s", config.CfAPIEndpoint, config.Username, config.Password))
 
 	if cfLoginError != nil {
@@ -38,7 +32,7 @@ func runCloudFoundryDeleteSpace(config *cloudFoundryDeleteSpaceOptions, telemetr
 	}
 
 	defer func() {
-		logoutErr := cf.Logout()
+		logoutErr := cloudfoundry.Logout(c)
 		if logoutErr != nil {
 			err = fmt.Errorf("Error while logging out occured: %w", logoutErr)
 		}

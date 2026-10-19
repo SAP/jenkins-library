@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.empty
 import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.startsWith
 
 import util.JenkinsLoggingRule
 import util.JenkinsShellCallRule
@@ -126,5 +127,43 @@ class InfluxDataTest extends BasePiperTest {
         InfluxData.readFromDisk(nullScript)
         // asserts
         assertThat(InfluxData.instance.fields.step_data, is([sonar: true, protecode: false]))
+    }
+
+    @Test
+    void testReadFromDiskJsonValues() {
+        // init
+        List readJsonCalls = []
+        helper.registerAllowedMethod("readJSON", [Map.class], { Map m ->
+            readJsonCalls.add(m.text.toString())
+            return new groovy.json.JsonSlurper().parseText(m.text)
+        })
+        helper.registerAllowedMethod("findFiles", [Map.class], { map ->
+            if(map.glob == '.pipeline/influx/**')
+                return [
+                    new File(".pipeline/influx/pipeline_data/fields/github_changes.json"),
+                    new File(".pipeline/influx/pipeline_data/fields/build_result_key.json"),
+                    new File(".pipeline/influx/step_data/fields/details.json"),
+                    new File(".pipeline/influx/step_data/fields/items.json"),
+                    new File(".pipeline/influx/step_data/tags/flag.json"),
+                ].toArray()
+            return [].toArray()
+        })
+        readFileRule.files.putAll([
+            '.pipeline/influx/pipeline_data/fields/github_changes.json': '0',
+            '.pipeline/influx/pipeline_data/fields/build_result_key.json': '1',
+            '.pipeline/influx/step_data/fields/details.json': '{"a":1,"b":"x"}',
+            '.pipeline/influx/step_data/fields/items.json': '[1,2,3]',
+            '.pipeline/influx/step_data/tags/flag.json': 'true',
+        ])
+
+        // tests
+        InfluxData.readFromDisk(nullScript)
+        // asserts
+        assertThat(InfluxData.instance.fields.pipeline_data, is([github_changes: 0, build_result_key: 1]))
+        assertThat(InfluxData.instance.fields.step_data, is([details: [a: 1, b: 'x'], items: [1, 2, 3]]))
+        assertThat(InfluxData.instance.tags.step_data, is([flag: true]))
+        // exactly one readJSON call per file, never a failing first attempt
+        assertThat(readJsonCalls.size(), is(5))
+        readJsonCalls.each { assertThat(it, startsWith('{"content": ')) }
     }
 }

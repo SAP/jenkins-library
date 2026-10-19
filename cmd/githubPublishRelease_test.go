@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -628,6 +629,27 @@ func TestUploadReleaseAssetList(t *testing.T) {
 		// asserts
 		assert.NoError(t, err)
 		ghClient.AssertExpectations(t)
+	})
+}
+
+func TestResolveGitHubToken(t *testing.T) {
+	t.Run("configured token wins", func(t *testing.T) {
+		t.Setenv(piperGithub.GitHubTokenEnv, "actions-token")
+		token, err := resolveGitHubToken("configured-token")
+		assert.NoError(t, err)
+		assert.Equal(t, "configured-token", token)
+	})
+	t.Run("GITHUB_TOKEN is the last resort", func(t *testing.T) {
+		t.Setenv(piperGithub.GitHubTokenEnv, "actions-token")
+		token, err := resolveGitHubToken("")
+		assert.NoError(t, err)
+		assert.Equal(t, "actions-token", token)
+	})
+	t.Run("error without any token", func(t *testing.T) {
+		t.Setenv(piperGithub.GitHubTokenEnv, "")
+		token, err := resolveGitHubToken("")
+		assert.ErrorIs(t, err, errNoGitHubToken)
+		assert.Empty(t, token)
 	})
 }
 

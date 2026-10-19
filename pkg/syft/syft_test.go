@@ -92,3 +92,85 @@ func TestGenerateSBOM(t *testing.T) {
 		assert.Equal(t, "failed to install syft: failed to download syft binary: HTTP GET request to http://failure.com/syft.tar.gz failed: Get \"http://failure.com/syft.tar.gz\": network error", err.Error())
 	})
 }
+
+func TestScanImageTo(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	fileMock := mock.FilesMock{}
+	fakeArchive, err := fileMock.CreateArchive(map[string][]byte{"syft": []byte("test")})
+	assert.NoError(t, err)
+
+	httpmock.RegisterResponder(http.MethodGet, "http://test-syft-gh-release.com/syft.tar.gz",
+		httpmock.NewBytesResponder(http.StatusOK, fakeArchive))
+	client := &piperhttp.Client{}
+	client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+
+	t.Run("writes SBOM to explicit output file with --platform arg", func(t *testing.T) {
+		execMock := mock.ExecMockRunner{}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		err = scanner.ScanImageTo("", &execMock, "https://my-registry", "image:1.0", "bom-docker-linux-arm64.xml", "--platform=linux/arm64")
+		assert.NoError(t, err)
+
+		assert.Len(t, execMock.Calls, 1)
+		call := execMock.Calls[0]
+		assert.Equal(t, []string{
+			"scan", "registry:my-registry/image:1.0",
+			"-o", "cyclonedx-xml@1.4=bom-docker-linux-arm64.xml",
+			"-q", "--exclude=**/{distlib,distlib-*}/**/*.exe",
+			"--platform=linux/arm64",
+		}, call.Params)
+	})
+
+	t.Run("scanner can be reused across platforms without arg accumulation", func(t *testing.T) {
+		execMock := mock.ExecMockRunner{}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		assert.NoError(t, scanner.ScanImageTo("", &execMock, "https://my-registry", "image:1.0", "bom-docker-linux-amd64.xml", "--platform=linux/amd64"))
+		assert.NoError(t, scanner.ScanImageTo("", &execMock, "https://my-registry", "image:1.0", "bom-docker-linux-arm64.xml", "--platform=linux/arm64"))
+
+		assert.Len(t, execMock.Calls, 2)
+		// Each call must carry exactly its own --platform, not both
+		assert.Contains(t, execMock.Calls[0].Params, "--platform=linux/amd64")
+		assert.NotContains(t, execMock.Calls[0].Params, "--platform=linux/arm64")
+		assert.Contains(t, execMock.Calls[1].Params, "--platform=linux/arm64")
+		assert.NotContains(t, execMock.Calls[1].Params, "--platform=linux/amd64")
+	})
+
+	t.Run("no extraArgs — no extra flags appended", func(t *testing.T) {
+		execMock := mock.ExecMockRunner{}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		err = scanner.ScanImageTo("", &execMock, "https://my-registry", "image:1.0", "bom-docker-0.xml")
+		assert.NoError(t, err)
+
+		call := execMock.Calls[0]
+		assert.Equal(t, []string{
+			"scan", "registry:my-registry/image:1.0",
+			"-o", "cyclonedx-xml@1.4=bom-docker-0.xml",
+			"-q", "--exclude=**/{distlib,distlib-*}/**/*.exe",
+		}, call.Params)
+	})
+
+	t.Run("error: empty registry", func(t *testing.T) {
+		execMock := mock.ExecMockRunner{}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		err = scanner.ScanImageTo("", &execMock, "", "image:1.0", "out.xml")
+		assert.EqualError(t, err, "syft: registry url must not be empty")
+	})
+
+	t.Run("error: empty image", func(t *testing.T) {
+		execMock := mock.ExecMockRunner{}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		err = scanner.ScanImageTo("", &execMock, "https://my-registry", "", "out.xml")
+		assert.EqualError(t, err, "syft: image name must not be empty")
+	})
+}

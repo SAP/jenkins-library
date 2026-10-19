@@ -20,9 +20,9 @@ import (
 )
 
 type artifactPrepareVersionOptions struct {
-	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn"`
+	AdditionalTargetTools       []string `json:"additionalTargetTools,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip rust sbt yarn"`
 	AdditionalTargetDescriptors []string `json:"additionalTargetDescriptors,omitempty"`
-	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip sbt yarn CAP"`
+	BuildTool                   string   `json:"buildTool,omitempty" validate:"possible-values=custom docker dub golang gradle helm maven mta npm pip rust sbt yarn CAP"`
 	CommitUserName              string   `json:"commitUserName,omitempty"`
 	CustomVersionField          string   `json:"customVersionField,omitempty"`
 	CustomVersionSection        string   `json:"customVersionSection,omitempty"`
@@ -496,6 +496,12 @@ func artifactPrepareVersionMetadata() config.StepData {
 								Name:    "gitHttpsCredentialVaultSecretName",
 								Type:    "vaultSecret",
 								Default: "gitHttpsCredential",
+							},
+
+							{
+								Name:    "gitSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -140,6 +141,8 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	if err != nil {
 		return err
 	}
+
+	config.Username, config.Password = piperGithub.WithActionsTokenFallback(config.Username, config.Password)
 
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
 	temporaryFolder = regexp.MustCompile(`^./`).ReplaceAllString(temporaryFolder, "")

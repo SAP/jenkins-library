@@ -20,11 +20,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
-	cfUtils := cloudfoundry.CFUtils{
-		Exec: &c,
-	}
-
-	err := runCloudFoundryDeleteService(&options, &c, &cfUtils)
+	err := runCloudFoundryDeleteService(&options, &c)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -32,7 +28,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	}
 }
 
-func runCloudFoundryDeleteService(options *cloudFoundryDeleteServiceOptions, c command.ExecRunner, cfUtils cloudfoundry.AuthenticationUtils) (returnedError error) {
+func runCloudFoundryDeleteService(options *cloudFoundryDeleteServiceOptions, c command.ExecRunner) (returnedError error) {
 
 	config := cloudfoundry.LoginOptions{
 		CfAPIEndpoint: options.CfAPIEndpoint,
@@ -41,12 +37,12 @@ func runCloudFoundryDeleteService(options *cloudFoundryDeleteServiceOptions, c c
 		Username:      options.Username,
 		Password:      options.Password,
 	}
-	loginErr := cfUtils.Login(config)
+	loginErr := cloudfoundry.Login(c, config)
 	if loginErr != nil {
 		return fmt.Errorf("Error while logging in occurred: %w", loginErr)
 	}
 	defer func() {
-		logoutErr := cfUtils.Logout()
+		logoutErr := cloudfoundry.Logout(c)
 		if logoutErr != nil && returnedError == nil {
 			returnedError = fmt.Errorf("Error while logging out occurred: %w", logoutErr)
 		}

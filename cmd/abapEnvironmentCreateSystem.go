@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -15,17 +14,17 @@ import (
 
 func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData) {
 
-	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+	c := &command.Command{}
 	u := &googleUUID{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCreateSystem(&config, telemetryData, cf, u)
+	err := runAbapEnvironmentCreateSystem(&config, telemetryData, c, u)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, u uuidGenerator) error {
+func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, c command.ExecRunner, u uuidGenerator) error {
 
 	if config.ServiceManifest != "" {
 		// if the manifest file is provided, it is directly passed through to cloudFoundryCreateService
@@ -37,7 +36,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			Password:        config.Password,
 			ServiceManifest: config.ServiceManifest,
 		}
-		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
+		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, c)
 	}
 
 	cfConfig, err := generateServiceParameterString(config)
@@ -57,7 +56,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 		CfCreateServiceConfig: cfConfig,
 		CfAsync:               false,
 	}
-	return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
+	return runCloudFoundryCreateService(&createServiceConfig, telemetryData, c)
 }
 
 func generateServiceParameterString(config *abapEnvironmentCreateSystemOptions) (string, error) {
