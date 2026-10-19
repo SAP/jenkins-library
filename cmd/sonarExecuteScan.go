@@ -52,8 +52,11 @@ var (
 )
 
 const MAX_RETRIES = 3
-const BACKOFF_SECONDS = 3
-const NETWORK_EXCEPTION = "java.net.SocketException"
+const BACKOFF_SECONDS = 30
+var NETWORK_ISSUES = []string{
+	"java.net.SocketException",
+	"failed with HTTP 404 Not Found",
+}
 
 const (
 	javaBinaries       = "sonar.java.binaries="
@@ -205,7 +208,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		if err == nil {
 			break
 		}
-		if strings.Contains(err.Error(), NETWORK_EXCEPTION) && i != MAX_RETRIES-1 {
+		if  i != MAX_RETRIES-1 && isNetworkIssue(err) {
 			sleepTime := time.Duration(math.Pow(2, float64(i))*BACKOFF_SECONDS) * time.Second
 			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
 			time.Sleep(sleepTime)
@@ -516,4 +519,13 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 			options.BranchName = branch
 		}
 	}
+}
+
+func isNetworkIssue(err error) bool {
+	for _, pattern := range NETWORK_ISSUES {
+		if strings.Contains(err.Error(), pattern) {
+			return true
+		}
+	}
+	return false
 }
