@@ -244,7 +244,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		runnerMock := &gitOpsExecRunnerMock{}
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
-		assert.EqualError(t, err, "missing required fields for kubectl: the following parameters are necessary for kubectl: [containerName]")
+		assert.EqualError(t, err, "missing required fields for kubectl: the following parameters are necessary for kubectl: [containerName customPatchStringWithVersion when containerName is not provided")
 	})
 
 	t.Run("error on kubectl execution", func(t *testing.T) {
