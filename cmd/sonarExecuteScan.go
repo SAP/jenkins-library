@@ -53,8 +53,8 @@ var (
 	doublestarGlob  = piperutils.Glob
 )
 
-const MAX_RETRIES = 3
-const BACKOFF_SECONDS = 30
+const MAX_RETRIES = 4
+const BACKOFF_SECONDS = 40
 
 var NETWORK_ISSUES = []string{
 	"java.net.SocketException",
