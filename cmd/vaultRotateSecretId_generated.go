@@ -31,10 +31,11 @@ type vaultRotateSecretIdOptions struct {
 	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty"`
 	AdoProject                           string `json:"adoProject,omitempty"`
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
-	GithubToken                          string `json:"githubToken,omitempty" validate:"required_if=SecretStore github"`
+	GithubToken                          string `json:"githubToken,omitempty"`
 	GithubAPIURL                         string `json:"githubApiUrl,omitempty"`
 	Owner                                string `json:"owner,omitempty"`
 	Repository                           string `json:"repository,omitempty"`
+	SystemTrustAppAccessToken            string `json:"systemTrustAppAccessToken,omitempty"`
 }
 
 // VaultRotateSecretIdCommand Rotate Vault AppRole Secret ID
@@ -87,6 +88,7 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			log.RegisterSecret(stepConfig.JenkinsToken)
 			log.RegisterSecret(stepConfig.AdoPersonalAccessToken)
 			log.RegisterSecret(stepConfig.GithubToken)
+			log.RegisterSecret(stepConfig.SystemTrustAppAccessToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -194,6 +196,7 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL that corresponds to the pipeline repository")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Owner of the pipeline GitHub repository")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the pipeline GitHub repository")
+	cmd.Flags().StringVar(&stepConfig.SystemTrustAppAccessToken, "systemTrustAppAccessToken", os.Getenv("PIPER_systemTrustAppAccessToken"), "GitHub App access token from System Trust. Takes precedence over githubToken when set.")
 
 	cmd.MarkFlagRequired("vaultAppRoleSecretTokenCredentialsId")
 	cmd.MarkFlagRequired("vaultServerUrl")
@@ -402,6 +405,21 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_repository"),
+					},
+					{
+						Name: "systemTrustAppAccessToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "githubSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app<scope>pipeline-ghas",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubSystemTrustAppAccessToken"}},
+						Default:   os.Getenv("PIPER_systemTrustAppAccessToken"),
 					},
 				},
 			},
