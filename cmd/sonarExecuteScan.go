@@ -205,6 +205,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 
 	// load task results
+	log.Entry().Info(">>> sonar.workingDir: " + sonar.workingDir)
 	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
 		log.Entry().WithError(err).Warning("no scan report found")
