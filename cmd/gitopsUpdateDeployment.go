@@ -372,8 +372,12 @@ func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateD
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply kubectl command: %w", err)
 	}
+
 	patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
 
+	if len(config.CustomPatchStringWithVersion) > 0 {
+		patchString = strings.ReplaceAll(config.CustomPatchStringWithVersion, "{{.Version}}", config.ArtifactVersion)
+	}
 	log.Entry().Infof("[kubectl] updating '%s'", filePath)
 	outputBytes, err = runKubeCtlCommand(command, patchString, filePath)
 	if err != nil {
