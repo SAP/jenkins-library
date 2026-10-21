@@ -58,6 +58,7 @@ const BACKOFF_SECONDS = 30
 
 var NETWORK_ISSUES = []string{
 	"java.net.SocketException",
+	"failed with HTTP 403 Forbidden",
 	"failed with HTTP 404 Not Found",
 	"failed with HTTP 503 Service Unavailable",
 }
