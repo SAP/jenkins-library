@@ -293,7 +293,11 @@ func checkRequiredFieldsForKustomize(config *gitopsUpdateDeploymentOptions) erro
 func checkRequiredFieldsForKubectl(config *gitopsUpdateDeploymentOptions) error {
 	var missingParameters []string
 	if config.ContainerName == "" {
-		missingParameters = append(missingParameters, "containerName")
+		// in some cases we are not building an container but only an OCM component
+		if config.CustomPatchStringWithVersion == "" {
+			missingParameters = append(missingParameters, "containerName")
+			missingParameters = append(missingParameters, "customPatchStringWithVersion when containerName is not provided")
+		}
 	}
 	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
