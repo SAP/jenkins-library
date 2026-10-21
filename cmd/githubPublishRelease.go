@@ -21,21 +21,13 @@ var errOwnerOrRepositoryEmpty = errors.New("'owner' or 'repository' is empty")
 
 var errNoGitHubToken = errors.New("no GitHub token available: provide 'token' via configuration, System Trust, Vault or the GITHUB_TOKEN environment variable")
 
-// gitHubTokenEnv is the token GitHub Actions provides to a workflow job.
-// It is used as the last resort when configuration, System Trust and Vault did not provide a token.
-const gitHubTokenEnv = "GITHUB_TOKEN"
-
 // resolveGitHubToken returns the configured token or, if empty, the GitHub Actions token from the environment.
 func resolveGitHubToken(configured string) (string, error) {
-	if configured != "" {
-		return configured, nil
+	_, token := piperGithub.WithActionsTokenFallback("", configured)
+	if token == "" {
+		return "", errNoGitHubToken
 	}
-	if token := os.Getenv(gitHubTokenEnv); token != "" {
-		log.RegisterSecret(token)
-		log.Entry().Infof("Using the %s environment variable: no token from configuration, System Trust or Vault", gitHubTokenEnv)
-		return token, nil
-	}
-	return "", errNoGitHubToken
+	return token, nil
 }
 
 type GithubRepoClient interface {
