@@ -18,27 +18,29 @@ type TaskReportData struct {
 	ServerVersion string `properties:"serverVersion"`
 }
 
-// GetProjectBaseDir reads sonar-project.properties from the workspace directory and returns the value of
-// sonar.projectBaseDir, or an empty string if the property is absent or the file cannot be read.
-func GetProjectBaseDir(workspace string) string {
-	propsFile := filepath.Join(workspace, "sonar-project.properties")
-	props, err := properties.LoadFile(propsFile, properties.UTF8)
+// LoadProperties reads a properties file assembled from the given path segments.
+func LoadProperties(path ...string) (*properties.Properties, error) {
+	return properties.LoadFile(filepath.Join(path...), properties.UTF8)
+}
+
+// GetProperty reads sonar-project.properties from the workspace directory and returns the value of
+// the given property, or an empty string if the property is absent or the file cannot be read.
+func GetProperty(workspace string, property string) string {
+	props, err := LoadProperties(workspace, "sonar-project.properties")
 	if err != nil {
 		return ""
 	}
-	return props.GetString("sonar.projectBaseDir", "")
+	return props.GetString(property, "")
 }
 
 // ReadTaskReport expects a file ".scannerwork/report-task.txt" to exist in the provided workspace directory,
 // and parses its contents into the returned TaskReportData struct.
 func ReadTaskReport(workspace string) (result TaskReportData, err error) {
 	reportFile := filepath.Join(workspace, ".scannerwork", "report-task.txt")
-	// read file content
-	reportContent, err := properties.LoadFile(reportFile, properties.UTF8)
+	reportContent, err := LoadProperties(reportFile)
 	if err != nil {
 		return
 	}
-	// read content into struct
 	err = reportContent.Decode(&result)
 	if err != nil {
 		err = fmt.Errorf("decode %s: %w", reportFile, err)

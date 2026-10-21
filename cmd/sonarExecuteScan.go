@@ -206,7 +206,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	// load task results
 	workspaceForReport := sonar.workingDir
-	if baseDir := SonarUtils.GetProjectBaseDir(sonar.workingDir); len(baseDir) > 0 {
+	if baseDir := SonarUtils.GetProperty(sonar.workingDir, "sonar.projectBaseDir"); len(baseDir) > 0 {
 		workspaceForReport = filepath.Join(sonar.workingDir, baseDir)
 	}
 	taskReport, err := SonarUtils.ReadTaskReport(workspaceForReport)

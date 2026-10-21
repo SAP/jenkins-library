@@ -45,20 +45,36 @@ func TestReadTaskReport(t *testing.T) {
 	})
 }
 
-func TestGetProjectBaseDir(t *testing.T) {
+func TestLoadProperties(t *testing.T) {
+	t.Run("valid file", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "test.properties"), []byte("foo=bar\n"), 0o644))
+		props, err := LoadProperties(dir, "test.properties")
+		assert.NoError(t, err)
+		assert.Equal(t, "bar", props.GetString("foo", ""))
+	})
+
+	t.Run("missing file", func(t *testing.T) {
+		props, err := LoadProperties(t.TempDir(), "missing.properties")
+		assert.Nil(t, props)
+		assert.Error(t, err)
+	})
+}
+
+func TestGetProperty(t *testing.T) {
 	t.Run("property present", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "sonar-project.properties"), []byte("sonar.projectBaseDir=myapp\n"), 0o644))
-		assert.Equal(t, "myapp", GetProjectBaseDir(dir))
+		assert.Equal(t, "myapp", GetProperty(dir, "sonar.projectBaseDir"))
 	})
 
 	t.Run("property absent", func(t *testing.T) {
 		dir := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(dir, "sonar-project.properties"), []byte("sonar.projectKey=foo\n"), 0o644))
-		assert.Empty(t, GetProjectBaseDir(dir))
+		assert.Empty(t, GetProperty(dir, "sonar.projectBaseDir"))
 	})
 
 	t.Run("missing file", func(t *testing.T) {
-		assert.Empty(t, GetProjectBaseDir(t.TempDir()))
+		assert.Empty(t, GetProperty(t.TempDir(), "sonar.projectBaseDir"))
 	})
 }
