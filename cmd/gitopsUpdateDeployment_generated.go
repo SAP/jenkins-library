@@ -197,7 +197,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. In case of `kustomize` this is the name or alias of the image in the `kustomization.yaml`")
 	cmd.Flags().StringVar(&stepConfig.Tool, "tool", `kubectl`, "Defines the tool which should be used to update the deployment description.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
-	cmd.Flags().StringVar(&stepConfig.CustomPatchStringWithVersion, "customPatchStringWithVersion", os.Getenv("PIPER_customPatchStringWithVersion"), "Custom patch string with version to be applied to the deployment configuration, for example `{\"spec\":{\"semver\":\"{{.Version}}\"}}`. The Go template `{{.Version}}` will be replaced with the unique version Piper generates during the pipeline run.")
+	cmd.Flags().StringVar(&stepConfig.CustomPatchStringWithVersion, "customPatchStringWithVersion", os.Getenv("PIPER_customPatchStringWithVersion"), "Custom patch string with version to be applied to the deployment configuration using `kubectl` only, for example `{\"spec\":{\"semver\":\"{{.Version}}\"}}`. The Go template `{{.Version}}` will be replaced with the unique version Piper generates during the pipeline run.")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version assigned by artifactPrepareVersion to the uploaded artifact")
 
 	cmd.MarkFlagRequired("branchName")

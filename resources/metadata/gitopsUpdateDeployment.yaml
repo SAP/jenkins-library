@@ -201,7 +201,7 @@ spec:
           - STEPS
       - name: customPatchStringWithVersion
         type: string
-        description: 'Custom patch string with version to be applied to the deployment configuration, for example `{"spec":{"semver":"{{.Version}}"}}`. The Go template `{{.Version}}` will be replaced with the unique version Piper generates during the pipeline run.'
+        description: 'Custom patch string with version to be applied to the deployment configuration using `kubectl` only, for example `{"spec":{"semver":"{{.Version}}"}}`. The Go template `{{.Version}}` will be replaced with the unique version Piper generates during the pipeline run.'
         scope:
           - PARAMETERS
           - STAGES
