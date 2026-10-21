@@ -334,6 +334,36 @@ func TestRunSonar(t *testing.T) {
 		assert.Contains(t, sonar.options, "-Dsonar.coverage.exclusions=one,**/two,three**")
 		assert.Contains(t, sonar.options, "-Dsonar.verbose=true")
 	})
+	t.Run("with projectBaseDir in sonar-project.properties", func(t *testing.T) {
+		// init
+		tmpFolder := t.TempDir()
+		subDir := "myapp"
+		// write sonar-project.properties with sonar.projectBaseDir
+		require.NoError(t, os.WriteFile(filepath.Join(tmpFolder, "sonar-project.properties"),
+			[]byte("sonar.projectBaseDir="+subDir+"\n"), 0o644))
+		// place task report under the base dir, as sonar-scanner would
+		createTaskReportFile(t, filepath.Join(tmpFolder, subDir))
+
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		options := sonarExecuteScanOptions{
+			Token:               "secret-ABC",
+			ServerURL:           sonarServerURL,
+			PullRequestProvider: "GitHub",
+		}
+		fileUtilsExists = mockFileUtilsExists(false)
+		defer func() {
+			fileUtilsExists = piperutils.FileExists
+		}()
+		// test
+		err := runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		// assert — task report must be found; without the fix this would silently skip and not reach the API calls
+		assert.NoError(t, err)
+	})
 }
 
 func TestSonarHandlePullRequest(t *testing.T) {

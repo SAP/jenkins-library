@@ -18,6 +18,17 @@ type TaskReportData struct {
 	ServerVersion string `properties:"serverVersion"`
 }
 
+// GetProjectBaseDir reads sonar-project.properties from the workspace directory and returns the value of
+// sonar.projectBaseDir, or an empty string if the property is absent or the file cannot be read.
+func GetProjectBaseDir(workspace string) string {
+	propsFile := filepath.Join(workspace, "sonar-project.properties")
+	props, err := properties.LoadFile(propsFile, properties.UTF8)
+	if err != nil {
+		return ""
+	}
+	return props.GetString("sonar.projectBaseDir", "")
+}
+
 // ReadTaskReport expects a file ".scannerwork/report-task.txt" to exist in the provided workspace directory,
 // and parses its contents into the returned TaskReportData struct.
 func ReadTaskReport(workspace string) (result TaskReportData, err error) {

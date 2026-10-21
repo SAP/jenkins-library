@@ -4,10 +4,12 @@
 package sonar
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadTaskReport(t *testing.T) {
@@ -40,5 +42,23 @@ func TestReadTaskReport(t *testing.T) {
 		// assert
 		assert.Empty(t, result.ProjectKey)
 		assert.EqualError(t, err, filepath.FromSlash("decode testData/invalid/.scannerwork/report-task.txt: missing required key projectKey"))
+	})
+}
+
+func TestGetProjectBaseDir(t *testing.T) {
+	t.Run("property present", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "sonar-project.properties"), []byte("sonar.projectBaseDir=myapp\n"), 0o644))
+		assert.Equal(t, "myapp", GetProjectBaseDir(dir))
+	})
+
+	t.Run("property absent", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "sonar-project.properties"), []byte("sonar.projectKey=foo\n"), 0o644))
+		assert.Empty(t, GetProjectBaseDir(dir))
+	})
+
+	t.Run("missing file", func(t *testing.T) {
+		assert.Empty(t, GetProjectBaseDir(t.TempDir()))
 	})
 }
