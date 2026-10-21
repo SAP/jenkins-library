@@ -206,7 +206,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 
 	// load task results
 	log.Entry().Info(">>> sonar.workingDir: " + sonar.workingDir)
-	log.Entry().Info(">>> sonar.options: " + sonar.options)
+	log.Entry().Infof(">>> sonar.options: %v", sonar.options)
 	log.Entry().Info("===")
 	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
