@@ -462,6 +462,12 @@ func cnbBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/dockerConfigJSON",
 							},
+
+							{
+								Name:    "stagingSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "staging-service",
+							},
 						},
 						Scope:     []string{},
 						Type:      "string",

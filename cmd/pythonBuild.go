@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -111,6 +112,10 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 		if err := createPythonBuildArtifactsMetadata(commonPipelineEnvironment); err != nil {
 			log.Entry().Warnf("unable to create build artifact metadata: %v", err)
 		}
+	}
+
+	if err := acquirePythonBuildStagingCredentials(context.Background(), config); err != nil {
+		return fmt.Errorf("acquire JIT staging credentials: %w", err)
 	}
 
 	if config.Publish {
