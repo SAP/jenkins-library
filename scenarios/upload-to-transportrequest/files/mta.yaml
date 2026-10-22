@@ -1,0 +1,17 @@
+_schema-version: "3.1"
+ID: "<Id of your MTA>"
+version: <version number of your application>
+
+parameters:
+  ...
+
+modules:
+  - name: "<Name of your Fiori application>"
+    type: <type of your project>
+    path: .
+    parameters:
+      version: <version number of your application>-${timestamp}
+      name: "<Name of your Fiori application>"
+    build-parameters:
+      builder: <appropriated builder>
+      ...
