@@ -216,7 +216,7 @@ spec:
           - PARAMETERS
           - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.18.1
+    - image: docker.io/dtzar/helm-kubectl:3.18.1
       workingDir: /config
       options:
         - name: -u
@@ -226,7 +226,7 @@ spec:
           params:
             - name: tool
               value: helm
-    - image: dtzar/helm-kubectl:3.18.1
+    - image: docker.io/dtzar/helm-kubectl:3.18.1
       workingDir: /config
       options:
         - name: -u
@@ -236,7 +236,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: alpine/k8s:1.33.13
+    - image: docker.io/alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u

@@ -352,7 +352,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "fiori-client", Image: "node"},
+				{Name: "fiori-client", Image: "docker.io/node"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
