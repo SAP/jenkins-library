@@ -17,21 +17,29 @@ type PubsubClient interface {
 	Publish(topic string, data []byte) error
 }
 
+const PubsubEuropeWest3Endpoint = "europe-west3-pubsub.googleapis.com:443"
+
 type pubsubClient struct {
 	tokenProvider OIDCTokenProvider
 	projectNumber string
 	pool          string
 	provider      string
+	endpoint      string
 	orderingKey   string
 	oidcRoleId    string
 }
 
 func NewGcpPubsubClient(tokenProvider OIDCTokenProvider, projectNumber, pool, provider, orderingKey, oidcRoleId string) PubsubClient {
+	return NewGcpPubsubClientWithEndpoint(tokenProvider, projectNumber, pool, provider, "", orderingKey, oidcRoleId)
+}
+
+func NewGcpPubsubClientWithEndpoint(tokenProvider OIDCTokenProvider, projectNumber, pool, provider, endpoint, orderingKey, oidcRoleId string) PubsubClient {
 	return &pubsubClient{
 		tokenProvider,
 		projectNumber,
 		pool,
 		provider,
+		endpoint,
 		orderingKey,
 		oidcRoleId,
 	}
@@ -59,7 +67,11 @@ func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Cli
 	}
 
 	staticTokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
-	return pubsub.NewClient(ctx, cl.projectNumber, option.WithTokenSource(staticTokenSource))
+	clientOptions := []option.ClientOption{option.WithTokenSource(staticTokenSource)}
+	if cl.endpoint != "" {
+		clientOptions = append(clientOptions, option.WithEndpoint(cl.endpoint))
+	}
+	return pubsub.NewClient(ctx, cl.projectNumber, clientOptions...)
 }
 
 func (cl *pubsubClient) publish(ctx context.Context, psClient *pubsub.Client, topic, orderingKey string, data []byte) error {

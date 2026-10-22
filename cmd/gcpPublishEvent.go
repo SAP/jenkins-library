@@ -20,11 +20,12 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 
 	provider := orchestrator.GetOrchestratorConfigProvider(nil)
 
-	publisher := gcp.NewGcpPubsubClient(
+	publisher := gcp.NewGcpPubsubClientWithEndpoint(
 		vaultClient.GetOIDCTokenByValidation,
 		cfg.GcpProjectNumber,
 		cfg.GcpWorkloadIDentityPool,
 		cfg.GcpWorkloadIDentityPoolProvider,
+		gcp.PubsubEuropeWest3Endpoint, // temporary hardcode endpoint
 		provider.BuildURL(),
 		GeneralConfig.HookConfig.OIDCConfig.RoleID,
 	)
