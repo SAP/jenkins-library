@@ -69,7 +69,10 @@ func (cl *pubsubClient) getAuthorizedGCPClient(ctx context.Context) (*pubsub.Cli
 	staticTokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
 	clientOptions := []option.ClientOption{option.WithTokenSource(staticTokenSource)}
 	if cl.endpoint != "" {
+		log.Entry().Debugf("Using GCP Pub/Sub endpoint: %s", cl.endpoint)
 		clientOptions = append(clientOptions, option.WithEndpoint(cl.endpoint))
+	} else {
+		log.Entry().Debug("Using default global GCP Pub/Sub endpoint")
 	}
 	return pubsub.NewClient(ctx, cl.projectNumber, clientOptions...)
 }
