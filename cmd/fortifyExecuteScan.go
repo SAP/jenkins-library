@@ -1278,3 +1278,7 @@ func getProxyParams(proxyUrl string) (string, string) {
 	}
 	return urlParams.Port(), urlParams.Hostname()
 }
+
+func tokenize(command string) []string {
+	return strings.Split(command, " ")
+}

@@ -39,11 +39,6 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
             stepsCalled.add('containerPushToRegistry')
             stepParameters.containerPushToRegistry = m
         })
-
-        helper.registerAllowedMethod('nexusUpload', [Map.class], {m ->
-            stepsCalled.add('nexusUpload')
-            stepParameters.nexusUpload = m
-        })
     }
 
     @Test
@@ -53,7 +48,7 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(anyOf(hasItem('containerPushToRegistry'), hasItem('nexusUpload'))))
+        assertThat(stepsCalled, not(anyOf(hasItem('containerPushToRegistry'))))
 
     }
 
@@ -67,17 +62,5 @@ class PiperPipelineStagePromoteTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('containerPushToRegistry'))
-    }
-
-    @Test
-    void testStagePromoteNexusUpload() {
-
-        jsr.step.piperPipelineStagePromote(
-            script: nullScript,
-            juStabUtils: utils,
-            nexusUpload: true
-        )
-
-        assertThat(stepsCalled, hasItem('nexusUpload'))
     }
 }

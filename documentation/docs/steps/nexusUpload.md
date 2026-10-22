@@ -1,7 +1,0 @@
-# ${docGenStepName}
-
-## ${docGenDescription}
-
-## ${docGenParameters}
-
-## ${docGenConfiguration}

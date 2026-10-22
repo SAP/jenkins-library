@@ -11,10 +11,6 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
-    /** Executes bats tests which are for example suitable for testing Docker images via a shell.*/
-    'batsExecuteTests',
-    /** Executes karma tests which are for example suitable for OPA5 testing as well as QUnit testing of SAP UI5 apps.*/
-    'karmaExecuteTests',
     /** Executes npm scripts to run frontend unit tests */
     'npmExecuteScripts',
     /** Publishes test results to Jenkins. It will automatically be active in cases tests are executed. */
@@ -39,26 +35,10 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
-        .addIfEmpty('batsExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.batsExecuteTests)
-        .addIfEmpty('karmaExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.karmaExecuteTests)
         .addIfEmpty('npmExecuteScripts', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteScripts)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
-        if (config.batsExecuteTests) {
-            durationMeasure(script: script, measurementName: 'bats_duration') {
-                batsExecuteTests script: script
-                testsPublishResults script: script
-            }
-        }
-
-        if (config.karmaExecuteTests) {
-            durationMeasure(script: script, measurementName: 'karma_duration') {
-                karmaExecuteTests script: script
-                testsPublishResults script: script
-            }
-        }
-
         if (config.npmExecuteScripts) {
             durationMeasure(script: script, measurementName: 'npmExecuteScripts_duration') {
                 npmExecuteScripts script: script
