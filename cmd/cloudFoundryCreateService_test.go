@@ -117,7 +117,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		defer cfMockCleanup(m)
 		config := cloudFoundryCreateServiceOptions{}
 		error := runCloudFoundryCreateService(&config, &telemetryData, m)
-		assert.EqualError(t, error, "Error while logging in: Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
+		assert.EqualError(t, error, "Error while logging in: Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org and Space")
 	})
 
 	t.Run("Create service: variable substitution in-line", func(t *testing.T) {
