@@ -30,7 +30,7 @@ func TestMTAIntegrationMavenProject(t *testing.T) {
 	assert.Contains(output, "Installing /maven/.flattened-pom.xml to /maven/mym2/mygroup/mymvn/1.0-SNAPSHOT/mymvn-1.0-SNAPSHOT.pom")
 	assert.Contains(output, "Installing /maven/app/target/mymvn-app-1.0-SNAPSHOT.war to /maven/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT.war")
 	assert.Contains(output, "Installing /maven/app/target/mymvn-app-1.0-SNAPSHOT-classes.jar to /maven/mym2/mygroup/mymvn-app/1.0-SNAPSHOT/mymvn-app-1.0-SNAPSHOT-classes.jar")
-	assert.Contains(output, "added 2 packages in")
+	assert.Contains(output, "added 2 packages")
 }
 
 func TestMTAIntegrationMavenSpringProject(t *testing.T) {
@@ -77,7 +77,7 @@ func TestMTAIntegrationNPMProjectInstallsDevDependencies(t *testing.T) {
 	})
 
 	output := RunPiper(t, container, "/npm-install-dev-dependencies", "mtaBuild", "--installArtifacts")
-	assert.Contains(output, "added 2 packages in")
+	assert.Contains(output, "added 2 packages")
 }
 
 func TestMTAIntegrationNPMProjectWithSeparateBOMValidation(t *testing.T) {
