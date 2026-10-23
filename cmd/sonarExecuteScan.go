@@ -71,7 +71,7 @@ const (
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
-	log.Entry().Info("Running from test-script branch")
+	log.Entry().Info(">>> Running from sonar-test branch")
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
