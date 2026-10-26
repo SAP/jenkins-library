@@ -16,6 +16,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/docker"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -36,6 +37,9 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 
 func runKubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData, utils kubernetes.DeployUtils, stdout io.Writer) error {
 	telemetryData.DeployTool = config.DeployTool
+
+	_, githubToken := piperGithub.WithActionsTokenFallback("", config.GithubToken)
+	config.GithubToken = githubToken
 
 	log.Entry().Debugf("deployTool=%v deployCommand=%v namespace=%v", config.DeployTool, config.DeployCommand, config.Namespace)
 
