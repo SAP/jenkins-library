@@ -69,6 +69,8 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 		// and then evaluate stepActive conditions
 		runStep := make(map[string]bool, len(stage.Steps))
 		stepConfigCache := make(map[string]StepConfig, len(stage.Steps))
+		supportingSteps := make(map[string]bool, len(stage.Steps))
+		explicitlyActivatedSteps := make(map[string]bool, len(stage.Steps))
 		for _, step := range stage.Steps {
 			// Consider only orchestrator-specific steps if the orchestrator limitation is set.
 			if len(step.Orchestrators) > 0 && !slices.Contains(step.Orchestrators, currentOrchestrator) {
@@ -80,11 +82,15 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				return err
 			}
 			stepConfigCache[step.Name] = stepConfig
+			supportingSteps[step.Name] = step.Supporting
 
 			// Respect explicit activation/deactivation if available.
 			// Note that this has higher priority than step conditions
 			if active, ok := stepConfig.Config[step.Name].(bool); ok {
 				runStep[step.Name] = active
+				if active {
+					explicitlyActivatedSteps[step.Name] = true
+				}
 				continue
 			}
 
@@ -125,6 +131,24 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				if stepNotActive {
 					runStep[step.Name] = false
 					break
+				}
+			}
+		}
+
+		// Supporting steps may run only alongside an active primary step. An
+		// explicit activation keeps a supporting step, and therefore its stage,
+		// active on its own.
+		activePrimaryStep := false
+		for stepName, active := range runStep {
+			if active && !supportingSteps[stepName] {
+				activePrimaryStep = true
+				break
+			}
+		}
+		if !activePrimaryStep {
+			for stepName := range supportingSteps {
+				if !explicitlyActivatedSteps[stepName] {
+					runStep[stepName] = false
 				}
 			}
 		}

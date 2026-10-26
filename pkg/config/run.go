@@ -61,6 +61,7 @@ type Stage struct {
 type Step struct {
 	Name                string          `json:"name,omitempty" yaml:"name,omitempty"`
 	Description         string          `json:"description,omitempty" yaml:"description,omitempty"`
+	Supporting          bool            `json:"supporting,omitempty" yaml:"supporting,omitempty"`
 	Conditions          []StepCondition `json:"conditions,omitempty" yaml:"conditions,omitempty"`
 	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty" yaml:"notActiveConditions,omitempty"`
 	Orchestrators       []string        `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`

@@ -256,6 +256,82 @@ func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 	}
 }
 
+func TestRunConfigV1SupportingSteps(t *testing.T) {
+	tests := []struct {
+		name         string
+		config       Config
+		steps        []Step
+		wantRunSteps map[string]bool
+		wantRunStage bool
+	}{
+		{
+			name: "inactive primary deactivates conditionally active supporting step",
+			steps: []Step{
+				{Name: "primary", Conditions: []StepCondition{{ConfigKey: "missing"}}},
+				{Name: "supporting", Supporting: true},
+			},
+			wantRunSteps: map[string]bool{"primary": false, "supporting": false},
+			wantRunStage: false,
+		},
+		{
+			name: "active primary keeps supporting step active",
+			steps: []Step{
+				{Name: "primary"},
+				{Name: "supporting", Supporting: true},
+			},
+			wantRunSteps: map[string]bool{"primary": true, "supporting": true},
+			wantRunStage: true,
+		},
+		{
+			name: "multiple supporting steps do not activate stage",
+			steps: []Step{
+				{Name: "primary", Conditions: []StepCondition{{ConfigKey: "missing"}}},
+				{Name: "supporting1", Supporting: true},
+				{Name: "supporting2", Supporting: true},
+			},
+			wantRunSteps: map[string]bool{"primary": false, "supporting1": false, "supporting2": false},
+			wantRunStage: false,
+		},
+		{
+			name: "explicitly activated supporting step activates stage",
+			config: Config{Stages: map[string]map[string]interface{}{
+				"Test Stage 1": {"supporting": true},
+			}},
+			steps: []Step{
+				{Name: "primary", Conditions: []StepCondition{{ConfigKey: "missing"}}},
+				{Name: "supporting", Supporting: true},
+			},
+			wantRunSteps: map[string]bool{"primary": false, "supporting": true},
+			wantRunStage: true,
+		},
+		{
+			name: "explicitly deactivated supporting step stays inactive",
+			config: Config{Stages: map[string]map[string]interface{}{
+				"Test Stage 1": {"supporting": false},
+			}},
+			steps: []Step{
+				{Name: "primary"},
+				{Name: "supporting", Supporting: true},
+			},
+			wantRunSteps: map[string]bool{"primary": true, "supporting": false},
+			wantRunStage: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pipelineConfig := PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{
+				DisplayName: "Test Stage 1",
+				Steps:       tt.steps,
+			}}}}
+			r := &RunConfigV1{PipelineConfig: pipelineConfig}
+			assert.NoError(t, r.evaluateConditionsV1(&tt.config, &mock.FilesMock{}, ".pipeline"))
+			assert.Equal(t, map[string]map[string]bool{"Test Stage 1": tt.wantRunSteps}, r.RunSteps)
+			assert.Equal(t, map[string]bool{"Test Stage 1": tt.wantRunStage}, r.RunStages)
+		})
+	}
+}
+
 func TestEvaluateV1(t *testing.T) {
 	tt := []struct {
 		name          string
