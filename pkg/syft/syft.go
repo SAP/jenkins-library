@@ -2,6 +2,7 @@ package syft
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
@@ -66,16 +68,15 @@ func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.Exec
 			return errors.New("syft: image name must not be empty")
 		}
 		// TrimPrefix needed as syft needs containerRegistry name only
-		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index), "-q",
+		args := []string{"scan", fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image), "-o", fmt.Sprintf("cyclonedx-xml%s=bom-docker-%v.xml", cyclonedxFormatForSyft, index),
 			// Exclude Windows PE launcher stubs shipped by pip's distlib on Linux images.
 			// These are detected as "Simple Launcher" without a PURL, causing SBOM validation failures.
 			// The glob covers distlib/ and versioned variants (distlib-x.y.z/) at any depth.
 			"--exclude=**/{distlib,distlib-*}/**/*.exe",
 		}
 		args = append(args, s.additionalArgs...)
-		err := execRunner.RunExecutable(s.syftFile, args...)
-		if err != nil {
-			return fmt.Errorf("failed to generate SBOM: %w", err)
+		if err := runSyftWithCapture(execRunner, s.syftFile, args); err != nil {
+			return err
 		}
 	}
 
@@ -97,14 +98,27 @@ func (s *SyftScanner) ScanImageTo(dockerConfigDir string, execRunner command.Exe
 		"scan",
 		fmt.Sprintf("registry:%s/%s", strings.TrimPrefix(registryURL, "https://"), image),
 		"-o", fmt.Sprintf("cyclonedx-xml%s=%s", cyclonedxFormatForSyft, outputFile),
-		"-q",
 		"--exclude=**/{distlib,distlib-*}/**/*.exe",
 	}
 	args = append(args, extraArgs...)
-	if err := execRunner.RunExecutable(s.syftFile, args...); err != nil {
-		return fmt.Errorf("failed to generate SBOM: %w", err)
+	return runSyftWithCapture(execRunner, s.syftFile, args)
+}
+
+// On failure, appends captured output to the error so syft's real reason is visible over the generic exit code.
+func runSyftWithCapture(execRunner command.ExecRunner, syftFile string, args []string) error {
+	buf := &bytes.Buffer{}
+	execRunner.Stdout(io.MultiWriter(buf, log.Writer()))
+	execRunner.Stderr(io.MultiWriter(buf, log.Writer()))
+	execErr := execRunner.RunExecutable(syftFile, args...)
+	execRunner.Stdout(log.Writer())
+	execRunner.Stderr(log.Writer())
+	if execErr == nil {
+		return nil
 	}
-	return nil
+	if out := strings.TrimSpace(buf.String()); out != "" {
+		return fmt.Errorf("failed to generate SBOM: %w\n%s", execErr, out)
+	}
+	return fmt.Errorf("failed to generate SBOM: %w", execErr)
 }
 
 func install(syftDownloadURL, dest string, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {

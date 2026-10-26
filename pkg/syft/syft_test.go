@@ -44,22 +44,41 @@ func TestGenerateSBOM(t *testing.T) {
 		assert.Len(t, execMock.Calls, 2)
 		firstCall := execMock.Calls[0]
 		assert.Equal(t, firstCall.Exec, "/tmp/syfttest/syft")
-		assert.Equal(t, firstCall.Params, []string{"scan", "registry:my-registry/image:latest", "-o", "cyclonedx-xml@1.4=bom-docker-0.xml", "-q", "--exclude=**/{distlib,distlib-*}/**/*.exe"})
+		assert.Equal(t, firstCall.Params, []string{"scan", "registry:my-registry/image:latest", "-o", "cyclonedx-xml@1.4=bom-docker-0.xml", "--exclude=**/{distlib,distlib-*}/**/*.exe"})
 
 		secondCall := execMock.Calls[1]
 		assert.Equal(t, secondCall.Exec, "/tmp/syfttest/syft")
-		assert.Equal(t, secondCall.Params, []string{"scan", "registry:my-registry/image:1.2.3", "-o", "cyclonedx-xml@1.4=bom-docker-1.xml", "-q", "--exclude=**/{distlib,distlib-*}/**/*.exe"})
+		assert.Equal(t, secondCall.Params, []string{"scan", "registry:my-registry/image:1.2.3", "-o", "cyclonedx-xml@1.4=bom-docker-1.xml", "--exclude=**/{distlib,distlib-*}/**/*.exe"})
 	})
 
 	t.Run("error case: syft execution failed", func(t *testing.T) {
 		execMock = mock.ExecMockRunner{}
 		execMock.ShouldFailOnCommand = map[string]error{
-			"/tmp/syfttest/syft scan registry:my-registry/image:latest -o cyclonedx-xml@1.4=bom-docker-0.xml -q --exclude=**/{distlib,distlib-*}/**/*.exe": errors.New("failed"),
+			"/tmp/syfttest/syft scan registry:my-registry/image:latest -o cyclonedx-xml@1.4=bom-docker-0.xml --exclude=**/{distlib,distlib-*}/**/*.exe": errors.New("failed"),
 		}
 
 		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &execMock, &fileMock, client, "https://my-registry", []string{"image:latest"})
 		assert.Error(t, err)
 		assert.Equal(t, "failed to generate SBOM: failed", err.Error())
+	})
+
+	t.Run("error case: syft diagnostic is included in error when output is present", func(t *testing.T) {
+		// syft's real failure reason must appear in the error, not just the exit code.
+		const syftCmd = "/tmp/syfttest/syft scan registry:my-registry/image:latest -o cyclonedx-xml@1.4=bom-docker-0.xml --exclude=**/{distlib,distlib-*}/**/*.exe"
+		execMock = mock.ExecMockRunner{
+			StdoutReturn: map[string]string{
+				syftCmd: "FATAL  [0001] unable to fetch image: http: 429 Too Many Requests",
+			},
+			ShouldFailOnCommand: map[string]error{
+				syftCmd: errors.New("exit status 1"),
+			},
+		}
+
+		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &execMock, &fileMock, client, "https://my-registry", []string{"image:latest"})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to generate SBOM")
+		assert.Contains(t, err.Error(), "FATAL")
+		assert.Contains(t, err.Error(), "429 Too Many Requests")
 	})
 
 	t.Run("error case: no registry", func(t *testing.T) {
@@ -119,7 +138,7 @@ func TestScanImageTo(t *testing.T) {
 		assert.Equal(t, []string{
 			"scan", "registry:my-registry/image:1.0",
 			"-o", "cyclonedx-xml@1.4=bom-docker-linux-arm64.xml",
-			"-q", "--exclude=**/{distlib,distlib-*}/**/*.exe",
+			"--exclude=**/{distlib,distlib-*}/**/*.exe",
 			"--platform=linux/arm64",
 		}, call.Params)
 	})
@@ -152,7 +171,7 @@ func TestScanImageTo(t *testing.T) {
 		assert.Equal(t, []string{
 			"scan", "registry:my-registry/image:1.0",
 			"-o", "cyclonedx-xml@1.4=bom-docker-0.xml",
-			"-q", "--exclude=**/{distlib,distlib-*}/**/*.exe",
+			"--exclude=**/{distlib,distlib-*}/**/*.exe",
 		}, call.Params)
 	})
 
@@ -172,5 +191,25 @@ func TestScanImageTo(t *testing.T) {
 
 		err = scanner.ScanImageTo("", &execMock, "https://my-registry", "", "out.xml")
 		assert.EqualError(t, err, "syft: image name must not be empty")
+	})
+
+	t.Run("error: syft diagnostic is included in error when output is present", func(t *testing.T) {
+		// syft's real failure reason must appear in the error, not just the exit code.
+		const syftCmd = "/tmp/syfttest/syft scan registry:my-registry/image:1.0 -o cyclonedx-xml@1.4=out.xml --exclude=**/{distlib,distlib-*}/**/*.exe"
+		execMock := mock.ExecMockRunner{
+			StdoutReturn: map[string]string{
+				syftCmd: "FATAL  [0001] unable to fetch image: http: 429 Too Many Requests",
+			},
+			ShouldFailOnCommand: map[string]error{
+				syftCmd: errors.New("exit status 1"),
+			},
+		}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		err = scanner.ScanImageTo("", &execMock, "https://my-registry", "image:1.0", "out.xml")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to generate SBOM")
+		assert.Contains(t, err.Error(), "429 Too Many Requests")
 	})
 }
