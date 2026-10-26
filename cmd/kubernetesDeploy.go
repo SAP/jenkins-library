@@ -15,8 +15,8 @@ import (
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/docker"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/kubernetes"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
