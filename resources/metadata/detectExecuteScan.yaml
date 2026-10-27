@@ -610,10 +610,11 @@ spec:
             param: container/registryUrl
       - name: repositoryUsername
         type: string
+        secret: true
         mandatoryIf:
           - name: scanContainerDistro
             notEmpty: true
-        description: Used accessing for the images to be scanned (typically filled by CPE)
+        description: Username for accessing the container images to be scanned, provided by CPE or Vault.
         scope:
           - STEPS
           - STAGES
@@ -621,12 +622,16 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryUsername
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
       - name: repositoryPassword
         type: string
+        secret: true
         mandatoryIf:
           - name: scanContainerDistro
             notEmpty: true
-        description: Used accessing for the images to be scanned (typically filled by CPE)
+        description: Password for accessing the container images to be scanned, provided by CPE or Vault.
         scope:
           - STEPS
           - STAGES
@@ -634,6 +639,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/repositoryPassword
+          - type: vaultSecret
+            name: registryCredentialsVaultSecretName
+            default: docker-registry
       - name: useDetect9
         description:
           "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11"
