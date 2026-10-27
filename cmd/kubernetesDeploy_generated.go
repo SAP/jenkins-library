@@ -569,6 +569,12 @@ func kubernetesDeployMetadata() config.StepData {
 								Type:    "vaultSecret",
 								Default: "github",
 							},
+
+							{
+								Name:    "githubSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
