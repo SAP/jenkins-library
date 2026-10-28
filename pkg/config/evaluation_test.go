@@ -332,6 +332,66 @@ func TestRunConfigV1SupportingSteps(t *testing.T) {
 	}
 }
 
+func TestStageHasExtension(t *testing.T) {
+	t.Setenv("GITHUB_WORKSPACE", "/repo")
+	tests := []struct {
+		name      string
+		files     func(*mock.FilesMock)
+		stageName string
+		expected  bool
+	}{
+		{
+			name:      "local pre extension",
+			stageName: "Build",
+			files: func(files *mock.FilesMock) {
+				files.AddFile("/repo/backend/.pipeline/extensions/preBuild/action.yml", nil)
+			},
+			expected: true,
+		},
+		{
+			name:      "global post extension in repository root",
+			stageName: "Build",
+			files: func(files *mock.FilesMock) {
+				files.AddFile("/repo/.pipeline/tmp/global_extensions/postBuild/action.yaml", nil)
+			},
+			expected: true,
+		},
+		{
+			name:      "no extension",
+			stageName: "Acceptance",
+			files:     func(_ *mock.FilesMock) {},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files := &mock.FilesMock{CurrentDir: "/repo/backend"}
+			tt.files(files)
+			got, err := stageHasExtension(tt.stageName, files)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestEvaluateConditionsV1ExtensionActivatesStage(t *testing.T) {
+	t.Setenv("GITHUB_WORKSPACE", "/repo")
+	files := &mock.FilesMock{CurrentDir: "/repo"}
+	files.AddFile("/repo/.pipeline/extensions/preAcceptance/action.yml", nil)
+	r := &RunConfigV1{
+		RunConfig: RunConfig{ExtensibilityEnabled: true},
+		PipelineConfig: PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{
+			DisplayName: "Acceptance",
+			Steps:       []Step{{Name: "primary", Conditions: []StepCondition{{ConfigKey: "missing"}}}},
+		}}}},
+	}
+
+	assert.NoError(t, r.evaluateConditionsV1(&Config{}, files, ".pipeline"))
+	assert.Equal(t, map[string]map[string]bool{"Acceptance": {"primary": false}}, r.RunSteps)
+	assert.Equal(t, map[string]bool{"Acceptance": true}, r.RunStages)
+}
+
 func TestEvaluateV1(t *testing.T) {
 	tt := []struct {
 		name          string

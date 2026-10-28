@@ -3,6 +3,8 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -161,10 +163,58 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				stageActive = true
 			}
 		}
+		if r.ExtensibilityEnabled {
+			hasExtension, err := stageHasExtension(stageName, utils)
+			if err != nil {
+				return fmt.Errorf("failed to detect stage extensions: %w", err)
+			}
+			stageActive = stageActive || hasExtension
+		}
 		r.RunStages[stageName] = stageActive
 	}
 
 	return nil
+}
+
+func stageHasExtension(stageName string, utils piperutils.FileUtils) (bool, error) {
+	extensionName := strings.ReplaceAll(stageName, " ", "")
+	globalRoot := globalExtensionRoot()
+
+	for _, extensionPrefix := range []string{"pre", "post"} {
+		extensionPoint := extensionPrefix + extensionName
+		localExtensionPath := filepath.Join(".pipeline", "extensions", extensionPoint)
+		for _, filename := range []string{"action.yml", "action.yaml"} {
+			exists, err := utils.FileExists(filepath.Join(localExtensionPath, filename))
+			if err != nil {
+				return false, err
+			}
+			if exists {
+				return true, nil
+			}
+		}
+
+		if globalRoot != "" {
+			for _, filename := range []string{"action.yml", "action.yaml"} {
+				exists, err := utils.FileExists(filepath.Join(globalRoot, extensionPoint, filename))
+				if err != nil {
+					return false, err
+				}
+				if exists {
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+func globalExtensionRoot() string {
+	workspace := os.Getenv("GITHUB_WORKSPACE")
+	if workspace == "" {
+		return ""
+	}
+	return filepath.Join(workspace, ".pipeline", "tmp", "global_extensions")
 }
 
 func (s *StepCondition) evaluateV1(

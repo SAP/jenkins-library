@@ -11,12 +11,13 @@ import (
 
 // RunConfig ...
 type RunConfig struct {
-	StageConfigFile io.ReadCloser
-	StageConfig     StageConfig
-	RunStages       map[string]bool
-	RunSteps        map[string]map[string]bool
-	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
-	FileUtils       *piperutils.Files
+	StageConfigFile      io.ReadCloser
+	StageConfig          StageConfig
+	RunStages            map[string]bool
+	RunSteps             map[string]map[string]bool
+	ExtensibilityEnabled bool
+	OpenFile             func(s string, t map[string]string) (io.ReadCloser, error)
+	FileUtils            *piperutils.Files
 }
 
 type RunConfigV1 struct {
