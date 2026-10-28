@@ -168,6 +168,10 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 			if err != nil {
 				return fmt.Errorf("failed to detect stage extensions: %w", err)
 			}
+			log.Entry().Debugf("Extension detection for stage '%s': found=%t, active from steps=%t", stageName, hasExtension, stageActive)
+			if hasExtension && !stageActive {
+				log.Entry().Debugf("Activating stage '%s' because an extension was found", stageName)
+			}
 			stageActive = stageActive || hasExtension
 		}
 		r.RunStages[stageName] = stageActive
@@ -189,6 +193,7 @@ func stageHasExtension(stageName string, utils piperutils.FileUtils) (bool, erro
 				return false, err
 			}
 			if exists {
+				log.Entry().Debugf("Found local extension '%s' for stage '%s'", extensionPoint, stageName)
 				return true, nil
 			}
 		}
@@ -200,6 +205,7 @@ func stageHasExtension(stageName string, utils piperutils.FileUtils) (bool, erro
 					return false, err
 				}
 				if exists {
+					log.Entry().Debugf("Found global extension '%s' for stage '%s'", extensionPoint, stageName)
 					return true, nil
 				}
 			}
