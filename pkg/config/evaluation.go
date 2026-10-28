@@ -59,6 +59,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 	}
 
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+	isGitHubActions := currentOrchestrator == orchestrator.GitHubActions.String()
 	for _, stage := range r.PipelineConfig.Spec.Stages {
 		// Currently, the displayName is being used, but it may be necessary
 		// to also consider using the technical name.
@@ -147,7 +148,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				break
 			}
 		}
-		if !activePrimaryStep {
+		if isGitHubActions && !activePrimaryStep {
 			for stepName := range supportingSteps {
 				if !explicitlyActivatedSteps[stepName] {
 					runStep[stepName] = false
@@ -163,7 +164,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				stageActive = true
 			}
 		}
-		if r.ExtensibilityEnabled {
+		if isGitHubActions && r.ExtensibilityEnabled {
 			hasExtension, err := stageHasExtension(stageName, utils)
 			if err != nil {
 				return fmt.Errorf("failed to detect stage extensions: %w", err)

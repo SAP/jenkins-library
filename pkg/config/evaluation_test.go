@@ -257,6 +257,7 @@ func TestRunConfigV1EvaluateConditionsV1(t *testing.T) {
 }
 
 func TestRunConfigV1SupportingSteps(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	tests := []struct {
 		name         string
 		config       Config
@@ -332,6 +333,24 @@ func TestRunConfigV1SupportingSteps(t *testing.T) {
 	}
 }
 
+func TestRunConfigV1SupportingStepsUnchangedOutsideGitHubActions(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "false")
+	t.Setenv("GITHUB_ACTION", "false")
+	config := Config{}
+	pipelineConfig := PipelineDefinitionV1{Spec: Spec{Stages: []Stage{{
+		DisplayName: "Test Stage 1",
+		Steps: []Step{
+			{Name: "primary", Conditions: []StepCondition{{ConfigKey: "missing"}}},
+			{Name: "supporting", Supporting: true},
+		},
+	}}}}
+	r := &RunConfigV1{PipelineConfig: pipelineConfig}
+
+	assert.NoError(t, r.evaluateConditionsV1(&config, &mock.FilesMock{}, ".pipeline"))
+	assert.Equal(t, map[string]map[string]bool{"Test Stage 1": {"primary": false, "supporting": true}}, r.RunSteps)
+	assert.Equal(t, map[string]bool{"Test Stage 1": true}, r.RunStages)
+}
+
 func TestStageHasExtension(t *testing.T) {
 	t.Setenv("GITHUB_WORKSPACE", "/repo")
 	tests := []struct {
@@ -376,6 +395,7 @@ func TestStageHasExtension(t *testing.T) {
 }
 
 func TestEvaluateConditionsV1ExtensionActivatesStage(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_WORKSPACE", "/repo")
 	files := &mock.FilesMock{CurrentDir: "/repo"}
 	files.AddFile("/repo/.pipeline/extensions/preAcceptance/action.yml", nil)
