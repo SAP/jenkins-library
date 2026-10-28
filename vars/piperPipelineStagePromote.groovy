@@ -1,6 +1,5 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
-import com.sap.piper.ReportAggregator
 import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -14,8 +13,6 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field STAGE_STEP_KEYS = [
     /** For Docker builds: pushes the Docker image to a container registry. */
     'containerPushToRegistry',
-    /** For Maven/MTA builds: uploads artifacts to a Nexus repository manager. */
-    'nexusUpload',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -37,18 +34,12 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('containerPushToRegistry', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.containerPushToRegistry)
-        .addIfEmpty('nexusUpload', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.nexusUpload)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
         durationMeasure(script: script, measurementName: 'promote_duration') {
             if (config.containerPushToRegistry) {
                 containerPushToRegistry script: script
-            }
-
-            if (config.nexusUpload) {
-                nexusUpload script: script
-                ReportAggregator.instance.reportDeploymentToNexus()
             }
         }
     }

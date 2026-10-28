@@ -21,14 +21,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'neoDeploy',
     /** For Kubernetes use-cases: Performs deployment to Kubernetes landscape. */
     'kubernetesDeploy',
-    /** For TMS use-cases: Performs upload to Transport Management Service node*/
-    'tmsUpload',
-    /** For TMS use-cases: Performs export to Transport Management Service node*/
-    'tmsExport',
     /** Publishes release information to GitHub. */
     'githubPublishRelease',
-    /** Executes smoke tests by running the npm script 'ci-smoke' defined in the project's package.json file. */
-    'npmExecuteEndToEndTests',
     /** This step uploads SAPUI5 application to the SAPUI5 ABAP repository. */
     'transportRequestUploadCTS'
 ]
@@ -54,10 +48,8 @@ void call(Map parameters = [:]) {
         .addIfEmpty('cloudFoundryDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.cloudFoundryDeploy)
         .addIfEmpty('githubPublishRelease', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.githubPublishRelease)
         .addIfEmpty('healthExecuteCheck', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.healthExecuteCheck)
-        .addIfEmpty('tmsUpload', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.tmsUpload)
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
         .addIfEmpty('kubernetesDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.kubernetesDeploy)
-        .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
         .addIfEmpty('transportRequestUploadCTS', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.transportRequestUploadCTS)
         .use()
 
@@ -87,24 +79,8 @@ void call(Map parameters = [:]) {
             }
         }
 
-        if (config.tmsUpload) {
-            durationMeasure(script: script, measurementName: 'upload_release_tms_duration') {
-                tmsUpload script: script
-            }
-        } else if(config.tmsExport){
-            durationMeasure(script: script, measurementName: 'export_release_tms_duration') {
-                tmsExport script: script
-            }
-        }
-
         if (config.healthExecuteCheck) {
             healthExecuteCheck script: script
-        }
-
-        if (config.npmExecuteEndToEndTests) {
-            durationMeasure(script: script, measurementName: 'npmExecuteEndToEndTests_duration') {
-                npmExecuteEndToEndTests script: script, stageName: stageName, runScript: 'ci-smoke'
-            }
         }
 
         if (config.githubPublishRelease) {

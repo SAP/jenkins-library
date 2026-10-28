@@ -21,14 +21,6 @@ import static com.sap.piper.Prerequisites.checkScript
     'buildExecute',
     /** Publishes check results to Jenkins. It will always be active. */
     'checksPublishResults',
-    /**
-     * Executes karma tests. For example suitable for OPA5 testing as well as QUnit testing of SAP UI5 apps.<br />
-     * This step is not active by default. It can be activated by:
-     *
-     * * using pull request comments or pull request lables (see [Advanced Pull-Request Voting](#advanced-pull-request-voting).
-     * * explicit activation via stage configuration.
-     */
-    'karmaExecuteTests',
     /** Runs backend integration tests via maven in the module integration-tests/pom.xml */
     'mavenExecuteIntegration',
     /** Executes static code checks for Maven based projects. The plugins SpotBugs and PMD are used. */
@@ -74,7 +66,6 @@ import static com.sap.piper.Prerequisites.checkScript
  *
  * | step name | comment | pull-request label |
  * | --------- | ------- | ------------------ |
- * | karmaExecuteTests | `/piper karma` | `pr_karma`
  * | whitesourceExecuteScan | `/piper whitesource` | `pr_whitesource`
  *
  */
@@ -90,7 +81,6 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
-        .addIfEmpty('karmaExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.karmaExecuteTests)
         .addIfEmpty('mavenExecuteIntegration', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.mavenExecuteIntegration)
         .addIfEmpty('mavenExecuteStaticCodeChecks', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.mavenExecuteStaticCodeChecks)
         .addIfEmpty('npmExecuteLint', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteLint)
@@ -116,11 +106,6 @@ void call(Map parameters = [:]) {
                 if (config.sonarExecuteScan) {
                     sonarExecuteScan script: script
                 }
-            }
-
-            if (config.karmaExecuteTests) {
-                karmaExecuteTests script: script
-                testsPublishResults script: script
             }
 
             if (config.mavenExecuteIntegration) {

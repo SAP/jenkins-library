@@ -100,18 +100,6 @@ steps:
     sbt:
       filePath: 'sbtDescriptor.json'
       versioningTemplate: '${version}-${timestamp}${commitId?"+"+commitId:""}'
-  batsExecuteTests:
-    #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-bookworm'
-    dockerWorkspace: '/home/node'
-    envVars: {}
-    outputFormat: 'junit' # tap, junit
-    testPath: 'src/test'
-    failOnError: false
-    repository: 'https://github.com/bats-core/bats-core.git'
-    stashContent:
-      - 'tests'
-    testPackage: 'piper-bats'
   checksPublishResults:
     failOnError: false
     tasks:
@@ -304,28 +292,6 @@ steps:
     healthEndpoint: ''
   influxWriteData:
     influxServer: ''
-  karmaExecuteTests:
-    containerPortMappings:
-      'node:lts-bookworm':
-        - containerPort: 9876
-          hostPort: 9876
-    dockerEnvVars:
-      NO_PROXY: 'localhost,selenium,$NO_PROXY'
-      no_proxy: 'localhost,selenium,$no_proxy'
-    #TODO: check wheather defaults in here are still required
-    dockerImage: 'node:lts-bookworm'
-    dockerName: 'karma'
-    dockerWorkspace: '/home/node'
-    installCommand: 'npm install --quiet'
-    modules:
-      - '.'
-    runCommand: 'npm run karma'
-    sidecarEnvVars:
-      NO_PROXY: 'localhost,karma,$NO_PROXY'
-      no_proxy: 'localhost,karma,$no_proxy'
-    stashContent:
-      - buildDescriptor
-      - tests
   mailSendNotification:
     notificationAttachment: true
     notifyCulprits: true
@@ -358,8 +324,6 @@ steps:
     dockerImage: 'node:lts-bookworm'
   npmExecuteScripts:
     install: true
-  npmExecuteEndToEndTests:
-    runScript: 'ci-e2e'
   whitesourceExecuteScan:
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
     stashExcludes:
@@ -513,11 +477,6 @@ steps:
       active: false
   checkChangeInDevelopment:
       failIfStatusIsNotInDevelopment: true
-  tmsUpload:
-    namedUser: 'Piper-Pipeline'
-    mtaVersion: '*'
-    stashContent:
-      - 'buildResult'
   transportRequestCreate:
       developmentSystemId: null
       verbose: false
@@ -558,7 +517,6 @@ steps:
     stepMappings:
       checkmarx: 'checkmarxExecuteScan'
       fortify: 'fortifyExecuteScan'
-      karma: 'karmaExecuteTests'
       whitesource: 'whitesourceExecuteScan'
     labelPrefix: pr_
   cnbBuild:

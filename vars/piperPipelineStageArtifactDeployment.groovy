@@ -1,5 +1,4 @@
 import com.sap.piper.GenerateStageDocumentation
-import com.sap.piper.ReportAggregator
 import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -32,11 +31,5 @@ void call(Map parameters = [:]) {
             unstableSteps = []
             commonPipelineEnvironment.setValue('unstableSteps', unstableSteps)
         }
-
-        withEnv(["STAGE_NAME=${stageName}"]) {
-            nexusUpload(script: script)
-        }
-
-        ReportAggregator.instance.reportDeploymentToNexus()
     }
 }

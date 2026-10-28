@@ -82,7 +82,6 @@ nav:
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
         - awsS3Upload: steps/awsS3Upload.md
         - azureBlobUpload: steps/azureBlobUpload.md
-        - batsExecuteTests: steps/batsExecuteTests.md
         - buildExecute: steps/buildExecute.md
         - checkmarxExecuteScan: steps/checkmarxExecuteScan.md
         - checkmarxOneExecuteScan: steps/checkmarxOneExecuteScan.md
@@ -141,7 +140,6 @@ nav:
         - isChangeInDevelopment: steps/isChangeInDevelopment.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
-        - karmaExecuteTests: steps/karmaExecuteTests.md
         - kubernetesDeploy: steps/kubernetesDeploy.md
         - mailSendNotification: steps/mailSendNotification.md
         - malwareExecuteScan: steps/malwareExecuteScan.md
@@ -153,8 +151,6 @@ nav:
         - multicloudDeploy: steps/multicloudDeploy.md
         - neoDeploy: steps/neoDeploy.md
         - newmanExecute: steps/newmanExecute.md
-        - nexusUpload: steps/nexusUpload.md
-        - npmExecuteEndToEndTests: steps/npmExecuteEndToEndTests.md
         - npmExecuteLint: steps/npmExecuteLint.md
         - npmExecuteScripts: steps/npmExecuteScripts.md
         - npmExecuteTests: steps/npmExecuteTests.md
@@ -176,14 +172,11 @@ nav:
         - sonarExecuteScan: steps/sonarExecuteScan.md
         - spinnakerTriggerPipeline: steps/spinnakerTriggerPipeline.md
         - testsPublishResults: steps/testsPublishResults.md
-        - tmsUpload: steps/tmsUpload.md
-        - tmsExport: steps/tmsExport.md
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
         - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
         - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
-        - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - writeTemporaryCredentials: steps/writeTemporaryCredentials.md
         - xsDeploy: steps/xsDeploy.md
