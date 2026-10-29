@@ -2,7 +2,6 @@ package checkmarxOne
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -14,8 +13,12 @@ import (
 	"github.com/go-git/go-git/v5"
 )
 
-func sarifSourcePrefix() string {
-	workingDirectory, err := os.Getwd()
+func sarifSourcePrefix(workspace ...string) string {
+	sourceDirectory := "."
+	if len(workspace) > 0 && workspace[0] != "" {
+		sourceDirectory = workspace[0]
+	}
+	workingDirectory, err := filepath.Abs(sourceDirectory)
 	if err != nil {
 		return ""
 	}
@@ -43,7 +46,7 @@ func sarifSourcePrefix() string {
 }
 
 func sarifSourcePath(prefix, filename string) string {
-	return path.Join(prefix, strings.TrimPrefix(filename, "/"))
+	return path.Join(prefix, strings.TrimLeft(filename, "/"))
 }
 
 // ConvertCxJSONToSarif is the entrypoint for the Parse function
@@ -51,24 +54,24 @@ func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResul
 	return ConvertCxSASTJSONToSarif(sys, serverURL, scanResults, scan)
 }
 
-func ConvertCxSASTJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan) (format.SARIF, error) {
+func ConvertCxSASTJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan, workspace ...string) (format.SARIF, error) {
 	baseURL := serverURL + "/results/" + scan.ScanID + "/" + scan.ProjectID
 	projectBaseURL := serverURL + "/projects/" + scan.ProjectID + "/"
 
-	return convertCxJSONToSarif(sys, "sast", baseURL, projectBaseURL, scanResults, scan)
+	return convertCxJSONToSarif(sys, "sast", baseURL, projectBaseURL, scanResults, scan, workspace...)
 }
 
-func ConvertCxIACJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan) (format.SARIF, error) {
+func ConvertCxIACJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan, workspace ...string) (format.SARIF, error) {
 	baseURL := serverURL + "/results/" + scan.ScanID + "/" + scan.ProjectID
 	projectBaseURL := serverURL + "/projects/" + scan.ProjectID + "/"
 
-	return convertCxJSONToSarif(sys, "kics", baseURL, projectBaseURL, scanResults, scan)
+	return convertCxJSONToSarif(sys, "kics", baseURL, projectBaseURL, scanResults, scan, workspace...)
 }
 
-func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string, scanResults *[]ScanResult, scan *Scan) (format.SARIF, error) {
+func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string, scanResults *[]ScanResult, scan *Scan, workspace ...string) (format.SARIF, error) {
 	// Process sarif
 	start := time.Now()
-	sourcePrefix := sarifSourcePrefix()
+	sourcePrefix := sarifSourcePrefix(workspace...)
 
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"

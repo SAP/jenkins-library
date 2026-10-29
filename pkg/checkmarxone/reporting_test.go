@@ -19,11 +19,11 @@ func TestSASTSarifRepositoryPaths(t *testing.T) {
 			require.NoError(t, err)
 			workingDirectory := filepath.Join(root, directory)
 			require.NoError(t, os.MkdirAll(workingDirectory, 0o700))
-			t.Chdir(workingDirectory)
+			t.Chdir(root)
 
 			var results []ScanResult
 			require.NoError(t, json.Unmarshal([]byte(`[{"type":"sast","severity":"HIGH","data":{"queryId":1,"queryName":"Test_Query","languageName":"Go","nodes":[{"fileName":"/main.go","line":1,"column":1},{"fileName":"/src/sink.go","line":2,"column":1}]}}]`), &results))
-			sarif, err := ConvertCxSASTJSONToSarif(nil, "https://example.com", &results, &Scan{})
+			sarif, err := ConvertCxSASTJSONToSarif(nil, "https://example.com", &results, &Scan{}, workingDirectory)
 			require.NoError(t, err)
 			require.Len(t, sarif.Runs[0].Results, 1)
 			result := sarif.Runs[0].Results[0]
@@ -33,6 +33,10 @@ func TestSASTSarifRepositoryPaths(t *testing.T) {
 				assert.Equal(t, expected, result.RelatedLocations[index].PhysicalLocation.ArtifactLocation.URI)
 				assert.Equal(t, expected, result.CodeFlows[0].ThreadFlows[0].Locations[index].Location.PhysicalLocation.ArtifactLocation.URI)
 			}
+			t.Chdir(workingDirectory)
+			workingDirectorySarif, err := ConvertCxSASTJSONToSarif(nil, "https://example.com", &results, &Scan{})
+			require.NoError(t, err)
+			assert.Equal(t, sarif.Runs[0].Results, workingDirectorySarif.Runs[0].Results)
 		})
 	}
 }
@@ -42,6 +46,7 @@ func TestSarifSourcePathOutsideRepository(t *testing.T) {
 	assert.Empty(t, sarifSourcePrefix())
 	assert.Equal(t, "main.go", sarifSourcePath(sarifSourcePrefix(), "/main.go"))
 	assert.Equal(t, "componentA/main.go", sarifSourcePath("componentA", "main.go"))
+	assert.Equal(t, "componentA/main.go", sarifSourcePath("componentA", "//main.go"))
 }
 
 type sarifIACSystem struct {
@@ -58,11 +63,11 @@ func TestIACSarifRepositoryPaths(t *testing.T) {
 	require.NoError(t, err)
 	componentDirectory := filepath.Join(root, "componentA")
 	require.NoError(t, os.MkdirAll(componentDirectory, 0o700))
-	t.Chdir(componentDirectory)
+	t.Chdir(root)
 
 	var results []ScanResult
 	require.NoError(t, json.Unmarshal([]byte(`[{"type":"kics","severity":"HIGH","data":{"queryId":"test-query","queryName":"Test_Query","platform":"Terraform","fileName":"/main.tf","line":1}}]`), &results))
-	sarif, err := ConvertCxIACJSONToSarif(sarifIACSystem{}, "https://example.com", &results, &Scan{})
+	sarif, err := ConvertCxIACJSONToSarif(sarifIACSystem{}, "https://example.com", &results, &Scan{}, componentDirectory)
 	require.NoError(t, err)
 	require.Len(t, sarif.Runs[0].Results, 1)
 	result := sarif.Runs[0].Results[0]

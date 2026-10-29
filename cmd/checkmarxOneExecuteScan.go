@@ -1080,7 +1080,7 @@ func (c *checkmarxOneExecuteScanHelper) GetReportSASTSARIF(scan *checkmarxOne.Sc
 	if c.config.ConvertToSarif {
 		if scanmeta.SAST != nil {
 			log.Entry().Info("Calling SAST JSON conversion to SARIF function.")
-			sarif, err := checkmarxOne.ConvertCxSASTJSONToSarif(c.sys, c.config.ServerURL, results, scan)
+			sarif, err := checkmarxOne.ConvertCxSASTJSONToSarif(c.sys, c.config.ServerURL, results, scan, c.utils.GetWorkspace())
 			if err != nil {
 				return fmt.Errorf("Failed to generate SARIF: %s", err)
 			}
@@ -1098,7 +1098,7 @@ func (c *checkmarxOneExecuteScanHelper) GetReportIACSARIF(scan *checkmarxOne.Sca
 	if c.config.ConvertToSarif {
 		if scanmeta.IAC != nil {
 			log.Entry().Info("Calling IAC JSON conversion to SARIF function.")
-			sarif, err := checkmarxOne.ConvertCxIACJSONToSarif(c.sys, c.config.ServerURL, results, scan)
+			sarif, err := checkmarxOne.ConvertCxIACJSONToSarif(c.sys, c.config.ServerURL, results, scan, c.utils.GetWorkspace())
 			if err != nil {
 				return fmt.Errorf("Failed to generate SARIF: %s", err)
 			}
