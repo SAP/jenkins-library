@@ -379,6 +379,9 @@ spec:
           - type: vaultSecret
             default: github
             name: githubVaultSecretName
+          - type: systemTrustSecret
+            name: githubSystemTrustSecretName
+            default: github-app
       - name: image
         aliases:
           - name: deployImage

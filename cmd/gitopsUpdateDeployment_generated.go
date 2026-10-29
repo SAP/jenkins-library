@@ -18,21 +18,23 @@ import (
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName                string   `json:"branchName,omitempty"`
-	CommitMessage             string   `json:"commitMessage,omitempty"`
-	ServerURL                 string   `json:"serverUrl,omitempty"`
-	ForcePush                 bool     `json:"forcePush,omitempty"`
-	Username                  string   `json:"username,omitempty"`
-	Password                  string   `json:"password,omitempty"`
-	FilePath                  string   `json:"filePath,omitempty"`
-	ContainerName             string   `json:"containerName,omitempty"`
-	ContainerRegistryURL      string   `json:"containerRegistryUrl,omitempty"`
-	ContainerImageNameTag     string   `json:"containerImageNameTag,omitempty"`
-	ChartPath                 string   `json:"chartPath,omitempty"`
-	HelmValues                []string `json:"helmValues,omitempty"`
-	DeploymentName            string   `json:"deploymentName,omitempty"`
-	Tool                      string   `json:"tool,omitempty" validate:"possible-values=kubectl helm kustomize"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	BranchName                   string   `json:"branchName,omitempty"`
+	CommitMessage                string   `json:"commitMessage,omitempty"`
+	ServerURL                    string   `json:"serverUrl,omitempty"`
+	ForcePush                    bool     `json:"forcePush,omitempty"`
+	Username                     string   `json:"username,omitempty"`
+	Password                     string   `json:"password,omitempty"`
+	FilePath                     string   `json:"filePath,omitempty"`
+	ContainerName                string   `json:"containerName,omitempty"`
+	ContainerRegistryURL         string   `json:"containerRegistryUrl,omitempty"`
+	ContainerImageNameTag        string   `json:"containerImageNameTag,omitempty"`
+	ChartPath                    string   `json:"chartPath,omitempty"`
+	HelmValues                   []string `json:"helmValues,omitempty"`
+	DeploymentName               string   `json:"deploymentName,omitempty"`
+	Tool                         string   `json:"tool,omitempty" validate:"possible-values=kubectl helm kustomize"`
+	CustomTLSCertificateLinks    []string `json:"customTlsCertificateLinks,omitempty"`
+	CustomPatchStringWithVersion string   `json:"customPatchStringWithVersion,omitempty"`
+	ArtifactVersion              string   `json:"artifactVersion,omitempty"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -195,6 +197,8 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. In case of `kustomize` this is the name or alias of the image in the `kustomization.yaml`")
 	cmd.Flags().StringVar(&stepConfig.Tool, "tool", `kubectl`, "Defines the tool which should be used to update the deployment description.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.")
+	cmd.Flags().StringVar(&stepConfig.CustomPatchStringWithVersion, "customPatchStringWithVersion", os.Getenv("PIPER_customPatchStringWithVersion"), "Custom patch string with version to be applied to the deployment configuration using `kubectl` only, for example `{\"spec\":{\"semver\":\"{{.Version}}\"}}`. The Go template `{{.Version}}` will be replaced with the unique version Piper generates during the pipeline run.")
+	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version assigned by artifactPrepareVersion to the uploaded artifact")
 
 	cmd.MarkFlagRequired("branchName")
 	cmd.MarkFlagRequired("serverUrl")
@@ -395,6 +399,29 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "customPatchStringWithVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customPatchStringWithVersion"),
+					},
+					{
+						Name: "artifactVersion",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_artifactVersion"),
 					},
 				},
 			},
