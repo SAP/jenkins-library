@@ -69,6 +69,9 @@ func (m *mvnRunner) Execute(options *maven.ExecuteOptions, utils maven.Utils) (s
 func (m *mvnRunner) Evaluate(options *maven.EvaluateOptions, expression string, utils maven.Utils) (string, error) {
 	return maven.Evaluate(options, expression, utils)
 }
+func (m *mvnRunner) EvaluateMultiple(options *maven.EvaluateOptions, expressions []string, utils maven.Utils) ([]string, error) {
+	return maven.EvaluateMultiple(options, expressions, utils)
+}
 
 var fileExists func(string) (bool, error)
 
