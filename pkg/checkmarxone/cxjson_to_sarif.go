@@ -2,36 +2,76 @@ package checkmarxOne
 
 import (
 	"fmt"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/go-git/go-git/v5"
 )
+
+func sarifSourcePrefix(workspace ...string) string {
+	sourceDirectory := "."
+	if len(workspace) > 0 && workspace[0] != "" {
+		sourceDirectory = workspace[0]
+	}
+	workingDirectory, err := filepath.Abs(sourceDirectory)
+	if err != nil {
+		return ""
+	}
+	workingDirectory, err = filepath.EvalSymlinks(workingDirectory)
+	if err != nil {
+		return ""
+	}
+	repository, err := git.PlainOpenWithOptions(workingDirectory, &git.PlainOpenOptions{DetectDotGit: true})
+	if err != nil {
+		return ""
+	}
+	worktree, err := repository.Worktree()
+	if err != nil {
+		return ""
+	}
+	repositoryRoot, err := filepath.EvalSymlinks(worktree.Filesystem.Root())
+	if err != nil {
+		return ""
+	}
+	prefix, err := filepath.Rel(repositoryRoot, workingDirectory)
+	if err != nil {
+		return ""
+	}
+	return filepath.ToSlash(prefix)
+}
+
+func sarifSourcePath(prefix, filename string) string {
+	return path.Join(prefix, strings.TrimLeft(filename, "/"))
+}
 
 // ConvertCxJSONToSarif is the entrypoint for the Parse function
 func ConvertCxJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, _ ScanSASTMetadata, scan *Scan) (format.SARIF, error) {
 	return ConvertCxSASTJSONToSarif(sys, serverURL, scanResults, scan)
 }
 
-func ConvertCxSASTJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan) (format.SARIF, error) {
+func ConvertCxSASTJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan, workspace ...string) (format.SARIF, error) {
 	baseURL := serverURL + "/results/" + scan.ScanID + "/" + scan.ProjectID
 	projectBaseURL := serverURL + "/projects/" + scan.ProjectID + "/"
 
-	return convertCxJSONToSarif(sys, "sast", baseURL, projectBaseURL, scanResults, scan)
+	return convertCxJSONToSarif(sys, "sast", baseURL, projectBaseURL, scanResults, scan, workspace...)
 }
 
-func ConvertCxIACJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan) (format.SARIF, error) {
+func ConvertCxIACJSONToSarif(sys System, serverURL string, scanResults *[]ScanResult, scan *Scan, workspace ...string) (format.SARIF, error) {
 	baseURL := serverURL + "/results/" + scan.ScanID + "/" + scan.ProjectID
 	projectBaseURL := serverURL + "/projects/" + scan.ProjectID + "/"
 
-	return convertCxJSONToSarif(sys, "kics", baseURL, projectBaseURL, scanResults, scan)
+	return convertCxJSONToSarif(sys, "kics", baseURL, projectBaseURL, scanResults, scan, workspace...)
 }
 
-func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string, scanResults *[]ScanResult, scan *Scan) (format.SARIF, error) {
+func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string, scanResults *[]ScanResult, scan *Scan, workspace ...string) (format.SARIF, error) {
 	// Process sarif
 	start := time.Now()
+	sourcePrefix := sarifSourcePrefix(workspace...)
 
 	var sarif format.SARIF
 	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/cos02/schemas/sarif-schema-2.1.0.json"
@@ -110,11 +150,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 		case "sast":
 			for k := 0; k < len(r.Data.Nodes); k++ {
 				loc := *new(format.Location)
-				loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
-				// remove absolute path of file name (coming from JSON format)
-				if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
-					loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
-				}
+				loc.PhysicalLocation.ArtifactLocation.URI = sarifSourcePath(sourcePrefix, r.Data.Nodes[k].FileName)
 				loc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 				loc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 				loc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -138,11 +174,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 
 				threadFlowLocation := *new(format.Locations)
 				tfloc := new(format.Location)
-				tfloc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName
-				// remove absolute path of file name (coming from JSON format)
-				if len(r.Data.Nodes[0].FileName) > 0 && r.Data.Nodes[0].FileName[0:1] == "/" {
-					loc.PhysicalLocation.ArtifactLocation.URI = r.Data.Nodes[0].FileName[1:]
-				}
+				tfloc.PhysicalLocation.ArtifactLocation.URI = loc.PhysicalLocation.ArtifactLocation.URI
 				tfloc.PhysicalLocation.Region.StartLine = r.Data.Nodes[k].Line
 				tfloc.PhysicalLocation.Region.EndLine = r.Data.Nodes[k].Line
 				tfloc.PhysicalLocation.Region.StartColumn = r.Data.Nodes[k].Column
@@ -153,11 +185,7 @@ func convertCxJSONToSarif(sys System, resultType, baseURL, projectBaseURL string
 		case "kics":
 			loc := *new(format.Location)
 
-			filename := r.Data.Filename
-			// remove absolute path of file name (coming from JSON format)
-			if len(filename) > 0 && filename[0:1] == "/" {
-				filename = filename[1:]
-			}
+			filename := sarifSourcePath(sourcePrefix, r.Data.Filename)
 
 			loc.PhysicalLocation.ArtifactLocation.URI = filename
 			loc.PhysicalLocation.Region.StartLine = r.Data.Line
