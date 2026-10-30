@@ -625,6 +625,29 @@ func TestBuildMtaEffectiveProfiles(t *testing.T) {
 		// entries in settings.xml.
 		assert.Equal(t, []string{"release.build"}, buildMtaEffectiveProfiles([]string{"release.build"}))
 	})
+
+	t.Run("milestone.build with release.build strips release.build", func(t *testing.T) {
+		// milestone.build must not be co-activated with release.build — the function
+		// must strip release.build even when the caller passes both.
+		assert.Equal(t, []string{"milestone.build"},
+			buildMtaEffectiveProfiles([]string{"milestone.build", "release.build"}))
+	})
+
+	t.Run("release.build with milestone.build strips release.build", func(t *testing.T) {
+		assert.Equal(t, []string{"milestone.build"},
+			buildMtaEffectiveProfiles([]string{"release.build", "milestone.build"}))
+	})
+
+	t.Run("milestone.build with snapshot.build strips release.build and keeps both", func(t *testing.T) {
+		// Both quality tiers present: milestone check wins, no release.build injected.
+		assert.Equal(t, []string{"milestone.build", "snapshot.build"},
+			buildMtaEffectiveProfiles([]string{"milestone.build", "snapshot.build"}))
+	})
+
+	t.Run("snapshot.build with milestone.build strips release.build and keeps both", func(t *testing.T) {
+		assert.Equal(t, []string{"snapshot.build", "milestone.build"},
+			buildMtaEffectiveProfiles([]string{"snapshot.build", "milestone.build"}))
+	})
 }
 
 func TestMtaBuildProfileSettingsXMLUpdate(t *testing.T) {

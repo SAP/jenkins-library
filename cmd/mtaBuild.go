@@ -369,7 +369,19 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 //   - Other user profiles: prepend release.build so the release Artifactory
 //     repository remains accessible alongside the custom profiles.
 func buildMtaEffectiveProfiles(userProfiles []string) []string {
-	if containsProfile(userProfiles, "milestone.build") || containsProfile(userProfiles, "snapshot.build") {
+	if containsProfile(userProfiles, "milestone.build") {
+		// Milestone quality: milestone.build activates its own Artifactory repository
+		// mapping. release.build must not be co-activated — strip it if the caller
+		// passed both, since <activeProfile> has no deactivation syntax.
+		result := make([]string, 0, len(userProfiles))
+		for _, p := range userProfiles {
+			if p != "release.build" {
+				result = append(result, p)
+			}
+		}
+		return result
+	}
+	if containsProfile(userProfiles, "snapshot.build") {
 		return userProfiles
 	}
 	if containsProfile(userProfiles, "release.build") {
