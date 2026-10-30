@@ -154,7 +154,8 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 		return err
 	}
 
-	if err := handleActiveProfileUpdate(config, utils); err != nil {
+	effectiveProfiles := buildMtaEffectiveProfiles(config.Profiles)
+	if err := handleActiveProfileUpdate(config, effectiveProfiles, utils); err != nil {
 		return err
 	}
 
@@ -237,7 +238,7 @@ func runMtaBuild(config mtaBuildOptions, commonPipelineEnvironment *mtaBuildComm
 	}
 
 	mtaConfig := buildsettings.BuildOptions{
-		Profiles:           config.Profiles,
+		Profiles:           effectiveProfiles,
 		GlobalSettingsFile: config.GlobalSettingsFile,
 		Publish:            config.Publish,
 		BuildSettingsInfo:  config.BuildSettingsInfo,
@@ -347,11 +348,61 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 	return nil
 }
 
-func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
-	if len(config.Profiles) > 0 {
-		return maven.UpdateActiveProfileInSettingsXML(config.Profiles, utils)
+// buildMtaEffectiveProfiles returns the Maven profile IDs to write into the
+// global settings.xml <activeProfiles> section for mtaBuild.
+//
+// Unlike mavenBuild (which passes profiles on the Maven CLI and can use the
+// deactivation syntax "!profile"), mtaBuild drives Maven internally via the
+// mbt binary so profiles must be communicated through the downloaded global
+// settings.xml.  The <activeProfile> element only accepts positive profile
+// IDs; the "!profile" deactivation syntax is a CLI-only concept.
+//
+// The quality-tier strategy mirrors buildBuiltinProfiles from mavenBuild:
+//   - Default / Release quality (no user profiles): activate release.build only
+//     — replaces the settings.xml default (snapshot.build) so that only the
+//     SAP Artifactory build-releases repository is reachable.
+//   - Milestone quality ("milestone.build" in user profiles): use the user
+//     profiles as-is; milestone.build activates the milestone repository on its
+//     own and release.build must not be co-activated.
+//   - Snapshot opt-in ("snapshot.build" in user profiles): use the user profiles
+//     as-is.
+//   - Other user profiles: prepend release.build so the release Artifactory
+//     repository remains accessible alongside the custom profiles.
+func buildMtaEffectiveProfiles(userProfiles []string) []string {
+	if containsProfile(userProfiles, "milestone.build") {
+		// Milestone quality: milestone.build activates its own Artifactory repository
+		// mapping. release.build must not be co-activated — strip it if the caller
+		// passed both, since <activeProfile> has no deactivation syntax.
+		result := make([]string, 0, len(userProfiles))
+		for _, p := range userProfiles {
+			if p != "release.build" {
+				result = append(result, p)
+			}
+		}
+		return result
 	}
-	return nil
+	if containsProfile(userProfiles, "snapshot.build") {
+		return userProfiles
+	}
+	if containsProfile(userProfiles, "release.build") {
+		// Caller already carries release.build; prepending another copy would produce
+		// a duplicate <activeProfile> entry in settings.xml.
+		return userProfiles
+	}
+	result := make([]string, 0, len(userProfiles)+1)
+	result = append(result, "release.build")
+	result = append(result, userProfiles...)
+	return result
+}
+
+func handleActiveProfileUpdate(config mtaBuildOptions, effectiveProfiles []string, utils mtaBuildUtils) error {
+	// Only update the settings.xml when a global settings file was provided;
+	// without one there is no $M2_HOME/conf/settings.xml for mbt's internal
+	// Maven to read, so there is nothing to update.
+	if len(config.GlobalSettingsFile) == 0 {
+		return nil
+	}
+	return maven.UpdateActiveProfileInSettingsXML(effectiveProfiles, utils)
 }
 
 func installMavenArtifacts(utils mtaBuildUtils, config mtaBuildOptions) error {
