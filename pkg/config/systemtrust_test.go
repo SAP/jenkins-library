@@ -234,3 +234,81 @@ func mustCompactJSON(t *testing.T, s string) string {
 	}
 	return buf.String()
 }
+
+func TestSystemTrustReferenceArguments(t *testing.T) {
+	params := []StepParameters{
+		{Name: "assertionToken", ResourceRef: []ResourceReference{{Type: RefTypeSystemTrustSecret, Default: "btp-cf<scope>$(systemTrustScope)", Args: map[string]string{"ias_tenant_issuer_uri": "$(iasTenantIssuerUri)"}}}},
+		{Name: "systemTrustScope"},
+		{Name: "iasTenantIssuerUri"},
+	}
+	for _, tc := range []struct {
+		name      string
+		changes   map[string]any
+		status    int
+		response  string
+		wantToken string
+		wantCalls int
+		wantScope string
+	}{
+		{name: "component", wantToken: "cf-assertion", wantCalls: 1, wantScope: "component"},
+		{name: "workspace", changes: map[string]any{"systemTrustScope": "workspace"}, wantToken: "cf-assertion", wantCalls: 1, wantScope: "workspace"},
+		{name: "preset", changes: map[string]any{"assertionToken": "preset"}, wantToken: "preset"},
+		{name: "skipped", changes: map[string]any{skipSystemTrust: true}},
+		{name: "missing issuer", changes: map[string]any{"iasTenantIssuerUri": nil}},
+		{name: "empty issuer", changes: map[string]any{"iasTenantIssuerUri": ""}},
+		{name: "non-string issuer", changes: map[string]any{"iasTenantIssuerUri": 42}},
+		{name: "unresolved issuer", changes: map[string]any{"iasTenantIssuerUri": "$(absent)"}},
+		{name: "missing scope", changes: map[string]any{"systemTrustScope": nil}},
+		{name: "empty scope", changes: map[string]any{"systemTrustScope": ""}},
+		{name: "non-string scope", changes: map[string]any{"systemTrustScope": true}},
+		{name: "unresolved scope", changes: map[string]any{"systemTrustScope": "$(absent)"}},
+		{name: "forbidden", status: 403, response: "forbidden", wantCalls: 1, wantScope: "component"},
+		{name: "empty token", response: `{"btp-cf":""}`, wantCalls: 1, wantScope: "component"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			values := map[string]any{"assertionToken": "", "systemTrustScope": "component", "iasTenantIssuerUri": "https://ias.example", "username": "fallback-user", "password": "fallback-password"}
+			for key, value := range tc.changes {
+				if value == nil {
+					delete(values, key)
+				} else {
+					values[key] = value
+				}
+			}
+			httpmock.RegisterResponder(http.MethodPost, testFullURL, func(req *http.Request) (*http.Response, error) {
+				var body []map[string]any
+				assert.NoError(t, json.NewDecoder(req.Body).Decode(&body))
+				assert.Equal(t, []map[string]any{{"system": "btp-cf", "scope": tc.wantScope, "args": map[string]any{"ias_tenant_issuer_uri": "https://ias.example"}}}, body)
+				status, response := tc.status, tc.response
+				if status == 0 {
+					status = 200
+				}
+				if response == "" {
+					response = `{"btp-cf":"cf-assertion"}`
+				}
+				resp := httpmock.NewStringResponse(status, response)
+				resp.Request = req
+				return resp, nil
+			})
+			client := &piperhttp.Client{}
+			client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+			stepConfig := &StepConfig{Config: values}
+			resolveAllSystemTrustReferences(stepConfig, params, systemtrust.Configuration{ServerURL: testServerURL, TokenEndPoint: testTokenEndPoint}, client)
+			assert.Equal(t, tc.wantCalls, httpmock.GetTotalCallCount())
+			assert.Equal(t, tc.wantToken, values["assertionToken"])
+			assert.Equal(t, "fallback-user", values["username"])
+			assert.Equal(t, "fallback-password", values["password"])
+		})
+	}
+	t.Run("templated empty scope never uses pipeline default", func(t *testing.T) {
+		_, _, err := resolveSystemTrustReference(ResourceReference{Default: "btp-cf<scope>$(scope)"}, map[string]any{"scope": ""})
+		assert.ErrorContains(t, err, "nonempty system and scope")
+	})
+	t.Run("legacy literal scope parsing unchanged", func(t *testing.T) {
+		ref, args, err := resolveSystemTrustReference(ResourceReference{Default: "sonar<scope>"}, nil)
+		assert.NoError(t, err)
+		assert.Equal(t, "sonar<scope>", ref)
+		assert.Nil(t, args)
+	})
+}
