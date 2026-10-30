@@ -226,6 +226,8 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
 			log.RegisterSecret(stepConfig.PrivateModulesGitToken)
+			log.RegisterSecret(stepConfig.RepositoryUsername)
+			log.RegisterSecret(stepConfig.RepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -369,8 +371,8 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ScanContainerDistro, "scanContainerDistro", os.Getenv("PIPER_scanContainerDistro"), "To also scan your images in the CPE, choose the distro")
 	cmd.Flags().StringSliceVar(&stepConfig.ImageNameTags, "imageNameTags", []string{}, "Images to be scanned (typically filled by CPE)")
 	cmd.Flags().StringVar(&stepConfig.RegistryURL, "registryUrl", os.Getenv("PIPER_registryUrl"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Used accessing for the images to be scanned (typically filled by CPE)")
-	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Used accessing for the images to be scanned (typically filled by CPE)")
+	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "Username for accessing the container images to be scanned, provided by CPE or Vault.")
+	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for accessing the container images to be scanned, provided by CPE or Vault.")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect9, "useDetect9", false, "DEPRECATED: This flag enables the use of the supported version 9 of the Detect script instead of default version 11")
 	cmd.Flags().BoolVar(&stepConfig.UseDetect10, "useDetect10", false, "This flag enables the use of the supported version 10 of the Detect script instead of default version 11")
 	cmd.Flags().BoolVar(&stepConfig.ContainerScan, "containerScan", false, "When set to true, Container Scanning will be used instead of Docker Inspector as the Detect tool for scanning images, and all other detect tools will be ignored in the scan")
@@ -942,6 +944,12 @@ func detectExecuteScanMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryUsername",
 							},
+
+							{
+								Name:    "registryCredentialsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "docker-registry",
+							},
 						},
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
@@ -955,6 +963,12 @@ func detectExecuteScanMetadata() config.StepData {
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "container/repositoryPassword",
+							},
+
+							{
+								Name:    "registryCredentialsVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "docker-registry",
 							},
 						},
 						Scope:     []string{"STEPS", "STAGES", "PARAMETERS"},
@@ -993,12 +1007,12 @@ func detectExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "openjdk", Image: "openjdk:11-ea", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "openjdk", Image: "docker.io/openjdk:11-ea", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Sidecars: []config.Container{
-				{Name: "inspector-ubuntu", Image: "blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},
-				{Name: "inspector-alpine", Image: "blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "alpine"}}}}},
-				{Name: "inspector-centos", Image: "blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "centos"}}}}},
+				{Name: "inspector-ubuntu", Image: "docker.io/blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "ubuntu"}}}}},
+				{Name: "inspector-alpine", Image: "docker.io/blackducksoftware/blackduck-imageinspector-alpine:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "alpine"}}}}},
+				{Name: "inspector-centos", Image: "docker.io/blackducksoftware/blackduck-imageinspector-centos:5.1.0", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanContainerDistro", Value: "centos"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

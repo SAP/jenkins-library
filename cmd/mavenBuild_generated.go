@@ -647,7 +647,7 @@ func mavenBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.9-sapmachine-17"},
+				{Name: "mvn", Image: "docker.io/maven:3.9-sapmachine-17"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

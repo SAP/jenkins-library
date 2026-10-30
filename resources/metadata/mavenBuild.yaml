@@ -367,4 +367,4 @@ spec:
             type: jacoco-coverage
   containers:
     - name: mvn
-      image: maven:3.9-sapmachine-17
+      image: docker.io/maven:3.9-sapmachine-17

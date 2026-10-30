@@ -152,4 +152,4 @@ spec:
           - name: custom/transportRequestId
   containers:
     - name: fiori-client
-      image: node
+      image: docker.io/node

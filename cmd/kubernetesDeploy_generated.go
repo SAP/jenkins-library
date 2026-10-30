@@ -569,6 +569,12 @@ func kubernetesDeployMetadata() config.StepData {
 								Type:    "vaultSecret",
 								Default: "github",
 							},
+
+							{
+								Name:    "githubSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -831,7 +837,7 @@ func kubernetesDeployMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Image: "docker.io/alpine/k8s:1.33.13", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}

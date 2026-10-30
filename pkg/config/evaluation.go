@@ -3,6 +3,8 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -57,6 +59,7 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 	}
 
 	currentOrchestrator := orchestrator.DetectOrchestrator().String()
+	isGitHubActions := currentOrchestrator == orchestrator.GitHubActions.String()
 	for _, stage := range r.PipelineConfig.Spec.Stages {
 		// Currently, the displayName is being used, but it may be necessary
 		// to also consider using the technical name.
@@ -69,6 +72,8 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 		// and then evaluate stepActive conditions
 		runStep := make(map[string]bool, len(stage.Steps))
 		stepConfigCache := make(map[string]StepConfig, len(stage.Steps))
+		supportingSteps := make(map[string]bool, len(stage.Steps))
+		explicitlyActivatedSteps := make(map[string]bool, len(stage.Steps))
 		for _, step := range stage.Steps {
 			// Consider only orchestrator-specific steps if the orchestrator limitation is set.
 			if len(step.Orchestrators) > 0 && !slices.Contains(step.Orchestrators, currentOrchestrator) {
@@ -80,11 +85,15 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				return err
 			}
 			stepConfigCache[step.Name] = stepConfig
+			supportingSteps[step.Name] = step.Supporting
 
 			// Respect explicit activation/deactivation if available.
 			// Note that this has higher priority than step conditions
 			if active, ok := stepConfig.Config[step.Name].(bool); ok {
 				runStep[step.Name] = active
+				if active {
+					explicitlyActivatedSteps[step.Name] = true
+				}
 				continue
 			}
 
@@ -129,6 +138,24 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 			}
 		}
 
+		// Supporting steps may run only alongside an active primary step. An
+		// explicit activation keeps a supporting step, and therefore its stage,
+		// active on its own.
+		activePrimaryStep := false
+		for stepName, active := range runStep {
+			if active && !supportingSteps[stepName] {
+				activePrimaryStep = true
+				break
+			}
+		}
+		if isGitHubActions && !activePrimaryStep {
+			for stepName := range supportingSteps {
+				if !explicitlyActivatedSteps[stepName] {
+					runStep[stepName] = false
+				}
+			}
+		}
+
 		r.RunSteps[stageName] = runStep
 
 		stageActive := false
@@ -137,10 +164,64 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, utils piperutils.File
 				stageActive = true
 			}
 		}
+		if isGitHubActions && r.ExtensibilityEnabled {
+			hasExtension, err := stageHasExtension(stageName, utils)
+			if err != nil {
+				return fmt.Errorf("failed to detect stage extensions: %w", err)
+			}
+			log.Entry().Debugf("Extension detection for stage '%s': found=%t, active from steps=%t", stageName, hasExtension, stageActive)
+			if hasExtension && !stageActive {
+				log.Entry().Debugf("Activating stage '%s' because an extension was found", stageName)
+			}
+			stageActive = stageActive || hasExtension
+		}
 		r.RunStages[stageName] = stageActive
 	}
 
 	return nil
+}
+
+func stageHasExtension(stageName string, utils piperutils.FileUtils) (bool, error) {
+	extensionName := strings.ReplaceAll(stageName, " ", "")
+	globalRoot := globalExtensionRoot()
+
+	for _, extensionPrefix := range []string{"pre", "post"} {
+		extensionPoint := extensionPrefix + extensionName
+		localExtensionPath := filepath.Join(".pipeline", "extensions", extensionPoint)
+		for _, filename := range []string{"action.yml", "action.yaml"} {
+			exists, err := utils.FileExists(filepath.Join(localExtensionPath, filename))
+			if err != nil {
+				return false, err
+			}
+			if exists {
+				log.Entry().Debugf("Found local extension '%s' for stage '%s'", extensionPoint, stageName)
+				return true, nil
+			}
+		}
+
+		if globalRoot != "" {
+			for _, filename := range []string{"action.yml", "action.yaml"} {
+				exists, err := utils.FileExists(filepath.Join(globalRoot, extensionPoint, filename))
+				if err != nil {
+					return false, err
+				}
+				if exists {
+					log.Entry().Debugf("Found global extension '%s' for stage '%s'", extensionPoint, stageName)
+					return true, nil
+				}
+			}
+		}
+	}
+
+	return false, nil
+}
+
+func globalExtensionRoot() string {
+	workspace := os.Getenv("GITHUB_WORKSPACE")
+	if workspace == "" {
+		return ""
+	}
+	return filepath.Join(workspace, ".pipeline", "tmp", "global_extensions")
 }
 
 func (s *StepCondition) evaluateV1(

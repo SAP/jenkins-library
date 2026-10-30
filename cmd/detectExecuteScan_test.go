@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
+	"github.com/SAP/jenkins-library/pkg/config"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -24,6 +25,31 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestDetectExecuteScanRegistryCredentialsMetadata(t *testing.T) {
+	t.Parallel()
+
+	parameters := map[string]config.StepParameters{}
+	for _, parameter := range detectExecuteScanMetadata().Spec.Inputs.Parameters {
+		parameters[parameter.Name] = parameter
+	}
+
+	for _, name := range []string{"repositoryUsername", "repositoryPassword"} {
+		t.Run(name, func(t *testing.T) {
+			parameter, ok := parameters[name]
+			require.True(t, ok, "parameter %s not found", name)
+			assert.Contains(t, parameter.ResourceRef, config.ResourceReference{
+				Name:  "commonPipelineEnvironment",
+				Param: "container/" + name,
+			})
+			assert.Contains(t, parameter.ResourceRef, config.ResourceReference{
+				Type:    "vaultSecret",
+				Name:    "registryCredentialsVaultSecretName",
+				Default: "docker-registry",
+			})
+		})
+	}
+}
 
 type detectTestUtilsBundle struct {
 	expectedError   error

@@ -199,8 +199,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: customPatchStringWithVersion
+        type: string
+        description: 'Custom patch string with version to be applied to the deployment configuration using `kubectl` only, for example `{"spec":{"semver":"{{.Version}}"}}`. The Go template `{{.Version}}` will be replaced with the unique version Piper generates during the pipeline run.'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: artifactVersion
+        description: "The version assigned by artifactPrepareVersion to the uploaded artifact"
+        type: string
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+        scope:
+          - PARAMETERS
+          - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.18.1
+    - image: docker.io/dtzar/helm-kubectl:3.18.1
       workingDir: /config
       options:
         - name: -u
@@ -210,7 +226,7 @@ spec:
           params:
             - name: tool
               value: helm
-    - image: dtzar/helm-kubectl:3.18.1
+    - image: docker.io/dtzar/helm-kubectl:3.18.1
       workingDir: /config
       options:
         - name: -u
@@ -220,7 +236,7 @@ spec:
           params:
             - name: tool
               value: kubectl
-    - image: alpine/k8s:1.33.13
+    - image: docker.io/alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u

@@ -290,7 +290,7 @@ func hadolintExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "hadolint", Image: "hadolint/hadolint:v2.15.1-alpine"},
+				{Name: "hadolint", Image: "docker.io/hadolint/hadolint:v2.15.1-alpine"},
 			},
 		},
 	}

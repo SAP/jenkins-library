@@ -622,7 +622,7 @@ func golangBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "golang", Image: "golang:1", Options: []config.Option{{Name: "-u", Value: "0"}}},
+				{Name: "golang", Image: "docker.io/golang:1", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
