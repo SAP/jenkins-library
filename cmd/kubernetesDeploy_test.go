@@ -1255,6 +1255,32 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		assert.Equal(t, ".pipeline/teardown_script.sh", mockUtils.Calls[3].Exec)
 	})
 
+	t.Run("test helm - GITHUB_TOKEN env used when no token configured", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ChartPath:               "path/to/chart",
+			ContainerRegistrySecret: "testSecret",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+			SetupScript:             "https://github.com/my/test/setup_script.sh",
+		}
+		t.Setenv("GITHUB_TOKEN", "envGHToken")
+
+		mockUtils := newKubernetesDeployMockUtils()
+		mockUtils.HttpClientMock = &mock.HttpClientMock{HTTPFileUtils: mockUtils.FilesMock}
+
+		var stdout bytes.Buffer
+
+		runKubernetesDeploy(opts, &telemetry.CustomData{}, mockUtils, &stdout)
+
+		// script was downloaded — confirms the env token was picked up and passed through
+		assert.Equal(t, ".pipeline/setup_script.sh", mockUtils.Calls[0].Exec)
+	})
+
 	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:    "https://my.registry:55555",

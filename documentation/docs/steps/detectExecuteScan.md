@@ -12,6 +12,18 @@ You need to store the API token for the Detect service as _'Secret text'_ creden
 
 ## ${docGenConfiguration}
 
+## Container registry credentials
+
+`repositoryUsername` and `repositoryPassword` can be read from Vault as well as from the common pipeline environment (CPE).
+Store them as the `repositoryUsername` and `repositoryPassword` keys in the `docker-registry` secret under your configured Vault path.
+To use a different secret name, set `registryCredentialsVaultSecretName`:
+
+```yaml
+steps:
+  detectExecuteScan:
+    registryCredentialsVaultSecretName: my-container-registry
+```
+
 ## Rapid scan
 
 In addition to the full scan, Black Duck also offers a faster and easier scan option, called <a href="https://documentation.blackduck.com/bundle/detect/page/runningdetect/rapidscan.html" target="_blank">Rapid Scan</a>.

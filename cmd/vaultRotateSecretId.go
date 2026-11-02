@@ -156,7 +156,12 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		// Additional info:
 		// https://github.com/google/go-github/blob/master/example/newreposecretwithxcrypto/main.go
 
-		ctx, client, err := piperGithub.NewClientBuilder(config.GithubToken, config.GithubAPIURL).Build()
+		token := selectVaultRotateGithubToken(config)
+		if token == "" {
+			return fmt.Errorf("no GitHub token available: provide either systemTrustAppAccessToken or githubToken")
+		}
+
+		ctx, client, err := piperGithub.NewClientBuilder(token, config.GithubAPIURL).Build()
 		if err != nil {
 			return fmt.Errorf("could not create GitHub client: %w", err)
 		}
@@ -179,4 +184,11 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		return fmt.Errorf("error: invalid secret store: %s", config.SecretStore)
 	}
 	return nil
+}
+
+func selectVaultRotateGithubToken(config *vaultRotateSecretIdOptions) string {
+	if config.SystemTrustAppAccessToken != "" {
+		return config.SystemTrustAppAccessToken
+	}
+	return config.GithubToken
 }

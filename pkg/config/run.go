@@ -11,12 +11,13 @@ import (
 
 // RunConfig ...
 type RunConfig struct {
-	StageConfigFile io.ReadCloser
-	StageConfig     StageConfig
-	RunStages       map[string]bool
-	RunSteps        map[string]map[string]bool
-	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
-	FileUtils       *piperutils.Files
+	StageConfigFile      io.ReadCloser
+	StageConfig          StageConfig
+	RunStages            map[string]bool
+	RunSteps             map[string]map[string]bool
+	ExtensibilityEnabled bool
+	OpenFile             func(s string, t map[string]string) (io.ReadCloser, error)
+	FileUtils            *piperutils.Files
 }
 
 type RunConfigV1 struct {
@@ -61,6 +62,7 @@ type Stage struct {
 type Step struct {
 	Name                string          `json:"name,omitempty" yaml:"name,omitempty"`
 	Description         string          `json:"description,omitempty" yaml:"description,omitempty"`
+	Supporting          bool            `json:"supporting,omitempty" yaml:"supporting,omitempty"`
 	Conditions          []StepCondition `json:"conditions,omitempty" yaml:"conditions,omitempty"`
 	NotActiveConditions []StepCondition `json:"notActiveConditions,omitempty" yaml:"notActiveConditions,omitempty"`
 	Orchestrators       []string        `json:"orchestrators,omitempty" yaml:"orchestrators,omitempty"`

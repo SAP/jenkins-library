@@ -460,10 +460,9 @@ func RemoveVaultSecretFiles() {
 
 func createTemporarySecretFile(namePattern string, content string) (string, error) {
 	if VaultSecretFileDirectory == "" {
-		var err error
 		fileUtils := &piperutils.Files{}
-		VaultSecretFileDirectory, err = fileUtils.TempDir("", "vault")
-		if err != nil {
+		VaultSecretFileDirectory = "/tmp/piper"
+		if err := fileUtils.MkdirAll(VaultSecretFileDirectory, 0700); err != nil {
 			return "", err
 		}
 	}

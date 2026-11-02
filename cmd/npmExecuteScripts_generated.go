@@ -551,7 +551,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:24-bookworm"},
+				{Name: "node", Image: "docker.io/node:24-bookworm"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

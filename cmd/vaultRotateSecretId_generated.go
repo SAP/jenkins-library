@@ -31,7 +31,8 @@ type vaultRotateSecretIdOptions struct {
 	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty"`
 	AdoProject                           string `json:"adoProject,omitempty"`
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
-	GithubToken                          string `json:"githubToken,omitempty" validate:"required_if=SecretStore github"`
+	GithubToken                          string `json:"githubToken,omitempty"`
+	SystemTrustAppAccessToken            string `json:"systemTrustAppAccessToken,omitempty"`
 	GithubAPIURL                         string `json:"githubApiUrl,omitempty"`
 	Owner                                string `json:"owner,omitempty"`
 	Repository                           string `json:"repository,omitempty"`
@@ -87,6 +88,7 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			log.RegisterSecret(stepConfig.JenkinsToken)
 			log.RegisterSecret(stepConfig.AdoPersonalAccessToken)
 			log.RegisterSecret(stepConfig.GithubToken)
+			log.RegisterSecret(stepConfig.SystemTrustAppAccessToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -191,6 +193,7 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 	cmd.Flags().StringVar(&stepConfig.AdoProject, "adoProject", os.Getenv("PIPER_adoProject"), "The Azure DevOps project ID. Project name also can be used")
 	cmd.Flags().IntVar(&stepConfig.AdoPipelineID, "adoPipelineId", 0, "The Azure DevOps pipeline ID. Also called as definition ID")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line with the scope 'repo'")
+	cmd.Flags().StringVar(&stepConfig.SystemTrustAppAccessToken, "systemTrustAppAccessToken", os.Getenv("PIPER_systemTrustAppAccessToken"), "GitHub App access token from System Trust. Takes precedence over githubToken when set.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL that corresponds to the pipeline repository")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Owner of the pipeline GitHub repository")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the pipeline GitHub repository")
@@ -365,6 +368,21 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}, {Name: "token"}},
 						Default:   os.Getenv("PIPER_githubToken"),
+					},
+					{
+						Name: "systemTrustAppAccessToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "githubSystemTrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "github-app<scope>pipeline-ghas",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubSystemTrustAppAccessToken"}},
+						Default:   os.Getenv("PIPER_systemTrustAppAccessToken"),
 					},
 					{
 						Name:        "githubApiUrl",

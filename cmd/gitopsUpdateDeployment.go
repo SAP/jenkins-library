@@ -292,8 +292,10 @@ func checkRequiredFieldsForKustomize(config *gitopsUpdateDeploymentOptions) erro
 
 func checkRequiredFieldsForKubectl(config *gitopsUpdateDeploymentOptions) error {
 	var missingParameters []string
-	if config.ContainerName == "" {
+	if config.ContainerName == "" && config.CustomPatchStringWithVersion == "" {
+		// in some cases we are not building an container but only an OCM component
 		missingParameters = append(missingParameters, "containerName")
+		missingParameters = append(missingParameters, "customPatchStringWithVersion when containerName is not provided")
 	}
 	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -372,8 +374,12 @@ func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateD
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply kubectl command: %w", err)
 	}
+
 	patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
 
+	if len(config.CustomPatchStringWithVersion) > 0 {
+		patchString = strings.ReplaceAll(config.CustomPatchStringWithVersion, "{{.Version}}", config.ArtifactVersion)
+	}
 	log.Entry().Infof("[kubectl] updating '%s'", filePath)
 	outputBytes, err = runKubeCtlCommand(command, patchString, filePath)
 	if err != nil {

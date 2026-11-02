@@ -74,7 +74,7 @@ spec:
             type: delivery-mapping
   containers:
     - name: uiVeri5
-      image: node:24-bookworm
+      image: docker.io/node:24-bookworm
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy
@@ -82,7 +82,7 @@ spec:
           value: localhost,selenium,$NO_PROXY
       workingDir: /home/node
   sidecars:
-    - image: selenium/standalone-chrome:151.0
+    - image: docker.io/selenium/standalone-chrome:151.0
       name: selenium
       securityContext:
         privileged: true

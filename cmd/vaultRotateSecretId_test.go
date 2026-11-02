@@ -154,3 +154,31 @@ func getTestConfig() *vaultRotateSecretIdOptions {
 		DaysBeforeExpiry: 5,
 	}
 }
+
+func TestSelectVaultRotateGithubToken(t *testing.T) {
+	t.Parallel()
+
+	t.Run("uses system trust token when available", func(t *testing.T) {
+		config := &vaultRotateSecretIdOptions{
+			SystemTrustAppAccessToken: "system-trust-token",
+			GithubToken:               "vault-token",
+		}
+		assert.Equal(t, "system-trust-token", selectVaultRotateGithubToken(config))
+	})
+
+	t.Run("falls back to github token when system trust token is empty", func(t *testing.T) {
+		config := &vaultRotateSecretIdOptions{
+			SystemTrustAppAccessToken: "",
+			GithubToken:               "vault-token",
+		}
+		assert.Equal(t, "vault-token", selectVaultRotateGithubToken(config))
+	})
+
+	t.Run("returns empty string when both tokens are empty", func(t *testing.T) {
+		config := &vaultRotateSecretIdOptions{
+			SystemTrustAppAccessToken: "",
+			GithubToken:               "",
+		}
+		assert.Equal(t, "", selectVaultRotateGithubToken(config))
+	})
+}

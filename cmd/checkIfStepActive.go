@@ -15,14 +15,15 @@ import (
 )
 
 type checkStepActiveCommandOptions struct {
-	openFile        func(s string, t map[string]string) (io.ReadCloser, error)
-	fileExists      func(filename string) (bool, error)
-	stageConfigFile string
-	stepName        string
-	stageName       string
-	v1Active        bool
-	stageOutputFile string
-	stepOutputFile  string
+	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
+	fileExists       func(filename string) (bool, error)
+	stageConfigFile  string
+	stepName         string
+	stageName        string
+	v1Active         bool
+	detectExtensions bool
+	stageOutputFile  string
+	stepOutputFile   string
 }
 
 var checkStepActiveOptions checkStepActiveCommandOptions
@@ -82,7 +83,10 @@ func checkIfStepActive(utils piperutils.FileUtils) error {
 	defer stageConfigFile.Close()
 
 	// load and evaluate step conditions
-	runConfig := config.RunConfig{StageConfigFile: stageConfigFile}
+	runConfig := config.RunConfig{
+		StageConfigFile:      stageConfigFile,
+		ExtensibilityEnabled: checkStepActiveOptions.detectExtensions || os.Getenv("PIPER_EXTENSIBILITY_ENABLED") == "true",
+	}
 	runConfigV1 := &config.RunConfigV1{RunConfig: runConfig}
 	err = runConfigV1.InitRunConfigV1(projectConfig, utils, GeneralConfig.EnvRootPath)
 	if err != nil {
@@ -137,6 +141,7 @@ func addCheckStepActiveFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepName, "step", "", "Name of the step being checked")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageName, "stage", "", "Name of the stage in which contains the step being checked")
 	cmd.Flags().BoolVar(&checkStepActiveOptions.v1Active, "useV1", false, "Use new CRD-style stage configuration (deprecated)")
+	cmd.Flags().BoolVar(&checkStepActiveOptions.detectExtensions, "detectExtensions", false, "Keep stages with local or global extensions active")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stageOutputFile, "stageOutputFile", "", "Defines a file path. If set, the stage output will be written to the defined file")
 	cmd.Flags().StringVar(&checkStepActiveOptions.stepOutputFile, "stepOutputFile", "", "Defines a file path. If set, the step output will be written to the defined file")
 	_ = cmd.MarkFlagRequired("step")

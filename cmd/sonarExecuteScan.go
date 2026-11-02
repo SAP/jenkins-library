@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -49,6 +52,16 @@ var (
 	osStat          = os.Stat
 	doublestarGlob  = piperutils.Glob
 )
+
+const MAX_RETRIES = 4
+const BACKOFF_SECONDS = 40
+
+var NETWORK_ISSUES = []string{
+	"java.net.SocketException",
+	"failed with HTTP 403 Forbidden",
+	"failed with HTTP 404 Not Found",
+	"failed with HTTP 503 Service Unavailable",
+}
 
 const (
 	javaBinaries       = "sonar.java.binaries="
@@ -194,9 +207,22 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		Debug("Executing sonar scan command")
 	// execute scan
 	runner.SetEnv(sonar.environment)
-	err := runner.RunExecutable(sonar.binary, sonar.options...)
-	if err != nil {
-		return err
+
+	for i := range MAX_RETRIES {
+		var stderrBuf bytes.Buffer
+		runner.Stderr(io.MultiWriter(log.Writer(), &stderrBuf))
+
+		err := runner.RunExecutable(sonar.binary, sonar.options...)
+		if err == nil {
+			break
+		}
+		if i != MAX_RETRIES-1 && isNetworkIssue(stderrBuf.String()) {
+			sleepTime := time.Duration(math.Pow(2, float64(i))*BACKOFF_SECONDS) * time.Second
+			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
+			time.Sleep(sleepTime)
+		} else {
+			return err
+		}
 	}
 
 	// as PRs are handled locally for legacy SonarQube systems, no measurements will be fetched.
@@ -205,7 +231,11 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 
 	// load task results
-	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
+	workspaceForReport := sonar.workingDir
+	if baseDir := SonarUtils.GetProperty(sonar.workingDir, "sonar.projectBaseDir"); len(baseDir) > 0 {
+		workspaceForReport = filepath.Join(sonar.workingDir, baseDir)
+	}
+	taskReport, err := SonarUtils.ReadTaskReport(workspaceForReport)
 	if err != nil {
 		log.Entry().WithError(err).Warning("no scan report found")
 		return nil
@@ -501,4 +531,13 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 			options.BranchName = branch
 		}
 	}
+}
+
+func isNetworkIssue(stderr string) bool {
+	for _, pattern := range NETWORK_ISSUES {
+		if strings.Contains(stderr, pattern) {
+			return true
+		}
+	}
+	return false
 }

@@ -12,9 +12,12 @@ import (
 	"testing"
 
 	checkmarxOne "github.com/SAP/jenkins-library/pkg/checkmarxone"
+	"github.com/SAP/jenkins-library/pkg/format"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type checkmarxOneSystemMock struct {
@@ -498,6 +501,41 @@ func TestCheckmarxOneZipFolder(t *testing.T) {
 		assert.Len(t, reader.File, 1)
 		assert.Equal(t, "src/component.go", reader.File[0].Name)
 	})
+}
+
+func TestCheckmarxOneSARIFWorkspace(t *testing.T) {
+	root := t.TempDir()
+	_, err := git.PlainInit(root, false)
+	require.NoError(t, err)
+	componentDirectory := filepath.Join(root, "componentA")
+	require.NoError(t, os.MkdirAll(componentDirectory, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(componentDirectory, "main.go"), []byte("package main"), 0o600))
+	t.Chdir(root)
+
+	helper := checkmarxOneExecuteScanHelper{
+		config: checkmarxOneExecuteScanOptions{ConvertToSarif: true},
+		utils:  newcheckmarxOneExecuteScanUtilsBundle(componentDirectory, nil),
+	}
+	zipFile, err := helper.ZipFiles()
+	require.NoError(t, err)
+	archive, err := zip.OpenReader(zipFile.Name())
+	require.NoError(t, err)
+	defer archive.Close()
+	require.Len(t, archive.File, 1)
+	require.Equal(t, "main.go", archive.File[0].Name)
+
+	var results []checkmarxOne.ScanResult
+	require.NoError(t, json.Unmarshal([]byte(`[{"type":"sast","severity":"HIGH","data":{"queryId":1,"queryName":"Test_Query","languageName":"Go","nodes":[{"fileName":"/main.go","line":1,"column":1}]}}]`), &results))
+	results[0].Data.Nodes[0].FileName = "/" + archive.File[0].Name
+	err = helper.GetReportSASTSARIF(&checkmarxOne.Scan{}, &checkmarxOne.ScanMetadata{SAST: &checkmarxOne.ScanSASTMetadata{}}, &results)
+	require.NoError(t, err)
+	require.Len(t, helper.reports, 1)
+	report, err := os.ReadFile(helper.reports[0].Target)
+	require.NoError(t, err)
+	var sarif format.SARIF
+	require.NoError(t, json.Unmarshal(report, &sarif))
+	require.Len(t, sarif.Runs[0].Results, 1)
+	assert.Equal(t, "componentA/main.go", sarif.Runs[0].Results[0].Locations[0].PhysicalLocation.ArtifactLocation.URI)
 }
 
 func testRawDetailedResults() map[string]any {
