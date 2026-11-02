@@ -492,7 +492,7 @@ func gradleExecuteBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "gradle", Image: "gradle:6-jdk11-alpine"},
+				{Name: "gradle", Image: "docker.io/gradle:6-jdk11-alpine"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

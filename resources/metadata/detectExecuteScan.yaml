@@ -722,7 +722,7 @@ spec:
             type: blackduck-security
   containers:
     - name: openjdk
-      image: openjdk:11-ea
+      image: docker.io/openjdk:11-ea
       workingDir: /root
       options:
         - name: -u
@@ -732,7 +732,7 @@ spec:
           name: volume
   sidecars:
     - name: inspector-ubuntu
-      image: blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
+      image: docker.io/blackducksoftware/blackduck-imageinspector-ubuntu:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
@@ -743,7 +743,7 @@ spec:
             - name: scanContainerDistro
               value: ubuntu
     - name: inspector-alpine
-      image: blackducksoftware/blackduck-imageinspector-alpine:5.1.0
+      image: docker.io/blackducksoftware/blackduck-imageinspector-alpine:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared
@@ -754,7 +754,7 @@ spec:
             - name: scanContainerDistro
               value: alpine
     - name: inspector-centos
-      image: blackducksoftware/blackduck-imageinspector-centos:5.1.0
+      image: docker.io/blackducksoftware/blackduck-imageinspector-centos:5.1.0
       command: ['']
       volumeMounts:
         - mountPath: /opt/blackduck/blackduck-imageinspector/shared

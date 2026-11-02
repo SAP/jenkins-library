@@ -300,7 +300,7 @@ spec:
             type: cobertura-coverage
   containers:
     - name: golang
-      image: golang:1
+      image: docker.io/golang:1
       options:
         - name: -u
           value: "0"

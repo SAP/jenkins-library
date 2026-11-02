@@ -272,7 +272,7 @@ func mavenExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn", Image: "maven:3.6-jdk-8"},
+				{Name: "mvn", Image: "docker.io/maven:3.6-jdk-8"},
 			},
 		},
 	}

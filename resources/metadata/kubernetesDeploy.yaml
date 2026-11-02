@@ -655,7 +655,7 @@ spec:
             name: CACertificateVaultSecretName
             default: ca-certificate
   containers:
-    - image: alpine/k8s:1.33.13
+    - image: docker.io/alpine/k8s:1.33.13
       workingDir: /config
       options:
         - name: -u

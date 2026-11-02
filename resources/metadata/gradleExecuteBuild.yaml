@@ -207,4 +207,4 @@ spec:
           - name: custom/buildSettingsInfo
   containers:
     - name: gradle
-      image: gradle:6-jdk11-alpine
+      image: docker.io/gradle:6-jdk11-alpine

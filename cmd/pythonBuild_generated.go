@@ -423,7 +423,7 @@ func pythonBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "python", Image: "python:3.11"},
+				{Name: "python", Image: "docker.io/python:3.11"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

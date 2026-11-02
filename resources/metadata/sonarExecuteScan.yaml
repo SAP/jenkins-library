@@ -321,7 +321,7 @@ spec:
                 type: int
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:11
+      image: docker.io/sonarsource/sonar-scanner-cli:11
       options:
         - name: -u
           value: "0"

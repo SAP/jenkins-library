@@ -267,7 +267,7 @@ func batsExecuteTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "bats", Image: "node:24-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "outputFormat", Value: "junit"}}}}},
+				{Name: "bats", Image: "docker.io/node:24-bookworm", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "outputFormat", Value: "junit"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

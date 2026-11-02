@@ -261,4 +261,4 @@ spec:
             type: cucumber
   containers:
     - name: node
-      image: node:24-bookworm
+      image: docker.io/node:24-bookworm

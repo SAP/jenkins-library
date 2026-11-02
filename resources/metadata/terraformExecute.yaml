@@ -70,7 +70,7 @@ spec:
           - STEPS
   containers:
     - name: terraform
-      image: hashicorp/terraform:1.10.5
+      image: docker.io/hashicorp/terraform:1.10.5
       options:
         - name: --entrypoint
           value: ""
