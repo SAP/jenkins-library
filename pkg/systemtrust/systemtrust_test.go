@@ -131,3 +131,44 @@ func TestSystemTrust(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestSystemTrustArguments(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		response  string
+		wantError string
+	}{
+		{name: "select exact system", response: `{"other":"wrong-token","btp-cf":"cf-assertion"}`},
+		{name: "missing key", response: `{"other":"wrong-token"}`, wantError: "could not find token"},
+		{name: "malformed response", response: `not-json`, wantError: "getting response from System Trust failed"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			httpmock.RegisterResponder(http.MethodPost, testFullURL, func(req *http.Request) (*http.Response, error) {
+				assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+				assert.Equal(t, "application/json", req.Header.Get("Accept"))
+				assert.Equal(t, "Bearer testToken", req.Header.Get("Authorization"))
+				var body []map[string]any
+				assert.NoError(t, json.NewDecoder(req.Body).Decode(&body))
+				assert.Equal(t, []map[string]any{{"system": "btp-cf", "scope": "workspace", "args": map[string]any{"ias_tenant_issuer_uri": "https://ias.example"}}}, body)
+				return httpmock.NewStringResponse(200, tc.response), nil
+			})
+			client := PrepareClient(&piperhttp.Client{}, systemTrustConfiguration)
+			client.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true, Token: "Bearer testToken"})
+			token, err := GetToken("btp-cf<scope>workspace", client, systemTrustConfiguration, map[string]string{"ias_tenant_issuer_uri": "https://ias.example"})
+			if tc.wantError != "" {
+				assert.ErrorContains(t, err, tc.wantError)
+				assert.Empty(t, token)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, "cf-assertion", token)
+			}
+		})
+	}
+	t.Run("multiple argument maps rejected before HTTP", func(t *testing.T) {
+		token, err := GetToken("btp-cf", nil, systemTrustConfiguration, nil, nil)
+		assert.EqualError(t, err, "at most one System Trust argument map is supported")
+		assert.Empty(t, token)
+	})
+}

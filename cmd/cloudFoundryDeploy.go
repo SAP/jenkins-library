@@ -537,7 +537,11 @@ func cfDeploy(
 	var err error
 	var loginPerformed bool
 
-	additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
+	if config.AssertionToken != "" {
+		additionalEnvironment = append(additionalEnvironment, "CF_TRACE=false", "CF_USERNAME=", "CF_PASSWORD=")
+	} else {
+		additionalEnvironment = append(additionalEnvironment, "CF_TRACE="+cfLogFile)
+	}
 
 	if len(config.CfHome) > 0 {
 		additionalEnvironment = append(additionalEnvironment, "CF_HOME="+config.CfHome)
@@ -561,6 +565,8 @@ func cfDeploy(
 			CfSpace:       config.Space,
 			Username:      config.Username,
 			Password:      config.Password,
+			Assertion:     config.AssertionToken,
+			Origin:        config.UserOrigin,
 			CfLoginOpts:   strings.Fields(config.LoginParameters),
 		})
 	}
@@ -592,7 +598,7 @@ func cfDeploy(
 		}
 	}
 
-	if err != nil || GeneralConfig.Verbose {
+	if config.AssertionToken == "" && (err != nil || GeneralConfig.Verbose) {
 		e := handleCfCliLog(cfLogFile)
 		if e != nil {
 			log.Entry().WithError(err).Errorf("Error reading cf log file '%s'.", cfLogFile)

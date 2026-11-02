@@ -21,6 +21,10 @@ import (
 
 type cloudFoundryDeployOptions struct {
 	APIEndpoint              string         `json:"apiEndpoint,omitempty"`
+	AssertionToken           string         `json:"assertionToken,omitempty"`
+	IasTenantIssuerUri       string         `json:"iasTenantIssuerUri,omitempty"`
+	UserOrigin               string         `json:"userOrigin,omitempty"`
+	SystemTrustScope         string         `json:"systemTrustScope,omitempty" validate:"possible-values=component workspace"`
 	AppName                  string         `json:"appName,omitempty"`
 	ArtifactVersion          string         `json:"artifactVersion,omitempty"`
 	CommitHash               string         `json:"commitHash,omitempty"`
@@ -153,6 +157,7 @@ The step achieves this via following deploy tools
 				}
 			}
 			log.SetStepErrors(stepErrors)
+			log.RegisterSecret(stepConfig.AssertionToken)
 			log.RegisterSecret(stepConfig.DockerPassword)
 			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
@@ -249,6 +254,10 @@ The step achieves this via following deploy tools
 
 func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `https://api.cf.eu10.hana.ondemand.com`, "Cloud Foundry API endpoint")
+	cmd.Flags().StringVar(&stepConfig.AssertionToken, "assertionToken", os.Getenv("PIPER_assertionToken"), "CF assertion supplied explicitly or resolved through System Trust; not a password or CF access token.")
+	cmd.Flags().StringVar(&stepConfig.IasTenantIssuerUri, "iasTenantIssuerUri", os.Getenv("PIPER_iasTenantIssuerUri"), "IAS issuer used as the assertion audience. If empty, System Trust lookup cannot complete and credential authentication remains available.")
+	cmd.Flags().StringVar(&stepConfig.UserOrigin, "userOrigin", os.Getenv("PIPER_userOrigin"), "Platform identity provider origin from BTP Trust Configuration, required for assertion authentication.")
+	cmd.Flags().StringVar(&stepConfig.SystemTrustScope, "systemTrustScope", `component`, "Scope for the btp-cf System Trust assertion request.")
 	cmd.Flags().StringVar(&stepConfig.AppName, "appName", os.Getenv("PIPER_appName"), "Defines the name of the application to be deployed to the Cloud Foundry space")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The artifact version, used for influx reporting")
 	cmd.Flags().StringVar(&stepConfig.CommitHash, "commitHash", os.Getenv("PIPER_commitHash"), "The commit hash, used for influx reporting")
@@ -277,9 +286,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 
 	cmd.MarkFlagRequired("apiEndpoint")
 	cmd.MarkFlagRequired("org")
-	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("space")
-	cmd.MarkFlagRequired("username")
 }
 
 // retrieve step metadata
@@ -305,6 +312,51 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint", Deprecated: true}},
 						Default:     `https://api.cf.eu10.hana.ondemand.com`,
+					},
+					{
+						Name: "assertionToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:    "cfSystemtrustSecretName",
+								Type:    "systemTrustSecret",
+								Default: "btp-cf<scope>$(systemTrustScope)",
+								Args: map[string]string{
+									"ias_tenant_issuer_uri": "$(iasTenantIssuerUri)",
+								},
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_assertionToken"),
+					},
+					{
+						Name:        "iasTenantIssuerUri",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_iasTenantIssuerUri"),
+					},
+					{
+						Name:        "userOrigin",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_userOrigin"),
+					},
+					{
+						Name:        "systemTrustScope",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `component`,
 					},
 					{
 						Name:        "appName",
@@ -564,7 +616,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_password"),
 					},
@@ -594,7 +646,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_username"),
 					},

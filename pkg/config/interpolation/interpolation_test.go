@@ -46,3 +46,10 @@ func TestResolveMap(t *testing.T) {
 	})
 
 }
+
+func TestResolveStringNonStringInput(t *testing.T) {
+	for _, value := range []any{42, true, nil, []string{"issuer"}, map[string]any{"issuer": "value"}} {
+		_, ok := ResolveString("$(issuer)", map[string]any{"issuer": value})
+		assert.False(t, ok)
+	}
+}

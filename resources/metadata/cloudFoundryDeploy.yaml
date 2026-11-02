@@ -38,6 +38,46 @@ spec:
           - name: cfApiEndpoint
           - name: cloudFoundry/apiEndpoint
             deprecated: true
+      - name: assertionToken
+        type: string
+        description: "CF assertion supplied explicitly or resolved through System Trust; not a password or CF access token."
+        secret: true
+        scope:
+          - PARAMETERS
+        resourceRef:
+          - type: systemTrustSecret
+            name: cfSystemtrustSecretName
+            default: btp-cf<scope>$(systemTrustScope)
+            args:
+              ias_tenant_issuer_uri: $(iasTenantIssuerUri)
+      - name: iasTenantIssuerUri
+        type: string
+        description: "IAS issuer used as the assertion audience. If empty, System Trust lookup cannot complete and credential authentication remains available."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: userOrigin
+        type: string
+        description: "Platform identity provider origin from BTP Trust Configuration, required for assertion authentication."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: systemTrustScope
+        type: string
+        description: "Scope for the btp-cf System Trust assertion request."
+        default: component
+        possibleValues:
+          - component
+          - workspace
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
       - name: appName
         type: string
         description: "Defines the name of the application to be deployed to the Cloud Foundry space"
@@ -342,7 +382,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: cfCredentialsId
@@ -371,7 +411,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
         secret: true
         resourceRef:
           - name: cfCredentialsId
