@@ -285,8 +285,10 @@ func TestMtaBuild(t *testing.T) {
 
 	t.Run("Settings file releatd tests", func(t *testing.T) {
 		t.Run("Copy global settings file", func(t *testing.T) {
+			t.Setenv("M2_HOME", "/opt/maven")
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte(`ID: "myNameFromMtar"`))
+			utilsMock.AddFile("/opt/maven/conf/settings.xml", []byte(snapshotSettingsXML))
 
 			options := mtaBuildOptions{
 				ApplicationName:    "myApp",
@@ -322,8 +324,10 @@ func TestMtaBuild(t *testing.T) {
 
 	t.Run("publish related tests", func(t *testing.T) {
 		t.Run("error when no repository url", func(t *testing.T) {
+			t.Setenv("M2_HOME", "/opt/maven")
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte(`ID: "myNameFromMtar"`))
+			utilsMock.AddFile("/opt/maven/conf/settings.xml", []byte(snapshotSettingsXML))
 
 			options := mtaBuildOptions{
 				ApplicationName:    "myApp",
@@ -341,8 +345,10 @@ func TestMtaBuild(t *testing.T) {
 		})
 
 		t.Run("error when no mtar group", func(t *testing.T) {
+			t.Setenv("M2_HOME", "/opt/maven")
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte(`ID: "myNameFromMtar"`))
+			utilsMock.AddFile("/opt/maven/conf/settings.xml", []byte(snapshotSettingsXML))
 
 			options := mtaBuildOptions{
 				ApplicationName:                 "myApp",
@@ -363,11 +369,13 @@ func TestMtaBuild(t *testing.T) {
 		})
 
 		t.Run("successful publish", func(t *testing.T) {
+			t.Setenv("M2_HOME", "/opt/maven")
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.sendRequestReturns = func() (*http.Response, error) {
 				return &http.Response{StatusCode: 200}, nil
 			}
 			utilsMock.AddFile("mta.yaml", []byte(`ID: "myNameFromMtar"`))
+			utilsMock.AddFile("/opt/maven/conf/settings.xml", []byte(snapshotSettingsXML))
 			utilsMock.openReturns = `{"version":"1.2.3"}`
 			options := mtaBuildOptions{
 				ApplicationName:                 "myApp",
@@ -388,8 +396,10 @@ func TestMtaBuild(t *testing.T) {
 		})
 
 		t.Run("succesful build artifact", func(t *testing.T) {
+			t.Setenv("M2_HOME", "/opt/maven")
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte(`ID: "myNameFromMtar"`))
+			utilsMock.AddFile("/opt/maven/conf/settings.xml", []byte(snapshotSettingsXML))
 			utilsMock.openReturns = `{"version":"1.2.3"}`
 			utilsMock.sendRequestReturns = func() (*http.Response, error) {
 				return &http.Response{StatusCode: 200}, nil
@@ -549,4 +559,281 @@ func _ignoreError(s string, e error) string {
 
 func _ignoreErrorForGetMtarName(s string, b bool, e error) string {
 	return s
+}
+
+// snapshotSettingsXML is a minimal SAP-Artifactory-style global settings.xml
+// that has snapshot.build as the default active profile, matching the real-world
+// pre-fix state.  Go's xml.Unmarshal will parse the namespace-qualified root
+// element into maven.Settings when M2_HOME is set and the file is present.
+const snapshotSettingsXML = `<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <activeProfiles>
+        <activeProfile>snapshot.build</activeProfile>
+    </activeProfiles>
+</settings>`
+
+// noActiveProfilesSettingsXML is a minimal settings.xml that contains no
+// <activeProfiles> element.  UpdateActiveProfileInSettingsXML warns and leaves
+// the file untouched in this case; tests assert the byte-identical no-op.
+const noActiveProfilesSettingsXML = `<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+</settings>`
+
+func TestBuildMtaEffectiveProfiles(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil user profiles activates release.build", func(t *testing.T) {
+		assert.Equal(t, []string{"release.build"}, buildMtaEffectiveProfiles(nil))
+	})
+
+	t.Run("empty user profiles activates release.build", func(t *testing.T) {
+		assert.Equal(t, []string{"release.build"}, buildMtaEffectiveProfiles([]string{}))
+	})
+
+	t.Run("milestone opt-in passes profiles as-is", func(t *testing.T) {
+		// milestone.build activates its own repository mapping; release.build must NOT
+		// be co-activated (it would pull in the wrong quality repository).
+		assert.Equal(t, []string{"milestone.build"}, buildMtaEffectiveProfiles([]string{"milestone.build"}))
+	})
+
+	t.Run("milestone opt-in with extra profiles passes profiles as-is", func(t *testing.T) {
+		assert.Equal(t, []string{"milestone.build", "custom"},
+			buildMtaEffectiveProfiles([]string{"milestone.build", "custom"}))
+	})
+
+	t.Run("snapshot opt-in passes profiles as-is", func(t *testing.T) {
+		assert.Equal(t, []string{"snapshot.build"}, buildMtaEffectiveProfiles([]string{"snapshot.build"}))
+	})
+
+	t.Run("custom profiles get release.build prepended", func(t *testing.T) {
+		// Non-quality-indicator profiles get release.build prepended so the
+		// SAP Artifactory release repository remains accessible.
+		assert.Equal(t, []string{"release.build", "my-profile"},
+			buildMtaEffectiveProfiles([]string{"my-profile"}))
+	})
+
+	t.Run("multiple custom profiles get release.build prepended once", func(t *testing.T) {
+		assert.Equal(t, []string{"release.build", "p1", "p2"},
+			buildMtaEffectiveProfiles([]string{"p1", "p2"}))
+	})
+
+	t.Run("explicit release.build is not duplicated", func(t *testing.T) {
+		// When the caller already passes release.build the function must not
+		// prepend a second copy — that would produce duplicate <activeProfile>
+		// entries in settings.xml.
+		assert.Equal(t, []string{"release.build"}, buildMtaEffectiveProfiles([]string{"release.build"}))
+	})
+
+	t.Run("milestone.build with release.build strips release.build", func(t *testing.T) {
+		// milestone.build must not be co-activated with release.build — the function
+		// must strip release.build even when the caller passes both.
+		assert.Equal(t, []string{"milestone.build"},
+			buildMtaEffectiveProfiles([]string{"milestone.build", "release.build"}))
+	})
+
+	t.Run("release.build with milestone.build strips release.build", func(t *testing.T) {
+		assert.Equal(t, []string{"milestone.build"},
+			buildMtaEffectiveProfiles([]string{"release.build", "milestone.build"}))
+	})
+
+	t.Run("milestone.build with snapshot.build strips release.build and keeps both", func(t *testing.T) {
+		// Both quality tiers present: milestone check wins, no release.build injected.
+		assert.Equal(t, []string{"milestone.build", "snapshot.build"},
+			buildMtaEffectiveProfiles([]string{"milestone.build", "snapshot.build"}))
+	})
+
+	t.Run("snapshot.build with milestone.build strips release.build and keeps both", func(t *testing.T) {
+		assert.Equal(t, []string{"snapshot.build", "milestone.build"},
+			buildMtaEffectiveProfiles([]string{"snapshot.build", "milestone.build"}))
+	})
+}
+
+func TestMtaBuildProfileSettingsXMLUpdate(t *testing.T) {
+	const testM2Home = "/opt/test/m2"
+	const settingsPath = testM2Home + "/conf/settings.xml"
+
+	SetConfigOptions(ConfigCommandOptions{
+		OpenFile: config.OpenPiperFile,
+	})
+
+	cpe := mtaBuildCommonPipelineEnvironment{}
+
+	t.Run("default profiles rewrite settings.xml to release.build", func(t *testing.T) {
+		// When no user profiles are provided the step must switch the active
+		// profile from the SAP Artifactory default (snapshot.build) to release.build.
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		utilsMock.AddFile(settingsPath, []byte(snapshotSettingsXML))
+
+		options := mtaBuildOptions{
+			ApplicationName:    "myApp",
+			Platform:           "CF",
+			MtarName:           "myApp.mtar",
+			Source:             "./",
+			Target:             "./",
+			GlobalSettingsFile: "https://repo.example.com/settings.xml",
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+
+		content, readErr := utilsMock.FileRead(settingsPath)
+		if assert.Nil(t, readErr, "settings.xml must be readable after build") {
+			s := string(content)
+			assert.Contains(t, s, "release.build",
+				"settings.xml must contain release.build as active profile")
+			assert.NotContains(t, s, "snapshot.build",
+				"settings.xml must not contain snapshot.build after default-profile rewrite")
+		}
+	})
+
+	t.Run("milestone opt-in keeps milestone.build in settings.xml", func(t *testing.T) {
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		utilsMock.AddFile(settingsPath, []byte(snapshotSettingsXML))
+
+		options := mtaBuildOptions{
+			ApplicationName:    "myApp",
+			Platform:           "CF",
+			MtarName:           "myApp.mtar",
+			Source:             "./",
+			Target:             "./",
+			GlobalSettingsFile: "https://repo.example.com/settings.xml",
+			Profiles:           []string{"milestone.build"},
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+
+		content, readErr := utilsMock.FileRead(settingsPath)
+		if assert.Nil(t, readErr, "settings.xml must be readable after build") {
+			s := string(content)
+			assert.Contains(t, s, "milestone.build",
+				"settings.xml must contain milestone.build for milestone quality build")
+			assert.NotContains(t, s, "release.build",
+				"settings.xml must not contain release.build when milestone.build is the active profile")
+		}
+	})
+
+	t.Run("snapshot opt-in keeps snapshot.build in settings.xml", func(t *testing.T) {
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		utilsMock.AddFile(settingsPath, []byte(snapshotSettingsXML))
+
+		options := mtaBuildOptions{
+			ApplicationName:    "myApp",
+			Platform:           "CF",
+			MtarName:           "myApp.mtar",
+			Source:             "./",
+			Target:             "./",
+			GlobalSettingsFile: "https://repo.example.com/settings.xml",
+			Profiles:           []string{"snapshot.build"},
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+
+		content, readErr := utilsMock.FileRead(settingsPath)
+		if assert.Nil(t, readErr, "settings.xml must be readable after build") {
+			s := string(content)
+			assert.Contains(t, s, "snapshot.build",
+				"settings.xml must contain snapshot.build for snapshot quality build")
+			assert.NotContains(t, s, "release.build",
+				"settings.xml must not contain release.build for snapshot quality passthrough")
+		}
+	})
+
+	t.Run("custom profiles prepend release.build in settings.xml", func(t *testing.T) {
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		utilsMock.AddFile(settingsPath, []byte(snapshotSettingsXML))
+
+		options := mtaBuildOptions{
+			ApplicationName:    "myApp",
+			Platform:           "CF",
+			MtarName:           "myApp.mtar",
+			Source:             "./",
+			Target:             "./",
+			GlobalSettingsFile: "https://repo.example.com/settings.xml",
+			Profiles:           []string{"my-custom-profile"},
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+
+		content, readErr := utilsMock.FileRead(settingsPath)
+		if assert.Nil(t, readErr, "settings.xml must be readable after build") {
+			s := string(content)
+			assert.Contains(t, s, "release.build",
+				"settings.xml must contain release.build alongside custom profile")
+			assert.Contains(t, s, "my-custom-profile",
+				"settings.xml must contain the custom profile")
+		}
+	})
+
+	t.Run("no globalSettingsFile skips settings.xml update", func(t *testing.T) {
+		// When globalSettingsFile is not provided there is no $M2_HOME/conf/settings.xml
+		// for mbt's internal Maven to read, so the step must not attempt to update it.
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		// Deliberately NOT adding settings.xml to the mock — if the step tries to read
+		// it, utils.FileRead will fail, which would surface as a test error.
+
+		options := mtaBuildOptions{
+			ApplicationName: "myApp",
+			Platform:        "CF",
+			MtarName:        "myApp.mtar",
+			Source:          "./",
+			Target:          "./",
+			// GlobalSettingsFile intentionally empty
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err, "build must succeed when no globalSettingsFile is provided")
+
+		_, readErr := utilsMock.FileRead(settingsPath)
+		assert.NotNil(t, readErr,
+			"settings.xml must not exist (was not created/written) when no globalSettingsFile is provided")
+	})
+
+	t.Run("settings.xml with no activeProfiles element is left unchanged", func(t *testing.T) {
+		// UpdateActiveProfileInSettingsXML warns and leaves the file untouched
+		// when it finds no <activeProfiles> element; this test asserts that
+		// runMtaBuild propagates that no-op without error.
+		t.Setenv("M2_HOME", testM2Home)
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+		utilsMock.AddFile("mta.yaml", []byte(`ID: "myApp"`))
+		utilsMock.AddFile(settingsPath, []byte(noActiveProfilesSettingsXML))
+
+		options := mtaBuildOptions{
+			ApplicationName:    "myApp",
+			Platform:           "CF",
+			MtarName:           "myApp.mtar",
+			Source:             "./",
+			Target:             "./",
+			GlobalSettingsFile: "https://repo.example.com/settings.xml",
+		}
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+		assert.Nil(t, err)
+
+		content, readErr := utilsMock.FileRead(settingsPath)
+		if assert.Nil(t, readErr) {
+			assert.Equal(t, noActiveProfilesSettingsXML, string(content),
+				"settings.xml must be unchanged when no <activeProfiles> element is present")
+		}
+	})
 }
