@@ -11,11 +11,28 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
-
+	"github.com/SAP/jenkins-library/pkg/telesiactl"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBom(t *testing.T) {
+	t.Run("Create BOM with telesiactl", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{}"))
+		utils.AddFile(telesiactl.BinaryCandidates()[0], []byte("binary"))
+
+		exec := &Execute{Utils: &utils, Options: ExecutorOptions{}}
+		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Exec: telesiactl.BinaryCandidates()[0], Params: []string{"sbom", "generate", "--tech", "npm", "--project-path", ".", "--output", npmBomFilename, "--schema-version", CycloneDxSchemaVersion}},
+				{Exec: telesiactl.BinaryCandidates()[0], Params: []string{"sbom", "generate", "--tech", "npm", "--project-path", "src", "--output", npmBomFilename, "--schema-version", CycloneDxSchemaVersion}},
+			}, utils.execRunner.Calls)
+		}
+	})
+
 	t.Run("Create BOM with cyclonedx-npm", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
