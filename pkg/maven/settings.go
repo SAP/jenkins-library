@@ -1,6 +1,7 @@
 package maven
 
 import (
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -299,7 +300,13 @@ func downloadSettingsFromURL(url, filename string, utils SettingsDownloadUtils, 
 		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
 		return nil
 	}
-	err := utils.DownloadFile(url, filename, nil, nil)
+	var headers http.Header
+	user := os.Getenv("PIPER_ARTIFACTORY_USER")
+	token := os.Getenv("PIPER_ARTIFACTORY_TOKEN")
+	if user != "" && token != "" && strings.Contains(url, "common.repositories.cloud.sap") {
+		headers = http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+token))}}
+	}
+	err := utils.DownloadFile(url, filename, headers, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
 			url, filename, err)

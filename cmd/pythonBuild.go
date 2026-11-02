@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,18 @@ func runPythonBuild(config *pythonBuildOptions, telemetryData *telemetry.CustomD
 	}
 	log.DeferExitHandler(exitHandler)
 	defer exitHandler()
+
+	if user := os.Getenv("PIPER_ARTIFACTORY_USER"); user != "" {
+		if token := os.Getenv("PIPER_ARTIFACTORY_TOKEN"); token != "" {
+			pipIndexURL := os.Getenv("PIP_INDEX_URL")
+			if pipIndexURL != "" {
+				if parsed, err := url.Parse(pipIndexURL); err == nil {
+					parsed.User = url.UserPassword(user, token)
+					utils.AppendEnv([]string{"PIP_INDEX_URL=" + parsed.String()})
+				}
+			}
+		}
+	}
 
 	// check project descriptor
 	buildDescriptorFilePath, err := searchDescriptor([]string{"pyproject.toml", "setup.py"}, utils.FileExists)
