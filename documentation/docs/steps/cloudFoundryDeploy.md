@@ -46,10 +46,17 @@ This table compares deployment strategies for MTA and Non-MTA applications.
     You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
 - Recommended way to do **docker image deployments** is via kubernetesDeploy Piper step.This step is not capable of deploying docker images built in the same pipeline using other piper steps[i.e., kanikoExecute].
 
+#### Authentication
+
+The step uses the secret `token` parameter when it is provided. It authenticates with the CF CLI using `cf auth --assertion`, then targets the configured organization and space. Set `tokenOrigin` when the target CF identity provider requires an origin.
+
+If `token` is not provided, the step uses the existing username/password credentials resolved from Jenkins or Vault. If a token is provided but CF rejects it, the step fails and does not retry with technical-user credentials.
+
 ## Prerequisites
 
-* Cloud Foundry organization, space and deployment users are available
-* Credentials for deployment have been configured in Jenkins or Vault.
+* Cloud Foundry organization, space, and deployment identity are available.
+* Configure either a trusted assertion token that the target CF instance accepts, or deployment credentials in Jenkins or Vault.
+* The token identity must have the required role in the target Cloud Foundry space.
 
 ## ${docGenParameters}
 
