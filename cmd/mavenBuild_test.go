@@ -12,6 +12,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var cpe mavenBuildCommonPipelineEnvironment
@@ -126,6 +127,29 @@ func TestMavenBuild(t *testing.T) {
 			assert.Contains(t, mockedUtils.Calls[1].Params, "!snapshot.build,milestone.build")
 			assert.NotContains(t, mockedUtils.Calls[0].Params, "!milestone.build")
 			assert.NotContains(t, mockedUtils.Calls[1].Params, "!milestone.build")
+		}
+	})
+
+	t.Run("mavenBuild milestone opt-in with explicit release.build: builtin release.build not prepended", func(t *testing.T) {
+		// CLAUDE.md rule 5: test every constraint stated in a comment.
+		// The milestone branch of buildBuiltinProfiles only prepends !snapshot.build —
+		// it must NOT also prepend release.build even if the caller passes it explicitly.
+		// The user-supplied release.build is preserved; no second copy is injected.
+		mockedUtils := newMavenMockUtils()
+		options := mavenBuildOptions{Profiles: []string{"milestone.build", "release.build"}}
+		localCPE := mavenBuildCommonPipelineEnvironment{}
+		require.NoError(t, runMavenBuild(&options, nil, &mockedUtils, &localCPE))
+		profileIdx := -1
+		for i, p := range mockedUtils.Calls[0].Params {
+			if p == "--activate-profiles" {
+				profileIdx = i
+				break
+			}
+		}
+		if assert.Greater(t, profileIdx, -1) {
+			got := mockedUtils.Calls[0].Params[profileIdx+1]
+			assert.Equal(t, "!snapshot.build,milestone.build,release.build", got,
+				"only !snapshot.build is prepended as a builtin; user-supplied release.build is kept once")
 		}
 	})
 
@@ -371,6 +395,76 @@ func TestMavenBuild(t *testing.T) {
 		assert.Equal(t, mockedUtils.Calls[0].Exec, "mvn")
 		assert.Empty(t, cpe.custom.mavenBuildArtifacts)
 	})
+
+	t.Run("mavenBuild Jenkins shape: guards already in Profiles are not doubled", func(t *testing.T) {
+		// On Jenkins the Groovy wrapper sends the guards in config.Profiles; the binary
+		// must not prepend them a second time. Three guard shapes are exercised:
+		//   default  → "!snapshot.build,!milestone.build,release.build"
+		//   snapshot → "!milestone.build,release.build,snapshot.build"
+		//   milestone → "!snapshot.build,milestone.build"
+		profileCases := []struct {
+			name    string
+			input   []string
+			want    string
+		}{
+			{
+				name:  "default guards",
+				input: []string{"!snapshot.build", "!milestone.build", "release.build"},
+				want:  "!snapshot.build,!milestone.build,release.build",
+			},
+			{
+				name:  "snapshot opt-in guards",
+				input: []string{"!milestone.build", "release.build", "snapshot.build"},
+				want:  "!milestone.build,release.build,snapshot.build",
+			},
+			{
+				name:  "milestone opt-in guards",
+				input: []string{"!snapshot.build", "milestone.build"},
+				want:  "!snapshot.build,milestone.build",
+			},
+		}
+		for _, tc := range profileCases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				mockedUtils := newMavenMockUtils()
+				localCPE := mavenBuildCommonPipelineEnvironment{}
+				require.NoError(t, runMavenBuild(&mavenBuildOptions{Profiles: tc.input}, nil, &mockedUtils, &localCPE))
+				profileIdx := -1
+				for i, p := range mockedUtils.Calls[0].Params {
+					if p == "--activate-profiles" {
+						profileIdx = i
+						break
+					}
+				}
+				if assert.Greater(t, profileIdx, -1, "--activate-profiles must be present") {
+					assert.Equal(t, tc.want, mockedUtils.Calls[0].Params[profileIdx+1],
+						"guards must appear exactly once when caller already passes them")
+				}
+			})
+		}
+	})
+
+	t.Run("mavenBuild buildSettingsInfo records caller profiles, not built-in guards", func(t *testing.T) {
+		// Built-in guards are an implementation detail of the step; they must not leak
+		// into the persisted buildSettingsInfo consumed by downstream steps.
+		mockedUtils := newMavenMockUtils()
+		options := mavenBuildOptions{Profiles: []string{"my-profile"}}
+		localCPE := mavenBuildCommonPipelineEnvironment{}
+		err := runMavenBuild(&options, nil, &mockedUtils, &localCPE)
+		assert.NoError(t, err)
+		assert.Contains(t, localCPE.custom.buildSettingsInfo, "my-profile")
+		assert.NotContains(t, localCPE.custom.buildSettingsInfo, "!snapshot.build",
+			"built-in guards must not appear in persisted buildSettingsInfo")
+
+		// Empty caller profiles: guards must not appear either.
+		mockedUtils2 := newMavenMockUtils()
+		options2 := mavenBuildOptions{}
+		localCPE2 := mavenBuildCommonPipelineEnvironment{}
+		err = runMavenBuild(&options2, nil, &mockedUtils2, &localCPE2)
+		assert.NoError(t, err)
+		assert.NotContains(t, localCPE2.custom.buildSettingsInfo, "!snapshot.build",
+			"built-in guards must not appear in buildSettingsInfo when caller passes no profiles")
+	})
 }
 
 // TestContainsProfile exercises the containsProfile helper directly so that its
@@ -571,4 +665,57 @@ func TestLoadRemoteRepoCertificates(t *testing.T) {
 		// Should not error - just warn and continue
 		assert.NoError(t, err)
 	})
+}
+
+// TestBuildEffectiveProfiles pins the composition logic of buildEffectiveProfiles directly
+// so that regressions in the filter loop are caught without going through runMavenBuild.
+func TestBuildEffectiveProfiles(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []string
+		want  []string
+	}{
+		{
+			name:  "no user profiles → full default guard set",
+			input: nil,
+			want:  []string{"!snapshot.build", "!milestone.build", "release.build"},
+		},
+		{
+			name:  "default guards already present → returned unchanged (idempotent)",
+			input: []string{"!snapshot.build", "!milestone.build", "release.build"},
+			want:  []string{"!snapshot.build", "!milestone.build", "release.build"},
+		},
+		{
+			name:  "snapshot opt-in guards already present → returned unchanged",
+			input: []string{"!milestone.build", "release.build", "snapshot.build"},
+			want:  []string{"!milestone.build", "release.build", "snapshot.build"},
+		},
+		{
+			name:  "milestone opt-in guards already present → returned unchanged",
+			input: []string{"!snapshot.build", "milestone.build"},
+			want:  []string{"!snapshot.build", "milestone.build"},
+		},
+		{
+			name:  "user custom profile → builtins prepended, user profile appended",
+			input: []string{"my-profile"},
+			want:  []string{"!snapshot.build", "!milestone.build", "release.build", "my-profile"},
+		},
+		{
+			name:  "milestone.build → only !snapshot.build prepended",
+			input: []string{"milestone.build"},
+			want:  []string{"!snapshot.build", "milestone.build"},
+		},
+		{
+			name:  "snapshot.build → !milestone.build and release.build prepended",
+			input: []string{"snapshot.build"},
+			want:  []string{"!milestone.build", "release.build", "snapshot.build"},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildEffectiveProfiles(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

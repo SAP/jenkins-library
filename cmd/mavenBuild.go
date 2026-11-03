@@ -62,8 +62,7 @@ func buildBuiltinProfiles(userProfiles []string) []string {
 
 func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 	flags := []string{"--update-snapshots", "--batch-mode"}
-	builtinProfilesBOM := buildBuiltinProfiles(config.Profiles)
-	allProfilesBOM := append(builtinProfilesBOM, config.Profiles...)
+	allProfilesBOM := buildEffectiveProfiles(config.Profiles)
 	flags = append(flags, "--activate-profiles", strings.Join(allProfilesBOM, ","))
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
 	if exists {
@@ -111,8 +110,7 @@ func runMakeBOMGoal(config *mavenBuildOptions, utils maven.Utils) error {
 func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils maven.Utils, commonPipelineEnvironment *mavenBuildCommonPipelineEnvironment) error {
 	flags := []string{"--update-snapshots", "--batch-mode"}
 
-	builtinProfiles := buildBuiltinProfiles(config.Profiles)
-	allProfiles := append(builtinProfiles, config.Profiles...)
+	allProfiles := buildEffectiveProfiles(config.Profiles)
 	flags = append(flags, "--activate-profiles", strings.Join(allProfiles, ","))
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
@@ -185,7 +183,7 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 	}
 
 	mavenConfig := buildsettings.BuildOptions{
-		Profiles:                    allProfiles,
+		Profiles:                    config.Profiles,
 		GlobalSettingsFile:          config.GlobalSettingsFile,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 		CreateBOM:                   config.CreateBOM,
