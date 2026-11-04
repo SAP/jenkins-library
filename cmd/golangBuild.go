@@ -577,14 +577,11 @@ func runGolangBuildPerArchitecture(config *golangBuildOptions, goModFile *modfil
 		if goModFile != nil && goModFile.Module != nil {
 			modBaseName = path.Base(goModFile.Module.Mod.Path)
 		}
-		// Use getOutputBinaries when building multiple packages or a single package for a single architecture.
-		// Single-package multi-arch is excluded: each arch pass produces one binary named output-os.arch,
-		// which is handled by the else branch below.
-		if len(config.Packages) > 1 || (len(config.Packages) == 1 && !multipleArchitectures) {
-			outDir := strings.TrimRight(config.Output, string(os.PathSeparator)) + string(os.PathSeparator)
-			if multipleArchitectures {
-				outDir = fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(config.Output, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
-			}
+		// Multiple packages (>=2 entries) produce a directory <output>-<os>-<arch>/ containing one
+		// binary per main package, regardless of arch count. Zero or one package produces a single
+		// binary <output>-<os>.<arch> (handled by the else branch below), also regardless of arch count.
+		if len(config.Packages) > 1 {
+			outDir := fmt.Sprintf("%s-%s-%s%c", strings.TrimRight(config.Output, string(os.PathSeparator)), architecture.OS, architecture.Arch, os.PathSeparator)
 			binaries, err := getOutputBinaries(outDir, config.Packages, utils, architecture, config.BuildFlags, modBaseName)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorBuild)

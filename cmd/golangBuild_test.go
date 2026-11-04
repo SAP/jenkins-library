@@ -289,15 +289,12 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} ./cmd/somePkg": "main",
-		}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.fileUploads))
-			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir/somePkg", utils.fileUploads["outputDir/somePkg"])
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir-linux.amd64", utils.fileUploads["outputDir-linux.amd64"])
 		}
 	})
 
@@ -316,15 +313,12 @@ go 1.17`
 		utils := newGolangBuildTestsUtils()
 		utils.returnFileUploadStatus = 201
 		utils.FilesMock.AddFile("go.mod", []byte("module example.com/my/module"))
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} .": "main",
-		}
 		telemetryData := telemetry.CustomData{}
 
 		err := runGolangBuild(&config, &telemetryData, utils, &cpe)
 		if assert.NoError(t, err) {
 			assert.Equal(t, 1, len(utils.fileUploads))
-			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir/module", utils.fileUploads["outputDir/module"])
+			assert.Equal(t, "https://my.target.repository.local/go/example.com/my/module/1.0.0/outputDir-linux.amd64", utils.fileUploads["outputDir-linux.amd64"])
 		}
 	})
 
@@ -833,19 +827,17 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 		t.Parallel()
 		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
 		utils := newGolangBuildTestsUtils()
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} ./cmd/somePkg": "main",
-		}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
 		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
 		assert.NoError(t, err)
-		assert.Contains(t, utils.Calls[1].Params, "-o")
-		assert.Contains(t, utils.Calls[1].Params, "outputDir/")
+		// single package + single arch -> single binary <output>-<os>.<arch>, go list is not called
+		assert.Contains(t, utils.Calls[0].Params, "-o")
+		assert.Contains(t, utils.Calls[0].Params, "outputDir-linux.amd64")
 		assert.Len(t, binaryNames, 1)
-		assert.Contains(t, binaryNames, "outputDir/somePkg")
+		assert.Contains(t, binaryNames, "outputDir-linux.amd64")
 	})
 
 	t.Run("success - single arch multiple packages", func(t *testing.T) {
@@ -862,26 +854,25 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 
 		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
 		assert.NoError(t, err)
+		// multiple packages -> directory <output>-<os>-<arch>/ regardless of arch count
 		assert.Len(t, binaryNames, 2)
-		assert.Contains(t, binaryNames, "test/foo")
-		assert.Contains(t, binaryNames, "test/bar")
+		assert.Contains(t, binaryNames, "test-linux-amd64/foo")
+		assert.Contains(t, binaryNames, "test-linux-amd64/bar")
 	})
 
 	t.Run("success - single arch windows single package", func(t *testing.T) {
 		t.Parallel()
 		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
 		utils := newGolangBuildTestsUtils()
-		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} ./cmd/somePkg": "main",
-		}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("windows,amd64")
 		goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
 
 		binaryNames, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, ldflags, architecture, false)
 		assert.NoError(t, err)
+		// single package + single arch -> single binary <output>-<os>.<arch> with .exe on windows
 		assert.Len(t, binaryNames, 1)
-		assert.Contains(t, binaryNames, "outputDir/somePkg.exe")
+		assert.Contains(t, binaryNames, "outputDir-windows.amd64.exe")
 	})
 
 	t.Run("success - single pkg multi-arch uses os.arch suffix (bypasses getOutputBinaries)", func(t *testing.T) {
@@ -1015,7 +1006,8 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 
 	t.Run("failure - go list error propagated from getOutputBinaries", func(t *testing.T) {
 		t.Parallel()
-		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg"}}
+		// getOutputBinaries is only invoked for multi-package builds, so use two packages here
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{"./cmd/somePkg", "./cmd/other"}}
 		utils := newGolangBuildTestsUtils()
 		utils.ShouldFailOnCommand = map[string]error{
 			"go list -f {{ .Name }} ./cmd/somePkg": errors.New("go list error"),
@@ -1033,16 +1025,71 @@ func TestRunGolangBuildPerArchitecture(t *testing.T) {
 
 	t.Run("failure - nil goModFile with dot package", func(t *testing.T) {
 		t.Parallel()
-		config := golangBuildOptions{Output: "outputDir", Packages: []string{"."}}
+		// dot package resolves its name from go.mod; nil goModFile must fail. getOutputBinaries is
+		// only reached for multi-package builds, so pair the dot package with a second package.
+		config := golangBuildOptions{Output: "outputDir", Packages: []string{".", "package/bar"}}
 		utils := newGolangBuildTestsUtils()
 		utils.StdoutReturn = map[string]string{
-			"go list -f {{ .Name }} .": "main",
+			"go list -f {{ .Name }} .":           "main",
+			"go list -f {{ .Name }} package/bar": "main",
 		}
 		ldflags := ""
 		architecture, _ := multiarch.ParsePlatformString("linux,amd64")
 
 		_, err := runGolangBuildPerArchitecture(&config, nil, utils, ldflags, architecture, false)
 		assert.EqualError(t, err, "failed to calculate output binaries or directory: cannot determine binary name for package '.': go.mod not found or has no module declaration")
+	})
+
+	// Pins the documented output-naming contract (resources/metadata/golangBuild.yaml) across all package/arch cells.
+	// Single package (0 or 1 entry) -> single binary <output>-<os>.<arch>.
+	// Multiple packages (>=2 entries) -> directory <output>-<os>-<arch>/, regardless of arch count.
+	t.Run("output shape matches documented contract", func(t *testing.T) {
+		t.Parallel()
+		cases := []struct {
+			name      string
+			packages  []string
+			multiArch bool
+			wantOArg  string // the single -o argument this arch pass emits
+		}{
+			{"1 pkg single-arch", []string{"./cmd/foo"}, false, "myapp-linux.amd64"},
+			{"1 pkg multi-arch", []string{"./cmd/foo"}, true, "myapp-linux.amd64"},
+			{"2 pkgs single-arch", []string{"./cmd/foo", "./cmd/bar"}, false, "myapp-linux-amd64/"},
+			{"2 pkgs multi-arch", []string{"./cmd/foo", "./cmd/bar"}, true, "myapp-linux-amd64/"},
+		}
+		for _, tc := range cases {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
+				config := golangBuildOptions{Output: "myapp", Packages: tc.packages}
+				utils := newGolangBuildTestsUtils()
+				utils.StdoutReturn = map[string]string{}
+				for _, p := range tc.packages {
+					utils.StdoutReturn["go list -f {{ .Name }} "+p] = "main"
+				}
+				architecture, _ := multiarch.ParsePlatformString("linux,amd64")
+				goModFile := modfile.File{Module: &modfile.Module{Mod: module.Version{Path: "test/testBinary"}}}
+
+				_, err := runGolangBuildPerArchitecture(&config, &goModFile, utils, "", architecture, tc.multiArch)
+				assert.NoError(t, err)
+
+				// locate the `go build` call and read the argument immediately after `-o`
+				var gotOArg string
+				var foundBuild bool
+				for _, call := range utils.Calls {
+					if call.Exec != "go" || len(call.Params) == 0 || call.Params[0] != "build" {
+						continue
+					}
+					foundBuild = true
+					for i, p := range call.Params {
+						if p == "-o" && i+1 < len(call.Params) {
+							gotOArg = call.Params[i+1]
+						}
+					}
+				}
+				assert.True(t, foundBuild, "expected a `go build` call")
+				assert.Equal(t, tc.wantOArg, gotOArg)
+			})
+		}
 	})
 }
 
