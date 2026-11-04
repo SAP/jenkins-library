@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -376,13 +377,28 @@ func createGoBuildArtifactsMetadata(binary string, utils golangBuildUtils) (vers
 	return coordinate, nil
 }
 
+func injectArtifactoryAuth(rawURL string) string {
+	user := os.Getenv("PIPER_ARTIFACTORY_USER")
+	token := os.Getenv("PIPER_ARTIFACTORY_TOKEN")
+	if user == "" || token == "" {
+		return rawURL
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	parsed.User = url.UserPassword(user, token)
+	return parsed.String()
+}
+
 func prepareGolangEnvironment(config *golangBuildOptions, goModFile *modfile.File, utils golangBuildUtils) error {
 	// configure truststore
 	err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, utils, utils, "/etc/ssl/certs/ca-certificates.crt") // TODO reimplement
 
 	if config.GoProxy != "" {
-		os.Setenv("GOPROXY", config.GoProxy)
-		log.Entry().Debugf("GOPROXY set to: %s", config.GoProxy)
+		proxy := injectArtifactoryAuth(config.GoProxy)
+		os.Setenv("GOPROXY", proxy)
+		log.Entry().Debugf("GOPROXY set to: %s", proxy)
 	}
 
 	if config.PrivateModules == "" {
