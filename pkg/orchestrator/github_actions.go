@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"regexp"
 	"slices"
 	"strconv"
@@ -117,21 +118,36 @@ func (g *githubActionsConfigProvider) FullLogs() ([]byte, error) {
 	wg.SetLimit(10)
 	for i := range jobs {
 		wg.Go(func() error {
-			_, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 1)
+			// GetWorkflowJobLogs returns a redirect URL (302) to the log storage.
+			// Pass maxRedirects=0 so the library does not follow it; we fetch the URL ourselves.
+			// When GitHub returns 200 directly (no redirect), the library surfaces this as
+			// "unexpected status code: 200 OK" and the resp body already contains the logs.
+			redirectURL, resp, err := g.client.Actions.GetWorkflowJobLogs(g.ctx, g.owner, g.repo, jobs[i].ID, 0)
 			if err != nil {
-				// GetWorkflowJobLogs returns "200 OK" as error when log download is successful.
-				// Therefore, ignore this error.
-				// GitHub API returns redirect URL instead of plain text logs. See:
-				// https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#download-job-logs-for-a-workflow-run
 				if err.Error() != "unexpected status code: 200 OK" {
 					return fmt.Errorf("fetching job logs failed: %w", err)
 				}
+				// 200 direct response: body contains the logs
+				defer resp.Body.Close()
+				b, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return fmt.Errorf("failed to read response body: %w", err)
+				}
+				fullLogs.Lock()
+				fullLogs.b[i] = b
+				fullLogs.Unlock()
+				return nil
 			}
-			defer resp.Body.Close()
 
-			b, err := io.ReadAll(resp.Body)
+			// 302 redirect: fetch logs from the pre-signed URL (no auth header needed)
+			httpResp, err := http.Get(redirectURL.String())
 			if err != nil {
-				return fmt.Errorf("failed to read response body: %w", err)
+				return fmt.Errorf("failed to fetch log from redirect URL: %w", err)
+			}
+			defer httpResp.Body.Close()
+			b, err := io.ReadAll(httpResp.Body)
+			if err != nil {
+				return fmt.Errorf("failed to read log response body: %w", err)
 			}
 
 			fullLogs.Lock()
