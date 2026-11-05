@@ -403,9 +403,9 @@ func TestMavenBuild(t *testing.T) {
 		//   snapshot → "!milestone.build,release.build,snapshot.build"
 		//   milestone → "!snapshot.build,milestone.build"
 		profileCases := []struct {
-			name    string
-			input   []string
-			want    string
+			name  string
+			input []string
+			want  string
 		}{
 			{
 				name:  "default guards",
