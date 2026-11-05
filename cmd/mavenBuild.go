@@ -155,6 +155,11 @@ func runMavenBuild(config *mavenBuildOptions, _ *telemetry.CustomData, utils mav
 		if err := runMakeBOMGoal(config, utils); err != nil {
 			return fmt.Errorf("failed to execute makeBOM goal: %w", err)
 		}
+		if config.EnsureBOMTimestamp {
+			if err := ensureMavenBOMTimestamps(config.PomPath, utils); err != nil {
+				return fmt.Errorf("failed to ensure Maven BOM timestamps: %w", err)
+			}
+		}
 	}
 
 	log.Entry().Debugf("creating build settings information...")

@@ -33,6 +33,7 @@ type mavenBuildOptions struct {
 	M2Path                          string   `json:"m2Path,omitempty"`
 	LogSuccessfulMavenTransfers     bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 	CreateBOM                       bool     `json:"createBOM,omitempty"`
+	EnsureBOMTimestamp              bool     `json:"ensureBOMTimestamp,omitempty"`
 	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
 	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
 	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
@@ -325,6 +326,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX Maven plugin.")
+	cmd.Flags().BoolVar(&stepConfig.EnsureBOMTimestamp, "ensureBOMTimestamp", false, "When createBOM is enabled, post-processes bom-maven.xml and\nsimple-bom-maven.xml files recursively below the directory of pomPath\nafter both CycloneDX invocations. Inserts a UTC metadata timestamp only\nwhen missing and removes the metadata cdx:reproducible property when\ninserting. Existing valid timestamps and all other XML content are preserved.\nRejects malformed, unsupported or signed BOMs requiring modification.\nClean the workspace before building: matching files left by earlier builds\nare included. This does not perform full XSD or remote policy validation.\n")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryPassword, "altDeploymentRepositoryPassword", os.Getenv("PIPER_altDeploymentRepositoryPassword"), "Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
@@ -451,6 +453,15 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/createBOM"}},
+						Default:     false,
+					},
+					{
+						Name:        "ensureBOMTimestamp",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 						Default:     false,
 					},
 					{
