@@ -17,24 +17,20 @@ type contrastHttpClientMock struct {
 func (c *contrastHttpClientMock) ExecuteRequest(url string, params map[string]string, dest any) error {
 	switch url {
 	case appUrl:
-		app, ok := dest.(*ApplicationResponse)
+		envelope, ok := dest.(*ApplicationEnvelope)
 		if !ok {
 			return fmt.Errorf("wrong destination type")
 		}
-		app.Id = "1"
-		app.Name = "application"
+		envelope.Application.Id = "1"
+		envelope.Application.Name = "application"
 	case vulnsUrl:
-		vulns, ok := dest.(*VulnerabilitiesResponse)
+		resp, ok := dest.(*TraceFilterResponse)
 		if !ok {
 			return fmt.Errorf("wrong destination type")
 		}
-		vulns.Size = 6
-		vulns.TotalElements = 6
-		vulns.TotalPages = 1
-		vulns.Empty = false
-		vulns.First = true
-		vulns.Last = true
-		vulns.Vulnerabilities = []Vulnerability{
+		resp.Success = true
+		resp.Count = 6
+		resp.Traces = []Vulnerability{
 			{Severity: "HIGH", Status: "FIXED"},
 			{Severity: "MEDIUM", Status: "REMEDIATED"},
 			{Severity: "HIGH", Status: "REPORTED"},
@@ -43,34 +39,27 @@ func (c *contrastHttpClientMock) ExecuteRequest(url string, params map[string]st
 			{Severity: "NOTE", Status: "SUSPICIOUS"},
 		}
 	case vulnsUrlPaginated:
-		vulns, ok := dest.(*VulnerabilitiesResponse)
+		resp, ok := dest.(*TraceFilterResponse)
 		if !ok {
 			return fmt.Errorf("wrong destination type")
 		}
-		vulns.Size = 100
-		vulns.TotalElements = 300
-		vulns.TotalPages = 3
-		vulns.Empty = false
-		vulns.Last = false
-		if *c.page == 3 {
-			vulns.Last = true
-			return nil
-		}
+		resp.Success = true
+		resp.Count = 300
 		for range 20 {
-			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "HIGH", Status: "FIXED"})
-			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "NOTE", Status: "FIXED"})
-			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "MEDIUM", Status: "REPORTED"})
-			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "LOW", Status: "REPORTED"})
-			vulns.Vulnerabilities = append(vulns.Vulnerabilities, Vulnerability{Severity: "CRITICAL", Status: "NOT_A_PROBLEM"})
+			resp.Traces = append(resp.Traces, Vulnerability{Severity: "HIGH", Status: "FIXED"})
+			resp.Traces = append(resp.Traces, Vulnerability{Severity: "NOTE", Status: "FIXED"})
+			resp.Traces = append(resp.Traces, Vulnerability{Severity: "MEDIUM", Status: "REPORTED"})
+			resp.Traces = append(resp.Traces, Vulnerability{Severity: "LOW", Status: "REPORTED"})
+			resp.Traces = append(resp.Traces, Vulnerability{Severity: "CRITICAL", Status: "NOT_A_PROBLEM"})
 		}
 		*c.page++
 	case vulnsUrlEmpty:
-		vulns, ok := dest.(*VulnerabilitiesResponse)
+		resp, ok := dest.(*TraceFilterResponse)
 		if !ok {
 			return fmt.Errorf("wrong destination type")
 		}
-		vulns.Empty = true
-		vulns.Last = true
+		resp.Success = true
+		resp.Count = 0
 	default:
 		return fmt.Errorf("error")
 	}
@@ -265,13 +254,13 @@ func TestGetFindings(t *testing.T) {
 		assert.Equal(t, 2, optional.Audited)
 	})
 
-	t.Run("Camel case severity from session-filtered endpoint", func(t *testing.T) {
+	t.Run("v3 title case severity and status", func(t *testing.T) {
 		vulns := []Vulnerability{
-			{Severity: "Critical", Status: "FIXED"},
-			{Severity: "High", Status: "REMEDIATED"},
-			{Severity: "Medium", Status: "REPORTED"},
-			{Severity: "Low", Status: "CONFIRMED"},
-			{Severity: "Note", Status: "NOT_A_PROBLEM"},
+			{Severity: "Critical", Status: "Fixed"},
+			{Severity: "High", Status: "Remediated"},
+			{Severity: "Medium", Status: "Reported"},
+			{Severity: "Low", Status: "Confirmed"},
+			{Severity: "Note", Status: "Not A Problem"},
 		}
 		auditAll, optional := getFindings(vulns)
 		assert.Equal(t, 3, auditAll.Total)
