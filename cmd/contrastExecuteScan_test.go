@@ -54,7 +54,7 @@ func TestGetApplicationUrls(t *testing.T) {
 			ApplicationID:  "appId",
 		}
 		appUrl, guiUrl := getApplicationUrls(config)
-		assert.Equal(t, "https://server.com/api/v4/organizations/orgId/applications/appId", appUrl)
+		assert.Equal(t, "https://server.com/Contrast/api/ng/orgId/applications/appId", appUrl)
 		assert.Equal(t, "https://server.com/Contrast/static/ng/index.html#/orgId/applications/appId", guiUrl)
 	})
 }
@@ -196,7 +196,7 @@ func TestGenerateSarifReportMockSuccess(t *testing.T) {
 		mockContrastUsername,
 		mockContrastOrgID,
 		server.URL,
-		server.URL+"/api/v4/organizations/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
+		server.URL+"/Contrast/api/ng/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
 	)
 
 	reports, err := generateSarifReport(mockConfig, mockUtils, mockClient)
@@ -242,7 +242,7 @@ func TestGeneratePdfReportMockSuccess(t *testing.T) {
 		mockContrastUsername,
 		mockContrastOrgID,
 		server.URL,
-		server.URL+"/api/v4/organizations/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
+		server.URL+"/Contrast/api/ng/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
 	)
 
 	reports, err := generatePdfReport(mockConfig, mockUtils, mockClient)
@@ -260,7 +260,7 @@ func newMockContrastClient(server *httptest.Server) *contrast.Client {
 		mockContrastUsername,
 		mockContrastOrgID,
 		server.URL,
-		server.URL+"/api/v4/organizations/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
+		server.URL+"/Contrast/api/ng/"+mockContrastOrgID+"/applications/"+mockContrastAppID,
 	)
 }
 
