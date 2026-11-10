@@ -75,10 +75,10 @@ Workflow for any parameter change:
 
 ```bash
 # Unit tests for a single step
-go test ./cmd/stepName*.go
+go test -tags unit ./cmd/stepName*.go
 
-# All unit tests
-go test ./...
+# All unit tests (-tags unit is required; without it tagged tests are skipped)
+go test -tags unit ./cmd/... ./pkg/...
 
 # Integration tests (Docker required)
 go test -tags=integration ./integration/...
