@@ -6,6 +6,7 @@ package syft_test
 import (
 	"errors"
 	"net/http"
+	"os"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -15,6 +16,18 @@ import (
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 )
+
+type failTempDirMock struct{ mock.FilesMock }
+
+func (f *failTempDirMock) TempDir(string, string) (string, error) {
+	return "", errors.New("no temp space")
+}
+
+type failChmodMock struct{ mock.FilesMock }
+
+func (f *failChmodMock) Chmod(_ string, _ os.FileMode) error {
+	return errors.New("chmod: operation not permitted")
+}
 
 func TestGenerateSBOM(t *testing.T) {
 	execMock := mock.ExecMockRunner{}
@@ -109,6 +122,16 @@ func TestGenerateSBOM(t *testing.T) {
 		err := syft.GenerateSBOM("http://failure.com/syft.tar.gz", "", &execMock, &fileMock, client, "my-registry", []string{"img"})
 		assert.Error(t, err)
 		assert.Equal(t, "failed to install syft: failed to download syft binary: HTTP GET request to http://failure.com/syft.tar.gz failed: Get \"http://failure.com/syft.tar.gz\": network error", err.Error())
+	})
+
+	t.Run("error case: archive contains no syft binary", func(t *testing.T) {
+		localMock := mock.FilesMock{}
+		archive, err := localMock.CreateArchive(map[string][]byte{"not-syft": []byte("content")})
+		assert.NoError(t, err)
+		httpmock.RegisterResponder(http.MethodGet, "http://no-syft-binary.com/syft.tar.gz", httpmock.NewBytesResponder(http.StatusOK, archive))
+
+		err = syft.GenerateSBOM("http://no-syft-binary.com/syft.tar.gz", "", &execMock, &fileMock, client, "https://my-registry", []string{"image:latest"})
+		assert.EqualError(t, err, "failed to install syft: failed to extract syft binary: no file with the name 'syft' was found")
 	})
 }
 
@@ -211,5 +234,28 @@ func TestScanImageTo(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to generate SBOM")
 		assert.Contains(t, err.Error(), "429 Too Many Requests")
+	})
+
+	t.Run("error: TempDir fails during scanner creation", func(t *testing.T) {
+		_, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &failTempDirMock{}, client)
+		assert.EqualError(t, err, "no temp space")
+	})
+
+	t.Run("error: Chmod fails during install", func(t *testing.T) {
+		chmodMock := &failChmodMock{}
+		_, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", chmodMock, client)
+		assert.EqualError(t, err, "failed to install syft: chmod: operation not permitted")
+	})
+
+	t.Run("AddArgument appends extra arg to every scan call", func(t *testing.T) {
+		execMock := mock.ExecMockRunner{}
+		scanner, err := syft.CreateSyftScanner("http://test-syft-gh-release.com/syft.tar.gz", &fileMock, client)
+		assert.NoError(t, err)
+
+		scanner.AddArgument("--scope=all-layers")
+
+		err = scanner.ScanImages("", &execMock, "https://my-registry", []string{"image:latest"})
+		assert.NoError(t, err)
+		assert.Contains(t, execMock.Calls[0].Params, "--scope=all-layers")
 	})
 }

@@ -355,6 +355,7 @@ func callCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, 
 			log.SetErrorCategory(log.ErrorCompliance)
 			return fmt.Errorf("failed to create BOM file: %w", err)
 		}
+		log.Entry().Info("container SBOM generation successful")
 	}
 
 	return nil

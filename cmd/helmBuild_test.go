@@ -385,7 +385,9 @@ func TestRunHelmPushSBOM(t *testing.T) {
 			defer os.Remove("bom-docker-0.xml")
 
 			// Act
-			err := runHelmBuild(config, helmExecutor, utils, &cpe, execRunner, &mock.FilesMock{}, client)
+			filesMock := &mock.FilesMock{}
+			filesMock.AddFile("Chart.yaml", []byte("apiVersion: v2\nname: foo\nversion: 1.0.0\n"))
+			err := runHelmBuild(config, helmExecutor, utils, &cpe, execRunner, filesMock, client)
 
 			// Assert
 			assert.NoError(t, err)
@@ -595,7 +597,9 @@ func TestRunHelmDefaultCommandSBOM(t *testing.T) {
 			defer os.Remove("bom-docker-0.xml")
 
 			// Act
-			err := runHelmBuild(config, helmExecutor, utils, &cpe, execRunner, &mock.FilesMock{}, client)
+			filesMock := &mock.FilesMock{}
+			filesMock.AddFile("Chart.yaml", []byte("apiVersion: v2\nname: foo\nversion: 1.0.0\n"))
+			err := runHelmBuild(config, helmExecutor, utils, &cpe, execRunner, filesMock, client)
 
 			// Assert
 			assert.NoError(t, err)
@@ -932,13 +936,11 @@ func TestRunHelmSBOMDiscoverImages(t *testing.T) {
 	}
 }
 
-func TestRunHelmSBOMFailureIsBestEffort(t *testing.T) {
+func TestRunHelmSBOMFailureFailsStep(t *testing.T) {
 	setupConfigOpenFileMock(t)
-	// SBOM generation is best-effort: a failure inside generateContainerSBOMs
-	// (here, an unparseable image that fails registry derivation) must be logged
-	// and swallowed — the publish step itself must still succeed. Covers the
-	// `if err := generateContainerSBOMs(...); err != nil` guards in both the
-	// explicit "publish" command path and the default (publish=true) flow.
+	// A container SBOM failure (here: unparseable image name, registry derivation fails)
+	// must propagate and fail the publish step — SBOM generation is no longer best-effort.
+	// Covers both the explicit "publish" command path and the default (publish=true) flow.
 	tests := []struct {
 		name   string
 		config helmBuildOptions
@@ -977,10 +979,8 @@ func TestRunHelmSBOMFailureIsBestEffort(t *testing.T) {
 
 			err := runHelmBuild(test.config, helmExecutor, utils, &cpe, execRunner, &mock.FilesMock{}, &mock.HttpClientMock{})
 
-			assert.NoError(t, err, "SBOM generation failure must not fail the publish step")
+			assert.Error(t, err, "container SBOM generation failure must fail the publish step")
 			assert.False(t, syftScanInvoked(execRunner), "syft must not run when the registry cannot be derived")
-			assert.Equal(t, "https://my.target.repository/foo-1.0.0.tgz", cpe.custom.helmChartURL,
-				"the chart must still be published despite the SBOM failure")
 		})
 	}
 }

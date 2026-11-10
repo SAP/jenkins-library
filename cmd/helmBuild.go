@@ -143,7 +143,9 @@ func runHelmBuild(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor,
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
 		if config.CreateBOM {
-			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
+			if err := generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient); err != nil {
+				return err
+			}
 		}
 	default:
 		if err := runHelmBuildDefault(config, helmExecutor, commonPipelineEnvironment, execRunner, fileUtils, httpClient); err != nil {
@@ -191,7 +193,9 @@ func runHelmBuildDefault(config helmBuildOptions, helmExecutor kubernetes.HelmEx
 		}
 		commonPipelineEnvironment.custom.helmChartURL = targetURL
 		if config.CreateBOM {
-			generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient)
+			if err := generateSBOMs(config, helmExecutor, execRunner, fileUtils, httpClient); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -218,21 +222,23 @@ func writeHelmBuildArtifacts(artifactInfo versioning.Coordinates, targetURL stri
 }
 
 // generateSBOMs produces both SBOMs for the published chart: a chart-level
-// bom-helm.xml and per-image bom-docker-*.xml files. Both use the same
-// discovered image set so the chart BOM and container BOMs describe the same
-// images. Both are best-effort: a failure is logged but never fails the step.
-func generateSBOMs(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) {
+// bom-helm.xml and per-image bom-docker-*.xml files. Both failures are fatal.
+func generateSBOMs(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor, execRunner command.ExecRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	images := discoverImages(config, helmExecutor)
 
 	if err := generateContainerSBOMs(config, images, execRunner, fileUtils, httpClient); err != nil {
-		log.Entry().Warnf("container SBOM generation failed: %v", err)
+		log.Entry().Errorf("container SBOM generation failed: %v", err)
+		return fmt.Errorf("container SBOM generation failed: %w", err)
 	}
+	log.Entry().Info("container SBOM generation successful")
 
 	if err := helm.GenerateChartSBOM(config.ChartPath, "bom-helm.xml", images, fileUtils); err != nil {
-		log.Entry().Warnf("chart SBOM generation failed: %v", err)
-	} else {
-		log.Entry().Infof("helm SBOM: generated chart SBOM bom-helm.xml for %s", config.ChartPath)
+		log.Entry().Errorf("chart SBOM generation failed: %v", err)
+		return fmt.Errorf("chart SBOM generation failed: %w", err)
 	}
+	log.Entry().Infof("helm SBOM: generated chart SBOM bom-helm.xml for %s", config.ChartPath)
+
+	return nil
 }
 
 // generateContainerSBOMs generates a CycloneDX SBOM (bom-docker-<N>.xml) for

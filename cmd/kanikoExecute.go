@@ -186,8 +186,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 			if err != nil {
+				log.Entry().Errorf("container SBOM generation failed: %v", err)
 				return err
 			}
+			log.Entry().Info("container SBOM generation successful")
 		}
 
 		if config.CreateBuildArtifactsMetadata {
@@ -293,8 +295,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
 			err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 			if err != nil {
+				log.Entry().Errorf("container SBOM generation failed: %v", err)
 				return err
 			}
+			log.Entry().Info("container SBOM generation successful")
 		}
 
 		if config.CreateBuildArtifactsMetadata {
@@ -382,8 +386,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		// Syft for single image, generates bom-docker-0.xml
 		err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
 		if err != nil {
+			log.Entry().Errorf("container SBOM generation failed: %v", err)
 			return err
 		}
+		log.Entry().Info("container SBOM generation successful")
 	}
 	if config.CreateBuildArtifactsMetadata {
 		err := createDockerBuildArtifactMetadata(commonPipelineEnvironment.container.imageNameTags, commonPipelineEnvironment)
