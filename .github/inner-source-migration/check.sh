@@ -25,9 +25,8 @@ comment_file="${COMMENT_FILE:-/dev/null}"
 output_file="${GITHUB_OUTPUT:-/dev/null}"
 repo="${GITHUB_REPOSITORY:-SAP/jenkins-library}"
 list_url="${GITHUB_SERVER_URL:-https://github.com}/$repo/blob/${GITHUB_BASE_REF:-master}/.github/inner-source-migration/moved.txt"
-inner_source="SAP-internal Piper library"
-inner_source_caps="SAP-INTERNAL PIPER LIBRARY"
-inner_source_link="<https://url.sap/piper> (SAP-internal)"
+inner_source="inner source Piper library"
+inner_source_caps="INNER SOURCE PIPER LIBRARY"
 
 for list in moved.txt not-moved.txt; do
   if [[ ! -r "$list_dir/$list" ]]; then
@@ -133,7 +132,7 @@ body() {
       echo "> [!CAUTION]"
       echo "> ### 🚫 THIS PULL REQUEST CHANGES STEPS THAT MOVED TO THE $inner_source_caps. CHANGES TO THESE STEPS ARE NO LONGER ACCEPTED IN THIS REPOSITORY."
       echo
-      echo "\`$repo\` will be **archived on $ARCHIVE_DATE**. The steps below moved to the $inner_source, where their development continues. Please make this change there instead: $inner_source_link."
+      echo "\`$repo\` will be **archived on $ARCHIVE_DATE**. The steps below moved to the $inner_source, where their development continues. Please make this change there instead."
       echo
       echo "Until the archive date, pull requests are only accepted for steps that were **not** moved. Full list: [moved.txt]($list_url)."
       echo
@@ -144,7 +143,7 @@ body() {
       echo "> [!WARNING]"
       echo "> ### ⚠️ THIS PULL REQUEST CHANGES SHARED CODE THAT ALSO EXISTS IN THE $inner_source_caps."
       echo
-      echo "\`$repo\` will be **archived on $ARCHIVE_DATE**. This change is not blocked, but it likely needs to be ported to the $inner_source as well: $inner_source_link."
+      echo "\`$repo\` will be **archived on $ARCHIVE_DATE**. This change is not blocked, but it likely needs to be ported to the $inner_source as well."
       shared_section
       ;;
     ok)
@@ -158,7 +157,7 @@ body() {
 case "$status" in
   fail)
     banner "THIS PULL REQUEST CANNOT BE MERGED." \
-      "IT CHANGES STEPS THAT MOVED TO THE SAP-INTERNAL PIPER LIBRARY." \
+      "IT CHANGES STEPS THAT MOVED TO THE INNER SOURCE PIPER LIBRARY." \
       "CHANGES TO THESE STEPS ARE NO LONGER ACCEPTED IN THIS REPOSITORY." \
       "THIS REPOSITORY WILL BE ARCHIVED ON $ARCHIVE_DATE."
     while IFS=$'\t' read -r owner files; do
@@ -168,7 +167,7 @@ case "$status" in
     ;;
   warn)
     banner "THIS PULL REQUEST CHANGES SHARED CODE." \
-      "THE SAME CODE ALSO LIVES IN THE SAP-INTERNAL PIPER LIBRARY." \
+      "THE SAME CODE ALSO LIVES IN THE INNER SOURCE PIPER LIBRARY." \
       "THE CHANGE IS NOT BLOCKED, BUT LIKELY NEEDS TO BE PORTED THERE TOO." \
       "THIS REPOSITORY WILL BE ARCHIVED ON $ARCHIVE_DATE."
     ;;

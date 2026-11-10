@@ -1,4 +1,4 @@
-# Steps and paths that moved to the SAP-internal Piper library (sap-piper single binary).
+# Steps and paths that moved to the inner source Piper library.
 # Pull requests touching any of these are no longer accepted in SAP/jenkins-library.
 # Read by .github/workflows/inner-source-migration-check.yml from the base branch.
 #

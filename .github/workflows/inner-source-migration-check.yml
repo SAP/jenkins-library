@@ -1,6 +1,6 @@
 name: Inner source migration check
 
-# Flags pull requests that change steps which moved to the SAP-internal Piper library.
+# Flags pull requests that change steps which moved to the inner source Piper library.
 # The repository will be archived on 2026-12-31; until then only changes to steps that
 # were not moved are accepted. Lists and logic: .github/inner-source-migration/
 #
@@ -76,5 +76,5 @@ jobs:
       - name: Fail if moved steps are changed
         if: steps.classify.outputs.status == 'fail'
         run: |
-          echo "::error title=THIS PULL REQUEST CANNOT BE MERGED::It changes steps that moved to the SAP-internal Piper library. See the job summary."
+          echo "::error title=THIS PULL REQUEST CANNOT BE MERGED::It changes steps that moved to the inner source Piper library. See the job summary."
           exit 1

@@ -1,4 +1,4 @@
-# Steps and paths that were NOT moved to the SAP-internal Piper library.
+# Steps and paths that were NOT moved to the inner source Piper library.
 # Pull requests touching only these are still accepted until SAP/jenkins-library is archived (2026-12-31).
 # Same format as moved.txt. Anything matching neither list is treated as shared code (warning only).
 
