@@ -184,9 +184,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		}
 		if config.CreateBOM {
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
-			err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
-			if err != nil {
-				log.Entry().Errorf("container SBOM generation failed: %v", err)
+			if err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags); err != nil {
 				return err
 			}
 			log.Entry().Info("container SBOM generation successful")
@@ -293,9 +291,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 		if config.CreateBOM {
 			// Syft for multi image, generates bom-docker-(1/2/3).xml
-			err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
-			if err != nil {
-				log.Entry().Errorf("container SBOM generation failed: %v", err)
+			if err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags); err != nil {
 				return err
 			}
 			log.Entry().Info("container SBOM generation successful")
@@ -384,9 +380,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	if config.CreateBOM {
 		// Syft for single image, generates bom-docker-0.xml
-		err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags)
-		if err != nil {
-			log.Entry().Errorf("container SBOM generation failed: %v", err)
+		if err := syft.GenerateSBOM(config.SyftDownloadURL, "/kaniko/.docker", execRunner, fileUtils, httpClient, commonPipelineEnvironment.container.registryURL, commonPipelineEnvironment.container.imageNameTags); err != nil {
 			return err
 		}
 		log.Entry().Info("container SBOM generation successful")
