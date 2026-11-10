@@ -1,0 +1,80 @@
+name: Inner source migration check
+
+# Flags pull requests that change steps which moved to the SAP-internal Piper library.
+# The repository will be archived on 2026-12-31; until then only changes to steps that
+# were not moved are accepted. Lists and logic: .github/inner-source-migration/
+#
+# pull_request_target is needed to comment on pull requests from forks.
+# It is safe here because the PR head is never checked out or executed:
+# only the base branch is checked out, and changed file names are read via the API.
+
+on:
+  pull_request_target:
+    branches:
+      - master
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read        # checkout of the base branch (lists + script)
+  pull-requests: write  # create/update the sticky PR comment
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Moved steps check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout base branch (never the PR head)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          sparse-checkout: .github/inner-source-migration
+          persist-credentials: false
+
+      - name: Classify changed files
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          COMMENT_FILE: ${{ runner.temp }}/comment.md
+        run: |
+          gh api --paginate "repos/$REPO/pulls/$PR/files" \
+            --jq '.[] | .filename, (.previous_filename // empty)' \
+            | bash .github/inner-source-migration/check.sh .github/inner-source-migration
+
+      - name: Update sticky PR comment
+        if: always() && steps.classify.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          STATUS: ${{ steps.classify.outputs.status }}
+          COMMENT_FILE: ${{ runner.temp }}/comment.md
+        run: |
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- inner-source-migration-check -->"))) | .id' \
+            | head -n 1)
+          if [[ -n "$id" ]]; then
+            gh api --method PATCH "repos/$REPO/issues/comments/$id" -F "body=@$COMMENT_FILE" > /dev/null
+            echo "Updated comment $id"
+          elif [[ "$STATUS" != "ok" ]]; then
+            gh api --method POST "repos/$REPO/issues/$PR/comments" -F "body=@$COMMENT_FILE" > /dev/null
+            echo "Created comment"
+          else
+            echo "Nothing to report, no comment created"
+          fi
+
+      - name: Fail if moved steps are changed
+        if: steps.classify.outputs.status == 'fail'
+        run: |
+          echo "::error title=THIS PULL REQUEST CANNOT BE MERGED::It changes steps that moved to the SAP-internal Piper library. See the job summary."
+          exit 1

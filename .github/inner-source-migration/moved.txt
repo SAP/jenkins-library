@@ -1,0 +1,115 @@
+# Steps and paths that moved to the SAP-internal Piper library (sap-piper single binary).
+# Pull requests touching any of these are no longer accepted in SAP/jenkins-library.
+# Read by .github/workflows/inner-source-migration-check.yml from the base branch.
+#
+# Format, one entry per line, '#' starts a comment:
+#   <stepName>    matches cmd/<stepName>[_generated][_test].go, resources/metadata/<stepName>.yaml,
+#                 vars/<stepName>.groovy, test/groovy/<StepName>Test.groovy (case-insensitive),
+#                 documentation/docs/steps/<stepName>.md
+#   <path>        any entry containing '/' is matched as a literal path prefix
+#                 (end directories with '/' to avoid matching pkg/build/ against pkg/buildpacks/)
+
+# Steps
+artifactPrepareVersion
+ascAppUpload
+btpCreateServiceBinding
+btpCreateServiceInstance
+btpDeleteServiceBinding
+btpDeleteServiceInstance
+checkmarxOneExecuteScan
+cloudFoundryCreateService
+cloudFoundryDeploy
+cnbBuild
+codeqlExecuteScan
+containerSaveImage
+contrastExecuteScan
+detectExecuteScan
+gaugeExecuteTests
+gcpPublishEvent
+githubPublishRelease
+gitopsUpdateDeployment
+golangBuild
+gradleExecuteBuild
+hadolintExecute
+helmBuild
+imagePushToRegistry
+kanikoExecute
+kubernetesDeploy
+malwareExecuteScan
+mavenBuild
+mavenExecuteIntegration
+mavenExecuteStaticCodeChecks
+mtaBuild
+newmanExecute
+npmExecuteLint
+npmExecuteScripts
+npmExecuteTests
+protecodeExecuteScan
+pythonBuild
+shellExecute
+sonarExecuteScan
+terraformExecute
+vaultRotateSecretId
+
+# Commands
+checkIfStepActive
+getConfig
+getDefaults
+readPipelineEnv
+version
+writePipelineEnv
+
+# Packages used only by moved steps/commands (transitively, via go list)
+pkg/ado/
+pkg/asc/
+pkg/blackduck/
+pkg/build/
+pkg/buildpacks/
+pkg/buildsettings/
+pkg/certutils/
+pkg/checkmarxone/
+pkg/cnbutils/
+pkg/codeql/
+pkg/contrast/
+pkg/encryption/
+pkg/goget/
+pkg/helm/
+pkg/java/
+pkg/jenkins/
+pkg/kubernetes/
+pkg/malwarescan/
+pkg/multiarch/
+pkg/protecode/
+pkg/python/
+pkg/sonar/
+pkg/syft/
+pkg/terraform/
+
+# Integration tests of moved steps/packages
+integration/integration_cnb_test.go
+integration/integration_gauge_test.go
+integration/integration_github_test.go
+integration/integration_gitops_test.go
+integration/integration_golang_test.go
+integration/integration_gradle_test.go
+integration/integration_helm_test.go
+integration/integration_jenkins_test.go
+integration/integration_kubernetes_deploy_test.go
+integration/integration_maven_test.go
+integration/integration_mta_test.go
+integration/integration_npm_test.go
+integration/integration_pnpm_test.go
+integration/integration_python_test.go
+integration/integration_sonar_test.go
+integration/testdata/TestCnbIntegration/
+integration/testdata/TestGaugeIntegration/
+integration/testdata/TestGitopsUpdateIntegration/
+integration/testdata/TestGolangIntegration/
+integration/testdata/TestGradleIntegration/
+integration/testdata/TestHelmIntegration/
+integration/testdata/TestKubernetesDeployIntegration/
+integration/testdata/TestMavenIntegration/
+integration/testdata/TestMtaIntegration/
+integration/testdata/TestNpmIntegration/
+integration/testdata/TestPnpmIntegration/
+integration/testdata/TestPythonIntegration/
