@@ -648,6 +648,18 @@ func TestBuildMtaEffectiveProfiles(t *testing.T) {
 		assert.Equal(t, []string{"snapshot.build", "milestone.build"},
 			buildMtaEffectiveProfiles([]string{"snapshot.build", "milestone.build"}))
 	})
+
+	t.Run("snapshot.build with release.build strips release.build", func(t *testing.T) {
+		// snapshot.build activates its own repository mapping; release.build must NOT
+		// be co-activated — the invariant is the same as for milestone.build.
+		assert.Equal(t, []string{"snapshot.build"},
+			buildMtaEffectiveProfiles([]string{"snapshot.build", "release.build"}))
+	})
+
+	t.Run("release.build with snapshot.build strips release.build", func(t *testing.T) {
+		assert.Equal(t, []string{"snapshot.build"},
+			buildMtaEffectiveProfiles([]string{"release.build", "snapshot.build"}))
+	})
 }
 
 func TestMtaBuildProfileSettingsXMLUpdate(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"text/template"
@@ -361,38 +362,34 @@ func buildArtifactsMetadata(config mtaBuildOptions, commonPipelineEnvironment *m
 //   - Default / Release quality (no user profiles): activate release.build only
 //     — replaces the settings.xml default (snapshot.build) so that only the
 //     SAP Artifactory build-releases repository is reachable.
-//   - Milestone quality ("milestone.build" in user profiles): use the user
-//     profiles as-is; milestone.build activates the milestone repository on its
-//     own and release.build must not be co-activated.
-//   - Snapshot opt-in ("snapshot.build" in user profiles): use the user profiles
-//     as-is.
+//   - Explicit quality tier ("milestone.build" or "snapshot.build" in user
+//     profiles): use the user profiles as-is and strip release.build if
+//     present — the selected tier activates its own repository mapping and
+//     release.build must not co-activate (<activeProfile> has no deactivation
+//     syntax).
 //   - Other user profiles: prepend release.build so the release Artifactory
 //     repository remains accessible alongside the custom profiles.
+const (
+	mtaReleaseProfile   = "release.build"
+	mtaSnapshotProfile  = "snapshot.build"
+	mtaMilestoneProfile = "milestone.build"
+)
+
 func buildMtaEffectiveProfiles(userProfiles []string) []string {
-	if containsProfile(userProfiles, "milestone.build") {
-		// Milestone quality: milestone.build activates its own Artifactory repository
-		// mapping. release.build must not be co-activated — strip it if the caller
-		// passed both, since <activeProfile> has no deactivation syntax.
-		result := make([]string, 0, len(userProfiles))
-		for _, p := range userProfiles {
-			if p != "release.build" {
-				result = append(result, p)
-			}
-		}
-		return result
+	hasExplicitTier := slices.Contains(userProfiles, mtaReleaseProfile) ||
+		slices.Contains(userProfiles, mtaMilestoneProfile) ||
+		slices.Contains(userProfiles, mtaSnapshotProfile)
+	if !hasExplicitTier {
+		return append([]string{mtaReleaseProfile}, userProfiles...)
 	}
-	if containsProfile(userProfiles, "snapshot.build") {
-		return userProfiles
+	// Explicit quality tier (milestone or snapshot): strip release.build so it
+	// does not co-activate alongside the selected tier's repository mapping.
+	if slices.Contains(userProfiles, mtaMilestoneProfile) || slices.Contains(userProfiles, mtaSnapshotProfile) {
+		return slices.DeleteFunc(slices.Clone(userProfiles), func(p string) bool {
+			return p == mtaReleaseProfile
+		})
 	}
-	if containsProfile(userProfiles, "release.build") {
-		// Caller already carries release.build; prepending another copy would produce
-		// a duplicate <activeProfile> entry in settings.xml.
-		return userProfiles
-	}
-	result := make([]string, 0, len(userProfiles)+1)
-	result = append(result, "release.build")
-	result = append(result, userProfiles...)
-	return result
+	return userProfiles
 }
 
 func handleActiveProfileUpdate(config mtaBuildOptions, effectiveProfiles []string, utils mtaBuildUtils) error {
