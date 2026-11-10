@@ -21,20 +21,9 @@ const (
 	AuditAll        = "Audit All"
 	Optional        = "Optional"
 	pageSize        = 100
-	startPage       = 0
 	ContentType     = "Content-Type"
 	JSONContentType = "application/json"
 )
-
-type VulnerabilitiesResponse struct {
-	Size            int             `json:"size"`
-	TotalElements   int             `json:"totalElements"`
-	TotalPages      int             `json:"totalPages"`
-	Empty           bool            `json:"empty"`
-	First           bool            `json:"first"`
-	Last            bool            `json:"last"`
-	Vulnerabilities []Vulnerability `json:"content"`
-}
 
 type Vulnerability struct {
 	Severity string `json:"severity"`
@@ -42,17 +31,23 @@ type Vulnerability struct {
 }
 
 type ApplicationResponse struct {
-	Id          string `json:"id"`
+	Id          string `json:"app_id"`
 	Name        string `json:"name"`
 	DisplayName string `json:"displayName"`
 	Path        string `json:"path"`
 	Language    string `json:"language"`
-	Importance  string `json:"importance"`
+	Importance  int    `json:"importance"`
+}
+
+type ApplicationEnvelope struct {
+	Success     bool                `json:"success"`
+	Messages    []string            `json:"messages"`
+	Application ApplicationResponse `json:"application"`
 }
 
 type Contrast interface {
-	GetVulnerabilities() error
-	GetAppInfo(appUIUrl, server string)
+	GetVulnerabilities(appId string) ([]ContrastFindings, error)
+	GetAppInfo(appUIUrl, server string) (*ApplicationInfo, error)
 }
 
 // Client is the unified Contrast API client for both sync and async operations
@@ -176,37 +171,37 @@ func (c *Client) addAuth(req *http.Request) {
 // Note: ContrastInstance is deprecated. Use the unified Client from client.go instead.
 // The Client now supports both async (SARIF/PDF) and sync (vulnerabilities, app info) operations.
 func getApplicationFromClient(client ContrastHttpClient, url string) (*ApplicationInfo, error) {
-	var appResponse ApplicationResponse
-	err := client.ExecuteRequest(url, nil, &appResponse)
+	var envelope ApplicationEnvelope
+	err := client.ExecuteRequest(url, nil, &envelope)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ApplicationInfo{
-		Id:   appResponse.Id,
-		Name: appResponse.Name,
+		Id:   envelope.Application.Id,
+		Name: envelope.Application.Name,
 	}, nil
 }
 
-func getVulnerabilitiesFromClient(client ContrastHttpClient, url string, page int) ([]ContrastFindings, error) {
+func getVulnerabilitiesFromClient(client ContrastHttpClient, url string, offset int) ([]ContrastFindings, error) {
 	params := map[string]string{
-		"page": fmt.Sprintf("%d", page),
-		"size": fmt.Sprintf("%d", pageSize),
+		"offset": fmt.Sprintf("%d", offset),
+		"limit":  fmt.Sprintf("%d", pageSize),
 	}
-	var vulnsResponse VulnerabilitiesResponse
-	err := client.ExecuteRequest(url, params, &vulnsResponse)
+	var filterResp TraceFilterResponse
+	err := client.ExecuteRequest(url, params, &filterResp)
 	if err != nil {
 		return nil, err
 	}
 
-	if vulnsResponse.Empty {
+	if filterResp.Count == 0 {
 		log.Entry().Info("empty vulnerabilities response")
 	}
 
-	auditAllFindings, optionalFindings := getFindings(vulnsResponse.Vulnerabilities)
-
-	if !vulnsResponse.Last {
-		findings, err := getVulnerabilitiesFromClient(client, url, page+1)
+	auditAllFindings, optionalFindings := getFindings(filterResp.Traces)
+	nextOffset := offset + pageSize
+	if int64(nextOffset) < filterResp.Count {
+		findings, err := getVulnerabilitiesFromClient(client, url, nextOffset)
 		if err != nil {
 			return nil, err
 		}
@@ -226,13 +221,13 @@ func getFindings(vulnerabilities []Vulnerability) (ContrastFindings, ContrastFin
 	optionalFindings.Audited = 0
 
 	for _, vuln := range vulnerabilities {
-		if severity := strings.ToUpper(vuln.Severity); severity == Critical || severity == High || severity == Medium {
-			if strings.ToUpper(vuln.Status) != StatusReported {
+		if strings.EqualFold(vuln.Severity, Critical) || strings.EqualFold(vuln.Severity, High) || strings.EqualFold(vuln.Severity, Medium) {
+			if !strings.EqualFold(vuln.Status, StatusReported) {
 				auditAllFindings.Audited += 1
 			}
 			auditAllFindings.Total += 1
 		} else {
-			if strings.ToUpper(vuln.Status) != StatusReported {
+			if !strings.EqualFold(vuln.Status, StatusReported) {
 				optionalFindings.Audited += 1
 			}
 			optionalFindings.Total += 1
@@ -361,11 +356,10 @@ func (c *Client) DownloadReport(downloadUrl, reportType string) ([]byte, error) 
 }
 
 // GetVulnerabilities gets vulnerabilities for the application (synchronous)
-func (c *Client) GetVulnerabilities() ([]ContrastFindings, error) {
-	url := c.AppURL + "/vulnerabilities"
+func (c *Client) GetVulnerabilities(appId string) ([]ContrastFindings, error) {
+	url := fmt.Sprintf("%s/Contrast/api/ng/%s/traces/%s/filter", c.BaseURL, c.OrgID, appId)
 	httpClient := NewContrastHttpClient(c.ApiKey, c.Auth)
-
-	return getVulnerabilitiesFromClient(httpClient, url, startPage)
+	return getVulnerabilitiesFromClient(httpClient, url, 0)
 }
 
 // GetAppInfo gets application information (synchronous)

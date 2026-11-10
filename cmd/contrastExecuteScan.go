@@ -123,7 +123,7 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 	if agentSessionID != "" {
 		findings, err = client.GetVulnerabilitiesBySession(config.ApplicationID, agentSessionID)
 	} else {
-		findings, err = client.GetVulnerabilities()
+		findings, err = client.GetVulnerabilities(config.ApplicationID)
 	}
 	if err != nil {
 		log.Entry().Errorf("error while getting vulns")
@@ -166,7 +166,7 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 }
 
 func getApplicationUrls(config *contrastExecuteScanOptions) (string, string) {
-	appURL := fmt.Sprintf("%s/api/v4/organizations/%s/applications/%s", config.Server, config.OrganizationID, config.ApplicationID)
+	appURL := fmt.Sprintf("%s/Contrast/api/ng/%s/applications/%s", config.Server, config.OrganizationID, config.ApplicationID)
 	guiURL := fmt.Sprintf("%s/Contrast/static/ng/index.html#/%s/applications/%s", config.Server, config.OrganizationID, config.ApplicationID)
 
 	return appURL, guiURL
