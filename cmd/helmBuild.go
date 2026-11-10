@@ -227,13 +227,11 @@ func generateSBOMs(config helmBuildOptions, helmExecutor kubernetes.HelmExecutor
 	images := discoverImages(config, helmExecutor)
 
 	if err := generateContainerSBOMs(config, images, execRunner, fileUtils, httpClient); err != nil {
-		log.Entry().Errorf("container SBOM generation failed: %v", err)
 		return fmt.Errorf("container SBOM generation failed: %w", err)
 	}
 	log.Entry().Info("container SBOM generation successful")
 
 	if err := helm.GenerateChartSBOM(config.ChartPath, "bom-helm.xml", images, fileUtils); err != nil {
-		log.Entry().Errorf("chart SBOM generation failed: %v", err)
 		return fmt.Errorf("chart SBOM generation failed: %w", err)
 	}
 	log.Entry().Infof("helm SBOM: generated chart SBOM bom-helm.xml for %s", config.ChartPath)
