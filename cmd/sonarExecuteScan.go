@@ -57,6 +57,7 @@ const MAX_RETRIES = 4
 const BACKOFF_SECONDS = 40
 
 var NETWORK_ISSUES = []string{
+	"java.net.ConnectException",
 	"java.net.SocketException",
 	"failed with HTTP 403 Forbidden",
 	"failed with HTTP 404 Not Found",

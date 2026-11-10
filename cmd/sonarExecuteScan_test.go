@@ -587,6 +587,69 @@ func TestRunSonarRetry(t *testing.T) {
 		assert.Equal(t, otherErr, err)
 		assert.Equal(t, 1, callCount)
 	})
+
+	connectErr := errors.New("java.net.ConnectException: Connection refused")
+
+	t.Run("retries on ConnectException and succeeds", func(t *testing.T) {
+		tmpFolder := t.TempDir()
+		createTaskReportFile(t, tmpFolder)
+		newSonarSettings(tmpFolder)
+
+		callCount := 0
+		mockRunner := mock.ExecMockRunner{}
+		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+			callCount++
+			if callCount < 3 {
+				fmt.Fprint(mockRunner.GetStderr(), connectErr.Error())
+				return connectErr
+			}
+			return nil
+		}
+
+		err := runSonar(baseOptions, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.NoError(t, err)
+		assert.Equal(t, 3, callCount)
+	})
+
+	t.Run("exhausts all retries on repeated ConnectException and returns error", func(t *testing.T) {
+		tmpFolder := t.TempDir()
+		newSonarSettings(tmpFolder)
+
+		callCount := 0
+		mockRunner := mock.ExecMockRunner{}
+		mockRunner.Stub = func(call string, _ map[string]string, _ map[string]error, _ io.Writer) error {
+			callCount++
+			fmt.Fprint(mockRunner.GetStderr(), connectErr.Error())
+			return connectErr
+		}
+
+		err := runSonar(baseOptions, &mockDownloadClient, &mockRunner, apiClient, &mock.FilesMock{}, &sonarExecuteScanInflux{})
+		assert.Error(t, err)
+		assert.Equal(t, connectErr, err)
+		assert.Equal(t, MAX_RETRIES, callCount)
+	})
+}
+
+func TestIsNetworkIssue(t *testing.T) {
+	tests := []struct {
+		name     string
+		stderr   string
+		expected bool
+	}{
+		{"ConnectException triggers retry", "java.net.ConnectException: Connection refused", true},
+		{"SocketException triggers retry", "java.net.SocketException: Connection reset", true},
+		{"HTTP 403 triggers retry", "failed with HTTP 403 Forbidden", true},
+		{"HTTP 404 triggers retry", "failed with HTTP 404 Not Found", true},
+		{"HTTP 503 triggers retry", "failed with HTTP 503 Service Unavailable", true},
+		{"OutOfMemoryError does not trigger retry", "java.lang.OutOfMemoryError", false},
+		{"empty stderr does not trigger retry", "", false},
+		{"unrelated error does not trigger retry", "some unrelated build failure", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, isNetworkIssue(tt.stderr))
+		})
+	}
 }
 
 func TestSonarLoadCertificates(t *testing.T) {
