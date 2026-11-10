@@ -3,6 +3,7 @@ package eventing
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	cdevents "github.com/cdevents/sdk-go/pkg/api"
 	cdeventsv04 "github.com/cdevents/sdk-go/pkg/api/v04"
@@ -65,4 +66,62 @@ func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome, stageName
 		return nil, fmt.Errorf("failed to marshal CloudEvent: %w", err)
 	}
 	return bytes, nil
+}
+
+// NewCustomTypeCDEventFromJSON creates a CDEvents CustomType event and returns its JSON-serialized CloudEvent bytes.
+// eventType must be a CDEvents custom type string (e.g. "dev.cdeventsx.piper-pipeline.runstarted.0.1.0").
+// jsonData and additionalJSON are merged into the CDEvent customData field; additionalJSON keys overwrite jsonData keys.
+func NewCustomTypeCDEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
+	cdEventType, err := cdevents.CDEventTypeFromString(eventType)
+	if err != nil {
+		return nil, fmt.Errorf("invalid CDEvent type %q: %w", eventType, err)
+	}
+
+	event, err := cdeventsv04.NewCustomTypeEvent()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CDEvent: %w", err)
+	}
+
+	event.SetSource(source)
+	event.SetSubjectId(source)
+	event.SetSubjectContent(map[string]any{})
+	event.SetEventType(*cdEventType)
+
+	var dataMap map[string]any
+	if jsonData != "" {
+		if err = json.Unmarshal([]byte(jsonData), &dataMap); err != nil {
+			return nil, fmt.Errorf("eventData is invalid JSON: %w", err)
+		}
+	}
+
+	if additionalJSON != "" {
+		var additional map[string]any
+		if err = json.Unmarshal([]byte(additionalJSON), &additional); err != nil {
+			return nil, fmt.Errorf("additionalEventData is invalid JSON: %w", err)
+		}
+		if dataMap == nil {
+			dataMap = make(map[string]any)
+		}
+		maps.Copy(dataMap, additional)
+	}
+
+	if dataMap != nil {
+		if err = event.SetCustomData("application/json", dataMap); err != nil {
+			return nil, fmt.Errorf("failed to set custom data: %w", err)
+		}
+	}
+
+	ce, err := cdevents.AsCloudEvent(event)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert CDEvent to CloudEvent: %w", err)
+	}
+	// AsCloudEvent reads the type from GetType() which always returns the package-level zero-value
+	// for custom events; we override it with the actual event type string from the context.
+	ce.SetType(cdEventType.String())
+
+	b, err := json.Marshal(ce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal CloudEvent: %w", err)
+	}
+	return b, nil
 }

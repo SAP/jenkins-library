@@ -71,7 +71,7 @@ spec:
           - STAGES
           - STEPS
       - name: eventType
-        description:
+        description: The CDEvents custom type string for this event (e.g. "dev.cdeventsx.piper-pipeline.runstarted.0.1.0"). Must match the CDEvents custom type format dev.cdeventsx.<tool>-<subject>.<predicate>.<version>.
         type: "string"
         scope:
           - PARAMETERS
