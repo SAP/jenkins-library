@@ -42,8 +42,8 @@ func resolveString(str string, lookupMap map[string]any, n int) (string, bool) {
 	}
 	for _, match := range matches {
 		property := match[captureGroups["property"]]
-		if propVal, ok := lookupMap[property]; ok {
-			str = strings.ReplaceAll(str, fmt.Sprintf("$(%s)", property), propVal.(string))
+		if propVal, ok := lookupMap[property].(string); ok {
+			str = strings.ReplaceAll(str, fmt.Sprintf("$(%s)", property), propVal)
 		} else {
 			// value not found
 			log.Entry().Debugf("Can't interploate '%s'. Missing property '%s'", str, property)

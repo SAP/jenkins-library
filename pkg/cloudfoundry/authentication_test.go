@@ -123,10 +123,45 @@ func TestCloudFoundryLogin(t *testing.T) {
 }
 
 func TestCloudFoundryLogout(t *testing.T) {
-	t.Run("CF Logout", func(t *testing.T) {
-		runner := &mock.ExecMockRunner{}
-		err := Logout(runner)
-		if assert.NoError(t, err) {
-		}
-	})
+	runner := &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"cf logout": fmt.Errorf("logout rejected")}}
+	assert.EqualError(t, Logout(runner), "Failed to Logout of Cloud Foundry: logout rejected")
+}
+
+func TestCloudFoundryAssertionLogin(t *testing.T) {
+	api := mock.ExecCall{Exec: "cf", Params: []string{"api", "https://cf.example"}}
+	auth := mock.ExecCall{Exec: "cf", Params: []string{"auth", "--assertion", "synthetic-assertion", "--origin", "ias-platform"}}
+	target := mock.ExecCall{Exec: "cf", Params: []string{"target", "-o", "org", "-s", "space"}}
+	logout := mock.ExecCall{Exec: "cf", Params: []string{"logout"}}
+	for _, tc := range []struct {
+		name      string
+		configure func(*LoginOptions)
+		failures  map[string]error
+		wantCalls []mock.ExecCall
+		wantError string
+	}{
+		{name: "token only", wantCalls: []mock.ExecCall{api, auth, target}},
+		{name: "assertion wins over credentials", configure: func(o *LoginOptions) { o.Username, o.Password = "user", "password" }, wantCalls: []mock.ExecCall{api, auth, target}},
+		{name: "missing target", configure: func(o *LoginOptions) { o.CfSpace = "" }, wantError: "Parameters missing. Please provide the Cloud Foundry Endpoint, Org and Space"},
+		{name: "missing origin", configure: func(o *LoginOptions) { o.Origin = "" }, wantError: "Parameter missing. Please provide the Cloud Foundry identity provider origin for assertion authentication"},
+		{name: "unsupported login parameters", configure: func(o *LoginOptions) { o.CfLoginOpts = []string{"--origin", "other"} }, wantError: "loginParameters cannot be used with assertion authentication"},
+		{name: "api failure", failures: map[string]error{"cf api .*": fmt.Errorf("api rejected")}, wantCalls: []mock.ExecCall{api}, wantError: "api rejected"},
+		{name: "auth rejection never downgrades", configure: func(o *LoginOptions) { o.Username, o.Password = "user", "password" }, failures: map[string]error{"cf auth .*": fmt.Errorf("assertion rejected")}, wantCalls: []mock.ExecCall{api, auth}, wantError: "assertion rejected"},
+		{name: "target failure logs out", failures: map[string]error{"cf target .*": fmt.Errorf("target rejected")}, wantCalls: []mock.ExecCall{api, auth, target, logout}, wantError: "target rejected"},
+		{name: "cleanup failure preserves target error", failures: map[string]error{"cf target .*": fmt.Errorf("target rejected"), "cf logout": fmt.Errorf("logout rejected")}, wantCalls: []mock.ExecCall{api, auth, target, logout}, wantError: "target rejected"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			options := LoginOptions{CfAPIEndpoint: "https://cf.example", CfOrg: "org", CfSpace: "space", Assertion: "synthetic-assertion", Origin: "ias-platform"}
+			if tc.configure != nil {
+				tc.configure(&options)
+			}
+			runner := &mock.ExecMockRunner{ShouldFailOnCommand: tc.failures}
+			err := Login(runner, options)
+			if tc.wantError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, "Failed to login to Cloud Foundry: "+tc.wantError)
+			}
+			assert.Equal(t, tc.wantCalls, runner.Calls)
+		})
+	}
 }
