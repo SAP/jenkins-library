@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -146,12 +147,24 @@ allprojects {
         repositories {
             maven {
                 url "{{.ArtifactoryGradlePluginsURL}}"
+                {{- if .ArtifactoryUsername}}
+                credentials {
+                    username = "{{.ArtifactoryUsername}}"
+                    password = "{{.ArtifactoryPassword}}"
+                }
+                {{- end}}
             }
         }
     }
     repositories {
         maven {
             url "{{.ArtifactoryMirrorURL}}"
+            {{- if .ArtifactoryUsername}}
+            credentials {
+                username = "{{.ArtifactoryUsername}}"
+                password = "{{.ArtifactoryPassword}}"
+            }
+            {{- end}}
         }
     }
 }
@@ -243,7 +256,7 @@ func runGradleExecuteBuild(config *gradleExecuteBuildOptions, telemetryData *tel
 	// init scripts (bomInitScriptContentTemplate / publishInitScriptContentTemplate) and do not
 	// need a dependency mirror.
 	if config.UseArtifactoryMirror && config.ArtifactoryMirrorURL != "" && config.ArtifactoryGradlePluginsURL != "" {
-		mirrorInitScriptContent, err := getInitScriptContent(config, mirrorInitScriptContentTemplate)
+		mirrorInitScriptContent, err := getMirrorInitScriptContent(config)
 		if err != nil {
 			return fmt.Errorf("failed to get mirror init script content: %v", err)
 		}
@@ -336,6 +349,31 @@ func publishArtifacts(config *gradleExecuteBuildOptions, utils gradleExecuteBuil
 	}
 	pipelineEnv.custom.artifacts = artifacts
 	return nil
+}
+
+type mirrorInitScriptData struct {
+	ArtifactoryMirrorURL        string
+	ArtifactoryGradlePluginsURL string
+	ArtifactoryUsername         string
+	ArtifactoryPassword         string
+}
+
+func getMirrorInitScriptContent(config *gradleExecuteBuildOptions) (string, error) {
+	data := mirrorInitScriptData{
+		ArtifactoryMirrorURL:        config.ArtifactoryMirrorURL,
+		ArtifactoryGradlePluginsURL: config.ArtifactoryGradlePluginsURL,
+		ArtifactoryUsername:         os.Getenv("PIPER_ARTIFACTORY_USER"),
+		ArtifactoryPassword:         os.Getenv("PIPER_ARTIFACTORY_TOKEN"),
+	}
+	tmpl, err := template.New("mirror").Parse(mirrorInitScriptContentTemplate)
+	if err != nil {
+		return "", err
+	}
+	var generatedCode bytes.Buffer
+	if err = tmpl.Execute(&generatedCode, data); err != nil {
+		return "", err
+	}
+	return generatedCode.String(), nil
 }
 
 func getInitScriptContent(options *gradleExecuteBuildOptions, templateContent string) (string, error) {
