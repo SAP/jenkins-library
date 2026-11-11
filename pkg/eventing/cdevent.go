@@ -9,8 +9,6 @@ import (
 	cdeventsv04 "github.com/cdevents/sdk-go/pkg/api/v04"
 )
 
-// newPipelineRunStartedCDEvent creates a CDEvents PipelineRunStarted event and returns its JSON-serialized CloudEvent bytes.
-// Custom data fields (commitID, repositoryURL, pipelineRunMode, cumulusInformation) can be added via SetCustomData by the consuming team.
 func newPipelineRunStartedCDEvent(source, pipelineName, pipelineURL string) ([]byte, error) {
 	event, err := cdeventsv04.NewPipelineRunStartedEvent()
 	if err != nil {
@@ -35,7 +33,6 @@ func newPipelineRunStartedCDEvent(source, pipelineName, pipelineURL string) ([]b
 	return bytes, nil
 }
 
-// newTaskRunFinishedCDEvent creates a CDEvents TaskRunFinished event and returns its JSON-serialized CloudEvent bytes.
 func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome, stageName string) ([]byte, error) {
 	event, err := cdeventsv04.NewTaskRunFinishedEvent()
 	if err != nil {
@@ -68,9 +65,6 @@ func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome, stageName
 	return bytes, nil
 }
 
-// NewCustomTypeCDEventFromJSON creates a CDEvents CustomType event and returns its JSON-serialized CloudEvent bytes.
-// eventType must be a CDEvents custom type string (e.g. "dev.cdeventsx.piper-pipeline.runstarted.0.1.0").
-// jsonData and additionalJSON are merged into the CDEvent customData field; additionalJSON keys overwrite jsonData keys.
 func NewCustomTypeCDEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
 	cdEventType, err := cdevents.CDEventTypeFromString(eventType)
 	if err != nil {
@@ -115,8 +109,6 @@ func NewCustomTypeCDEventFromJSON(eventType, source, jsonData, additionalJSON st
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert CDEvent to CloudEvent: %w", err)
 	}
-	// AsCloudEvent reads the type from GetType() which always returns the package-level zero-value
-	// for custom events; we override it with the actual event type string from the context.
 	ce.SetType(cdEventType.String())
 
 	b, err := json.Marshal(ce)
