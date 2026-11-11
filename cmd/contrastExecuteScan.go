@@ -61,7 +61,9 @@ func validateConfigs(config *contrastExecuteScanOptions) error {
 		}
 	}
 
-	if !strings.HasPrefix(config.Server, "https://") {
+	if strings.HasPrefix(config.Server, "http://") {
+		log.Entry().Warn("Server URL uses http:// — credentials will be transmitted in cleartext. Use https:// in production.")
+	} else if !strings.HasPrefix(config.Server, "https://") {
 		config.Server = "https://" + config.Server
 	}
 
@@ -129,13 +131,23 @@ func runContrastExecuteScan(config *contrastExecuteScanOptions, telemetryData *t
 		log.Entry().Errorf("error while getting vulns")
 		return nil, err
 	}
-
+	var serverInfos []contrast.ServerInfo
+	for _, s := range agentSetup.Servers {
+		serverInfos = append(serverInfos, s.ToServerInfo())
+	}
 	contrastAudit := contrast.ContrastAudit{
-		ToolName:             "contrast",
-		ApplicationUrl:       appInfo.Url,
-		ScanResults:          findings,
-		RouteDiscoveredCount: agentSetup.RouteDiscoveredCount,
-		RouteExercisedCount:  agentSetup.RouteExercisedCount,
+		ToolName:                     "contrast",
+		ApplicationUrl:               appInfo.Url,
+		ScanResults:                  findings,
+		SessionMetadataVersion:       config.SessionMetadataVersion,
+		RouteTotalCount:              agentSetup.RouteTotalCount,
+		RouteDiscoveredCount:         agentSetup.RouteDiscoveredCount,
+		RouteExercisedCount:          agentSetup.RouteExercisedCount,
+		RouteCoveragePct:             agentSetup.RouteCoveragePct,
+		RouteCoverageThreshold:       config.RouteCoverageThreshold,
+		ConnectedServers:             agentSetup.ConnectedServers,
+		Servers:                      serverInfos,
+		AgentInactivityThresholdDays: config.AgentInactivityThresholdDays,
 	}
 	jsonData, err := json.Marshal(contrastAudit)
 	if err != nil {
@@ -219,8 +231,11 @@ func enforceComplianceThresholds(config *contrastExecuteScanOptions, setup *agen
 
 type agentSetupResult struct {
 	RouteCoveragePct         *float64
+	RouteTotalCount          *int
 	RouteDiscoveredCount     *int
 	RouteExercisedCount      *int
+	ConnectedServers         *int
+	Servers                  []contrast.ServerResource
 	ConnectedServerViolation error
 	InactivityViolation      error
 	RouteCoverageViolation   error
@@ -240,14 +255,18 @@ func checkAgentSetup(client *contrast.Client, config *contrastExecuteScanOptions
 	}
 
 	// Check 1: Are there any servers?
-	if len(servers) == 0 {
+	serversCount := len(servers)
+	result.ConnectedServers = &serversCount
+	result.Servers = servers
+
+	if serversCount == 0 {
 		msg := fmt.Sprintf("application %s has no servers or agents connected in organization %s. "+
 			"Please finish your Contrast agent setup before running this step.",
 			config.ApplicationID, config.OrganizationID)
 		log.Entry().Warn(msg)
 		result.ConnectedServerViolation = errors.New(msg)
 	}
-	log.Entry().Infof("Agent check: %d server(s) connected to the application.", len(servers))
+	log.Entry().Infof("Agent check: %d server(s) connected to the application.", serversCount)
 
 	// Check 2: When was the last server active?
 	if config.AgentInactivityThresholdDays > 0 {
@@ -292,6 +311,7 @@ func checkRouteCoverage(client *contrast.Client, config *contrastExecuteScanOpti
 		log.Entry().Warnf("Could not retrieve route coverage: %v", err)
 		return
 	}
+	result.RouteTotalCount = &coverage.Count
 	result.RouteDiscoveredCount = &coverage.DiscoveredCount
 	result.RouteExercisedCount = &coverage.ExercisedCount
 	if coverage.Count == 0 {

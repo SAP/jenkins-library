@@ -3,6 +3,7 @@ package contrast
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -10,11 +11,40 @@ import (
 )
 
 type ContrastAudit struct {
-	ToolName             string             `json:"toolName"`
-	ApplicationUrl       string             `json:"applicationUrl"`
-	ScanResults          []ContrastFindings `json:"findings"`
-	RouteDiscoveredCount *int               `json:"routeDiscoveredCount,omitempty"`
-	RouteExercisedCount  *int               `json:"routeExercisedCount,omitempty"`
+	ToolName                     string             `json:"toolName"`
+	ApplicationUrl               string             `json:"applicationUrl"`
+	ScanResults                  []ContrastFindings `json:"findings"`
+	RouteTotalCount              *int               `json:"routeTotalCount,omitempty"`
+	RouteDiscoveredCount         *int               `json:"routeDiscoveredCount,omitempty"`
+	RouteExercisedCount          *int               `json:"routeExercisedCount,omitempty"`
+	RouteCoveragePct             *float64           `json:"routeCoveragePct,omitempty"`
+	RouteCoverageThreshold       int                `json:"routeCoverageThreshold"`
+	AgentInactivityThresholdDays int                `json:"agentInactivityThresholdDays"`
+	ConnectedServers             *int               `json:"connectedServers,omitempty"`
+	Servers                      []ServerInfo       `json:"servers,omitempty"`
+	SessionMetadataVersion       string             `json:"sessionMetadataVersion,omitempty"`
+}
+
+// ServerInfo is a summary of one server/agent instance connected to the application.
+type ServerInfo struct {
+	Name         string `json:"name"`
+	Hostname     string `json:"hostname"`
+	LastActivity string `json:"lastActivity"`
+	Status       string `json:"status"`
+}
+
+// ToServerInfo converts a ServerResource API response into a ServerInfo report entry.
+func (r ServerResource) ToServerInfo() ServerInfo {
+	lastActivity := ""
+	if r.LastActivity > 0 {
+		lastActivity = time.UnixMilli(r.LastActivity).UTC().Format(time.RFC3339)
+	}
+	return ServerInfo{
+		Name:         r.Name,
+		Hostname:     r.Hostname,
+		LastActivity: lastActivity,
+		Status:       r.Status,
+	}
 }
 
 type ContrastFindings struct {

@@ -84,6 +84,14 @@ func TestValidateConfigs(t *testing.T) {
 		assert.Equal(t, config.Server, "https://server.com")
 	})
 
+	t.Run("Valid config, server url with http:// is not double-prefixed", func(t *testing.T) {
+		config := validConfig
+		config.Server = "http://server.com"
+		err := validateConfigs(&config)
+		assert.NoError(t, err)
+		assert.Equal(t, "http://server.com", config.Server)
+	})
+
 	t.Run("Empty config", func(t *testing.T) {
 		config := contrastExecuteScanOptions{}
 
@@ -266,12 +274,14 @@ func newMockContrastClient(server *httptest.Server) *contrast.Client {
 
 func newMockConfig(serverURL string) *contrastExecuteScanOptions {
 	return &contrastExecuteScanOptions{
-		UserAPIKey:     mockContrastAPIKey,
-		ServiceKey:     mockContrastServiceKey,
-		Username:       mockContrastUsername,
-		OrganizationID: mockContrastOrgID,
-		Server:         serverURL,
-		ApplicationID:  mockContrastAppID,
+		UserAPIKey:                   mockContrastAPIKey,
+		ServiceKey:                   mockContrastServiceKey,
+		Username:                     mockContrastUsername,
+		OrganizationID:               mockContrastOrgID,
+		Server:                       serverURL,
+		ApplicationID:                mockContrastAppID,
+		RouteCoverageThreshold:       60,
+		AgentInactivityThresholdDays: 7,
 	}
 }
 
@@ -348,6 +358,7 @@ func TestCheckRouteCoverage(t *testing.T) {
 		assert.NotNil(t, result.RouteCoverageViolation)
 		assert.NotNil(t, result.RouteCoveragePct)
 		assert.InDelta(t, 20.0, *result.RouteCoveragePct, 0.1)
+		assert.Equal(t, 100, *result.RouteTotalCount)
 		assert.Equal(t, 80, *result.RouteDiscoveredCount)
 		assert.Equal(t, 20, *result.RouteExercisedCount)
 	})
@@ -423,23 +434,44 @@ func TestCheckForComplianceWithNewThresholds(t *testing.T) {
 }
 
 func TestContrastAuditJSONReport(t *testing.T) {
-	t.Run("Route counts included in JSON when present", func(t *testing.T) {
-		discovered := 100
+	t.Run("All fields included in JSON when present", func(t *testing.T) {
+		total := 100
+		discoveredCount := 75
 		exercised := 80
+		pct := 80.0
+		connectedServers := 2
 		audit := contrast.ContrastAudit{
-			ToolName:             "contrast",
-			ApplicationUrl:       "https://example.com",
-			ScanResults:          []contrast.ContrastFindings{},
-			RouteDiscoveredCount: &discovered,
-			RouteExercisedCount:  &exercised,
+			ToolName:                     "contrast",
+			ApplicationUrl:               "https://example.com",
+			ScanResults:                  []contrast.ContrastFindings{},
+			RouteTotalCount:              &total,
+			RouteDiscoveredCount:         &discoveredCount,
+			RouteExercisedCount:          &exercised,
+			RouteCoveragePct:             &pct,
+			RouteCoverageThreshold:       60,
+			AgentInactivityThresholdDays: 7,
+			ConnectedServers:             &connectedServers,
+			Servers: []contrast.ServerInfo{
+				{Name: "srv1", Hostname: "host1", LastActivity: "2023-11-14T22:13:20Z", Status: "ONLINE"},
+			},
+			SessionMetadataVersion: "1.2.3",
 		}
 		data, err := json.Marshal(audit)
 		assert.NoError(t, err)
-		assert.Contains(t, string(data), `"routeDiscoveredCount":100`)
-		assert.Contains(t, string(data), `"routeExercisedCount":80`)
+		s := string(data)
+		assert.Contains(t, s, `"routeTotalCount":100`)
+		assert.Contains(t, s, `"routeDiscoveredCount":75`)
+		assert.Contains(t, s, `"routeExercisedCount":80`)
+		assert.Contains(t, s, `"routeCoveragePct":80`)
+		assert.Contains(t, s, `"routeCoverageThreshold":60`)
+		assert.Contains(t, s, `"agentInactivityThresholdDays":7`)
+		assert.Contains(t, s, `"connectedServers":2`)
+		assert.Contains(t, s, `"name":"srv1"`)
+		assert.Contains(t, s, `"hostname":"host1"`)
+		assert.Contains(t, s, `"sessionMetadataVersion":"1.2.3"`)
 	})
 
-	t.Run("Route counts omitted from JSON when nil", func(t *testing.T) {
+	t.Run("Optional fields omitted from JSON when absent; thresholds always present", func(t *testing.T) {
 		audit := contrast.ContrastAudit{
 			ToolName:       "contrast",
 			ApplicationUrl: "https://example.com",
@@ -447,8 +479,16 @@ func TestContrastAuditJSONReport(t *testing.T) {
 		}
 		data, err := json.Marshal(audit)
 		assert.NoError(t, err)
-		assert.NotContains(t, string(data), "routeDiscoveredCount")
-		assert.NotContains(t, string(data), "routeExercisedCount")
+		s := string(data)
+		assert.NotContains(t, s, "routeTotalCount")
+		assert.NotContains(t, s, "routeDiscoveredCount")
+		assert.NotContains(t, s, "routeExercisedCount")
+		assert.NotContains(t, s, "routeCoveragePct")
+		assert.Contains(t, s, `"routeCoverageThreshold":0`)
+		assert.Contains(t, s, `"agentInactivityThresholdDays":0`)
+		assert.NotContains(t, s, "connectedServers")
+		assert.NotContains(t, s, "servers")
+		assert.NotContains(t, s, "sessionMetadataVersion")
 	})
 }
 
