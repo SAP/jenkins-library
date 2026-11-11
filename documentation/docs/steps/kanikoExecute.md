@@ -62,6 +62,18 @@ Without both `--env` and `--build-arg` configured, the `ARG` in your Dockerfile 
 
 ## ${docGenParameters}
 
+## Syft configuration
+
+Set `SYFT_CONFIG` in the environment running Piper to select a Syft configuration file. For Jenkins container execution:
+
+```yaml
+steps:
+  kanikoExecute:
+    createBOM: true
+    dockerEnvVars:
+      SYFT_CONFIG: .pipeline/syft.yaml
+```
+
 ## ${docGenConfiguration}
 
 ## Build artifact metadata
