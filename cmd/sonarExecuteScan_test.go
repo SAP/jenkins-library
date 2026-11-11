@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -487,6 +488,8 @@ func TestRunSonarRetry(t *testing.T) {
 	mockDownloadClient := mockDownloader{shouldFail: false}
 	fileUtilsExists = mockFileUtilsExists(true)
 	defer func() { fileUtilsExists = piperutils.FileExists }()
+	sleepFunc = func(time.Duration) {}
+	defer func() { sleepFunc = time.Sleep }()
 
 	apiClient := &piperHttp.Client{}
 	apiClient.SetOptions(piperHttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})

@@ -56,6 +56,8 @@ var (
 const MAX_RETRIES = 4
 const BACKOFF_SECONDS = 40
 
+var sleepFunc = time.Sleep
+
 var NETWORK_ISSUES = []string{
 	"java.net.ConnectException",
 	"java.net.SocketException",
@@ -220,7 +222,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		if i != MAX_RETRIES-1 && isNetworkIssue(stderrBuf.String()) {
 			sleepTime := time.Duration(math.Pow(2, float64(i))*BACKOFF_SECONDS) * time.Second
 			log.Entry().Infof("Delaying for %v before next retry...", sleepTime)
-			time.Sleep(sleepTime)
+			sleepFunc(sleepTime)
 		} else {
 			return err
 		}
