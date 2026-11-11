@@ -28,7 +28,104 @@ func TestCloudFoundryLogin(t *testing.T) {
 
 		cfconfig := LoginOptions{}
 		err := Login(m, cfconfig)
-		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
+		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org and Space")
+	})
+	t.Run("CF Login: token authentication", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Token:         "testToken",
+			TokenOrigin:   "testOrigin",
+		}
+		err := Login(m, cfconfig)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
+				{Exec: "cf", Params: []string{"auth", "--assertion", "testToken", "--origin", "testOrigin"}},
+				{Exec: "cf", Params: []string{"target", "-o", "testOrg", "-s", "testSpace"}},
+			}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login: token authentication without origin", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Token:         "testToken",
+		}
+		err := Login(m, cfconfig)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
+				{Exec: "cf", Params: []string{"auth", "--assertion", "testToken"}},
+				{Exec: "cf", Params: []string{"target", "-o", "testOrg", "-s", "testSpace"}},
+			}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login: token failure does not fall back to user credentials", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		m.ShouldFailOnCommand = map[string]error{"cf auth .*": fmt.Errorf("invalid assertion")}
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Username:      "testUser",
+			Password:      "testPassword",
+			Token:         "testToken",
+		}
+		err := Login(m, cfconfig)
+		if assert.EqualError(t, err, "Failed to login to Cloud Foundry: invalid assertion") {
+			assert.Equal(t, []mock.ExecCall{
+				{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
+				{Exec: "cf", Params: []string{"auth", "--assertion", "testToken"}},
+			}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login: token takes precedence over user credentials", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+			Username:      "testUser",
+			Password:      "testPassword",
+			Token:         "testToken",
+		}
+		err := Login(m, cfconfig)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Exec: "cf", Params: []string{"api", "https://api.endpoint.com"}},
+				{Exec: "cf", Params: []string{"auth", "--assertion", "testToken"}},
+				{Exec: "cf", Params: []string{"target", "-o", "testOrg", "-s", "testSpace"}},
+			}, m.Calls)
+		}
+	})
+
+	t.Run("CF Login: missing authentication credentials", func(t *testing.T) {
+
+		defer loginMockCleanup(m)
+
+		cfconfig := LoginOptions{
+			CfAPIEndpoint: "https://api.endpoint.com",
+			CfSpace:       "testSpace",
+			CfOrg:         "testOrg",
+		}
+		err := Login(m, cfconfig)
+		assert.EqualError(t, err, "Failed to login to Cloud Foundry: Parameters missing. Please provide a token or Username and Password")
 	})
 
 	t.Run("CF Login: failure", func(t *testing.T) {

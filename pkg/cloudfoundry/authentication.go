@@ -8,9 +8,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-var errMissingAuth = errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
+var (
+	errMissingTarget = errors.New("Parameters missing. Please provide the Cloud Foundry Endpoint, Org and Space")
+	errMissingAuth   = errors.New("Parameters missing. Please provide a token or Username and Password")
+)
 
-// Login logs the current user in to Cloud Foundry with username/password credentials.
+// Login logs the current user in to Cloud Foundry.
+// It uses an assertion token when one is provided; otherwise it uses username/password credentials.
 func Login(runner command.ExecRunner, options LoginOptions) error {
 	if err := validateLoginOptions(options); err != nil {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
@@ -19,7 +23,13 @@ func Login(runner command.ExecRunner, options LoginOptions) error {
 	log.Entry().Info("Logging in to Cloud Foundry")
 	log.Entry().WithField("cfAPI:", options.CfAPIEndpoint).WithField("cfOrg", options.CfOrg).WithField("space", options.CfSpace).Info("Logging into Cloud Foundry..")
 
-	if err := loginWithCredentials(runner, options); err != nil {
+	var err error
+	if options.Token != "" {
+		err = loginWithToken(runner, options)
+	} else {
+		err = loginWithCredentials(runner, options)
+	}
+	if err != nil {
 		return fmt.Errorf("Failed to login to Cloud Foundry: %w", err)
 	}
 
@@ -28,7 +38,10 @@ func Login(runner command.ExecRunner, options LoginOptions) error {
 }
 
 func validateLoginOptions(options LoginOptions) error {
-	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.Username == "" || options.Password == "" {
+	if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" {
+		return errMissingTarget
+	}
+	if options.Token == "" && (options.Username == "" || options.Password == "") {
 		return errMissingAuth
 	}
 	return nil
@@ -45,6 +58,22 @@ func loginWithCredentials(runner command.ExecRunner, options LoginOptions) error
 	}, options.CfLoginOpts...)
 
 	return runner.RunExecutable("cf", args...)
+}
+
+func loginWithToken(runner command.ExecRunner, options LoginOptions) error {
+	if err := runner.RunExecutable("cf", "api", options.CfAPIEndpoint); err != nil {
+		return err
+	}
+
+	authArgs := []string{"auth", "--assertion", options.Token}
+	if options.TokenOrigin != "" {
+		authArgs = append(authArgs, "--origin", options.TokenOrigin)
+	}
+	if err := runner.RunExecutable("cf", authArgs...); err != nil {
+		return err
+	}
+
+	return runner.RunExecutable("cf", "target", "-o", options.CfOrg, "-s", options.CfSpace)
 }
 
 // Logout logs the current user out of Cloud Foundry.
@@ -66,5 +95,7 @@ type LoginOptions struct {
 	CfSpace       string
 	Username      string
 	Password      string
+	Token         string
+	TokenOrigin   string
 	CfLoginOpts   []string
 }

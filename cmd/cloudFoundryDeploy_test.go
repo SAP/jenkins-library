@@ -68,6 +68,28 @@ func TestCfDeployment(t *testing.T) {
 		config = defaultConfig
 	}
 
+	t.Run("deploy with token authentication", func(t *testing.T) {
+		defer cleanup()
+
+		config.Token = "testToken"
+		config.TokenOrigin = "testOrigin"
+		s := mock.ExecMockRunner{}
+
+		err := cfDeploy(&config, []string{"push", "testApp"}, nil, &s)
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Exec: "cf", Params: []string{"version"}},
+				{Exec: "cf", Params: []string{"api", config.APIEndpoint}},
+				{Exec: "cf", Params: []string{"auth", "--assertion", "testToken", "--origin", "testOrigin"}},
+				{Exec: "cf", Params: []string{"target", "-o", config.Org, "-s", config.Space}},
+				{Exec: "cf", Params: []string{"plugins"}},
+				{Exec: "cf", Params: []string{"push", "testApp"}},
+				{Exec: "cf", Params: []string{"logout"}},
+			}, s.Calls)
+		}
+	})
+
 	t.Run("Test invalid appname", func(t *testing.T) {
 
 		defer cleanup()
