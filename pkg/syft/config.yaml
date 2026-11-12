@@ -1,0 +1,100 @@
+dev:
+    profile: ""
+output:
+    - json
+format:
+    pretty: null
+    template:
+        path: ""
+        legacy: false
+    json:
+        legacy: false
+        pretty: false
+    spdx-json:
+        pretty: false
+    cyclonedx-json:
+        pretty: false
+    cyclonedx-xml:
+        pretty: false
+check-for-app-update: true
+default-catalogers: []
+select-catalogers: []
+package:
+    search-unindexed-archives: false
+    search-indexed-archives: true
+    exclude-binary-overlap-by-ownership: true
+license:
+    include-unknown-license-content: false
+    license-coverage: 75
+file:
+    metadata:
+        selection: all
+        digests:
+            - sha512
+    content:
+        skip-files-above-size: 256000
+        globs: []
+    executable:
+        globs: []
+scope: squashed
+parallelism: 0
+relationships:
+    package-file-ownership: true
+    package-file-ownership-overlap: true
+compliance:
+    missing-name: drop
+    missing-version: stub
+enrich: []
+dotnet:
+    dep-packages-must-have-dll: false
+    dep-packages-must-claim-dll: true
+    relax-dll-claims-when-bundling-detected: true
+golang:
+    search-local-mod-cache-licenses: null
+    local-mod-cache-dir: null
+    search-local-vendor-licenses: null
+    local-vendor-dir: ""
+    search-remote-licenses: null
+    proxy: https://proxy.golang.org,direct
+    no-proxy: ""
+    main-module-version:
+        from-ld-flags: true
+        from-contents: true
+        from-build-settings: true
+java:
+    use-network: null
+    use-maven-local-repository: null
+    maven-local-repository-dir: null
+    maven-url: https://repo1.maven.org/maven2
+    max-parent-recursive-depth: 0
+    resolve-transitive-dependencies: false
+javascript:
+    search-remote-licenses: null
+    npm-base-url: ""
+    include-dev-dependencies: null
+linux-kernel:
+    catalog-modules: true
+python:
+    guess-unpinned-requirements: false
+registry:
+    insecure-skip-tls-verify: false
+    insecure-use-http: false
+    auth: []
+    ca-cert: ""
+from: []
+platform: ""
+source:
+    name: ""
+    version: ""
+    base-path: ""
+    file:
+        digests:
+            - SHA-256
+    image:
+        default-pull-source: ""
+        max-layer-size: ""
+exclude: []
+unknowns:
+    remove-when-packages-defined: true
+    executables-without-packages: true
+    unexpanded-archives: true

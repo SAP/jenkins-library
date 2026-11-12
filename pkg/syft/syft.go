@@ -3,6 +3,7 @@ package syft
 import (
 	"archive/tar"
 	"compress/gzip"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io"
@@ -15,8 +16,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
+const configFileName = "config.yaml"
+
+//go:embed config.yaml
+var configContent []byte
+
 type SyftScanner struct {
 	syftFile       string
+	configFile     string
 	additionalArgs []string
 }
 
@@ -43,7 +50,12 @@ func CreateSyftScanner(syftDownloadURL string, fileUtils piperutils.FileUtils, h
 		return nil, fmt.Errorf("failed to install syft: %w", err)
 	}
 
-	return &SyftScanner{syftFile: syftFile}, nil
+	configFile := filepath.Join(tmpDir, configFileName)
+	if err := fileUtils.WriteFile(configFile, configContent, 0600); err != nil {
+		return nil, fmt.Errorf("failed to write syft config: %w", err)
+	}
+
+	return &SyftScanner{syftFile: syftFile, configFile: configFile}, nil
 }
 
 func (s *SyftScanner) AddArgument(arg string) {
@@ -71,6 +83,7 @@ func (s *SyftScanner) ScanImages(dockerConfigDir string, execRunner command.Exec
 			// These are detected as "Simple Launcher" without a PURL, causing SBOM validation failures.
 			// The glob covers distlib/ and versioned variants (distlib-x.y.z/) at any depth.
 			"--exclude=**/{distlib,distlib-*}/**/*.exe",
+			"--config", s.configFile,
 		}
 		args = append(args, s.additionalArgs...)
 		err := execRunner.RunExecutable(s.syftFile, args...)
@@ -99,6 +112,7 @@ func (s *SyftScanner) ScanImageTo(dockerConfigDir string, execRunner command.Exe
 		"-o", fmt.Sprintf("cyclonedx-xml%s=%s", cyclonedxFormatForSyft, outputFile),
 		"-q",
 		"--exclude=**/{distlib,distlib-*}/**/*.exe",
+		"--config", s.configFile,
 	}
 	args = append(args, extraArgs...)
 	if err := execRunner.RunExecutable(s.syftFile, args...); err != nil {

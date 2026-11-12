@@ -64,6 +64,10 @@ Without both `--env` and `--build-arg` configured, the `ARG` in your Dockerfile 
 
 ## ${docGenConfiguration}
 
+## Syft configuration
+
+SBOM generation uses the bundled `config.yaml` profile, written beside the temporary Syft binary and passed with `--config`. The same profile is used by `helmBuild` and `cnbBuild'.
+
 ## Build artifact metadata
 
 **Default changed:** `createBuildArtifactsMetadata` was previously `false` and is now `true` by default. The step now writes artifact coordinates to `commonPipelineEnvironment/custom/dockerBuildArtifacts` on every run. Downstream steps such as OSC CTP scans consume this data.

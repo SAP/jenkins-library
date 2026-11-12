@@ -37,6 +37,11 @@ func TestGenerateSBOM(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.True(t, fileMock.HasFile("/tmp/syfttest/syft"))
+		config, err := fileMock.ReadFile("/tmp/syfttest/config.yaml")
+		assert.NoError(t, err)
+		assert.Contains(t, string(config), "selection: all")
+		assert.Contains(t, string(config), "- sha512")
+		assert.Contains(t, string(config), "from-contents: true")
 		fi, err := fileMock.Stat("/tmp/syfttest/syft")
 		assert.NoError(t, err)
 		assert.Equal(t, fi.Mode().Perm().String(), "-rwxr-xr-x")
@@ -44,22 +49,30 @@ func TestGenerateSBOM(t *testing.T) {
 		assert.Len(t, execMock.Calls, 2)
 		firstCall := execMock.Calls[0]
 		assert.Equal(t, firstCall.Exec, "/tmp/syfttest/syft")
-		assert.Equal(t, firstCall.Params, []string{"scan", "registry:my-registry/image:latest", "-o", "cyclonedx-xml@1.4=bom-docker-0.xml", "-q", "--exclude=**/{distlib,distlib-*}/**/*.exe"})
+		assert.Equal(t, firstCall.Params, []string{"scan", "registry:my-registry/image:latest", "-o", "cyclonedx-xml@1.4=bom-docker-0.xml", "-q", "--exclude=**/{distlib,distlib-*}/**/*.exe", "--config", "/tmp/syfttest/config.yaml"})
 
 		secondCall := execMock.Calls[1]
 		assert.Equal(t, secondCall.Exec, "/tmp/syfttest/syft")
-		assert.Equal(t, secondCall.Params, []string{"scan", "registry:my-registry/image:1.2.3", "-o", "cyclonedx-xml@1.4=bom-docker-1.xml", "-q", "--exclude=**/{distlib,distlib-*}/**/*.exe"})
+		assert.Equal(t, secondCall.Params, []string{"scan", "registry:my-registry/image:1.2.3", "-o", "cyclonedx-xml@1.4=bom-docker-1.xml", "-q", "--exclude=**/{distlib,distlib-*}/**/*.exe", "--config", "/tmp/syfttest/config.yaml"})
 	})
 
 	t.Run("error case: syft execution failed", func(t *testing.T) {
 		execMock = mock.ExecMockRunner{}
 		execMock.ShouldFailOnCommand = map[string]error{
-			"/tmp/syfttest/syft scan registry:my-registry/image:latest -o cyclonedx-xml@1.4=bom-docker-0.xml -q --exclude=**/{distlib,distlib-*}/**/*.exe": errors.New("failed"),
+			"/tmp/syfttest/syft scan registry:my-registry/image:latest -o cyclonedx-xml@1.4=bom-docker-0.xml -q --exclude=**/{distlib,distlib-*}/**/*.exe --config /tmp/syfttest/config.yaml": errors.New("failed"),
 		}
 
 		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &execMock, &fileMock, client, "https://my-registry", []string{"image:latest"})
 		assert.Error(t, err)
 		assert.Equal(t, "failed to generate SBOM: failed", err.Error())
+	})
+
+	t.Run("error case: failed to write config", func(t *testing.T) {
+		files := mock.FilesMock{FileWriteError: errors.New("write failed")}
+		runner := mock.ExecMockRunner{}
+		err := syft.GenerateSBOM("http://test-syft-gh-release.com/syft.tar.gz", "", &runner, &files, client, "my-registry", []string{"image:latest"})
+		assert.EqualError(t, err, "failed to write syft config: write failed")
+		assert.Empty(t, runner.Calls)
 	})
 
 	t.Run("error case: no registry", func(t *testing.T) {
@@ -120,6 +133,7 @@ func TestScanImageTo(t *testing.T) {
 			"scan", "registry:my-registry/image:1.0",
 			"-o", "cyclonedx-xml@1.4=bom-docker-linux-arm64.xml",
 			"-q", "--exclude=**/{distlib,distlib-*}/**/*.exe",
+			"--config", "/tmp/syfttest/config.yaml",
 			"--platform=linux/arm64",
 		}, call.Params)
 	})
@@ -153,6 +167,7 @@ func TestScanImageTo(t *testing.T) {
 			"scan", "registry:my-registry/image:1.0",
 			"-o", "cyclonedx-xml@1.4=bom-docker-0.xml",
 			"-q", "--exclude=**/{distlib,distlib-*}/**/*.exe",
+			"--config", "/tmp/syfttest/config.yaml",
 		}, call.Params)
 	})
 
