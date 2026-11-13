@@ -88,7 +88,7 @@ func TestNewCustomTypeCDEventFromJSON(t *testing.T) {
 	const validEventType = "dev.cdeventsx.piper-pipeline.runstarted.0.1.0"
 
 	t.Run("creates valid CDEvent as CloudEvent", func(t *testing.T) {
-		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", `{"key":"value"}`, "")
+		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id", `{"key":"value"}`, "")
 		assert.NoError(t, err)
 
 		var result map[string]any
@@ -108,8 +108,23 @@ func TestNewCustomTypeCDEventFromJSON(t *testing.T) {
 		assert.Equal(t, "application/json", data["customDataContentType"])
 	})
 
+	t.Run("subject.id is set to the provided subjectID", func(t *testing.T) {
+		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "pipeline-run-42", "", "")
+		assert.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(bytes, &result)
+		assert.NoError(t, err)
+
+		data, ok := result["data"].(map[string]any)
+		assert.True(t, ok)
+		subject, ok := data["subject"].(map[string]any)
+		assert.True(t, ok)
+		assert.Equal(t, "pipeline-run-42", subject["id"])
+	})
+
 	t.Run("merges additional JSON data", func(t *testing.T) {
-		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source",
+		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id",
 			`{"key":"value"}`,
 			`{"extra":"data"}`,
 		)
@@ -126,7 +141,7 @@ func TestNewCustomTypeCDEventFromJSON(t *testing.T) {
 	})
 
 	t.Run("additional data overwrites existing keys", func(t *testing.T) {
-		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source",
+		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id",
 			`{"key":"original"}`,
 			`{"key":"overwritten"}`,
 		)
@@ -142,7 +157,7 @@ func TestNewCustomTypeCDEventFromJSON(t *testing.T) {
 	})
 
 	t.Run("no customData when both inputs are empty", func(t *testing.T) {
-		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "", "")
+		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id", "", "")
 		assert.NoError(t, err)
 
 		var result map[string]any
@@ -155,20 +170,35 @@ func TestNewCustomTypeCDEventFromJSON(t *testing.T) {
 		assert.False(t, hasCustomData)
 	})
 
+	t.Run("only additionalEventData set produces customData", func(t *testing.T) {
+		bytes, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id", "", `{"only":"additional"}`)
+		assert.NoError(t, err)
+
+		var result map[string]any
+		err = json.Unmarshal(bytes, &result)
+		assert.NoError(t, err)
+
+		data, ok := result["data"].(map[string]any)
+		assert.True(t, ok)
+		customData, ok := data["customData"].(map[string]any)
+		assert.True(t, ok)
+		assert.Equal(t, "additional", customData["only"])
+	})
+
 	t.Run("returns error on invalid CDEvent type string", func(t *testing.T) {
-		_, err := NewCustomTypeCDEventFromJSON("not-a-cdevent-type", "test/source", "", "")
+		_, err := NewCustomTypeCDEventFromJSON("not-a-cdevent-type", "test/source", "my-run-id", "", "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid CDEvent type")
 	})
 
 	t.Run("returns error on invalid eventData JSON", func(t *testing.T) {
-		_, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "not-json", "")
+		_, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id", "not-json", "")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid JSON")
 	})
 
 	t.Run("returns error on invalid additionalEventData JSON", func(t *testing.T) {
-		_, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", `{"key":"value"}`, "not-json")
+		_, err := NewCustomTypeCDEventFromJSON(validEventType, "test/source", "my-run-id", `{"key":"value"}`, "not-json")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid JSON")
 	})

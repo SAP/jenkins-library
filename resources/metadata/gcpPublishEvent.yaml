@@ -63,7 +63,7 @@ spec:
           - STAGES
           - STEPS
       - name: eventSource
-        description: The events source as defined by CDEvents.
+        description: The event producer URI as defined by the CDEvents spec (e.g. '/default/org.myteam.piper').
         type: "string"
         scope:
           - GENERAL
@@ -77,12 +77,12 @@ spec:
           - PARAMETERS
       - name: eventData
         type: string
-        description: Data to be merged with the generated data for the cloud event data field (JSON)
+        description: JSON string set as the event's customData. Merged with additionalEventData if both are provided.
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/eventData
       - name: additionalEventData
-        description: Data (formatted as JSON string) to add to eventData. This can be used to enrich eventData that comes from the pipeline environment.
+        description: JSON string merged on top of eventData. Values here overwrite matching keys in eventData. Must be passed as a direct parameter.
         type: string
         scope:
           - PARAMETERS

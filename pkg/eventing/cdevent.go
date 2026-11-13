@@ -3,7 +3,6 @@ package eventing
 import (
 	"encoding/json"
 	"fmt"
-	"maps"
 
 	cdevents "github.com/cdevents/sdk-go/pkg/api"
 	cdeventsv04 "github.com/cdevents/sdk-go/pkg/api/v04"
@@ -68,7 +67,7 @@ func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome, stageName
 	return bytes, nil
 }
 
-func NewCustomTypeCDEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
+func NewCustomTypeCDEventFromJSON(eventType, source, subjectID, jsonData, additionalJSON string) ([]byte, error) {
 	cdEventType, err := cdevents.CDEventTypeFromString(eventType)
 	if err != nil {
 		return nil, fmt.Errorf("invalid CDEvent type %q: %w", eventType, err)
@@ -80,26 +79,13 @@ func NewCustomTypeCDEventFromJSON(eventType, source, jsonData, additionalJSON st
 	}
 
 	event.SetSource(source)
-	event.SetSubjectId(source)
+	event.SetSubjectId(subjectID)
 	event.SetSubjectContent(map[string]any{})
 	event.SetEventType(*cdEventType)
 
-	var dataMap map[string]any
-	if jsonData != "" {
-		if err = json.Unmarshal([]byte(jsonData), &dataMap); err != nil {
-			return nil, fmt.Errorf("eventData is invalid JSON: %w", err)
-		}
-	}
-
-	if additionalJSON != "" {
-		var additional map[string]any
-		if err = json.Unmarshal([]byte(additionalJSON), &additional); err != nil {
-			return nil, fmt.Errorf("additionalEventData is invalid JSON: %w", err)
-		}
-		if dataMap == nil {
-			dataMap = make(map[string]any)
-		}
-		maps.Copy(dataMap, additional)
+	dataMap, err := mergeJSONInputs(jsonData, additionalJSON)
+	if err != nil {
+		return nil, err
 	}
 
 	if dataMap != nil {

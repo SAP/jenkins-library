@@ -36,7 +36,7 @@ func gcpPublishEvent(cfg gcpPublishEventOptions, telemetryData *telemetry.Custom
 }
 
 func runGcpPublishEvent(publisher gcp.PubsubClient, cfg *gcpPublishEventOptions) error {
-	data, err := eventing.NewCustomTypeCDEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
+	data, err := eventing.NewCustomTypeCDEventFromJSON(cfg.EventType, cfg.EventSource, cfg.EventSource, cfg.EventData, cfg.AdditionalEventData)
 	if err != nil {
 		return fmt.Errorf("failed to create event data: %w", err)
 	}
