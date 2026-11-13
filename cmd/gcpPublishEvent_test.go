@@ -24,7 +24,7 @@ func TestRunGcpPublishEvent(t *testing.T) {
 		t.Parallel()
 		publisher := &mockPubsubClient{}
 		cfg := &gcpPublishEventOptions{
-			EventType:   "PipelineRunStarted",
+			EventType:   "dev.cdeventsx.piper-pipeline.runstarted.0.1.0",
 			EventSource: "unittest",
 			Topic:       "test-topic",
 		}
@@ -37,7 +37,7 @@ func TestRunGcpPublishEvent(t *testing.T) {
 		t.Parallel()
 		publisher := &mockPubsubClient{publishErr: errors.New("failed to send request")}
 		cfg := &gcpPublishEventOptions{
-			EventType:   "PipelineRunStarted",
+			EventType:   "dev.cdeventsx.piper-pipeline.runstarted.0.1.0",
 			EventSource: "unittest",
 			Topic:       "test-topic",
 		}

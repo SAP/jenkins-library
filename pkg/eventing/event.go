@@ -30,16 +30,13 @@ func newEvent(eventType, source string, data any) ([]byte, error) {
 	return bytes, nil
 }
 
-// NewEventFromJSON creates a CloudEvent v1.0 from JSON string data, optionally merging
-// additional JSON data into the event payload. Returns the serialized CloudEvent bytes.
-func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
+func mergeJSONInputs(jsonData, additionalJSON string) (map[string]any, error) {
 	var dataMap map[string]any
 	if jsonData != "" {
 		if err := json.Unmarshal([]byte(jsonData), &dataMap); err != nil {
 			return nil, fmt.Errorf("eventData is invalid JSON: %w", err)
 		}
 	}
-
 	if additionalJSON != "" {
 		var additional map[string]any
 		if err := json.Unmarshal([]byte(additionalJSON), &additional); err != nil {
@@ -50,6 +47,15 @@ func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byt
 		}
 		maps.Copy(dataMap, additional)
 	}
+	return dataMap, nil
+}
 
+// NewEventFromJSON creates a CloudEvent v1.0 from JSON string data, optionally merging
+// additional JSON data into the event payload. Returns the serialized CloudEvent bytes.
+func NewEventFromJSON(eventType, source, jsonData, additionalJSON string) ([]byte, error) {
+	dataMap, err := mergeJSONInputs(jsonData, additionalJSON)
+	if err != nil {
+		return nil, err
+	}
 	return newEvent(eventType, source, dataMap)
 }

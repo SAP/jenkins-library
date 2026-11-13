@@ -66,3 +66,43 @@ func newTaskRunFinishedCDEvent(source, taskName, pipelineURL, outcome, stageName
 	}
 	return bytes, nil
 }
+
+func NewCustomTypeCDEventFromJSON(eventType, source, subjectID, jsonData, additionalJSON string) ([]byte, error) {
+	cdEventType, err := cdevents.CDEventTypeFromString(eventType)
+	if err != nil {
+		return nil, fmt.Errorf("invalid CDEvent type %q: %w", eventType, err)
+	}
+
+	event, err := cdeventsv04.NewCustomTypeEvent()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create CDEvent: %w", err)
+	}
+
+	event.SetSource(source)
+	event.SetSubjectId(subjectID)
+	event.SetSubjectContent(map[string]any{})
+	event.SetEventType(*cdEventType)
+
+	dataMap, err := mergeJSONInputs(jsonData, additionalJSON)
+	if err != nil {
+		return nil, err
+	}
+
+	if dataMap != nil {
+		if err = event.SetCustomData("application/json", dataMap); err != nil {
+			return nil, fmt.Errorf("failed to set custom data: %w", err)
+		}
+	}
+
+	ce, err := cdevents.AsCloudEvent(event)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert CDEvent to CloudEvent: %w", err)
+	}
+	ce.SetType(cdEventType.String())
+
+	b, err := json.Marshal(ce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal CloudEvent: %w", err)
+	}
+	return b, nil
+}

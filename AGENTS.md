@@ -70,6 +70,8 @@ Workflow for any parameter change:
 - **No hardcoded secrets.** Use Vault, Jenkins credentials, GitHub secrets, or System Trust.
 - **Orchestrator abstraction is mandatory.** Use `pkg/orchestrator` to detect the CI environment — never assume Jenkins.
 - **Backward compatibility matters.** This library has external open-source users. Breaking changes need discussion.
+- **No new code comments.** Do not add comments to new or existing code. Only pre-existing comments may remain — never remove or alter them.
+- **No AI attribution in commits.** Do not mention Claude, AI, or any AI tool in commit messages, PR titles, or PR descriptions.
 
 ## Testing conventions
 
