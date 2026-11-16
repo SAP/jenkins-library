@@ -121,7 +121,6 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"transportRequestUploadCTS":                 transportRequestUploadCTSMetadata(),
 		"transportRequestUploadRFC":                 transportRequestUploadRFCMetadata(),
 		"transportRequestUploadSOLMAN":              transportRequestUploadSOLMANMetadata(),
-		"uiVeri5ExecuteTests":                       uiVeri5ExecuteTestsMetadata(),
 		"vaultRotateSecretId":                       vaultRotateSecretIdMetadata(),
 		"whitesourceExecuteScan":                    whitesourceExecuteScanMetadata(),
 		"xsDeploy":                                  xsDeployMetadata(),
