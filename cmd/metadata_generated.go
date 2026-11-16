@@ -95,7 +95,6 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"isChangeInDevelopment":                     isChangeInDevelopmentMetadata(),
 		"jsonApplyPatch":                            jsonApplyPatchMetadata(),
 		"kanikoExecute":                             kanikoExecuteMetadata(),
-		"karmaExecuteTests":                         karmaExecuteTestsMetadata(),
 		"kubernetesDeploy":                          kubernetesDeployMetadata(),
 		"malwareExecuteScan":                        malwareExecuteScanMetadata(),
 		"mavenBuild":                                mavenBuildMetadata(),
