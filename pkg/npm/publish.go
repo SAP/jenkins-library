@@ -3,6 +3,7 @@ package npm
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -112,6 +113,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password, publishT
 
 		if len(scope) > 0 {
 			npmrc.Set(fmt.Sprintf("%s:registry", scope), registry)
+		}
+
+		// inject Artifactory auth token when registry is the SAP internet-facing proxy
+		user := os.Getenv("PIPER_ARTIFACTORY_USER")
+		token := os.Getenv("PIPER_ARTIFACTORY_TOKEN")
+		if user != "" && token != "" && strings.Contains(registry, "common.repositories.cloud.sap") {
+			npmrc.Set("//common.repositories.cloud.sap/:_authToken", token)
 		}
 
 		// set registry auth
