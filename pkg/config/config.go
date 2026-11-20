@@ -410,7 +410,11 @@ func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, e
 
 	var header http.Header
 	if len(accessTokens[u.Host]) > 0 {
-		client.SetOptions(piperhttp.ClientOptions{Token: fmt.Sprintf("token %v", accessTokens[u.Host])})
+		tokenPrefix := "token"
+		if u.Host == "common.repositories.cloud.sap" {
+			tokenPrefix = "Bearer"
+		}
+		client.SetOptions(piperhttp.ClientOptions{Token: fmt.Sprintf("%v %v", tokenPrefix, accessTokens[u.Host])})
 		if strings.Contains(u.Path, "releases/assets") {
 			// Assets download endpoint requires 'application/octet-stream' media type.
 			// See: https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#get-a-release-asset
