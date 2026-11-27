@@ -44,7 +44,7 @@
         <findbugs.skip>true</findbugs.skip>
         <jenkins.version>2.32.3</jenkins.version>
         <pipeline.version>2.5</pipeline.version>
-        <cps.global.lib.version>2.6</cps.global.lib.version>
+        <cps.global.lib.version>588.v576c103a_ff86</cps.global.lib.version>
         <java.level>8</java.level>
     </properties>
 
